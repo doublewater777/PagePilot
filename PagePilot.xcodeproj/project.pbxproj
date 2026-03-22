@@ -910,7 +910,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.pagepilot.PagePilot;
+				PRODUCT_BUNDLE_IDENTIFIER = com.panyang.PagePilot;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -989,7 +989,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.pagepilot.PagePilot;
+				PRODUCT_BUNDLE_IDENTIFIER = com.panyang.PagePilot;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -1006,7 +1006,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.pagepilot.PagePilot.WatchRemote;
+				PRODUCT_BUNDLE_IDENTIFIER = com.panyang.PagePilot.WatchRemote;
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
 				TARGETED_DEVICE_FAMILY = 4;
@@ -1025,7 +1025,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.pagepilot.PagePilot.WatchRemote;
+				PRODUCT_BUNDLE_IDENTIFIER = com.panyang.PagePilot.WatchRemote;
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
 				TARGETED_DEVICE_FAMILY = 4;
