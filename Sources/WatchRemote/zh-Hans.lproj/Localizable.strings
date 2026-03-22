@@ -1,0 +1,4 @@
+/* Watch Remote */
+"watch.connected" = "已连接";
+"watch.notConnected" = "未连接";
+"watch.crownHint" = "旋转表冠翻页";

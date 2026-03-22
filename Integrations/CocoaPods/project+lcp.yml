@@ -1,0 +1,17 @@
+name: TestApp
+options:
+  bundleIdPrefix: org.readium
+targets:
+  TestApp:
+    type: application
+    platform: iOS
+    deploymentTarget: "18.0"
+    sources: 
+      - path: Sources
+        excludes:
+          - Resources/Fonts
+      - path: Sources/Resources/Fonts
+        type: folder
+    settings:
+      OTHER_SWIFT_FLAGS: $(inherited) -DLCP
+      DEVELOPMENT_TEAM: ${RD_DEVELOPMENT_TEAM}

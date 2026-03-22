@@ -1,0 +1,16 @@
+TestApp.xcodeproj
+TestApp.xcworkspace
+TestApp.xctestplan
+project.yml
+# IntelliJ AppCode
+.idea
+
+Carthage/
+Cartfile
+Cartfile.resolved
+
+Pods/
+Podfile
+Podfile.lock
+
+R2LCPClient/

@@ -1,0 +1,326 @@
+/* MARK: App */
+
+/* Library tab title */
+"library_title" = "书架";
+"home_tab" = "首页";
+"bookshelf_tab" = "书架";
+"catalogs_tab" = "OPDS 目录";
+"about_tab" = "关于";
+
+/* Buttons */
+"ok_button" = "确定";
+"cancel_button" = "取消";
+"confirm_button" = "确认";
+"add_button" = "添加";
+"edit_button" = "编辑";
+"remove_button" = "删除";
+"metadata_button" = "详情";
+"filter_button" = "筛选";
+"close_button" = "关闭";
+
+/* Alerts */
+"success_title" = "成功";
+
+/* Caption for the app version in About screen */
+"app_version_caption" = "应用版本：";
+/* Caption for the build version in About screen */
+"build_version_caption" = "构建版本：";
+
+"error" = "发生错误。";
+"error_cancelled" = "操作已取消。";
+"error_decoding" = "资源解码失败。";
+"error_forbidden" = "您无权访问此资源。";
+"error_io" = "文件系统错误。";
+"error_network" = "网络错误。";
+"error_not_found" = "资源未找到。";
+"error_out_of_space" = "存储空间不足，请释放一些空间后继续。";
+"error_read" = "资源读取失败。";
+
+
+/* MARK: Library */
+
+/* Hint message when the library is empty */
+"library_empty_message" = "📖 导入 EPUB、PDF、CBZ 或有声书";
+
+/* Add book alert message */
+"library_add_book_title" = "将书籍添加到书架";
+"library_add_book_from_device_button" = "从设备选择";
+
+/* Alert when a publication is successfully imported */
+"library_import_success_message" = "出版物已添加到书架";
+/* Alert when a publication is successfully downloaded */
+"library_download_success_message" = "[%@] 已添加到书架。";
+
+/* Import confirmation alert when the publication already exists in the library */
+"library_duplicate_alert_title" = "出版物已存在";
+"library_duplicate_alert_message" = "是否仍然添加？";
+
+/* Remove confirmation alert when the user deletes a publication */
+"library_delete_alert_title" = "确定删除？";
+"library_delete_alert_message" = "此操作将从书架中移除该出版物。";
+
+/* Error message used when trying to import a publication that is not valid */
+"library_error_publicationIsNotValid" = "出版物无效";
+/* Error message used when trying to open a book whose file is not found */
+"library_error_bookNotFound" = "书籍文件未找到";
+/* Error message used when a low-level error occured while importing a publication */
+"library_error_importFailed" = "导入出版物失败";
+/* Error message used when a low-level error occured while opening a publication */
+"library_error_openFailed" = "打开发出版物失败";
+/* Error message when the download of a publication failed */
+"library_error_downloadFailed" = "下载失败";
+/* Error message when the deletion of a publication failed */
+"library_error_bookDeletionFailed" = "删除出版物失败";
+/* Error message when the publication is still restricted. */
+"library_error_publicationIsRestricted" = "您无权打开此出版物";
+
+/* Accessibility label for the library collection view */
+"library_a11y_label" = "书架";
+
+/* Accessibility hint for the publication collection cell */
+"library_publication_a11y_hint" = "长按访问选项。";
+
+
+/* MARK: Reader */
+
+/* Error message when adding a new bookmark failed */
+"reader_bookmark_failure_message" = "无法添加书签";
+/* Success message when adding a bookmark */
+"reader_bookmark_success_message" = "书签已添加";
+
+/* Error message when adding a new highlight failed */
+"reader_highlight_failure_message" = "无法添加高亮";
+/* Success message when adding a highlight */
+"reader_highlight_success_message" = "高亮已添加";
+
+/* Error message when trying to read a publication with a unsupported format */
+"reader_error_formatNotSupported" = "不支持的格式";
+"reader_error_schemeNotSupported" = "不支持的资源方案";
+/* Error message when trying to read an EPUB that is invalid */
+"reader_error_epubNotValid" = "无效的 EPUB 文件";
+"reader_error_copyForbidden" = "您已超出允许复制的字符数。";
+"reader_error_search" = "搜索此出版物失败";
+"reader_error_tts" = "尝试朗读此出版物时发生错误。";
+"reader_error_tts_language_not_supported" = "TTS 引擎不支持所选语言。";
+
+/* Accessibility label to go backward in the publication */
+"reader_backward_a11y_label" = "上一章";
+/* Accessibility label to go forward in the publication */
+"reader_forward_a11y_label" = "下一章";
+
+/* Outline bookmark label when the position is available */
+"reader_outline_position_label" = "位置 %d";
+/* Outline bookmark label when the progression is available */
+"reader_outline_progression_label" = "章节进度的 %.2f%%";
+/* Outline tab name for Contents */
+"reader_outline_tab_contents" = "目录";
+/* Outline tab name for Bookmarks */
+"reader_outline_tab_bookmarks" = "书签";
+/* Outline tab name for Pagelist */
+"reader_outline_tab_pagelist" = "页面列表";
+/* Outline tab name for Landmarks */
+"reader_outline_tab_landmarks" = "导览";
+/* Outline tab name for Highlights */
+"reader_outline_tab_highlights" = "高亮";
+
+/* Title of the DRM management view */
+"reader_drm_management_title" = "DRM 管理";
+/* Unlimited quantity for a given DRM consumable right */
+"reader_drm_unlimited_label" = "无限";
+/* Title of the renew confirmation alert */
+"reader_drm_renew_title" = "续期许可证";
+/* Message of the renew confirmation alert */
+"reader_drm_renew_message" = "提供商将收到您的请求并进行处理。";
+/* Success message after renewing a publication */
+"reader_drm_renew_success_message" = "出版物续期成功。";
+/* Title of the return confirmation alert */
+"reader_drm_return_title" = "归还许可证";
+/* Message of the return confirmation alert */
+"reader_drm_return_message" = "归还后将无法再访问此出版物。";
+/* Success message after returning a publication */
+"reader_drm_return_success_message" = "出版物归还成功。";
+
+
+/* MARK: LCP */
+"lcp_type" = "Readium LCP";
+
+/* Quantity of characters left to be copied */
+"lcp_characters_label" = "%d 个字符";
+/* Quantity of pages left to be printed */
+"lcp_pages_label" = "%d 页";
+
+/* LCP errors */
+"lcp_error_missing_passphrase" = "需要密码才能打开此出版物。";
+"lcp_error_internal" = "发生严重的 LCP 内部错误。";
+"lcp_error_invalid_license" = "LCP 许可证无效。";
+"lcp_error_invalid_operation" = "此操作无法执行。";
+"lcp_error_container" = "读取或写入 LCP 许可证失败。";
+"lcp_error_network" = "网络错误。";
+"lcp_error_status_cancelled" = "此许可证已于 %@ 被取消。";
+"lcp_error_status_returned" = "此许可证已于 %@ 被归还。";
+"lcp_error_status_expired_start" = "此许可证于 %@ 开始生效。";
+"lcp_error_status_expired_end" = "此许可证已于 %@ 到期。";
+"lcp_error_status_revoked" = "此许可证已被其提供商于 %1$@ 撤销。\n它已被 %2$d 个设备注册";
+"lcp_error_renew_failed" = "无法正确续期您的出版物。";
+"lcp_error_invalid_renewal_period" = "续期周期不正确，您的出版物无法续期。";
+"lcp_error_return_failed" = "无法正确归还您的出版物。";
+"lcp_error_already_returned_or_expired" = "您的出版物已被归还或已过期。";
+
+/* MARK: OPDS */
+
+/* Button to edit the OPDS catalog */
+"opds_edit_button" = "编辑目录";
+/* Button to expand a feed gallery */
+"opds_more_button" = "更多 >";
+"opds_more_button_a11y_label" = "展开目录";
+/* Title of the section displaying the feeds */
+"opds_browse_title" = "浏览";
+/* Title of the add feed alert */
+"opds_add_title" = "输入目录标题和 URL";
+/* Message when adding an invalid OPDS feed */
+"opds_add_failure_message" = "目录无效，请重试。";
+/* Label for the OPDS feed title field */
+"opds_feed_title_caption" = "目录标题";
+/* Label for the OPDS feed URL field */
+"opds_feed_url_caption" = "目录 URL";
+/* Error message when the feed couldn't be loaded */
+"opds_failure_message" = "出错了。";
+/* Add OPDS Feed button label */
+"opds_add_button_a11y_label" = "添加 OPDS 目录";
+"opds_show_detail_view_a11y_hint" = "点击查看详情";
+"opds_feed_header_a11y_hint" = "目录组标题";
+
+/* Library additional */
+"library_import_local" = "导入本地出版物";
+"library_stream_http" = "通过 HTTP 流式传输出版物";
+"library_stream_title" = "流式传输出版物";
+"library_http_url_placeholder" = "HTTP URL";
+
+/* OPDS additional */
+"opds_loading" = "加载中...";
+"opds_load_error" = "加载目录失败，请重试。";
+"opds_load_error_detail" = "加载目录失败：%@";
+"opds_no_content" = "此目录中没有内容。";
+"opds_untitled" = "无标题";
+"opds_error_title_required" = "需要标题";
+"opds_error_enter_title" = "请输入标题。";
+"opds_error_invalid_url" = "无效的 URL";
+"opds_error_enter_valid_url" = "请输入有效的 URL。";
+
+/* About */
+"about_version" = "版本";
+"about_title" = "关于 Readium Swift Toolkit";
+"about_copyright" = "版权";
+"about_copyright_text" = "© 2022 European Digital Reading Lab";
+"about_license" = "[BSD-3 许可证]";
+"about_acknowledgements" = "致谢";
+"about_ack_text" = "如果没有法国政府的资金支持，R2 Reader 将无法开发。";
+
+/* Search */
+"search_placeholder" = "搜索";
+
+/* TTS */
+"tts_language" = "语言";
+"tts_voice" = "语音";
+"tts_settings" = "语音设置";
+"tts_default" = "默认";
+
+/* MARK: Preferences */
+"prefs_auto" = "自动";
+"prefs_yes" = "是";
+"prefs_no" = "否";
+"prefs_close" = "关闭";
+"prefs_reset" = "重置";
+"prefs_language" = "语言";
+"prefs_reading_progression" = "阅读方向";
+"prefs_background_color" = "背景颜色";
+"prefs_scroll" = "滚动";
+"prefs_scroll_axis" = "滚动方向";
+"prefs_horizontal" = "水平";
+"prefs_vertical" = "垂直";
+"prefs_spread" = "跨页";
+"prefs_never" = "从不";
+"prefs_always" = "始终";
+"prefs_offset_first_page" = "首页偏移";
+"prefs_width" = "宽度";
+"prefs_page_spacing" = "页间距";
+"prefs_fit" = "适应";
+"prefs_page" = "页面";
+"prefs_vertical_text" = "竖排文字";
+"prefs_columns" = "分栏";
+"prefs_page_margins" = "页边距";
+"prefs_none" = "无";
+"prefs_theme" = "主题";
+"prefs_text_color" = "文字颜色";
+"prefs_typeface" = "字体";
+"prefs_sans_serif" = "无衬线";
+"prefs_font_size" = "字号";
+"prefs_font_weight" = "字重";
+"prefs_text_normalization" = "文字规范化";
+"prefs_publisher_styles" = "出版商样式";
+"prefs_text_alignment" = "文本对齐";
+"prefs_left" = "左对齐";
+"prefs_end" = "末尾";
+"prefs_type_scale" = "字体缩放";
+"prefs_line_height" = "行高";
+"prefs_word_spacing" = "字间距";
+"prefs_light" = "浅色";
+"prefs_dark" = "深色";
+"prefs_sepia" = "护眼";
+"prefs_image_filter" = "图像滤镜";
+"prefs_darken_colors" = "加深颜色";
+"prefs_invert_colors" = "反转颜色";
+"prefs_typeface" = "字体";
+"prefs_original" = "原始";
+"prefs_publisher_styles" = "出版商样式";
+"prefs_default" = "默认";
+"prefs_center" = "居中";
+"prefs_right" = "右对齐";
+"prefs_justify" = "两端对齐";
+"prefs_start" = "左对齐";
+"prefs_paragraph_indent" = "段落缩进";
+"prefs_paragraph_spacing" = "段落间距";
+"prefs_letter_spacing" = "字间距";
+"prefs_hyphens" = "连字符";
+"prefs_ligatures" = "合字";
+"prefs_volume" = "音量";
+"prefs_speed" = "速度";
+"prefs_ltr" = "从左到右";
+"prefs_rtl" = "从右到左";
+"prefs_no_user_preferences" = "没有可用的用户设置。";
+"prefs_user_preferences" = "用户设置";
+
+/* MARK: Metadata */
+"metadata_publication" = "出版物";
+"metadata_no_title" = "无标题";
+"metadata_title" = "标题";
+"metadata_identifier" = "标识符";
+"metadata_author" = "作者";
+"metadata_authors" = "作者";
+"metadata_publisher" = "出版商";
+"metadata_publishers" = "出版商";
+"metadata_publication_date" = "出版日期";
+"metadata_accessibility_claims" = "无障碍功能";
+"metadata_show_fields_no_metadata" = "显示无元数据的字段";
+"metadata_show_descriptive_statements" = "显示描述性说明";
+
+/* MARK: Reader */
+"reader_highlight" = "高亮";
+
+/* MARK: Launch */
+"launch_tagline_1" = "用手表翻页，畅快阅读";
+"launch_tagline_2" = "EPUB • PDF 有声书";
+"home_greeting_morning" = "早上好";
+"home_greeting_noon" = "中午好";
+"home_greeting_afternoon" = "下午好";
+"home_greeting_evening" = "晚上好";
+"home_greeting_night" = "夜深了";
+"home_reading_time_today" = "今日阅读 %@";
+"home_daily_goal" = "每日阅读目标";
+"home_daily_goal_of" = "/ %d 分钟";
+"home_minutes" = "%d 分钟";
+"home_continue_reading" = "继续阅读";
+"home_empty_title" = "还没有在读书";
+"home_empty_message" = "去书架找本书开始阅读吧";
+"home_import_button" = "去书架";
+"home_continue_reading_button" = "继续阅读";

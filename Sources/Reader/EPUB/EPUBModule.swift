@@ -1,0 +1,65 @@
+//
+//  Copyright 2026 Readium Foundation. All rights reserved.
+//  Use of this source code is governed by the BSD-style license
+//  available in the top-level LICENSE file of the project.
+//
+
+import Foundation
+import ReadiumNavigator
+import ReadiumShared
+import UIKit
+
+final class EPUBModule: ReaderFormatModule {
+    weak var delegate: ReaderFormatModuleDelegate?
+
+    init(delegate: ReaderFormatModuleDelegate?) {
+        self.delegate = delegate
+    }
+
+    func supports(_ publication: Publication) -> Bool {
+        publication.conforms(to: .epub) || publication.conforms(to: .divina) || publication.readingOrder.allAreHTML
+    }
+
+    @MainActor
+    func makeReaderViewController(
+        for publication: Publication,
+        locator: Locator?,
+        bookId: Book.Id,
+        books: BookRepository,
+        bookmarks: BookmarkRepository,
+        highlights: HighlightRepository,
+        readium: Readium
+    ) async throws -> UIViewController {
+        let preferencesStore = makePreferencesStore(books: books)
+
+        // Get initial preferences and override theme based on system appearance
+        var initialPreferences = try await preferencesStore.preferences(for: bookId)
+        if initialPreferences.theme == nil {
+            // Follow system theme if no theme is set
+            let isDarkMode = UITraitCollection.current.userInterfaceStyle == .dark
+            initialPreferences.theme = isDarkMode ? .dark : .light
+        }
+
+        let epubViewController = try await EPUBViewController(
+            publication: publication,
+            locator: locator,
+            bookId: bookId,
+            books: books,
+            bookmarks: bookmarks,
+            highlights: highlights,
+            initialPreferences: initialPreferences,
+            preferencesStore: preferencesStore
+        )
+        epubViewController.moduleDelegate = delegate
+        return epubViewController
+    }
+
+    func makePreferencesStore(books: BookRepository) -> AnyUserPreferencesStore<EPUBPreferences> {
+        CompositeUserPreferencesStore(
+            publicationStore: DatabaseUserPreferencesStore(books: books),
+            sharedStore: UserDefaultsUserPreferencesStore(),
+            publicationFilter: { $0.filterPublicationPreferences() },
+            sharedFilter: { $0.filterSharedPreferences() }
+        ).eraseToAnyPreferencesStore()
+    }
+}

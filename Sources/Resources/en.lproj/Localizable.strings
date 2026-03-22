@@ -1,0 +1,326 @@
+/* MARK: App */
+
+/* Library tab title */
+"library_title" = "Library";
+"home_tab" = "Home";
+"bookshelf_tab" = "Bookshelf";
+"catalogs_tab" = "OPDS Feeds";
+"about_tab" = "About";
+
+/* Buttons */
+"ok_button" = "OK";
+"cancel_button" = "Cancel";
+"confirm_button" = "Confirm";
+"add_button" = "Add";
+"edit_button" = "Edit";
+"remove_button" = "Remove";
+"metadata_button" = "Info";
+"filter_button" = "Filter";
+"close_button" = "Close";
+
+/* Alerts */
+"success_title" = "Success";
+
+/* Caption for the app version in About screen */
+"app_version_caption" = "App Version:";
+/* Caption for the build version in About screen */
+"build_version_caption" = "Build Version:";
+
+"error" = "An error occurred.";
+"error_cancelled" = "The operation was cancelled.";
+"error_decoding" = "Failed to decode the resource.";
+"error_forbidden" = "You are not allowed to access this resource.";
+"error_io" = "A file system error occurred.";
+"error_network" = "A networking error occurred.";
+"error_not_found" = "The resource was not found.";
+"error_out_of_space" = "Your storage is full. Please free up some space to continue.";
+"error_read" = "Failed to read the resource.";
+
+
+/* MARK: Library */
+
+/* Hint message when the library is empty */
+"library_empty_message" = "📖 Import EPUB, PDF, CBZ or Audiobook files";
+
+/* Add book alert message */
+"library_add_book_title" = "Add a book to your library";
+"library_add_book_from_device_button" = "From your device";
+
+/* Alert when a publication is successfully imported */
+"library_import_success_message" = "Publication added to library";
+/* Alert when a publication is successfully downloaded */
+"library_download_success_message" = "[%@] added to library.";
+
+/* Import confirmation alert when the publication already exists in the library */
+"library_duplicate_alert_title" = "The publication already exists";
+"library_duplicate_alert_message" = "Would you like to add it anyways?";
+
+/* Remove confirmation alert when the user deletes a publication */
+"library_delete_alert_title" = "Are you sure?";
+"library_delete_alert_message" = "This will remove the Publication from your library.";
+
+/* Error message used when trying to import a publication that is not valid */
+"library_error_publicationIsNotValid" = "The publication isn't valid";
+/* Error message used when trying to open a book whose file is not found */
+"library_error_bookNotFound" = "The book file was not found";
+/* Error message used when a low-level error occured while importing a publication */
+"library_error_importFailed" = "Failed to import the publication";
+/* Error message used when a low-level error occured while opening a publication */
+"library_error_openFailed" = "Failed to open the publication";
+/* Error message when the download of a publication failed */
+"library_error_downloadFailed" = "Download failed";
+/* Error message when the deletion of a publication failed */
+"library_error_bookDeletionFailed" = "Failed to delete the publication";
+/* Error message when the publication is still restricted. */
+"library_error_publicationIsRestricted" = "You are not allowed to open this publication";
+
+/* Accessibility label for the library collection view */
+"library_a11y_label" = "Library";
+
+/* Accessibility hint for the publication collection cell */
+"library_publication_a11y_hint" = "Hold to access options.";
+
+
+/* MARK: Reader */
+
+/* Error message when adding a new bookmark failed */
+"reader_bookmark_failure_message" = "Could not add bookmark";
+/* Success message when adding a bookmark */
+"reader_bookmark_success_message" = "Bookmark added";
+
+/* Error message when adding a new highlight failed */
+"reader_highlight_failure_message" = "Could not add highlight";
+/* Success message when adding a highlight */
+"reader_highlight_success_message" = "Highlight added";
+
+/* Error message when trying to read a publication with a unsupported format */
+"reader_error_formatNotSupported" = "Unsupported format";
+"reader_error_schemeNotSupported" = "Unsupported resource scheme";
+/* Error message when trying to read an EPUB that is invalid */
+"reader_error_epubNotValid" = "Invalid EPUB file";
+"reader_error_copyForbidden" = "You exceeded the amount of characters allowed to be copied.";
+"reader_error_search" = "Failed to search this publication";
+"reader_error_tts" = "An error occurred when trying to read aloud this publication.";
+"reader_error_tts_language_not_supported" = "The selected language is not supported by the TTS engine.";
+
+/* Accessibility label to go backward in the publication */
+"reader_backward_a11y_label" = "Previous Chapter";
+/* Accessibility label to go forward in the publication */
+"reader_forward_a11y_label" = "Next Chapter";
+
+/* Outline bookmark label when the position is available */
+"reader_outline_position_label" = "position %d";
+/* Outline bookmark label when the progression is available */
+"reader_outline_progression_label" = "%.2f%% through the chapter";
+/* Outline tab name for Contents */
+"reader_outline_tab_contents" = "Contents";
+/* Outline tab name for Bookmarks */
+"reader_outline_tab_bookmarks" = "Bookmarks";
+/* Outline tab name for Pagelist */
+"reader_outline_tab_pagelist" = "Pagelist";
+/* Outline tab name for Landmarks */
+"reader_outline_tab_landmarks" = "Landmarks";
+/* Outline tab name for Highlights */
+"reader_outline_tab_highlights" = "Highlights";
+
+/* Title of the DRM management view */
+"reader_drm_management_title" = "DRM Management";
+/* Unlimited quantity for a given DRM consumable right */
+"reader_drm_unlimited_label" = "unlimited";
+/* Title of the renew confirmation alert */
+"reader_drm_renew_title" = "Renew License";
+/* Message of the renew confirmation alert */
+"reader_drm_renew_message" = "The provider will receive your request and process it.";
+/* Success message after renewing a publication */
+"reader_drm_renew_success_message" = "Publication renewed successfully.";
+/* Title of the return confirmation alert */
+"reader_drm_return_title" = "Return License";
+/* Message of the return confirmation alert */
+"reader_drm_return_message" = "Returning the loan will prevent you from accessing the publication.";
+/* Success message after returning a publication */
+"reader_drm_return_success_message" = "Publication returned successfully.";
+
+
+/* MARK: LCP */
+"lcp_type" = "Readium LCP";
+
+/* Quantity of characters left to be copied */
+"lcp_characters_label" = "%d characters";
+/* Quantity of pages left to be printed */
+"lcp_pages_label" = "%d pages";
+
+/* LCP errors */
+"lcp_error_missing_passphrase" = "The passphrase is required to open the publication.";
+"lcp_error_internal" = "A critical internal LCP error occurred.";
+"lcp_error_invalid_license" = "The LCP license is not valid.";
+"lcp_error_invalid_operation" = "This action cannot be performed.";
+"lcp_error_container" = "Failed to read or write the LCP license.";
+"lcp_error_network" = "A networking error occurred.";
+"lcp_error_status_cancelled" = "This license was cancelled on %@.";
+"lcp_error_status_returned" = "This license has been returned on %@.";
+"lcp_error_status_expired_start" = "This license starts on %@.";
+"lcp_error_status_expired_end" = "This license expired on %@.";
+"lcp_error_status_revoked" = "This license was revoked by its provider on %1$@.\nIt was registered by %2$d device(s)";
+"lcp_error_renew_failed" = "Your publication could not be renewed properly.";
+"lcp_error_invalid_renewal_period" = "Incorrect renewal period, your publication could not be renewed.";
+"lcp_error_return_failed" = "Your publication could not be returned properly.";
+"lcp_error_already_returned_or_expired" = "Your publication has already been returned before or is expired.";
+
+/* MARK: OPDS */
+
+/* Button to edit the OPDS catalog */
+"opds_edit_button" = "Edit catalog";
+/* Button to expand a feed gallery */
+"opds_more_button" = "more >";
+"opds_more_button_a11y_label" = "expand feed";
+/* Title of the section displaying the feeds */
+"opds_browse_title" = "Browse";
+/* Title of the add feed alert */
+"opds_add_title" = "Enter feed title and URL";
+/* Message when adding an invalid OPDS feed */
+"opds_add_failure_message" = "Feed is not valid, please try again.";
+/* Label for the OPDS feed title field */
+"opds_feed_title_caption" = "Feed Title";
+/* Label for the OPDS feed URL field */
+"opds_feed_url_caption" = "Feed URL";
+/* Error message when the feed couldn't be loaded */
+"opds_failure_message" = "Something went wrong.";
+/* Add OPDS Feed button label */
+"opds_add_button_a11y_label" = "Add OPDS Feed";
+"opds_show_detail_view_a11y_hint" = "tap to view details";
+"opds_feed_header_a11y_hint" = "Feed Group Header";
+
+/* Library additional */
+"library_import_local" = "Import local publication";
+"library_stream_http" = "Stream publication over HTTP";
+"library_stream_title" = "Stream publication";
+"library_http_url_placeholder" = "HTTP URL";
+
+/* OPDS additional */
+"opds_loading" = "Loading...";
+"opds_load_error" = "Failed to load feed. Please try again.";
+"opds_load_error_detail" = "Failed to load feed: %@";
+"opds_no_content" = "No content in this feed.";
+"opds_untitled" = "Untitled";
+"opds_error_title_required" = "Title Required";
+"opds_error_enter_title" = "Please enter a title.";
+"opds_error_invalid_url" = "Invalid URL";
+"opds_error_enter_valid_url" = "Please enter a valid URL.";
+
+/* About */
+"about_version" = "Version";
+"about_title" = "About the Readium Swift Toolkit";
+"about_copyright" = "Copyright";
+"about_copyright_text" = "© 2022 European Digital Reading Lab";
+"about_license" = "[BSD-3 License]";
+"about_acknowledgements" = "Acknowledgements";
+"about_ack_text" = "R2 Reader wouldn't have been developed without the financial help of the French State.";
+
+/* Search */
+"search_placeholder" = "Search";
+
+/* TTS */
+"tts_language" = "Language";
+"tts_voice" = "Voice";
+"tts_settings" = "Speech settings";
+"tts_default" = "Default";
+
+/* MARK: Preferences */
+"prefs_auto" = "Auto";
+"prefs_yes" = "Yes";
+"prefs_no" = "No";
+"prefs_close" = "Close";
+"prefs_reset" = "Reset";
+"prefs_language" = "Language";
+"prefs_reading_progression" = "Reading progression";
+"prefs_background_color" = "Background color";
+"prefs_scroll" = "Scroll";
+"prefs_scroll_axis" = "Scroll axis";
+"prefs_horizontal" = "Horizontal";
+"prefs_vertical" = "Vertical";
+"prefs_spread" = "Spread";
+"prefs_never" = "Never";
+"prefs_always" = "Always";
+"prefs_offset_first_page" = "Offset first page";
+"prefs_width" = "Width";
+"prefs_page_spacing" = "Page spacing";
+"prefs_fit" = "Fit";
+"prefs_page" = "Page";
+"prefs_vertical_text" = "Vertical text";
+"prefs_columns" = "Columns";
+"prefs_page_margins" = "Page margins";
+"prefs_none" = "None";
+"prefs_theme" = "Theme";
+"prefs_text_color" = "Text color";
+"prefs_typeface" = "Typeface";
+"prefs_sans_serif" = "Sans serif";
+"prefs_font_size" = "Font size";
+"prefs_font_weight" = "Font weight";
+"prefs_text_normalization" = "Text normalization";
+"prefs_publisher_styles" = "Publisher styles";
+"prefs_text_alignment" = "Text alignment";
+"prefs_left" = "Left";
+"prefs_end" = "End";
+"prefs_type_scale" = "Type scale";
+"prefs_line_height" = "Line height";
+"prefs_word_spacing" = "Word spacing";
+"prefs_light" = "Light";
+"prefs_dark" = "Dark";
+"prefs_sepia" = "Sepia";
+"prefs_image_filter" = "Image filter";
+"prefs_darken_colors" = "Darken colors";
+"prefs_invert_colors" = "Invert colors";
+"prefs_typeface" = "Typeface";
+"prefs_original" = "Original";
+"prefs_publisher_styles" = "Publisher styles";
+"prefs_default" = "Default";
+"prefs_center" = "Center";
+"prefs_right" = "Right";
+"prefs_justify" = "Justify";
+"prefs_start" = "Start";
+"prefs_paragraph_indent" = "Paragraph indent";
+"prefs_paragraph_spacing" = "Paragraph spacing";
+"prefs_letter_spacing" = "Letter spacing";
+"prefs_hyphens" = "Hyphens";
+"prefs_ligatures" = "Ligatures";
+"prefs_volume" = "Volume";
+"prefs_speed" = "Speed";
+"prefs_ltr" = "LTR";
+"prefs_rtl" = "RTL";
+"prefs_no_user_preferences" = "No user preferences available.";
+"prefs_user_preferences" = "User Preferences";
+
+/* MARK: Metadata */
+"metadata_publication" = "Publication";
+"metadata_no_title" = "No Title";
+"metadata_title" = "Title";
+"metadata_identifier" = "Identifier";
+"metadata_author" = "Author";
+"metadata_authors" = "Authors";
+"metadata_publisher" = "Publisher";
+"metadata_publishers" = "Publishers";
+"metadata_publication_date" = "Publication Date";
+"metadata_accessibility_claims" = "Accessibility";
+"metadata_show_fields_no_metadata" = "Show Fields with No Metadata";
+"metadata_show_descriptive_statements" = "Show Descriptive Statements";
+
+/* MARK: Reader */
+"reader_highlight" = "Highlight";
+
+/* MARK: Launch */
+"launch_tagline_1" = "Read with your Apple Watch";
+"launch_tagline_2" = "EPUB • PDF • Audiobook";
+"home_greeting_morning" = "Good morning";
+"home_greeting_noon" = "Good noon";
+"home_greeting_afternoon" = "Good afternoon";
+"home_greeting_evening" = "Good evening";
+"home_greeting_night" = "Good night";
+"home_reading_time_today" = "Today %@";
+"home_daily_goal" = "Daily Reading Goal";
+"home_daily_goal_of" = "of %d min";
+"home_minutes" = "%d min";
+"home_continue_reading" = "Continue Reading";
+"home_empty_title" = "No books yet";
+"home_empty_message" = "Head to your bookshelf to find something to read";
+"home_import_button" = "Go to Bookshelf";
+"home_continue_reading_button" = "Continue Reading";

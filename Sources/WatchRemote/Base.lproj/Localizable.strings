@@ -1,0 +1,4 @@
+/* Watch Remote */
+"watch.connected" = "Connected";
+"watch.notConnected" = "Not Connected";
+"watch.crownHint" = "Crown to turn pages";
