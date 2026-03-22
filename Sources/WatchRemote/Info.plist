@@ -28,7 +28,7 @@
     <key>WKApplication</key>
     <true/>
     <key>WKCompanionAppBundleIdentifier</key>
-    <string>com.pagepilot.PagePilot</string>
+    <string>com.panyang.PagePilot</string>
     <key>WCAppIcon</key>
     <string>AppIcon</string>
 </dict>

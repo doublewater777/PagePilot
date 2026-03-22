@@ -28,6 +28,6 @@
     <key>WKApplication</key>
     <true/>
     <key>WKCompanionAppBundleIdentifier</key>
-    <string>com.pagepilot.PagePilot</string>
+    <string>com.panyang.PagePilot</string>
 </dict>
 </plist>
