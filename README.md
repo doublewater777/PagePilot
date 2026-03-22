@@ -31,3 +31,10 @@ This project uses [XcodeGen](https://github.com/yonaskolb/XcodeGen) to generate 
 
 > [!IMPORTANT]
 > The Xcode project is not committed to the repository. Run `make spm` after pulling any changes.
+
+## License
+
+This project is licensed under the BSD 3-Clause License. See [LICENSE](LICENSE) for details.
+
+Copyright (c) 2026 PagePilot. All rights reserved.
+Copyright (c) 2026 Readium Foundation. All rights reserved.
