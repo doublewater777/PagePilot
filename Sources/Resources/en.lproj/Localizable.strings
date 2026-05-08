@@ -21,6 +21,17 @@
 /* Alerts */
 "success_title" = "Success";
 
+/* Onboarding */
+"onboarding_later_button" = "Later";
+"onboarding_continue_button" = "Continue";
+"onboarding_start_button" = "Start Reading";
+"onboarding_welcome_title" = "Welcome to PagePilot";
+"onboarding_welcome_message" = "A quiet place for your books, built for reading on iPhone.";
+"onboarding_import_title" = "Bring your library";
+"onboarding_import_message" = "Add EPUB, PDF, CBZ, and audiobook files from Files, sharing, or a direct link.";
+"onboarding_watch_title" = "Turn pages from your wrist";
+"onboarding_watch_message" = "Read on iPhone and use Apple Watch as a simple page-turning remote.";
+
 /* Caption for the app version in About screen */
 "app_version_caption" = "App Version:";
 /* Caption for the build version in About screen */

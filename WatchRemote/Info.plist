@@ -24,10 +24,22 @@
     <key>CFBundleShortVersionString</key>
     <string>1.0</string>
     <key>CFBundleVersion</key>
-    <string>1</string>
+    <string>3</string>
     <key>WKApplication</key>
     <true/>
     <key>WKCompanionAppBundleIdentifier</key>
     <string>com.panyang.PagePilot</string>
+    <key>CFBundleIconName</key>
+    <string>AppIcon</string>
+    <key>CFBundleIcons</key>
+    <dict>
+        <key>CFBundlePrimaryIcon</key>
+        <dict>
+            <key>CFBundleIconFiles</key>
+            <array/>
+            <key>CFBundleIconName</key>
+            <string>AppIcon</string>
+        </dict>
+    </dict>
 </dict>
 </plist>

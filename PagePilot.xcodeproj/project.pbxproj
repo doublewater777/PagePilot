@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		PRIVACY0002A2B3C4D5E6F7 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = PRIVACY0001A2B3C4D5E6F7 /* PrivacyInfo.xcprivacy */; };
 		0770E830103BBA269C86E6A6 /* ReadiumShared in Frameworks */ = {isa = PBXBuildFile; productRef = 7498BDB1A48B56ECEAA3F18C /* ReadiumShared */; };
 		0815F8C75C98F6A74480AC43 /* PageCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2D15A9E53D4374742A8A4B5 /* PageCommand.swift */; };
 		0A55B7EE2DE0F7D9F50F009A /* AboutSectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D69D4E560EB4829803E9C5F /* AboutSectionView.swift */; };
@@ -238,6 +239,7 @@
 		EE56BD15CF1C12FD76DB0C02 /* LibraryViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryViewController.swift; sourceTree = "<group>"; };
 		FEF4D3667F1B05A11DE7F79E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		FF40A2122433936DCE54F2A2 /* pagepilot.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = pagepilot.entitlements; sourceTree = "<group>"; };
+		PRIVACY0001A2B3C4D5E6F7 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -536,6 +538,7 @@
 				694BDEB5CE7C0CB8BA260381 /* Assets.xcassets */,
 				802E01DF5344718745EF9759 /* Localizable.strings */,
 				DBEA2030A7E77B55426B2E03 /* Localizable.strings */,
+				PRIVACY0001A2B3C4D5E6F7 /* PrivacyInfo.xcprivacy */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -724,6 +727,7 @@
 				8479AF25CE7A19F643B5D33D /* OPDS.storyboard in Resources */,
 				DCDB6FBAC53F9F4B0C302759 /* PublicationCollectionViewCell.xib in Resources */,
 				B267E78537DF003C24F79365 /* PublicationMenuViewController.xib in Resources */,
+				PRIVACY0002A2B3C4D5E6F7 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -912,7 +916,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.panyang.PagePilot;
 				SDKROOT = iphoneos;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
 		};
@@ -991,7 +995,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.panyang.PagePilot;
 				SDKROOT = iphoneos;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;
 		};
