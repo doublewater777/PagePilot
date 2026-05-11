@@ -4,7 +4,9 @@
 //  available in the top-level LICENSE file of the project.
 //
 
+import AVFoundation
 import Combine
+import OSLog
 import ReadiumShared
 import SwiftUI
 import UIKit
@@ -18,6 +20,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     private var subscriptions = Set<AnyCancellable>()
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+        configureAudioSession()
         app = try! AppModule()
 
         func makeItem(title: String, systemImage: String) -> UITabBarItem {
@@ -65,8 +68,85 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
         app.tabBarController = tabBarController
         presentOnboardingIfNeeded(from: tabBarController)
+        importPreloadedBooks()
 
         return true
+    }
+
+    /// Configures the shared `AVAudioSession` so that audio features (audiobook
+    /// playback and text-to-speech) keep playing when the app is sent to the
+    /// background or the device is locked.
+    ///
+    /// Without this, the default `soloAmbient` category silences audio as soon
+    /// as the app is backgrounded, which makes the `audio` UIBackgroundMode
+    /// declared in Info.plist appear non-functional during App Review.
+    private func configureAudioSession() {
+        let session = AVAudioSession.sharedInstance()
+        do {
+            try session.setCategory(
+                .playback,
+                mode: .spokenAudio,
+                options: []
+            )
+            try session.setActive(true, options: [])
+        } catch {
+            print("Failed to configure AVAudioSession: \(error)")
+        }
+    }
+
+    /// Imports preloaded sample books from the app bundle on first launch.
+    private func importPreloadedBooks() {
+        let log = Logger(subsystem: "com.panyang.PagePilot", category: "PreloadedBooks")
+        let preloadedBooksKey = "preloadedBooksImported"
+        guard !UserDefaults.standard.bool(forKey: preloadedBooksKey) else {
+            log.info("Already imported, skipping")
+            return
+        }
+
+        guard let resourceURL = Bundle.main.resourceURL else {
+            log.error("No resource URL")
+            return
+        }
+        let preloadedDir = resourceURL.appendingPathComponent("PreloadedBooks")
+        log.info("Preloaded dir: \(preloadedDir.path)")
+
+        guard let rootVC = window?.rootViewController else {
+            log.error("No root view controller, window=\(String(describing: self.window))")
+            return
+        }
+
+        let fileManager = FileManager.default
+        var isDir: ObjCBool = false
+        guard fileManager.fileExists(atPath: preloadedDir.path, isDirectory: &isDir), isDir.boolValue else {
+            log.error("PreloadedBooks dir does not exist at \(preloadedDir.path)")
+            return
+        }
+
+        guard let files = try? fileManager.contentsOfDirectory(at: preloadedDir, includingPropertiesForKeys: nil) else {
+            log.error("Failed to list files at \(preloadedDir.path)")
+            return
+        }
+
+        log.info("Found \(files.count) file(s) to import: \(files.map(\.lastPathComponent).joined(separator: ", "))")
+
+        Task {
+            for fileURL in files {
+                guard let absoluteURL = fileURL.anyURL.absoluteURL else {
+                    log.error("Failed to create AbsoluteURL for \(fileURL.lastPathComponent)")
+                    continue
+                }
+
+                log.info("Importing: \(absoluteURL.string)")
+                do {
+                    let book = try await app.library.importPublication(from: absoluteURL, sender: rootVC, progress: { _ in })
+                    log.info("Imported book: \(book.title)")
+                } catch {
+                    log.error("Import failed for \(fileURL.lastPathComponent): \(String(describing: error))")
+                }
+            }
+            UserDefaults.standard.set(true, forKey: preloadedBooksKey)
+            log.info("All preloaded books import finished")
+        }
     }
 
     func application(_ application: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {

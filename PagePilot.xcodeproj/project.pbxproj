@@ -25,6 +25,7 @@
 		246CE1BD19E31E8CAA5F2DC0 /* EPUBViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 178105C26BFF5F19FC32A6F8 /* EPUBViewController.swift */; };
 		2AFB2B96D9FBA573769DA99B /* HighlightCellView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 131E7CACE1290AE0E3E01703 /* HighlightCellView.swift */; };
 		2AFC36A1B4D06924FB33ABBD /* OPDSCatalogsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BAF4FE882F5F77DD7DDEC99 /* OPDSCatalogsViewModel.swift */; };
+		OPDSEMPTYBUILD123456789ABCDEF /* OPDSEmptyStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = OPDSEMPTYSTAT0123456789ABCDEF /* OPDSEmptyStateView.swift */; };
 		2C254C022831D5191216D859 /* ReadiumOPDS in Frameworks */ = {isa = PBXBuildFile; productRef = 3625E51E58424FCC5DD3B97F /* ReadiumOPDS */; };
 		2C8DD4ACB60CD5DB3873D8C1 /* Locator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2CEA58DCBF6A480F09C088C /* Locator.swift */; };
 		2DD9AAF066BC2FA01FD21899 /* TTSView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D345B3526CABD83831589416 /* TTSView.swift */; };
@@ -40,6 +41,7 @@
 		5801C06D7ED7B2F2BE67F715 /* OPDSCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7B63A2D2FD086BF05083F8F /* OPDSCatalog.swift */; };
 		5A1698C2F2297B670C92316F /* ReaderModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89E1A6F7ACDE11C9A2A513A8 /* ReaderModule.swift */; };
 		5ACC91C220CA6B29D7D20269 /* Fonts in Resources */ = {isa = PBXBuildFile; fileRef = 9D5902798099C3EE8E8D95B9 /* Fonts */; };
+		PRELOADBOOKSBUILD123456789 /* PreloadedBooks in Resources */ = {isa = PBXBuildFile; fileRef = PRELOADBOOKSREF123456789 /* PreloadedBooks */; };
 		5B31B63F319C2E22FD99251B /* AnyPublisher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1895D24415C4CE1D979D82BD /* AnyPublisher.swift */; };
 		606DDBE8BCAF3E5D6BB0262F /* OPDSCatalogsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2093F7B816F304E846E3C29A /* OPDSCatalogsView.swift */; };
 		623540415F286DFA546F2D4C /* MBProgressHUD in Frameworks */ = {isa = PBXBuildFile; productRef = 3C3D34DFF9245C495B9DF145 /* MBProgressHUD */; };
@@ -203,8 +205,10 @@
 		89E1A6F7ACDE11C9A2A513A8 /* ReaderModule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReaderModule.swift; sourceTree = "<group>"; };
 		8AFD12698D59F063197FC3EB /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Library.storyboard; sourceTree = "<group>"; };
 		8BAF4FE882F5F77DD7DDEC99 /* OPDSCatalogsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OPDSCatalogsViewModel.swift; sourceTree = "<group>"; };
+		OPDSEMPTYSTAT0123456789ABCDEF /* OPDSEmptyStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OPDSEmptyStateView.swift; sourceTree = "<group>"; };
 		8DA0E6603D4969DD32E0C366 /* UIViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UIViewController.swift; sourceTree = "<group>"; };
 		9D5902798099C3EE8E8D95B9 /* Fonts */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Fonts; path = Sources/Resources/Fonts; sourceTree = SOURCE_ROOT; };
+		PRELOADBOOKSREF123456789 /* PreloadedBooks */ = {isa = PBXFileReference; lastKnownFileType = folder; name = PreloadedBooks; path = Sources/Resources/PreloadedBooks; sourceTree = SOURCE_ROOT; };
 		A1EC74F4E12B871FEF191394 /* OPDSPublicationInfoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OPDSPublicationInfoView.swift; sourceTree = "<group>"; };
 		A7935C1E83615EA20E5F727D /* TTSViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TTSViewModel.swift; sourceTree = "<group>"; };
 		A7B63A2D2FD086BF05083F8F /* OPDSCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OPDSCatalog.swift; sourceTree = "<group>"; };
@@ -307,6 +311,7 @@
 				09EB51A647D02FEFB069368A /* OPDSCatalogRow.swift */,
 				2093F7B816F304E846E3C29A /* OPDSCatalogsView.swift */,
 				8BAF4FE882F5F77DD7DDEC99 /* OPDSCatalogsViewModel.swift */,
+				OPDSEMPTYSTAT0123456789ABCDEF /* OPDSEmptyStateView.swift */,
 			);
 			path = OPDSCatalogs;
 			sourceTree = "<group>";
@@ -724,6 +729,7 @@
 				170780DD70076A3034688F10 /* Library.storyboard in Resources */,
 				DF8FE15437316626D7ED14EF /* Localizable.strings in Resources */,
 				53E3DAE348DA4A9B593469D3 /* Localizable.strings in Resources */,
+				PRELOADBOOKSBUILD123456789 /* PreloadedBooks in Resources */,
 				8479AF25CE7A19F643B5D33D /* OPDS.storyboard in Resources */,
 				DCDB6FBAC53F9F4B0C302759 /* PublicationCollectionViewCell.xib in Resources */,
 				B267E78537DF003C24F79365 /* PublicationMenuViewController.xib in Resources */,
@@ -774,6 +780,7 @@
 				AA525D16EA15749798C12682 /* OPDSCatalogRow.swift in Sources */,
 				606DDBE8BCAF3E5D6BB0262F /* OPDSCatalogsView.swift in Sources */,
 				2AFC36A1B4D06924FB33ABBD /* OPDSCatalogsViewModel.swift in Sources */,
+				OPDSEMPTYBUILD123456789ABCDEF /* OPDSEmptyStateView.swift in Sources */,
 				1F60000FEAAF17C55EA13BF5 /* OPDSFacetView.swift in Sources */,
 				CCA15EA9BFF8055E0AD81870 /* OPDSFactory.swift in Sources */,
 				9EBA41B2CA0BF9BD8E76DCAC /* OPDSFeedView.swift in Sources */,

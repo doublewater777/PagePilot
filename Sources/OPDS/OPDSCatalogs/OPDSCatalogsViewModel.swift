@@ -82,9 +82,19 @@ final class OPDSCatalogsViewModel {
 
         let oldVersion = UserDefaults.standard.integer(forKey: .versionKey)
 
-        if
-            catalogs.isEmpty || oldVersion < .currentVersion
-        {
+        if oldVersion < .currentVersion {
+            // Migrate away from the previously bundled default catalogs
+            // (Project Gutenberg, Internet Archive) without wiping anything
+            // the user has added manually.
+            catalogs.removeAll { catalog in
+                [URL].legacyDefaultURLs.contains(catalog.url)
+            }
+            UserDefaults.standard.set(.currentVersion, forKey: .versionKey)
+        }
+
+        if catalogs.isEmpty, oldVersion == 0 {
+            // First launch ever: seed with whatever we ship as defaults
+            // (currently empty).
             setDefaultCatalogs()
         }
     }
@@ -100,20 +110,30 @@ private extension String {
 }
 
 private extension Int {
-    static let currentVersion = 2
+    /// Bumped to 3 to force a reset of the cached catalog list for users who
+    /// have the previous default catalogs (Project Gutenberg, Internet Archive)
+    /// stored in `UserDefaults`. Combined with an empty `defaultCatalogs`,
+    /// this leaves the Catalogs tab empty on launch unless the user adds
+    /// their own feed.
+    static let currentVersion = 3
 }
 
 private extension Array where Element == OPDSCatalog {
-    static let defaultCatalogs: [OPDSCatalog] = [
-        OPDSCatalog(
-            id: UUID().uuidString,
-            title: "Project Gutenberg",
-            url: URL(string: "https://gutenberg.org/ebooks.opds/")!
-        ),
-        OPDSCatalog(
-            id: UUID().uuidString,
-            title: "Internet Archive",
-            url: URL(string: "https://archive.org/services/opds/")!
-        ),
+    /// PagePilot does not ship any pre-configured catalogs. Users can add their
+    /// own OPDS feed URLs from the Catalogs tab.
+    ///
+    /// This avoids App Review flagging the app as "distributing book content"
+    /// (App Store Review Guideline 2.1 in the China mainland store, which
+    /// requires an Internet Publishing License / 网络出版服务许可证).
+    static let defaultCatalogs: [OPDSCatalog] = []
+}
+
+private extension Array where Element == URL {
+    /// URLs of the catalogs that were shipped as defaults in earlier builds.
+    /// Used on migration to remove them from users that upgrade, while
+    /// preserving any catalog they've added manually.
+    static let legacyDefaultURLs: [URL] = [
+        URL(string: "https://gutenberg.org/ebooks.opds/")!,
+        URL(string: "https://archive.org/services/opds/")!,
     ]
 }

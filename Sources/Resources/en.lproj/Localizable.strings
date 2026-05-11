@@ -218,6 +218,27 @@
 "opds_error_invalid_url" = "Invalid URL";
 "opds_error_enter_valid_url" = "Please enter a valid URL.";
 
+/* OPDS Empty State */
+"opds_empty_title" = "No Catalogs Yet";
+"opds_empty_subtitle" = "Add an OPDS feed to browse and download books directly in the app.";
+"opds_empty_what_title" = "What is OPDS?";
+"opds_empty_what_body" = "OPDS (Open Publication Distribution System) is an open standard for browsing and downloading ebooks. Many libraries and publishers provide free OPDS feeds you can add here.";
+"opds_empty_search_title" = "Find a Feed";
+"opds_empty_search_body" = "Search the web for an OPDS feed URL, then copy it and add it below.";
+"opds_empty_search_placeholder" = "Search keywords";
+"opds_empty_default_query" = "OPDS feed";
+"opds_empty_how_title" = "Add a Feed";
+"opds_empty_how_body" = "Once you've found a feed URL, tap the button below (or \"+\" in the top right) and paste it to start browsing.";
+"opds_empty_add_button" = "Add Your First Feed";
+
+/* Search engines */
+"search_engine_baidu" = "Baidu";
+"search_engine_bing" = "Bing";
+"search_engine_google" = "Google";
+"search_engine_360" = "360 Search";
+"search_engine_sogou" = "Sogou";
+"search_engine_shenma" = "Shenma";
+
 /* About */
 "about_version" = "Version";
 "about_title" = "About the Readium Swift Toolkit";

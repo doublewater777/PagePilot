@@ -218,6 +218,27 @@
 "opds_error_invalid_url" = "无效的 URL";
 "opds_error_enter_valid_url" = "请输入有效的 URL。";
 
+/* OPDS Empty State */
+"opds_empty_title" = "还没有书源";
+"opds_empty_subtitle" = "添加一个 OPDS 书源，即可在 App 内浏览和下载书籍。";
+"opds_empty_what_title" = "什么是 OPDS？";
+"opds_empty_what_body" = "OPDS（开放出版物分发系统）是一种用于浏览和下载电子书的开放标准。许多图书馆和出版商提供免费的 OPDS 书源，你可以将它们添加到这里。";
+"opds_empty_search_title" = "搜索书源";
+"opds_empty_search_body" = "使用下方搜索引擎查找 OPDS 书源 URL，复制后在下方添加。";
+"opds_empty_search_placeholder" = "搜索关键词";
+"opds_empty_default_query" = "OPDS 书源";
+"opds_empty_how_title" = "添加书源";
+"opds_empty_how_body" = "找到书源 URL 后，点击下方按钮（或右上角「+」）粘贴即可开始浏览。";
+"opds_empty_add_button" = "添加第一个书源";
+
+/* Search engines */
+"search_engine_baidu" = "百度搜索";
+"search_engine_bing" = "Bing 搜索";
+"search_engine_google" = "Google 搜索";
+"search_engine_360" = "360 搜索";
+"search_engine_sogou" = "搜狗搜索";
+"search_engine_shenma" = "神马搜索";
+
 /* About */
 "about_version" = "版本";
 "about_title" = "关于 Readium Swift Toolkit";

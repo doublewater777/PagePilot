@@ -17,6 +17,35 @@ struct OPDSCatalogsView: View {
     }
 
     var body: some View {
+        Group {
+            if viewModel.catalogs.isEmpty {
+                OPDSEmptyStateView {
+                    viewModel.onAddCatalogTap()
+                }
+            } else {
+                catalogList
+            }
+        }
+        .onAppear {
+            viewModel.viewDidAppear()
+        }
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button {
+                    viewModel.onAddCatalogTap()
+                } label: {
+                    Image(systemName: "plus")
+                }
+            }
+        }
+        .sheet(item: $viewModel.editingCatalog) { catalog in
+            EditOPDSCatalogView(catalog: catalog) { editingCatalog in
+                viewModel.onSaveEditedCatalogTap(editingCatalog)
+            }
+        }
+    }
+
+    private var catalogList: some View {
         List(viewModel.catalogs) { catalog in
             NavigationLink(value: catalog) {
                 OPDSCatalogRow(title: catalog.title)
@@ -37,23 +66,6 @@ struct OPDSCatalogsView: View {
             }
         }
         .listStyle(.plain)
-        .onAppear {
-            viewModel.viewDidAppear()
-        }
-        .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Button {
-                    viewModel.onAddCatalogTap()
-                } label: {
-                    Image(systemName: "plus")
-                }
-            }
-        }
-        .sheet(item: $viewModel.editingCatalog) { catalog in
-            EditOPDSCatalogView(catalog: catalog) { editingCatalog in
-                viewModel.onSaveEditedCatalogTap(editingCatalog)
-            }
-        }
     }
 }
 
