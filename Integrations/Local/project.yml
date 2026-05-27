@@ -57,6 +57,7 @@ targets:
       - package: MBProgressHUD
       - package: SwiftSoup
     settings:
+      PRODUCT_BUNDLE_IDENTIFIER: com.panyang.PagePilot
       DEVELOPMENT_TEAM: ${RD_DEVELOPMENT_TEAM}
 
   PagePilotWatch:
