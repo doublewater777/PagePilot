@@ -17,7 +17,6 @@ targets:
     dependencies:
       - target: PagePilotWatch
     settings:
-      OTHER_SWIFT_FLAGS: $(inherited) -DLCP
       DEVELOPMENT_TEAM: ${RD_DEVELOPMENT_TEAM}
 
   PagePilotWatch:

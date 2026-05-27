@@ -10,7 +10,7 @@
         <!--Drm Management-->
         <scene sceneID="ndF-KP-TEh">
             <objects>
-                <tableViewController storyboardIdentifier="DRMManagementTableViewController" title="Drm Management" id="Odk-Rs-3Y9" customClass="LCPManagementTableViewController" customModule="TestApp" customModuleProvider="target" sceneMemberID="viewController">
+                <tableViewController storyboardIdentifier="DRMManagementTableViewController" title="Drm Management" id="Odk-Rs-3Y9" customClass="LCPManagementTableViewController" customModule="PagePilot" customModuleProvider="target" sceneMemberID="viewController">
                     <tableView key="view" clipsSubviews="YES" contentMode="scaleToFill" alwaysBounceVertical="YES" dataMode="static" style="grouped" separatorStyle="default" allowsSelection="NO" rowHeight="-1" estimatedRowHeight="-1" sectionHeaderHeight="1" sectionFooterHeight="1" id="o4w-0i-GXt">
                         <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>

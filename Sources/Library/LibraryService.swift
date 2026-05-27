@@ -111,6 +111,16 @@ final class LibraryService: Loggable {
         }
 
         var url = url
+
+        // Convert TXT files to EPUB before importing
+        if let file = url.fileURL, file.url.pathExtension.lowercased() == "txt" {
+            let epubURL = try TXTToEPUBConverter.convert(from: file.url)
+            guard let converted = epubURL.anyURL.absoluteURL else {
+                throw LibraryError.importFailed(TXTToEPUBConverter.ConversionError.invalidOutputURL)
+            }
+            url = converted
+        }
+
         if let file = url.fileURL {
             url = try await fulfillIfNeeded(file, progress: progress)
         }

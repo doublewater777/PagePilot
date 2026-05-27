@@ -25,7 +25,6 @@ final class AppModule {
     // App modules
     var library: LibraryModuleAPI!
     var reader: ReaderModuleAPI!
-    var opds: OPDSModuleAPI!
     var home: HomeModuleAPI!
 
     weak var tabBarController: UITabBarController?
@@ -60,8 +59,6 @@ final class AppModule {
             highlights: highlights,
             readium: readium
         )
-
-        opds = OPDSModule(delegate: self)
 
         home = HomeModule(
             delegate: self,
@@ -125,22 +122,6 @@ extension AppModule: LibraryModuleDelegate {
 }
 
 extension AppModule: ReaderModuleDelegate {}
-
-extension AppModule: OPDSModuleDelegate {
-    func opdsDownloadPublication(
-        _ publication: Publication?,
-        at link: ReadiumShared.Link,
-        sender: UIViewController,
-        progress: @escaping (Double) -> Void
-    ) async throws -> Book {
-        guard let url = link.url(relativeTo: publication?.baseURL).httpURL else {
-            throw OPDSError.invalidURL(link.href)
-        }
-
-        let fileURL = try await readium.httpClient.download(url, onProgress: progress).get().location
-        return try await library.importPublication(from: fileURL, sender: sender, progress: progress)
-    }
-}
 
 extension AppModule: HomeModuleDelegate {
     func homeDidSelectContinueReading(bookId: Book.Id) {

@@ -3,9 +3,8 @@ options:
   bundleIdPrefix: org.readium
 packages:
   Readium:
-    path: ..
-  R2LCPClient:
-    path: R2LCPClient
+    url: https://github.com/readium/swift-toolkit.git
+    VERSION
   GRDB:
     url: https://github.com/groue/GRDB.swift.git
     from: 6.9.23
@@ -18,15 +17,6 @@ packages:
   SwiftSoup:
     url: https://github.com/scinfu/SwiftSoup.git
     from: 2.3.2
-schemes:
-  PagePilot:
-    build:
-      targets:
-        PagePilot: none
-    test:
-      testPlans:
-        - path: PagePilot.xctestplan
-          defaultPlan: true
 targets:
   PagePilot:
     type: application
@@ -42,8 +32,6 @@ targets:
       - path: Shared
     dependencies:
       - target: PagePilotWatch
-      - package: R2LCPClient
-        product: R2LCPClient
       - package: Readium
         product: ReadiumShared
       - package: Readium
@@ -61,7 +49,6 @@ targets:
       - package: MBProgressHUD
       - package: SwiftSoup
     settings:
-      OTHER_SWIFT_FLAGS: -DLCP
       DEVELOPMENT_TEAM: ${RD_DEVELOPMENT_TEAM}
 
   PagePilotWatch:

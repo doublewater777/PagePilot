@@ -1,0 +1,324 @@
+//
+//  Copyright 2026 Readium Foundation. All rights reserved.
+//  Use of this source code is governed by the BSD-style license
+//  available in the top-level LICENSE file of the project.
+//
+
+import AVFoundation
+import Combine
+import OSLog
+import ReadiumShared
+import SwiftUI
+import UIKit
+
+@main
+class AppDelegate: UIResponder, UIApplicationDelegate {
+    var window: UIWindow?
+
+    private let hasSeenOnboardingKey = "hasSeenOnboarding"
+    private var app: AppModule!
+    private var subscriptions = Set<AnyCancellable>()
+
+    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+        configureAudioSession()
+        app = try! AppModule()
+
+        // Activate Watch connectivity early so the session state is always
+        // current, even before the reader is opened.
+        WatchPageTurnService.shared.activate()
+
+        func makeItem(title: String, systemImage: String) -> UITabBarItem {
+            UITabBarItem(
+                title: NSLocalizedString(title, comment: "Tab bar item"),
+                image: UIImage(systemName: systemImage),
+                tag: 0
+            )
+        }
+
+        // Home
+        let homeViewController = app.home.rootViewController
+        homeViewController.tabBarItem = makeItem(title: "home_tab", systemImage: "house")
+
+        // Library
+        let libraryViewController = app.library.rootViewController
+        libraryViewController.tabBarItem = makeItem(title: "bookshelf_tab", systemImage: "books.vertical")
+
+        // Settings
+        let settingsView = NavigationView { SettingsView() }
+            .navigationViewStyle(.stack)
+        let settingsViewController = UIHostingController(rootView: settingsView)
+        settingsViewController.tabBarItem = makeItem(title: "settings_tab", systemImage: "gearshape")
+
+        let tabBarController = UITabBarController()
+        tabBarController.viewControllers = [
+            homeViewController,
+            libraryViewController,
+            settingsViewController,
+        ]
+
+        let tabBarAppearance = UITabBarAppearance()
+        tabBarAppearance.configureWithOpaqueBackground()
+        tabBarAppearance.backgroundColor = .systemBackground
+        tabBarController.tabBar.standardAppearance = tabBarAppearance
+        tabBarController.tabBar.scrollEdgeAppearance = tabBarAppearance
+
+        let navBarAppearance = UINavigationBarAppearance()
+        navBarAppearance.configureWithOpaqueBackground()
+        navBarAppearance.backgroundColor = .systemBackground
+        UINavigationBar.appearance().standardAppearance = navBarAppearance
+        UINavigationBar.appearance().scrollEdgeAppearance = navBarAppearance
+
+        window = UIWindow(frame: UIScreen.main.bounds)
+        window?.rootViewController = tabBarController
+        window?.makeKeyAndVisible()
+
+        app.tabBarController = tabBarController
+        presentOnboardingIfNeeded(from: tabBarController)
+        importPreloadedBooks()
+
+        return true
+    }
+
+    /// Configures the shared `AVAudioSession` so that audio features (audiobook
+    /// playback and text-to-speech) keep playing when the app is sent to the
+    /// background or the device is locked.
+    ///
+    /// Without this, the default `soloAmbient` category silences audio as soon
+    /// as the app is backgrounded, which makes the `audio` UIBackgroundMode
+    /// declared in Info.plist appear non-functional during App Review.
+    private func configureAudioSession() {
+        let session = AVAudioSession.sharedInstance()
+        do {
+            try session.setCategory(
+                .playback,
+                mode: .spokenAudio,
+                options: []
+            )
+            try session.setActive(true, options: [])
+        } catch {
+            print("Failed to configure AVAudioSession: \(error)")
+        }
+    }
+
+    /// Imports preloaded sample books from the app bundle on first launch.
+    private func importPreloadedBooks() {
+        let log = Logger(subsystem: "com.panyang.PagePilot", category: "PreloadedBooks")
+        let preloadedBooksKey = "preloadedBooksImported"
+        guard !UserDefaults.standard.bool(forKey: preloadedBooksKey) else {
+            log.info("Already imported, skipping")
+            return
+        }
+
+        guard let resourceURL = Bundle.main.resourceURL else {
+            log.error("No resource URL")
+            return
+        }
+        let preloadedDir = resourceURL.appendingPathComponent("PreloadedBooks")
+        log.info("Preloaded dir: \(preloadedDir.path)")
+
+        guard let rootVC = window?.rootViewController else {
+            log.error("No root view controller, window=\(String(describing: self.window))")
+            return
+        }
+
+        let fileManager = FileManager.default
+        var isDir: ObjCBool = false
+        guard fileManager.fileExists(atPath: preloadedDir.path, isDirectory: &isDir), isDir.boolValue else {
+            log.error("PreloadedBooks dir does not exist at \(preloadedDir.path)")
+            return
+        }
+
+        guard let files = try? fileManager.contentsOfDirectory(at: preloadedDir, includingPropertiesForKeys: nil) else {
+            log.error("Failed to list files at \(preloadedDir.path)")
+            return
+        }
+
+        log.info("Found \(files.count) file(s) to import: \(files.map(\.lastPathComponent).joined(separator: ", "))")
+
+        Task {
+            for fileURL in files {
+                guard let absoluteURL = fileURL.anyURL.absoluteURL else {
+                    log.error("Failed to create AbsoluteURL for \(fileURL.lastPathComponent)")
+                    continue
+                }
+
+                log.info("Importing: \(absoluteURL.string)")
+                do {
+                    let book = try await app.library.importPublication(from: absoluteURL, sender: rootVC, progress: { _ in })
+                    log.info("Imported book: \(book.title)")
+                } catch {
+                    log.error("Import failed for \(fileURL.lastPathComponent): \(String(describing: error))")
+                }
+            }
+            UserDefaults.standard.set(true, forKey: preloadedBooksKey)
+            log.info("All preloaded books import finished")
+        }
+    }
+
+    func application(_ application: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {
+        guard let url = url.anyURL.absoluteURL, let vc = window?.rootViewController else {
+            return false
+        }
+
+        Task {
+            do {
+                try await app.library.importPublication(from: url, sender: vc, progress: { _ in })
+            } catch {
+                guard let error = error as? UserErrorConvertible else {
+                    print(error)
+                    return
+                }
+                vc.alert(error)
+            }
+        }
+
+        return true
+    }
+
+    private func presentOnboardingIfNeeded(from presentingViewController: UIViewController) {
+        guard !UserDefaults.standard.bool(forKey: hasSeenOnboardingKey) else {
+            return
+        }
+
+        DispatchQueue.main.async { [weak self, weak presentingViewController] in
+            guard
+                let self,
+                let presentingViewController,
+                presentingViewController.presentedViewController == nil
+            else {
+                return
+            }
+
+            let onboardingView = OnboardingView {
+                UserDefaults.standard.set(true, forKey: self.hasSeenOnboardingKey)
+                presentingViewController.dismiss(animated: true)
+            }
+
+            let hostingController = UIHostingController(rootView: onboardingView)
+            hostingController.modalPresentationStyle = .fullScreen
+            presentingViewController.present(hostingController, animated: true)
+        }
+    }
+}
+
+private struct OnboardingView: View {
+    private let onFinish: () -> Void
+
+    @State private var selectedPage = 0
+
+    private let pages: [OnboardingPage] = [
+        OnboardingPage(
+            symbolName: "book.closed",
+            titleKey: "onboarding_welcome_title",
+            messageKey: "onboarding_welcome_message"
+        ),
+        OnboardingPage(
+            symbolName: "square.and.arrow.down",
+            titleKey: "onboarding_import_title",
+            messageKey: "onboarding_import_message"
+        ),
+        OnboardingPage(
+            symbolName: "applewatch",
+            titleKey: "onboarding_watch_title",
+            messageKey: "onboarding_watch_message"
+        ),
+    ]
+
+    init(onFinish: @escaping () -> Void) {
+        self.onFinish = onFinish
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Spacer()
+                Button(NSLocalizedString("onboarding_later_button", comment: "Dismiss onboarding button"), action: onFinish)
+                    .font(.subheadline.weight(.semibold))
+                    .buttonStyle(.borderless)
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 24)
+                    .padding(.top, 20)
+                    .accessibilityIdentifier("onboarding_later_button")
+            }
+
+            TabView(selection: $selectedPage) {
+                ForEach(pages.indices, id: \.self) { index in
+                    OnboardingPageView(page: pages[index])
+                        .tag(index)
+                }
+            }
+            .tabViewStyle(.page(indexDisplayMode: .always))
+
+            Button(action: advance) {
+                Text(selectedPage == pages.count - 1
+                     ? NSLocalizedString("onboarding_start_button", comment: "Start using app button")
+                     : NSLocalizedString("onboarding_continue_button", comment: "Next onboarding page button"))
+                    .font(.headline)
+                    .frame(maxWidth: .infinity)
+                    .frame(minHeight: 52)
+            }
+            .buttonStyle(.borderedProminent)
+            .padding(.horizontal, 24)
+            .padding(.bottom, 30)
+            .accessibilityIdentifier("onboarding_primary_button")
+        }
+        .background(Color(.systemGroupedBackground))
+    }
+
+    private func advance() {
+        guard selectedPage < pages.count - 1 else {
+            onFinish()
+            return
+        }
+
+        withAnimation(.easeInOut) {
+            selectedPage += 1
+        }
+    }
+}
+
+private struct OnboardingPage {
+    let symbolName: String
+    let titleKey: LocalizedStringKey
+    let messageKey: LocalizedStringKey
+}
+
+private struct OnboardingPageView: View {
+    let page: OnboardingPage
+
+    var body: some View {
+        VStack(spacing: 28) {
+            Spacer(minLength: 44)
+
+            Image(systemName: page.symbolName)
+                .font(.system(size: 44, weight: .semibold))
+                .symbolRenderingMode(.hierarchical)
+                .foregroundStyle(.tint)
+                .frame(width: 112, height: 112)
+                .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 28, style: .continuous)
+                        .stroke(Color(.separator).opacity(0.18), lineWidth: 1)
+                }
+                .accessibilityHidden(true)
+
+            VStack(spacing: 14) {
+                Text(page.titleKey)
+                    .font(.title.weight(.bold))
+                    .multilineTextAlignment(.center)
+                    .foregroundStyle(.primary)
+                    .minimumScaleFactor(0.8)
+
+                Text(page.messageKey)
+                    .font(.body.weight(.regular))
+                    .multilineTextAlignment(.center)
+                    .foregroundStyle(.secondary)
+                    .lineSpacing(3)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(.horizontal, 34)
+
+            Spacer(minLength: 92)
+        }
+    }
+}

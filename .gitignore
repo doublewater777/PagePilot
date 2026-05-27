@@ -1,7 +1,7 @@
-TestApp.xcodeproj
-TestApp.xcworkspace
-TestApp.xctestplan
-project.yml
+PagePilot.xcodeproj
+PagePilot.xcworkspace
+PagePilot.xctestplan
+/project.yml
 # IntelliJ AppCode
 .idea
 
@@ -22,6 +22,9 @@ Package.resolved
 Cartfile.resolved
 
 # Xcode
+build
+*.xcodeproj
+*.xcworkspace
 
 ## User settings
 xcuserdata/

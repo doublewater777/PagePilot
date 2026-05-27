@@ -4,6 +4,7 @@
 //  available in the top-level LICENSE file of the project.
 //
 
+import AVFoundation
 import Combine
 import Foundation
 import MediaPlayer
@@ -44,6 +45,7 @@ final class TTSViewModel: ObservableObject, Loggable {
     private let publication: Publication
     private let navigator: Navigator
     private let synthesizer: PublicationSpeechSynthesizer
+    private let engineDelegate: TTSEngineDelegate
 
     @Published private var playingUtterance: Locator?
     private let playingWordRangeSubject = PassthroughSubject<Locator, Never>()
@@ -53,9 +55,24 @@ final class TTSViewModel: ObservableObject, Loggable {
     private var subscriptions: Set<AnyCancellable> = []
 
     init?(navigator: Navigator, publication: Publication) {
-        guard let synthesizer = PublicationSpeechSynthesizer(publication: publication) else {
+        let prefs = TTSPreferences()
+
+        // Build the engine and apply the user's rate/pitch on every utterance.
+        let engineDelegate = TTSEngineDelegate()
+        let engineFactory: () -> TTSEngine = {
+            let engine = AVTTSEngine()
+            engine.delegate = engineDelegate
+            return engine
+        }
+
+        guard let synthesizer = PublicationSpeechSynthesizer(
+            publication: publication,
+            config: prefs.readiumConfig,
+            engineFactory: engineFactory
+        ) else {
             return nil
         }
+        self.engineDelegate = engineDelegate
         self.synthesizer = synthesizer
         settings = Settings(synthesizer: synthesizer)
         self.navigator = navigator
@@ -200,5 +217,28 @@ extension TTSViewModel: PublicationSpeechSynthesizerDelegate {
     func publicationSpeechSynthesizer(_ synthesizer: PublicationSpeechSynthesizer, utterance: PublicationSpeechSynthesizer.Utterance, didFailWithError error: PublicationSpeechSynthesizer.Error) {
         // FIXME:
         log(.error, error)
+    }
+}
+
+
+/// Bridge that applies user-selected rate and pitch to every utterance
+/// produced by the Readium `AVTTSEngine`.
+///
+/// The Readium `PublicationSpeechSynthesizer.Configuration` only exposes
+/// `defaultLanguage` and `voiceIdentifier`. Rate and pitch are configured
+/// here at the AVFoundation layer.
+final class TTSEngineDelegate: AVTTSEngineDelegate {
+    func avTTSEngine(_ engine: AVTTSEngine, didCreateUtterance utterance: AVSpeechUtterance) {
+        let prefs = TTSPreferences()
+        utterance.rate = prefs.rate.clamped(
+            to: AVSpeechUtteranceMinimumSpeechRate...AVSpeechUtteranceMaximumSpeechRate
+        )
+        utterance.pitchMultiplier = prefs.pitch.clamped(to: 0.5...2.0)
+    }
+}
+
+private extension Float {
+    func clamped(to range: ClosedRange<Float>) -> Float {
+        min(max(self, range.lowerBound), range.upperBound)
     }
 }

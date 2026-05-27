@@ -5,7 +5,6 @@
 //
 
 import Foundation
-import ReadiumOPDS
 import ReadiumShared
 
 /// See https://github.com/readium/r2-testapp-swift/discussions/402

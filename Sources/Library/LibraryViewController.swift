@@ -8,7 +8,6 @@ import Combine
 import Kingfisher
 import MobileCoreServices
 import ReadiumNavigator
-import ReadiumOPDS
 import ReadiumShared
 import ReadiumStreamer
 import SwiftUI
@@ -37,10 +36,13 @@ class LibraryViewController: UIViewController, Loggable {
         systemItem: .add,
         menu: UIMenu(
             children: [
-                UIAction(title: NSLocalizedString("library_import_local", comment: "")) { [weak self] _ in
+                UIAction(title: NSLocalizedString("library_import_local", comment: ""), image: UIImage(systemName: "folder")) { [weak self] _ in
                     self?.addBookFromDevice()
                 },
-                UIAction(title: NSLocalizedString("library_stream_http", comment: "")) { [weak self] _ in
+                UIAction(title: NSLocalizedString("library_wifi_transfer", comment: ""), image: UIImage(systemName: "wifi")) { [weak self] _ in
+                    self?.presentWiFiTransfer()
+                },
+                UIAction(title: NSLocalizedString("library_stream_http", comment: ""), image: UIImage(systemName: "link")) { [weak self] _ in
                     self?.addBookForStreaming()
                 },
             ]
@@ -146,6 +148,13 @@ class LibraryViewController: UIViewController, Loggable {
         let documentPicker = UIDocumentPickerViewController(forOpeningContentTypes: types)
         documentPicker.delegate = self
         present(documentPicker, animated: true, completion: nil)
+    }
+
+    private func presentWiFiTransfer() {
+        let wifiView = WiFiTransferView(library: library)
+        let hostingController = UIHostingController(rootView: wifiView)
+        hostingController.modalPresentationStyle = .formSheet
+        present(hostingController, animated: true)
     }
 
     @objc func addBookForStreaming() {

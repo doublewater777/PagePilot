@@ -13,7 +13,6 @@ target 'PagePilot' do
   pod 'ReadiumOPDS', '~> VERSION'
   pod 'ReadiumLCP', '~> VERSION'
   pod 'ReadiumAdapterGCDWebServer', '~> VERSION'
-  pod 'R2LCPClient', podspec: 'LCP_URL'
 
   pod 'GRDB.swift', '~> 6.0'
   pod 'Kingfisher', '~> 5.0'

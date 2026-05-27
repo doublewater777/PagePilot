@@ -203,6 +203,7 @@
 
 /* Library additional */
 "library_import_local" = "Import local publication";
+"library_wifi_transfer" = "WiFi Transfer";
 "library_stream_http" = "Stream publication over HTTP";
 "library_stream_title" = "Stream publication";
 "library_http_url_placeholder" = "HTTP URL";
@@ -238,6 +239,18 @@
 "search_engine_360" = "360 Search";
 "search_engine_sogou" = "Sogou";
 "search_engine_shenma" = "Shenma";
+
+/* WiFi Transfer */
+"wifi_transfer_title" = "WiFi Transfer";
+"wifi_transfer_done" = "Done";
+"wifi_transfer_instruction" = "Open this address in your computer's browser to upload files:";
+"wifi_transfer_copy" = "Copy URL";
+"wifi_transfer_copy_hint" = "Long-press to copy";
+"wifi_transfer_uploaded_count" = "%d file(s) received";
+"wifi_transfer_no_wifi" = "Please connect to a WiFi network first.";
+"wifi_transfer_retry" = "Retry";
+"wifi_transfer_starting" = "Starting server...";
+"wifi_transfer_tip" = "Make sure your phone and computer are on the same WiFi network. Uploaded files will appear in your bookshelf automatically.";
 
 /* About */
 "about_version" = "Version";
@@ -356,3 +369,80 @@
 "home_empty_message" = "Head to your bookshelf to find something to read";
 "home_import_button" = "Go to Bookshelf";
 "home_continue_reading_button" = "Continue Reading";
+
+/* MARK: Settings */
+"settings_tab" = "Settings";
+"settings_title" = "Settings";
+"settings_tts_section" = "Text-to-Speech";
+"settings_tts_voice" = "Voice & Speed";
+"settings_feedback_section" = "Feedback";
+"settings_feedback_bug" = "Report a Bug";
+"settings_feedback_feature" = "Request a Feature";
+"settings_feedback_other" = "Other Feedback";
+"settings_feedback_mail_error_title" = "Cannot Send Email";
+"settings_feedback_mail_error_message" = "Mail is not configured on this device. You can send feedback manually to: %@";
+"settings_feedback_copy_email" = "Copy Email Address";
+"settings_about_section" = "About";
+"settings_about" = "About PagePilot";
+"settings_version" = "Version";
+
+/* TTS Settings */
+"tts_settings_title" = "Voice & Speed";
+"tts_settings_voice_section" = "Voice";
+"tts_settings_speed_section" = "Speed & Pitch";
+"tts_settings_rate" = "Speed";
+"tts_settings_pitch" = "Pitch";
+"tts_settings_preview" = "Preview Voice";
+"tts_settings_preview_text" = "Hello, this is a preview of the selected voice and speed settings.";
+"tts_quality_premium" = "Premium";
+"tts_quality_enhanced" = "Enhanced";
+"tts_quality_default" = "Default";
+
+/* MARK: Watch Settings */
+"settings_watch_section" = "Apple Watch";
+"settings_watch_page_turn" = "Page Turn Settings";
+"watch_settings_title" = "Watch Page Turn";
+"watch_connection_status" = "Apple Watch";
+"watch_status_connected" = "Connected";
+"watch_status_disconnected" = "Not Connected";
+"watch_input_mode_section" = "Input Mode";
+"watch_input_mode_footer" = "Choose how you turn pages on your Apple Watch.";
+"watch_input_buttons_and_crown" = "Buttons & Crown";
+"watch_input_buttons_only" = "Buttons Only";
+"watch_input_crown_only" = "Crown Only";
+"watch_crown_section" = "Crown Sensitivity";
+"watch_crown_footer" = "Higher sensitivity requires less rotation to turn a page.";
+"watch_sensitivity_low" = "Low";
+"watch_sensitivity_medium" = "Medium";
+"watch_sensitivity_high" = "High";
+"watch_animation_section" = "Page Turn Style";
+"watch_animation_footer" = "The animation used when turning pages via Watch.";
+"watch_animation_slide" = "Slide";
+"watch_animation_curl" = "Page Curl";
+"watch_animation_fade" = "Fade";
+"watch_animation_none" = "Instant (No Animation)";
+"watch_haptic_section" = "Haptic Feedback";
+"watch_haptic_footer" = "Vibrate on your iPhone when a page is turned from the Watch.";
+"watch_haptic_toggle" = "Haptic on Page Turn";
+
+/* MARK: TXT Import */
+"txt_error_cannot_read" = "Cannot read the text file.";
+"txt_error_encoding" = "Cannot detect the file encoding.";
+"txt_error_conversion" = "Failed to convert TXT to EPUB: %@";
+"txt_error_invalid_output" = "Invalid output file path.";
+"txt_chapter_preface" = "Preface";
+"txt_chapter_number" = "Chapter %d";
+
+/* TTS Settings (revamped) */
+"tts_settings_voice_label" = "Voice";
+"tts_settings_voice_footer" = "Select an Apple voice. The default uses the system voice for the publication's language.";
+"tts_settings_default_voice_footer" = "Use the system default voice. Recommended for most users.";
+"tts_settings_preview_stop" = "Stop Preview";
+"tts_settings_preview_footer" = "Tap to hear how the current voice and speed sound.";
+"tts_settings_reset" = "Reset to Default";
+
+/* TTS Premium Voice Prompt */
+"tts_premium_prompt_title" = "Upgrade Voice Quality";
+"tts_premium_prompt_body" = "You're using the standard voice. Download a Premium or Enhanced voice in Settings for more natural, human-like speech.";
+"tts_premium_prompt_steps" = "Settings → Accessibility → Spoken Content → Voices → Choose Language → Download Premium";
+"tts_premium_prompt_dismiss" = "Got it";

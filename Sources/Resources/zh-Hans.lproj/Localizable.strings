@@ -203,6 +203,7 @@
 
 /* Library additional */
 "library_import_local" = "导入本地出版物";
+"library_wifi_transfer" = "WiFi 传书";
 "library_stream_http" = "通过 HTTP 流式传输出版物";
 "library_stream_title" = "流式传输出版物";
 "library_http_url_placeholder" = "HTTP URL";
@@ -238,6 +239,18 @@
 "search_engine_360" = "360 搜索";
 "search_engine_sogou" = "搜狗搜索";
 "search_engine_shenma" = "神马搜索";
+
+/* WiFi Transfer */
+"wifi_transfer_title" = "WiFi 传书";
+"wifi_transfer_done" = "完成";
+"wifi_transfer_instruction" = "在电脑浏览器中打开以下地址即可上传文件：";
+"wifi_transfer_copy" = "复制地址";
+"wifi_transfer_copy_hint" = "长按可复制";
+"wifi_transfer_uploaded_count" = "已接收 %d 个文件";
+"wifi_transfer_no_wifi" = "请先连接 WiFi 网络。";
+"wifi_transfer_retry" = "重试";
+"wifi_transfer_starting" = "正在启动服务...";
+"wifi_transfer_tip" = "请确保手机和电脑连接同一个 WiFi 网络。传输完成后文件会自动出现在书架中。";
 
 /* About */
 "about_version" = "版本";
@@ -356,3 +369,80 @@
 "home_empty_message" = "去书架找本书开始阅读吧";
 "home_import_button" = "去书架";
 "home_continue_reading_button" = "继续阅读";
+
+/* MARK: Settings */
+"settings_tab" = "设置";
+"settings_title" = "设置";
+"settings_tts_section" = "文字转语音";
+"settings_tts_voice" = "音色与语速";
+"settings_feedback_section" = "反馈";
+"settings_feedback_bug" = "报告 Bug";
+"settings_feedback_feature" = "功能建议";
+"settings_feedback_other" = "其他反馈";
+"settings_feedback_mail_error_title" = "无法发送邮件";
+"settings_feedback_mail_error_message" = "设备未配置邮件。你可以手动发送反馈到：%@";
+"settings_feedback_copy_email" = "复制邮箱地址";
+"settings_about_section" = "关于";
+"settings_about" = "关于 PagePilot";
+"settings_version" = "版本";
+
+/* TTS Settings */
+"tts_settings_title" = "音色与语速";
+"tts_settings_voice_section" = "音色";
+"tts_settings_speed_section" = "语速与音调";
+"tts_settings_rate" = "语速";
+"tts_settings_pitch" = "音调";
+"tts_settings_preview" = "试听";
+"tts_settings_preview_text" = "你好，这是当前选择的音色和语速的试听效果。";
+"tts_quality_premium" = "高级";
+"tts_quality_enhanced" = "增强";
+"tts_quality_default" = "默认";
+
+/* MARK: Watch Settings */
+"settings_watch_section" = "Apple Watch";
+"settings_watch_page_turn" = "翻页设置";
+"watch_settings_title" = "手表翻页";
+"watch_connection_status" = "Apple Watch";
+"watch_status_connected" = "已连接";
+"watch_status_disconnected" = "未连接";
+"watch_input_mode_section" = "操作方式";
+"watch_input_mode_footer" = "选择在 Apple Watch 上翻页的操作方式。";
+"watch_input_buttons_and_crown" = "按钮 + 表冠";
+"watch_input_buttons_only" = "仅按钮";
+"watch_input_crown_only" = "仅表冠";
+"watch_crown_section" = "表冠灵敏度";
+"watch_crown_footer" = "灵敏度越高，转动表冠越少即可翻页。";
+"watch_sensitivity_low" = "低";
+"watch_sensitivity_medium" = "中";
+"watch_sensitivity_high" = "高";
+"watch_animation_section" = "翻页样式";
+"watch_animation_footer" = "通过手表翻页时使用的动画效果。";
+"watch_animation_slide" = "滑动";
+"watch_animation_curl" = "翻页卷曲";
+"watch_animation_fade" = "淡入淡出";
+"watch_animation_none" = "无动画（瞬间切换）";
+"watch_haptic_section" = "触觉反馈";
+"watch_haptic_footer" = "通过手表翻页时 iPhone 振动提示。";
+"watch_haptic_toggle" = "翻页时振动";
+
+/* MARK: TXT Import */
+"txt_error_cannot_read" = "无法读取文本文件。";
+"txt_error_encoding" = "无法识别文件编码。";
+"txt_error_conversion" = "TXT 转换 EPUB 失败：%@";
+"txt_error_invalid_output" = "输出文件路径无效。";
+"txt_chapter_preface" = "前言";
+"txt_chapter_number" = "第 %d 章";
+
+/* TTS Settings (revamped) */
+"tts_settings_voice_label" = "音色";
+"tts_settings_voice_footer" = "选择一个 Apple 内置音色。默认会根据书籍的语言自动选用系统音色。";
+"tts_settings_default_voice_footer" = "使用系统默认音色，推荐大多数用户使用。";
+"tts_settings_preview_stop" = "停止试听";
+"tts_settings_preview_footer" = "点击试听当前音色与语速效果。";
+"tts_settings_reset" = "恢复默认值";
+
+/* TTS Premium Voice Prompt */
+"tts_premium_prompt_title" = "提升朗读音质";
+"tts_premium_prompt_body" = "当前使用的是标准音质。前往系统设置下载 Premium 或增强语音，可获得更自然、更接近真人的朗读效果。";
+"tts_premium_prompt_steps" = "设置 → 辅助功能 → 朗读内容 → 语音 → 选择语言 → 下载 Premium";
+"tts_premium_prompt_dismiss" = "知道了";

@@ -4,7 +4,7 @@ ifdef commit
 endif
 
 help:
-	@echo "Usage: make <target> [lcp=<url>]\n\n\
+	@echo "Usage: make <target> [lcp=<url>]\n\
 Choose one of the following targets to generate:\n\
 \n\
   from the \033[1;33mmain\033[0m branch only:\n\
@@ -24,9 +24,9 @@ clean:
 	@rm -f Cartfile*
 	@rm -rf Carthage
 	@rm -rf Pods
-	@rm -rf TestApp.xcodeproj
-	@rm -rf TestApp.xcworkspace
-	@rm -rf TestApp.xctestplan
+	@rm -rf PagePilot.xcodeproj
+	@rm -rf PagePilot.xcworkspace
+	@rm -rf PagePilot.xctestplan
 	@rm -rf R2LCPClient
 
 spm: clean
@@ -44,7 +44,7 @@ else
 	@sed -i '' -e "s>VERSION>from: $(version)>g" project.yml
 endif
 	xcodegen generate
-	@echo "\nopen TestApp.xcodeproj"
+	@echo "\nopen PagePilot.xcodeproj"
 
 carthage: clean
 ifdef commit
@@ -61,7 +61,7 @@ else
 endif
 	carthage update --verbose --platform ios --use-xcframeworks --cache-builds --no-use-binaries
 	xcodegen generate
-	@echo "\nopen TestApp.xcodeproj"
+	@echo "\nopen PagePilot.xcodeproj"
 
 cocoapods: clean
 ifdef lcp
@@ -74,7 +74,7 @@ endif
 	@sed -i '' -e "s>VERSION>$(version)>g" Podfile
 	xcodegen generate
 	pod install
-	@echo "\nopen TestApp.xcworkspace"
+	@echo "\nopen PagePilot.xcworkspace"
 
 dev: clean
 ifdef lcp
@@ -85,8 +85,8 @@ ifdef lcp
 else
 	@cp Integrations/Local/project.yml .
 endif
-	@cp -r Integrations/Local/TestApp.xcworkspace .
-	@cp -r Integrations/Local/TestApp.xctestplan .
+	@cp -r Integrations/Local/PagePilot.xcworkspace . 2>/dev/null || true
+	@cp -r Integrations/Local/PagePilot.xctestplan . 2>/dev/null || true
 	xcodegen generate
-	@echo "\nopen TestApp.xcworkspace"
+	@echo "\nopen PagePilot.xcworkspace"
 

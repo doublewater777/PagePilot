@@ -161,7 +161,7 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
         // Register with WatchPageTurnService for remote page turn control
         WatchPageTurnService.shared.activate()
         if let visualNavigator = navigator as? VisualNavigator {
-            WatchPageTurnService.shared.registerNavigator(visualNavigator)
+            WatchPageTurnService.shared.registerNavigator(visualNavigator, publication: publication)
         }
     }
 
@@ -222,6 +222,12 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
                 return nil
             }
         }()
+
+        // Update Watch progress
+        WatchPageTurnService.shared.updateProgress(
+            title: publication.metadata.title ?? "",
+            progression: locator.locations.totalProgression
+        )
     }
 
     // MARK: - Highlights

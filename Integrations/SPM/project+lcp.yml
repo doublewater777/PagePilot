@@ -1,4 +1,4 @@
-name: TestApp
+name: PagePilot
 options:
   bundleIdPrefix: org.readium
 packages:
@@ -20,17 +20,20 @@ packages:
     url: https://github.com/scinfu/SwiftSoup.git
     from: 2.3.2
 targets:
-  TestApp:
+  PagePilot:
     type: application
     platform: iOS
     deploymentTarget: "18.0"
-    sources: 
+    sources:
+      - path: iPhone
       - path: Sources
         excludes:
           - Resources/Fonts
       - path: Sources/Resources/Fonts
         type: folder
+      - path: Shared
     dependencies:
+      - target: PagePilotWatch
       - package: R2LCPClient
         product: R2LCPClient
       - package: Readium
@@ -51,4 +54,15 @@ targets:
       - package: SwiftSoup
     settings:
       OTHER_SWIFT_FLAGS: -DLCP
+      DEVELOPMENT_TEAM: ${RD_DEVELOPMENT_TEAM}
+
+  PagePilotWatch:
+    type: application
+    platform: watchOS
+    sources:
+      - path: WatchRemote
+      - path: Shared
+    settings:
+      INFOPLIST_FILE: WatchRemote/Info.plist
+      PRODUCT_BUNDLE_IDENTIFIER: com.panyang.PagePilot.WatchRemote
       DEVELOPMENT_TEAM: ${RD_DEVELOPMENT_TEAM}

@@ -8,14 +8,26 @@ import SwiftUI
 
 struct AboutView: View {
     var body: some View {
-        ScrollView(showsIndicators: false) {
-            VStack(alignment: .center, spacing: 20) {
-                versionSection
-                copyrightSection
-                acknowledgementsSection
+        HStack {
+            if UIDevice.current.userInterfaceIdiom == .pad {
+                Spacer()
             }
-            .padding(.horizontal, 16)
+            
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .center, spacing: 20) {
+                    versionSection
+                    copyrightSection
+                    acknowledgementsSection
+                }
+                .padding(.horizontal, 16)
+            }
+            .frame(maxWidth: UIDevice.current.userInterfaceIdiom == .pad ? 600 : .infinity)
+            
+            if UIDevice.current.userInterfaceIdiom == .pad {
+                Spacer()
+            }
         }
+        .background(Color(uiColor: .systemGroupedBackground))
     }
 
     private var versionSection: some View {
@@ -84,7 +96,10 @@ struct AboutView: View {
 
 struct About_Previews: PreviewProvider {
     static var previews: some View {
-        AboutView()
+        NavigationView {
+            AboutView()
+        }
+        .navigationViewStyle(.stack)
     }
 }
 
