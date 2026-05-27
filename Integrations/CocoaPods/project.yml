@@ -5,7 +5,7 @@ targets:
   PagePilot:
     type: application
     platform: iOS
-    deploymentTarget: "18.0"
+    deploymentTarget: "17.0"
     sources:
       - path: iPhone
       - path: Sources
