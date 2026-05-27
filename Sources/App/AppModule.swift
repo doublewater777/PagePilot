@@ -69,12 +69,6 @@ final class AppModule {
         ReadiumEnableLog(withMinimumSeverityLevel: .debug)
     }
 
-    private(set) lazy var aboutViewController: UIViewController = {
-        let hostingController = UIHostingController(rootView: AboutView())
-        hostingController.navigationItem.title = NSLocalizedString("about_title", comment: "")
-        hostingController.navigationItem.largeTitleDisplayMode = .never
-        return UINavigationController(rootViewController: hostingController)
-    }()
 }
 
 fileprivate final class DocumentPickerDelegate: NSObject, UIDocumentPickerDelegate {

@@ -20,7 +20,6 @@ struct SettingsView: View {
                 watchSection
                 ttsSection
                 feedbackSection
-                aboutSection
             }
             .listStyle(.insetGrouped)
             .frame(maxWidth: UIDevice.current.userInterfaceIdiom == .pad ? 600 : .infinity)
@@ -89,33 +88,6 @@ struct SettingsView: View {
         }
     }
 
-    private var aboutSection: some View {
-        Section(NSLocalizedString("settings_about_section", comment: "")) {
-            NavigationLink {
-                AboutView()
-                    .navigationTitle(NSLocalizedString("about_title", comment: ""))
-                    .navigationBarTitleDisplayMode(.inline)
-            } label: {
-                SettingsRow(
-                    icon: "info.circle.fill",
-                    iconColor: .gray,
-                    title: NSLocalizedString("settings_about", comment: "")
-                )
-            }
-
-            HStack {
-                SettingsRow(
-                    icon: "number",
-                    iconColor: .secondary,
-                    title: NSLocalizedString("settings_version", comment: "")
-                )
-                Spacer()
-                Text("\(Bundle.main.appVersion) (\(Bundle.main.buildVersion))")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
-        }
-    }
 }
 
 // MARK: - Reusable Row
