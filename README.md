@@ -32,6 +32,13 @@ This project uses [XcodeGen](https://github.com/yonaskolb/XcodeGen) to generate 
 > [!IMPORTANT]
 > The Xcode project is not committed to the repository. Run `make spm` after pulling any changes.
 
+## Terms of Use & Privacy Policy
+
+The official terms of use and privacy policy pages are hosted in the `docs/` folder and deployed via GitHub Pages:
+
+*   **Terms of Use (EULA)**: [https://doublewater777.github.io/PagePilot/terms.html](https://doublewater777.github.io/PagePilot/terms.html) (aligned with Apple's Standard EULA)
+*   **Privacy Policy**: [https://doublewater777.github.io/PagePilot/privacy.html](https://doublewater777.github.io/PagePilot/privacy.html) (adheres to local-first privacy principles)
+
 ## License
 
 This project is licensed under the BSD 3-Clause License. See [LICENSE](LICENSE) for details.
