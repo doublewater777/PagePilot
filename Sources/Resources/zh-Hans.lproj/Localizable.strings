@@ -51,7 +51,7 @@
 /* MARK: Library */
 
 /* Hint message when the library is empty */
-"library_empty_message" = "📖 导入 EPUB、PDF、CBZ 或有声书";
+"library_empty_message" = "添加 EPUB、PDF、漫画或有声书";
 
 /* Add book alert message */
 "library_add_book_title" = "将书籍添加到书架";
@@ -77,19 +77,41 @@
 /* Error message used when a low-level error occured while importing a publication */
 "library_error_importFailed" = "导入出版物失败";
 /* Error message used when a low-level error occured while opening a publication */
-"library_error_openFailed" = "打开发出版物失败";
+"library_error_openFailed" = "打开出版物失败";
 /* Error message when the download of a publication failed */
 "library_error_downloadFailed" = "下载失败";
 /* Error message when the deletion of a publication failed */
 "library_error_bookDeletionFailed" = "删除出版物失败";
 /* Error message when the publication is still restricted. */
 "library_error_publicationIsRestricted" = "您无权打开此出版物";
+"library_error_bookLimitReached" = "普通版最多可添加 %d 本书，升级 Pro 后可无限添加";
 
 /* Accessibility label for the library collection view */
 "library_a11y_label" = "书架";
+"library_book_limit_title" = "书架已满";
+"library_book_limit_message" = "普通版最多可添加 %d 本书。升级 Pro 后可无限添加书籍。";
+"library_book_limit_upgrade" = "升级 Pro";
 
 /* Accessibility hint for the publication collection cell */
 "library_publication_a11y_hint" = "长按访问选项。";
+"library_select_books" = "选择书籍";
+"library_view_mode_grid" = "网格";
+"library_view_mode_list" = "列表";
+"library_view_mode_title" = "展示方式";
+"library_sort_recent_read" = "最近阅读";
+"library_sort_title" = "书名";
+"library_sort_author" = "作者";
+"library_sort_recent_added" = "最近导入";
+"library_sort_title_menu" = "排序方式";
+"library_search_placeholder" = "搜索书名或作者";
+"library_delete_selected_count" = "删除所选书籍 (%d)";
+"library_delete_books" = "删除书籍";
+"library_delete_confirm_title" = "确认删除书籍";
+"library_delete_confirm_message" = "确认要从书架永久删除选中的 %d 本书籍吗？";
+"library_delete_button" = "删除";
+"library_demo_book_title" = "演示图书";
+"library_demo_book_message" = "《%@》是一本演示模拟图书，无法打开阅读。";
+"library_all_books" = "全部书籍";
 
 
 /* MARK: Reader */
@@ -202,7 +224,7 @@
 "opds_feed_header_a11y_hint" = "目录组标题";
 
 /* Library additional */
-"library_import_local" = "导入本地出版物";
+"library_import_local" = "添加书籍";
 "library_wifi_transfer" = "WiFi 传书";
 "library_stream_http" = "通过 HTTP 流式传输出版物";
 "library_stream_title" = "流式传输出版物";
@@ -218,6 +240,139 @@
 "opds_error_enter_title" = "请输入标题。";
 "opds_error_invalid_url" = "无效的 URL";
 "opds_error_enter_valid_url" = "请输入有效的 URL。";
+
+/* Reading stats */
+"stats_title" = "阅读统计";
+"stats_tab_summary" = "汇总";
+"stats_tab_day" = "日";
+"stats_tab_week" = "周";
+"stats_tab_month" = "月";
+"stats_tab_year" = "年";
+"stats_metric_time" = "阅读时长";
+"stats_metric_days" = "阅读天数";
+"stats_metric_sessions" = "阅读次数";
+"stats_metric_streak" = "连续天数";
+"stats_metric_average" = "日均时长";
+"stats_metric_books" = "书籍";
+"stats_days_value" = "%d 天";
+"stats_empty" = "还没有阅读数据。";
+"stats_pro_locked_title" = "Pro 统计";
+"stats_pro_locked_body" = "普通用户保留日数据；汇总、周、月、年统计预留给 Pro。";
+"stats_upgrade_pro" = "升级 Pro";
+"stats_subtitle" = "更清楚地回看你的阅读节奏、连续天数和最近活动。";
+"stats_metric_today" = "今日";
+"stats_metric_best_day" = "最佳单日";
+"stats_active" = "已阅读";
+"stats_inactive" = "未阅读";
+"stats_activity_title" = "阅读活动";
+"stats_sessions_value" = "%d 次阅读";
+"stats_hours_minutes" = "%d 小时 %d 分钟";
+"stats_minutes" = "%d 分钟";
+"stats_summary_all_time" = "累计阅读";
+"stats_summary_today" = "今日阅读";
+"stats_summary_week" = "本周阅读";
+"stats_summary_month" = "本月阅读";
+"stats_summary_year" = "今年阅读";
+"stats_timeline_recent" = "最近";
+"stats_timeline_today" = "今日";
+"stats_timeline_week" = "本周";
+"stats_timeline_month" = "本月";
+"stats_timeline_year" = "今年";
+"stats_chart_goal_line" = "每日目标";
+"stats_chart_goal_reached" = "今日已达标！";
+"stats_book_ranking" = "图书阅读排行";
+"stats_unknown_book" = "其他/未知图书";
+"stats_chart_axis_time" = "阅读时长";
+"stats_nav_today" = "今天";
+"stats_chart_goal_line_val" = "目标 %d 分钟";
+"stats_timeline_grouped_week" = "第 %d 周";
+"stats_quick_return" = "返回本期";
+"stats_heatmap_active" = "阅读时间：%@";
+"stats_chart_average_label" = "日均：%@";
+"stats_week_group" = "第 %d 周 (%@)";
+"stats_rank_gold" = "阅读冠军";
+"stats_rank_silver" = "阅读亚军";
+"stats_rank_bronze" = "阅读季军";
+
+/* Paywall */
+"paywall_title" = "解锁 PagePilot Pro";
+"paywall_subtitle" = "无限书架、iPad 手表翻页和高级阅读统计都在这里。";
+"paywall_pro_badge" = "年会员主推";
+"paywall_feature_unlimited_books" = "无限添加书籍（普通版最多 10 本）";
+"paywall_feature_ipad_page_turn" = "Apple Watch 可控制 iPad 翻页";
+"paywall_feature_stats" = "周、月、年阅读统计";
+"paywall_feature_streak" = "连续阅读天数追踪";
+"paywall_feature_premium_tts" = "高级 TTS 语言（即将到来）";
+"paywall_feature_ad_free" = "无广告阅读体验";
+"paywall_one_time" = "一次性购买，终身使用";
+"paywall_buy_button" = "立即购买";
+"paywall_restore_button" = "恢复购买";
+"paywall_close" = "关闭";
+"paywall_loading_price" = "加载中…";
+"paywall_load_failed_title" = "加载失败";
+"paywall_load_failed_message" = "无法加载商品信息，请检查网络连接。";
+"paywall_retry_button" = "重试";
+"paywall_error_title" = "购买失败";
+"paywall_success_title" = "已解锁 Pro！";
+"paywall_trial_badge" = "免费试用 1 个月";
+
+/* Settings Pro */
+"settings_pro_unlocked" = "PagePilot Pro";
+"settings_pro_badge" = "已解锁";
+"settings_upgrade_pro" = "升级 PagePilot Pro";
+
+/* Purchase Errors */
+"purchase_error_product_not_found" = "找不到产品信息";
+"purchase_error_failed" = "购买失败，请重试";
+"purchase_error_verification" = "无法验证购买，请重试";
+"purchase_error_cancelled" = "已取消购买";
+"purchase_error_pending" = "购买等待中，需要家长批准";
+
+/* Subscription & Purchase Tiers */
+"paywall_option_monthly" = "月度订阅";
+"paywall_option_yearly" = "年度订阅";
+"paywall_option_lifetime" = "终身会员";
+"paywall_price_monthly" = "¥2";
+"paywall_price_yearly" = "¥19.9";
+"paywall_price_lifetime" = "¥59.9";
+"paywall_price_monthly_sub" = "按月续订，适合先试用";
+"paywall_price_yearly_sub" = "约 %@/月，当前主推";
+"paywall_price_lifetime_sub" = "一次购买，限时优惠";
+"paywall_terms_of_use" = "使用条款";
+"paywall_privacy_policy" = "隐私政策";
+"paywall_recommended_badge" = "主推";
+"paywall_limited_badge" = "限时";
+"paywall_trial_eligible_label" = "首月免费";
+"paywall_lifetime_sub" = "一次性购买";
+"paywall_save_badge" = "立省 16%";
+"paywall_buy_button_eligible" = "开始 1 个月免费试用";
+"paywall_buy_button_ineligible" = "继续";
+"paywall_buy_button_lifetime" = "解锁终身会员";
+"paywall_trial_duration_eligible_monthly" = "免费试用 1 个月，随后 %@/月";
+"paywall_trial_duration_eligible_yearly" = "免费试用 1 个月，随后 %@/年";
+"paywall_trial_duration_ineligible_monthly" = "%@/月";
+"paywall_trial_duration_ineligible_yearly" = "%@/年";
+"paywall_trial_duration_lifetime" = "%@ 一次性购买";
+"paywall_subscription_billing_note" = "月/年会员将自动续期，可随时在 App Store 设置中取消。终身会员为一次性购买。";
+
+/* Bookshelf Status */
+"bookshelf_status_not_started" = "未开始";
+"bookshelf_status_reading" = "正在阅读";
+"bookshelf_status_completed" = "已完成";
+
+/* Feedback subjects */
+"feedback_subject_bug" = "[Bug] PagePilot 反馈";
+"feedback_subject_feature" = "[Feature Request] PagePilot 功能建议";
+"feedback_subject_other" = "[Feedback] PagePilot 反馈";
+
+/* Feedback body template fields */
+"feedback_body_device_info" = "设备信息";
+"feedback_body_description" = "问题描述";
+"feedback_body_reproduce_steps" = "复现步骤";
+"feedback_body_expected" = "期望行为";
+"feedback_body_actual" = "实际行为";
+"feedback_body_feature_description" = "功能描述";
+"feedback_body_use_cases" = "使用场景";
 
 /* OPDS Empty State */
 "opds_empty_title" = "还没有书源";
@@ -251,6 +406,25 @@
 "wifi_transfer_retry" = "重试";
 "wifi_transfer_starting" = "正在启动服务...";
 "wifi_transfer_tip" = "请确保手机和电脑连接同一个 WiFi 网络。传输完成后文件会自动出现在书架中。";
+
+/* Device Transfer */
+"library_device_transfer" = "发送到其他设备";
+"transfer_title" = "设备间传书";
+"transfer_tab_send" = "发送";
+"transfer_tab_receive" = "接收";
+"transfer_searching" = "正在搜索附近设备…";
+"transfer_peers_found" = "找到 %d 台设备";
+"transfer_no_peers_hint" = "未找到设备，请确保对方已打开「接收」页面且在同一 WiFi 下。";
+"transfer_send_to" = "发送到 %@";
+"transfer_empty_library" = "书架为空，请先导入书籍。";
+"transfer_receiving_active" = "正在等待接收…";
+"transfer_receiving_idle" = "接收已停止";
+"transfer_receiving_hint" = "保持此页面打开，发送方即可将书籍传输到本设备。";
+"transfer_received_count" = "已接收 %d 本书";
+"transfer_start_receiving" = "开始接收";
+"transfer_stop_receiving" = "停止接收";
+"transfer_error_send_failed" = "发送失败，请重试。";
+"transfer_error_peer_not_found" = "未找到目标设备。";
 
 /* About */
 "about_version" = "版本";
@@ -351,6 +525,11 @@
 
 /* MARK: Reader */
 "reader_highlight" = "高亮";
+"reader_highlight_select_color" = "选择高亮颜色";
+"reader_highlight_color_yellow" = "黄色";
+"reader_highlight_color_green" = "绿色";
+"reader_highlight_color_blue" = "蓝色";
+"reader_highlight_color_red" = "红色";
 
 /* MARK: Launch */
 "launch_tagline_1" = "用手表翻页，畅快阅读";
@@ -373,6 +552,18 @@
 /* MARK: Settings */
 "settings_tab" = "设置";
 "settings_title" = "设置";
+"settings_appearance_section" = "外观";
+"settings_reading_section" = "阅读";
+"settings_daily_goal" = "每日目标";
+"settings_language" = "语言";
+"settings_language_english" = "英文";
+"settings_language_chinese" = "简体中文";
+"settings_theme" = "主题";
+"settings_theme_system" = "跟随系统";
+"settings_theme_light" = "浅色";
+"settings_theme_dark" = "深色";
+"settings_stats_section" = "阅读统计";
+"settings_stats" = "阅读统计";
 "settings_tts_section" = "文字转语音";
 "settings_tts_voice" = "音色与语速";
 "settings_feedback_section" = "反馈";
@@ -382,6 +573,8 @@
 "settings_feedback_mail_error_title" = "无法发送邮件";
 "settings_feedback_mail_error_message" = "设备未配置邮件。你可以手动发送反馈到：%@";
 "settings_feedback_copy_email" = "复制邮箱地址";
+"settings_share_app" = "分享 PagePilot";
+"settings_share_app_message" = "推荐试试 PagePilot，戴上 Apple Watch 就能翻页，解放双手的阅读器。";
 "settings_about_section" = "关于";
 "settings_about" = "关于 PagePilot";
 "settings_version" = "版本";
@@ -404,26 +597,32 @@
 "watch_settings_title" = "手表翻页";
 "watch_connection_status" = "Apple Watch";
 "watch_status_connected" = "已连接";
+"watch_status_ipad_relay" = "iPad 已连接（经 iPhone）";
+"watch_status_iphone" = "iPhone 已连接";
 "watch_status_disconnected" = "未连接";
+"watch_target_section" = "翻页设备";
+"watch_target_picker" = "翻页设备";
+"watch_target_footer" = "默认控制 iPhone；在 iPad 阅读时再切换到 iPad。";
+"watch_target_ipad" = "iPad";
+"watch_target_ipad_pro" = "%@ Pro";
+"watch_target_iphone" = "iPhone";
 "watch_input_mode_section" = "操作方式";
 "watch_input_mode_footer" = "选择在 Apple Watch 上翻页的操作方式。";
 "watch_input_buttons_and_crown" = "按钮 + 表冠";
 "watch_input_buttons_only" = "仅按钮";
 "watch_input_crown_only" = "仅表冠";
-"watch_crown_section" = "表冠灵敏度";
-"watch_crown_footer" = "灵敏度越高，转动表冠越少即可翻页。";
-"watch_sensitivity_low" = "低";
-"watch_sensitivity_medium" = "中";
-"watch_sensitivity_high" = "高";
-"watch_animation_section" = "翻页样式";
-"watch_animation_footer" = "通过手表翻页时使用的动画效果。";
-"watch_animation_slide" = "滑动";
-"watch_animation_curl" = "翻页卷曲";
-"watch_animation_fade" = "淡入淡出";
-"watch_animation_none" = "无动画（瞬间切换）";
 "watch_haptic_section" = "触觉反馈";
-"watch_haptic_footer" = "通过手表翻页时 iPhone 振动提示。";
+"watch_haptic_footer" = "通过手表翻页时振动提示。";
 "watch_haptic_toggle" = "翻页时振动";
+
+"watch_guidance_header" = "使用步骤";
+"watch_guidance_ipad_step1" = "iPhone 与 iPad 连接同一 Wi-Fi";
+"watch_guidance_ipad_step2" = "在 iPad 上打开一本书";
+"watch_guidance_ipad_step3" = "在这里将翻页设备切换为 iPad";
+"watch_guidance_iphone_step1" = "在 iPhone 上打开一本书";
+"watch_guidance_iphone_step2" = "在 Apple Watch 上打开 PagePilot 翻页";
+"watch_guidance_ipad_footer" = "iPhone 与 iPad 需在同一 Wi-Fi 下";
+"watch_guidance_iphone_footer" = "直接控制本机阅读器";
 
 /* MARK: TXT Import */
 "txt_error_cannot_read" = "无法读取文本文件。";
@@ -446,3 +645,7 @@
 "tts_premium_prompt_body" = "当前使用的是标准音质。前往系统设置下载 Premium 或增强语音，可获得更自然、更接近真人的朗读效果。";
 "tts_premium_prompt_steps" = "设置 → 辅助功能 → 朗读内容 → 语音 → 选择语言 → 下载 Premium";
 "tts_premium_prompt_dismiss" = "知道了";
+
+/* MARK: Device Transfer */
+"onboarding_transfer_title" = "局域网传书";
+"onboarding_transfer_message" = "iPhone 和 iPad 在同一个 Wi-Fi 下时，可以直接在设备之间发送书籍。";

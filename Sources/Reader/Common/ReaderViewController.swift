@@ -22,6 +22,7 @@ class ReaderViewController<N: Navigator>: UIViewController,
     let bookId: Book.Id
     private let books: BookRepository
     private let bookmarks: BookmarkRepository
+    private var readingSessionStartDate: Date?
 
     var subscriptions = Set<AnyCancellable>()
 
@@ -57,18 +58,55 @@ class ReaderViewController<N: Navigator>: UIViewController,
         super.viewDidLoad()
 
         navigationItem.rightBarButtonItems = makeNavigationBarButtons()
+        NotificationCenter.default.addObserver(self, selector: #selector(appDidEnterBackground), name: UIApplication.didEnterBackgroundNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(appWillEnterForeground), name: UIApplication.willEnterForegroundNotification, object: nil)
+
+        // 记录最近阅读的图书ID
+        let idValue = bookId.rawValue
+        var list = UserDefaults.standard.array(forKey: "lastReadBookIds") as? [Int64] ?? []
+        if let idx = list.firstIndex(of: idValue) {
+            list.remove(at: idx)
+        }
+        list.insert(idValue, at: 0)
+        UserDefaults.standard.set(list, forKey: "lastReadBookIds")
     }
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
 
         tabBarController?.tabBar.isHidden = true
+        startReadingSessionIfNeeded()
     }
 
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
 
+        finishReadingSessionIfNeeded()
         tabBarController?.tabBar.isHidden = false
+    }
+
+    private func startReadingSessionIfNeeded() {
+        guard readingSessionStartDate == nil else { return }
+        readingSessionStartDate = Date()
+    }
+
+    private func finishReadingSessionIfNeeded() {
+        guard let startDate = readingSessionStartDate else { return }
+
+        let endDate = Date()
+        readingSessionStartDate = nil
+
+        ReadingStatsStore.shared.recordReadingSession(startDate: startDate, endDate: endDate, bookId: bookId)
+    }
+
+    @objc private func appDidEnterBackground() {
+        finishReadingSessionIfNeeded()
+    }
+
+    @objc private func appWillEnterForeground() {
+        if view.window != nil {
+            startReadingSessionIfNeeded()
+        }
     }
 
     // MARK: - Navigation bar
@@ -101,6 +139,15 @@ class ReaderViewController<N: Navigator>: UIViewController,
         Task {
             do {
                 try await books.saveProgress(for: bookId, locator: locator)
+                
+                // 进度变化时也提热最近阅读顺序
+                let idValue = bookId.rawValue
+                var list = UserDefaults.standard.array(forKey: "lastReadBookIds") as? [Int64] ?? []
+                if let idx = list.firstIndex(of: idValue) {
+                    list.remove(at: idx)
+                }
+                list.insert(idValue, at: 0)
+                UserDefaults.standard.set(list, forKey: "lastReadBookIds")
             } catch {
                 moduleDelegate?.presentError(UserError(error), from: self)
             }

@@ -15,6 +15,7 @@ enum LibraryError: Error {
     case publicationIsRestricted(Error)
     case openFailed(Error)
     case downloadFailed(Error?)
+    case bookLimitReached
 }
 
 extension LibraryError: UserErrorConvertible {
@@ -31,6 +32,8 @@ extension LibraryError: UserErrorConvertible {
                 return "library_error_openFailed".localized
             case .downloadFailed:
                 return "library_error_downloadFailed".localized
+            case .bookLimitReached:
+                return "library_error_bookLimitReached".localized(ProPurchaseManager.freeBookLimit)
             case .bookDeletionFailed:
                 return "library_error_bookDeletionFailed".localized
             case let .publicationIsRestricted(error):

@@ -80,6 +80,8 @@ final class LibraryService: Loggable {
 
     /// Imports a bunch of publications.
     func importPublications(from sourceURLs: [URL], sender: UIViewController) async throws {
+        try await ensureCanImport(additionalBookCount: sourceURLs.count)
+
         for url in sourceURLs {
             guard let url = url.anyURL.absoluteURL else {
                 continue
@@ -99,9 +101,11 @@ final class LibraryService: Loggable {
     @discardableResult
     func importPublication(
         from url: AbsoluteURL,
-        sender: UIViewController,
-        progress: @escaping (Double) -> Void
+        sender: UIViewController? = nil,
+        progress: @escaping (Double) -> Void = { _ in }
     ) async throws -> Book {
+        try await ensureCanImport(additionalBookCount: 1)
+
         // Necessary to read URL exported from the Files app, for example.
         let shouldRelinquishAccess = url.url.startAccessingSecurityScopedResource()
         defer {
@@ -144,6 +148,17 @@ final class LibraryService: Loggable {
             title: title,
             coverPath: coverPath
         )
+    }
+
+    private func ensureCanImport(additionalBookCount: Int) async throws {
+        guard additionalBookCount > 0, !ProPurchaseManager.shared.hasProAccess else {
+            return
+        }
+
+        let currentBookCount = try await books.count()
+        guard currentBookCount + additionalBookCount <= ProPurchaseManager.freeBookLimit else {
+            throw LibraryError.bookLimitReached
+        }
     }
 
     /// Fulfills the given `url` if it's a DRM license file.

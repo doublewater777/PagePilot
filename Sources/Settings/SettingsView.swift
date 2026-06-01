@@ -5,45 +5,144 @@
 //
 
 import AVFoundation
+import ObjectiveC
 import SwiftUI
 
 // MARK: - Root Settings View
 
 struct SettingsView: View {
+    @AppStorage(AppAppearancePreferences.Keys.language) private var selectedLanguage = AppAppearancePreferences.language.rawValue
+    @AppStorage(AppAppearancePreferences.Keys.theme) private var selectedTheme = AppTheme.system.rawValue
+    @AppStorage(ReadingPreferences.Keys.dailyGoalMinutes) private var dailyGoalMinutes = ReadingPreferences.defaultDailyGoalMinutes
+    @State private var localizationRefreshID = AppAppearancePreferences.language.rawValue
+    @State private var showPaywall = false
+    @State private var showDailyGoalPicker = false
+    @State private var hasProAccess = ProPurchaseManager.shared.hasProAccess
+    private static var hasAutoShownPaywall = false
+
     var body: some View {
-        HStack {
-            if UIDevice.current.userInterfaceIdiom == .pad {
-                Spacer()
-            }
+        List {
+            proSection
             
-            List {
+            readingSection
+            statsSection
+            
+            if UIDevice.current.userInterfaceIdiom == .phone {
                 watchSection
-                ttsSection
-                feedbackSection
             }
-            .listStyle(.insetGrouped)
-            .frame(maxWidth: UIDevice.current.userInterfaceIdiom == .pad ? 600 : .infinity)
+            ttsSection
             
-            if UIDevice.current.userInterfaceIdiom == .pad {
-                Spacer()
-            }
+            appearanceSection
+            
+            feedbackSection
         }
+        .listStyle(.insetGrouped)
+        .scrollContentBackground(.hidden)
         .background(Color(uiColor: .systemGroupedBackground))
         .navigationTitle(NSLocalizedString("settings_title", comment: ""))
         .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(Color(uiColor: .systemGroupedBackground), for: .navigationBar)
+        .toolbarBackground(.visible, for: .navigationBar)
+        .id(localizationRefreshID)
+        .onReceive(NotificationCenter.default.publisher(for: AppAppearancePreferences.languageDidChange)) { _ in
+            localizationRefreshID = AppAppearancePreferences.language.rawValue
+        }
+        .sheet(isPresented: $showPaywall) {
+            PaywallView()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: ProPurchaseManager.proAccessDidChange)) { _ in
+            hasProAccess = ProPurchaseManager.shared.hasProAccess
+        }
+        .onAppear {
+            if ProcessInfo.processInfo.arguments.contains("-ShowPaywall") && !Self.hasAutoShownPaywall {
+                Self.hasAutoShownPaywall = true
+                showPaywall = true
+            }
+        }
     }
 
     // MARK: - Sections
 
+    private var appearanceSection: some View {
+        Section(NSLocalizedString("settings_appearance_section", comment: "")) {
+            Picker(selection: languageBinding) {
+                ForEach(AppLanguage.allCases) { language in
+                    Text(language.localizedName).tag(language.rawValue)
+                }
+            } label: {
+                SettingsRow(
+                    icon: "globe",
+                    iconColor: .blue,
+                    title: NSLocalizedString("settings_language", comment: "")
+                )
+            }
+
+            Picker(selection: themeBinding) {
+                ForEach(AppTheme.allCases) { theme in
+                    Text(theme.localizedName).tag(theme.rawValue)
+                }
+            } label: {
+                SettingsRow(
+                    icon: "circle.lefthalf.filled",
+                    iconColor: .purple,
+                    title: NSLocalizedString("settings_theme", comment: "")
+                )
+            }
+        }
+    }
+
+    private var readingSection: some View {
+        Section(NSLocalizedString("settings_reading_section", comment: "")) {
+            VStack(spacing: 0) {
+                HStack {
+                    SettingsRow(
+                        icon: "target",
+                        iconColor: .blue,
+                        title: NSLocalizedString("settings_daily_goal", comment: "")
+                    )
+                    Spacer()
+                    Text(String(format: NSLocalizedString("home_minutes", comment: ""), dailyGoalMinutes))
+                        .foregroundStyle(.secondary)
+                    Image(systemName: "chevron.up.chevron.down")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(.tertiary)
+                        .rotationEffect(.degrees(showDailyGoalPicker ? 180 : 0))
+                        .animation(.easeInOut(duration: 0.2), value: showDailyGoalPicker)
+                }
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        showDailyGoalPicker.toggle()
+                    }
+                }
+
+                if showDailyGoalPicker {
+                    Picker("", selection: $dailyGoalMinutes) {
+                        ForEach(Array(stride(
+                            from: ReadingPreferences.dailyGoalRange.lowerBound,
+                            through: ReadingPreferences.dailyGoalRange.upperBound,
+                            by: 5
+                        )), id: \.self) { minute in
+                            Text(String(format: NSLocalizedString("home_minutes", comment: ""), minute))
+                        }
+                    }
+                    .pickerStyle(.wheel)
+                    .frame(height: 120)
+                    .clipped()
+                }
+            }
+        }
+    }
+
     private var watchSection: some View {
         Section(NSLocalizedString("settings_watch_section", comment: "")) {
             NavigationLink {
-                WatchSettingsView()
+                LazyView(WatchSettingsView())
                     .navigationBarTitleDisplayMode(.inline)
             } label: {
                 SettingsRow(
                     icon: "applewatch",
-                    iconColor: .black,
+                    iconColor: Color(uiColor: .label),
                     title: NSLocalizedString("settings_watch_page_turn", comment: "")
                 )
             }
@@ -53,13 +152,82 @@ struct SettingsView: View {
     private var ttsSection: some View {
         Section(NSLocalizedString("settings_tts_section", comment: "")) {
             NavigationLink {
-                TTSSettingsView()
+                LazyView(TTSSettingsView())
                     .navigationBarTitleDisplayMode(.inline)
             } label: {
                 SettingsRow(
                     icon: "speaker.wave.2.fill",
                     iconColor: .blue,
                     title: NSLocalizedString("settings_tts_voice", comment: "")
+                )
+            }
+        }
+    }
+
+    private var proSection: some View {
+        if hasProAccess {
+            // State 1: Pro access active (either active subscription or legacy buyer)
+            return AnyView(Section {
+                HStack {
+                    SettingsRow(
+                        icon: "crown.fill",
+                        iconColor: .yellow,
+                        title: NSLocalizedString("settings_pro_unlocked", comment: "")
+                    )
+                    Spacer()
+                    Text(NSLocalizedString("settings_pro_badge", comment: ""))
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(
+                            LinearGradient(
+                                colors: [
+                                    Color(red: 0.38, green: 0.56, blue: 1.0),
+                                    Color(red: 0.56, green: 0.44, blue: 0.96)
+                                ],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .cornerRadius(6)
+                }
+            })
+        } else {
+            // State 2: Pro access inactive
+            return AnyView(Section {
+                Button(action: {
+                    Analytics.shared.log(.paywallViewed(source: "settings_upgrade_row"))
+                    showPaywall = true
+                }) {
+                    HStack {
+                        SettingsRow(
+                            icon: "crown.fill",
+                            iconColor: .yellow,
+                            title: NSLocalizedString("settings_upgrade_pro", comment: "")
+                        )
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(.tertiary)
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            })
+        }
+    }
+
+    private var statsSection: some View {
+        Section(NSLocalizedString("settings_stats_section", comment: "")) {
+            NavigationLink {
+                LazyView(ReadingStatsView())
+                    .navigationBarTitleDisplayMode(.inline)
+            } label: {
+                SettingsRow(
+                    icon: "chart.bar.xaxis",
+                    iconColor: .blue,
+                    title: NSLocalizedString("settings_stats", comment: "")
                 )
             }
         }
@@ -85,9 +253,154 @@ struct SettingsView: View {
                 iconColor: .green,
                 title: NSLocalizedString("settings_feedback_other", comment: "")
             )
+            ShareAppRow()
         }
     }
 
+    private var languageBinding: Binding<String> {
+        Binding(
+            get: { selectedLanguage },
+            set: { newValue in
+                selectedLanguage = newValue
+                AppAppearancePreferences.language = AppLanguage(rawValue: newValue) ?? .english
+            }
+        )
+    }
+
+    private var themeBinding: Binding<String> {
+        Binding(
+            get: { selectedTheme },
+            set: { newValue in
+                selectedTheme = newValue
+                AppAppearancePreferences.theme = AppTheme(rawValue: newValue) ?? .system
+            }
+        )
+    }
+
+}
+
+// MARK: - App Appearance Preferences
+
+enum AppLanguage: String, CaseIterable, Identifiable {
+    case english = "en"
+    case simplifiedChinese = "zh-Hans"
+
+    var id: String { rawValue }
+
+    var localizedName: String {
+        switch self {
+        case .english:
+            return NSLocalizedString("settings_language_english", comment: "")
+        case .simplifiedChinese:
+            return NSLocalizedString("settings_language_chinese", comment: "")
+        }
+    }
+}
+
+enum AppTheme: String, CaseIterable, Identifiable {
+    case system
+    case light
+    case dark
+
+    var id: String { rawValue }
+
+    var localizedName: String {
+        switch self {
+        case .system:
+            return NSLocalizedString("settings_theme_system", comment: "")
+        case .light:
+            return NSLocalizedString("settings_theme_light", comment: "")
+        case .dark:
+            return NSLocalizedString("settings_theme_dark", comment: "")
+        }
+    }
+
+    var interfaceStyle: UIUserInterfaceStyle {
+        switch self {
+        case .system:
+            return .unspecified
+        case .light:
+            return .light
+        case .dark:
+            return .dark
+        }
+    }
+}
+
+enum AppAppearancePreferences {
+    enum Keys {
+        static let language = "app_language"
+        static let theme = "app_theme"
+    }
+
+    static let languageDidChange = Notification.Name("AppAppearancePreferencesLanguageDidChange")
+    static let themeDidChange = Notification.Name("AppAppearancePreferencesThemeDidChange")
+
+    static var language: AppLanguage {
+        get {
+            if let raw = UserDefaults.standard.string(forKey: Keys.language),
+               let language = AppLanguage(rawValue: raw) {
+                return language
+            }
+            return Locale.preferredLanguages.first?.hasPrefix("zh") == true ? .simplifiedChinese : .english
+        }
+        set {
+            UserDefaults.standard.set(newValue.rawValue, forKey: Keys.language)
+            NotificationCenter.default.post(name: languageDidChange, object: newValue)
+        }
+    }
+
+    static var theme: AppTheme {
+        get {
+            if let raw = UserDefaults.standard.string(forKey: Keys.theme),
+               let theme = AppTheme(rawValue: raw) {
+                return theme
+            }
+            return .system
+        }
+        set {
+            UserDefaults.standard.set(newValue.rawValue, forKey: Keys.theme)
+            NotificationCenter.default.post(name: themeDidChange, object: newValue)
+        }
+    }
+
+    static func configureLocalization() {
+        Bundle.installAppLanguageOverride()
+    }
+
+    static func applyTheme(to window: UIWindow?) {
+        window?.overrideUserInterfaceStyle = theme.interfaceStyle
+    }
+
+    static var locale: Locale {
+        Locale(identifier: language.rawValue)
+    }
+}
+
+private extension Bundle {
+    static func installAppLanguageOverride() {
+        _ = appLanguageOverrideInstalled
+    }
+
+    static let appLanguageOverrideInstalled: Void = {
+        guard
+            let original = class_getInstanceMethod(Bundle.self, #selector(Bundle.localizedString(forKey:value:table:))),
+            let replacement = class_getInstanceMethod(Bundle.self, #selector(Bundle.appLocalizedString(forKey:value:table:)))
+        else { return }
+
+        method_exchangeImplementations(original, replacement)
+    }()
+
+    @objc func appLocalizedString(forKey key: String, value: String?, table tableName: String?) -> String {
+        guard self == Bundle.main,
+              let path = Bundle.main.path(forResource: AppAppearancePreferences.language.rawValue, ofType: "lproj"),
+              let bundle = Bundle(path: path)
+        else {
+            return appLocalizedString(forKey: key, value: value, table: tableName)
+        }
+
+        return bundle.appLocalizedString(forKey: key, value: value, table: tableName)
+    }
 }
 
 // MARK: - Reusable Row
@@ -120,9 +433,9 @@ private enum FeedbackType {
 
     var subject: String {
         switch self {
-        case .bug: return "[Bug] PagePilot 反馈"
-        case .feature: return "[Feature Request] PagePilot 功能建议"
-        case .other: return "[Feedback] PagePilot 反馈"
+        case .bug: return NSLocalizedString("feedback_subject_bug", comment: "")
+        case .feature: return NSLocalizedString("feedback_subject_feature", comment: "")
+        case .other: return NSLocalizedString("feedback_subject_other", comment: "")
         }
     }
 
@@ -132,13 +445,21 @@ private enum FeedbackType {
         let buildVersion = Bundle.main.buildVersion
         let systemInfo = "\(device.model), iOS \(device.systemVersion), App \(appVersion) (\(buildVersion))"
 
+        let deviceInfoHeader = NSLocalizedString("feedback_body_device_info", comment: "")
+
         switch self {
         case .bug:
-            return "\n\n\n---\n设备信息：\(systemInfo)\n\n问题描述：\n\n复现步骤：\n1. \n2. \n3. \n\n期望行为：\n\n实际行为：\n"
+            let descHeader = NSLocalizedString("feedback_body_description", comment: "")
+            let stepsHeader = NSLocalizedString("feedback_body_reproduce_steps", comment: "")
+            let expectedHeader = NSLocalizedString("feedback_body_expected", comment: "")
+            let actualHeader = NSLocalizedString("feedback_body_actual", comment: "")
+            return "\n\n\n---\n\(deviceInfoHeader): \(systemInfo)\n\n\(descHeader):\n\n\(stepsHeader):\n1. \n2. \n3. \n\n\(expectedHeader):\n\n\(actualHeader):\n"
         case .feature:
-            return "\n\n\n---\n设备信息：\(systemInfo)\n\n功能描述：\n\n使用场景：\n"
+            let descHeader = NSLocalizedString("feedback_body_feature_description", comment: "")
+            let useCasesHeader = NSLocalizedString("feedback_body_use_cases", comment: "")
+            return "\n\n\n---\n\(deviceInfoHeader): \(systemInfo)\n\n\(descHeader):\n\n\(useCasesHeader):\n"
         case .other:
-            return "\n\n\n---\n设备信息：\(systemInfo)\n"
+            return "\n\n\n---\n\(deviceInfoHeader): \(systemInfo)\n"
         }
     }
 }
@@ -196,6 +517,47 @@ private struct FeedbackRow: View {
     }
 }
 
+// MARK: - Share App
+
+private struct ShareAppRow: View {
+    @State private var showShareSheet = false
+
+    var body: some View {
+        Button(action: { showShareSheet = true }) {
+            HStack {
+                SettingsRow(
+                    icon: "square.and.arrow.up",
+                    iconColor: .blue,
+                    title: NSLocalizedString("settings_share_app", comment: "")
+                )
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(.tertiary)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .sheet(isPresented: $showShareSheet) {
+            ActivityViewController(
+                activityItems: [
+                    NSLocalizedString("settings_share_app_message", comment: "")
+                ]
+            )
+        }
+    }
+}
+
+private struct ActivityViewController: UIViewControllerRepresentable {
+    let activityItems: [Any]
+
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        UIActivityViewController(activityItems: activityItems, applicationActivities: nil)
+    }
+
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
+}
+
 // MARK: - Helpers
 
 private extension Bundle {
@@ -213,4 +575,17 @@ private extension Bundle {
         SettingsView()
     }
     .navigationViewStyle(.stack)
+}
+
+// MARK: - LazyView Helper
+struct LazyView<Content: View>: View {
+    private let build: () -> Content
+    
+    init(_ build: @autoclosure @escaping () -> Content) {
+        self.build = build
+    }
+    
+    var body: Content {
+        build()
+    }
 }

@@ -51,7 +51,7 @@
 /* MARK: Library */
 
 /* Hint message when the library is empty */
-"library_empty_message" = "📖 Import EPUB, PDF, CBZ or Audiobook files";
+"library_empty_message" = "Add EPUB, PDF, comics, or audiobooks";
 
 /* Add book alert message */
 "library_add_book_title" = "Add a book to your library";
@@ -84,12 +84,34 @@
 "library_error_bookDeletionFailed" = "Failed to delete the publication";
 /* Error message when the publication is still restricted. */
 "library_error_publicationIsRestricted" = "You are not allowed to open this publication";
+"library_error_bookLimitReached" = "The free version can keep up to %d books. Upgrade to Pro for unlimited books.";
 
 /* Accessibility label for the library collection view */
 "library_a11y_label" = "Library";
+"library_book_limit_title" = "Library Full";
+"library_book_limit_message" = "The free version can keep up to %d books. Upgrade to Pro for unlimited books.";
+"library_book_limit_upgrade" = "Upgrade to Pro";
 
 /* Accessibility hint for the publication collection cell */
 "library_publication_a11y_hint" = "Hold to access options.";
+"library_select_books" = "Select Books";
+"library_view_mode_grid" = "Grid";
+"library_view_mode_list" = "List";
+"library_view_mode_title" = "View Mode";
+"library_sort_recent_read" = "Recent Read";
+"library_sort_title" = "Title";
+"library_sort_author" = "Author";
+"library_sort_recent_added" = "Recent Added";
+"library_sort_title_menu" = "Sort By";
+"library_search_placeholder" = "Search title or author";
+"library_delete_selected_count" = "Delete Selected Books (%d)";
+"library_delete_books" = "Delete Books";
+"library_delete_confirm_title" = "Confirm Delete";
+"library_delete_confirm_message" = "Are you sure you want to permanently delete the selected %d books from your library?";
+"library_delete_button" = "Delete";
+"library_demo_book_title" = "Demo Book";
+"library_demo_book_message" = "\"%@\" is a simulated demo book and cannot be opened for reading.";
+"library_all_books" = "All Books";
 
 
 /* MARK: Reader */
@@ -202,7 +224,7 @@
 "opds_feed_header_a11y_hint" = "Feed Group Header";
 
 /* Library additional */
-"library_import_local" = "Import local publication";
+"library_import_local" = "Add Books";
 "library_wifi_transfer" = "WiFi Transfer";
 "library_stream_http" = "Stream publication over HTTP";
 "library_stream_title" = "Stream publication";
@@ -218,6 +240,139 @@
 "opds_error_enter_title" = "Please enter a title.";
 "opds_error_invalid_url" = "Invalid URL";
 "opds_error_enter_valid_url" = "Please enter a valid URL.";
+
+/* Reading stats */
+"stats_title" = "Reading Stats";
+"stats_tab_summary" = "Summary";
+"stats_tab_day" = "Day";
+"stats_tab_week" = "Week";
+"stats_tab_month" = "Month";
+"stats_tab_year" = "Year";
+"stats_metric_time" = "Read time";
+"stats_metric_days" = "Active days";
+"stats_metric_sessions" = "Sessions";
+"stats_metric_streak" = "Streak";
+"stats_metric_average" = "Avg / active day";
+"stats_metric_books" = "Books";
+"stats_days_value" = "%d d";
+"stats_empty" = "No reading data yet.";
+"stats_pro_locked_title" = "Pro stats";
+"stats_pro_locked_body" = "Day stats stay available for everyone. Summary, week, month, and year views are reserved for Pro.";
+"stats_upgrade_pro" = "Upgrade to Pro";
+"stats_subtitle" = "A cleaner look at your reading rhythm, streaks, and recent activity.";
+"stats_metric_today" = "Today";
+"stats_metric_best_day" = "Best day";
+"stats_active" = "Active";
+"stats_inactive" = "No time";
+"stats_activity_title" = "Reading activity";
+"stats_sessions_value" = "%d sessions";
+"stats_hours_minutes" = "%dh %dm";
+"stats_minutes" = "%dm";
+"stats_summary_all_time" = "All-time reading";
+"stats_summary_today" = "Today";
+"stats_summary_week" = "This week";
+"stats_summary_month" = "This month";
+"stats_summary_year" = "This year";
+"stats_timeline_recent" = "Recent";
+"stats_timeline_today" = "Today";
+"stats_timeline_week" = "Week";
+"stats_timeline_month" = "Month";
+"stats_timeline_year" = "Year";
+"stats_chart_goal_line" = "Daily Goal";
+"stats_chart_goal_reached" = "Goal Reached!";
+"stats_book_ranking" = "Reading Leaderboard";
+"stats_unknown_book" = "Other/Unknown";
+"stats_chart_axis_time" = "Duration";
+"stats_nav_today" = "Today";
+"stats_chart_goal_line_val" = "Goal %d min";
+"stats_timeline_grouped_week" = "Week %d";
+"stats_quick_return" = "Current Period";
+"stats_heatmap_active" = "Read Time: %@";
+"stats_chart_average_label" = "Avg: %@";
+"stats_week_group" = "Week %d (%@)";
+"stats_rank_gold" = "Champion";
+"stats_rank_silver" = "Runner-up";
+"stats_rank_bronze" = "Third Place";
+
+/* Paywall */
+"paywall_title" = "Unlock PagePilot Pro";
+"paywall_subtitle" = "Unlimited books, iPad Watch page turns, and advanced reading stats in one upgrade.";
+"paywall_pro_badge" = "Yearly Recommended";
+"paywall_feature_unlimited_books" = "Unlimited books (free version keeps up to 10)";
+"paywall_feature_ipad_page_turn" = "Use Apple Watch to turn pages on iPad";
+"paywall_feature_stats" = "Weekly, monthly & yearly stats";
+"paywall_feature_streak" = "Reading streak tracking";
+"paywall_feature_premium_tts" = "Advanced TTS voices (coming soon)";
+"paywall_feature_ad_free" = "Ad-free reading experience";
+"paywall_one_time" = "One-time purchase, yours forever";
+"paywall_buy_button" = "Buy Now";
+"paywall_restore_button" = "Restore Purchases";
+"paywall_close" = "Close";
+"paywall_loading_price" = "Loading…";
+"paywall_load_failed_title" = "Failed to Load";
+"paywall_load_failed_message" = "Unable to load product information. Please check your network connection.";
+"paywall_retry_button" = "Retry";
+"paywall_error_title" = "Purchase Failed";
+"paywall_success_title" = "Pro Unlocked!";
+"paywall_trial_badge" = "1-Month Free Trial";
+
+/* Settings Pro */
+"settings_pro_unlocked" = "PagePilot Pro";
+"settings_pro_badge" = "Unlocked";
+"settings_upgrade_pro" = "Upgrade to PagePilot Pro";
+
+/* Purchase Errors */
+"purchase_error_product_not_found" = "Product information not found";
+"purchase_error_failed" = "Purchase failed, please try again";
+"purchase_error_verification" = "Unable to verify purchase, please try again";
+"purchase_error_cancelled" = "Purchase cancelled";
+"purchase_error_pending" = "Purchase pending, requires parental approval";
+
+/* Subscription & Purchase Tiers */
+"paywall_option_monthly" = "Monthly Plan";
+"paywall_option_yearly" = "Yearly Plan";
+"paywall_option_lifetime" = "Lifetime Plan";
+"paywall_price_monthly" = "¥2";
+"paywall_price_yearly" = "¥19.9";
+"paywall_price_lifetime" = "¥59.9";
+"paywall_price_monthly_sub" = "Renews monthly";
+"paywall_price_yearly_sub" = "Best value, about %@/month";
+"paywall_price_lifetime_sub" = "One-time purchase, limited-time offer";
+"paywall_terms_of_use" = "Terms of Use";
+"paywall_privacy_policy" = "Privacy Policy";
+"paywall_recommended_badge" = "Recommended";
+"paywall_limited_badge" = "Limited";
+"paywall_trial_eligible_label" = "1 Month Free";
+"paywall_lifetime_sub" = "One-time purchase";
+"paywall_save_badge" = "Save 16%";
+"paywall_buy_button_eligible" = "Start 1-Month Free Trial";
+"paywall_buy_button_ineligible" = "Continue";
+"paywall_buy_button_lifetime" = "Unlock Lifetime";
+"paywall_trial_duration_eligible_monthly" = "1 Month Free, then %@/month";
+"paywall_trial_duration_eligible_yearly" = "1 Month Free, then %@/year";
+"paywall_trial_duration_ineligible_monthly" = "%@/month";
+"paywall_trial_duration_ineligible_yearly" = "%@/year";
+"paywall_trial_duration_lifetime" = "%@ one-time";
+"paywall_subscription_billing_note" = "Monthly and yearly plans renew automatically and can be cancelled in App Store settings. Lifetime is a one-time purchase.";
+
+/* Bookshelf Status */
+"bookshelf_status_not_started" = "Not Started";
+"bookshelf_status_reading" = "Reading";
+"bookshelf_status_completed" = "Completed";
+
+/* Feedback subjects */
+"feedback_subject_bug" = "[Bug] PagePilot Feedback";
+"feedback_subject_feature" = "[Feature Request] PagePilot Suggestion";
+"feedback_subject_other" = "[Feedback] PagePilot Feedback";
+
+/* Feedback body template fields */
+"feedback_body_device_info" = "Device Info";
+"feedback_body_description" = "Description";
+"feedback_body_reproduce_steps" = "Steps to Reproduce";
+"feedback_body_expected" = "Expected Behavior";
+"feedback_body_actual" = "Actual Behavior";
+"feedback_body_feature_description" = "Feature Description";
+"feedback_body_use_cases" = "Use Cases";
 
 /* OPDS Empty State */
 "opds_empty_title" = "No Catalogs Yet";
@@ -251,6 +406,25 @@
 "wifi_transfer_retry" = "Retry";
 "wifi_transfer_starting" = "Starting server...";
 "wifi_transfer_tip" = "Make sure your phone and computer are on the same WiFi network. Uploaded files will appear in your bookshelf automatically.";
+
+/* Device Transfer */
+"library_device_transfer" = "Send to Another Device";
+"transfer_title" = "Device Transfer";
+"transfer_tab_send" = "Send";
+"transfer_tab_receive" = "Receive";
+"transfer_searching" = "Searching for nearby devices…";
+"transfer_peers_found" = "%d device(s) found";
+"transfer_no_peers_hint" = "No devices found. Make sure the other device has the Receive tab open on the same WiFi.";
+"transfer_send_to" = "Send to %@";
+"transfer_empty_library" = "Your library is empty. Import some books first.";
+"transfer_receiving_active" = "Waiting to receive…";
+"transfer_receiving_idle" = "Receiving stopped";
+"transfer_receiving_hint" = "Keep this screen open. The sender can now transfer books to this device.";
+"transfer_received_count" = "%d book(s) received";
+"transfer_start_receiving" = "Start Receiving";
+"transfer_stop_receiving" = "Stop Receiving";
+"transfer_error_send_failed" = "Send failed. Please try again.";
+"transfer_error_peer_not_found" = "Target device not found.";
 
 /* About */
 "about_version" = "Version";
@@ -351,6 +525,11 @@
 
 /* MARK: Reader */
 "reader_highlight" = "Highlight";
+"reader_highlight_select_color" = "Select Highlight Color";
+"reader_highlight_color_yellow" = "Yellow";
+"reader_highlight_color_green" = "Green";
+"reader_highlight_color_blue" = "Blue";
+"reader_highlight_color_red" = "Red";
 
 /* MARK: Launch */
 "launch_tagline_1" = "Read with your Apple Watch";
@@ -373,6 +552,18 @@
 /* MARK: Settings */
 "settings_tab" = "Settings";
 "settings_title" = "Settings";
+"settings_appearance_section" = "Appearance";
+"settings_reading_section" = "Reading";
+"settings_daily_goal" = "Daily Goal";
+"settings_language" = "Language";
+"settings_language_english" = "English";
+"settings_language_chinese" = "Simplified Chinese";
+"settings_theme" = "Theme";
+"settings_theme_system" = "System";
+"settings_theme_light" = "Light";
+"settings_theme_dark" = "Dark";
+"settings_stats_section" = "Reading Stats";
+"settings_stats" = "Reading Stats";
 "settings_tts_section" = "Text-to-Speech";
 "settings_tts_voice" = "Voice & Speed";
 "settings_feedback_section" = "Feedback";
@@ -382,6 +573,8 @@
 "settings_feedback_mail_error_title" = "Cannot Send Email";
 "settings_feedback_mail_error_message" = "Mail is not configured on this device. You can send feedback manually to: %@";
 "settings_feedback_copy_email" = "Copy Email Address";
+"settings_share_app" = "Share PagePilot";
+"settings_share_app_message" = "Check out PagePilot — turn pages hands-free with your Apple Watch.";
 "settings_about_section" = "About";
 "settings_about" = "About PagePilot";
 "settings_version" = "Version";
@@ -404,26 +597,32 @@
 "watch_settings_title" = "Watch Page Turn";
 "watch_connection_status" = "Apple Watch";
 "watch_status_connected" = "Connected";
+"watch_status_ipad_relay" = "iPad Connected (via iPhone)";
+"watch_status_iphone" = "iPhone Connected";
 "watch_status_disconnected" = "Not Connected";
+"watch_target_section" = "Page Turn Device";
+"watch_target_picker" = "Page Turn Device";
+"watch_target_footer" = "Apple Watch controls iPhone by default. Switch to iPad when reading there.";
+"watch_target_ipad" = "iPad";
+"watch_target_ipad_pro" = "%@ Pro";
+"watch_target_iphone" = "iPhone";
 "watch_input_mode_section" = "Input Mode";
 "watch_input_mode_footer" = "Choose how you turn pages on your Apple Watch.";
 "watch_input_buttons_and_crown" = "Buttons & Crown";
 "watch_input_buttons_only" = "Buttons Only";
 "watch_input_crown_only" = "Crown Only";
-"watch_crown_section" = "Crown Sensitivity";
-"watch_crown_footer" = "Higher sensitivity requires less rotation to turn a page.";
-"watch_sensitivity_low" = "Low";
-"watch_sensitivity_medium" = "Medium";
-"watch_sensitivity_high" = "High";
-"watch_animation_section" = "Page Turn Style";
-"watch_animation_footer" = "The animation used when turning pages via Watch.";
-"watch_animation_slide" = "Slide";
-"watch_animation_curl" = "Page Curl";
-"watch_animation_fade" = "Fade";
-"watch_animation_none" = "Instant (No Animation)";
 "watch_haptic_section" = "Haptic Feedback";
-"watch_haptic_footer" = "Vibrate on your iPhone when a page is turned from the Watch.";
+"watch_haptic_footer" = "Vibrate when a page is turned from the Watch.";
 "watch_haptic_toggle" = "Haptic on Page Turn";
+
+"watch_guidance_header" = "Steps";
+"watch_guidance_ipad_step1" = "Connect iPhone and iPad to the same Wi-Fi";
+"watch_guidance_ipad_step2" = "Open a book on iPad";
+"watch_guidance_ipad_step3" = "Switch Page Turn Device to iPad here";
+"watch_guidance_iphone_step1" = "Open a book on iPhone";
+"watch_guidance_iphone_step2" = "Open PagePilot on Apple Watch to turn pages";
+"watch_guidance_ipad_footer" = "iPhone and iPad must be on the same Wi-Fi";
+"watch_guidance_iphone_footer" = "Control the reader on this device";
 
 /* MARK: TXT Import */
 "txt_error_cannot_read" = "Cannot read the text file.";
@@ -446,3 +645,7 @@
 "tts_premium_prompt_body" = "You're using the standard voice. Download a Premium or Enhanced voice in Settings for more natural, human-like speech.";
 "tts_premium_prompt_steps" = "Settings → Accessibility → Spoken Content → Voices → Choose Language → Download Premium";
 "tts_premium_prompt_dismiss" = "Got it";
+
+/* MARK: Device Transfer */
+"onboarding_transfer_title" = "Send Books Locally";
+"onboarding_transfer_message" = "Move books between your iPhone and iPad over the same Wi-Fi network when both devices are nearby.";

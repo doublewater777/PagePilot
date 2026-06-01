@@ -16,8 +16,8 @@ import WatchConnectivity
 class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewController<N>, VisualNavigatorDelegate {
     private lazy var positionLabel = UILabel()
 
-    private let ttsViewModel: TTSViewModel?
-    private let ttsControlsViewController: UIHostingController<TTSControls>?
+    private var ttsViewModel: TTSViewModel?
+    private var ttsControlsViewController: UIHostingController<TTSControls>?
     private var positionCount: Int?
 
     init(
@@ -29,9 +29,8 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
         highlights: HighlightRepository?
     ) {
         self.highlights = highlights
-
-        ttsViewModel = TTSViewModel(navigator: navigator, publication: publication)
-        ttsControlsViewController = ttsViewModel.map { UIHostingController(rootView: TTSControls(viewModel: $0)) }
+        self.ttsViewModel = nil
+        self.ttsControlsViewController = nil
 
         super.init(
             navigator: navigator,
@@ -116,6 +115,12 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
 
         view.backgroundColor = .white
 
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("-ShowNavigationBar") {
+            navigationBarHidden = false
+        }
+        #endif
+
         updateNavigationBar(animated: false)
 
         addChild(navigator)
@@ -137,25 +142,40 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
             positionLabel.bottomAnchor.constraint(equalTo: navigator.view.bottomAnchor, constant: -20),
         ])
 
-        if let state = ttsViewModel?.$state, let controls = ttsControlsViewController {
-            controls.view.backgroundColor = .clear
-            controls.view.isHidden = true
+        Task { [weak self] in
+            guard let self = self else { return }
 
-            addChild(controls)
-            controls.view.translatesAutoresizingMaskIntoConstraints = false
-            view.addSubview(controls.view)
-            NSLayoutConstraint.activate([
-                controls.view.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-                controls.view.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 20),
-            ])
-            controls.didMove(toParent: self)
+            let ttsVM = TTSViewModel(navigator: self.navigator, publication: self.publication)
 
-            state
-                .receive(on: DispatchQueue.main)
-                .sink { state in
-                    controls.view.isHidden = !state.showControls
+            await MainActor.run {
+                self.ttsViewModel = ttsVM
+                if let ttsViewModel = self.ttsViewModel {
+                    let controls = UIHostingController(rootView: TTSControls(viewModel: ttsViewModel))
+                    self.ttsControlsViewController = controls
+
+                    controls.view.backgroundColor = .clear
+                    controls.view.isHidden = true
+
+                    self.addChild(controls)
+                    controls.view.translatesAutoresizingMaskIntoConstraints = false
+                    self.view.addSubview(controls.view)
+                    NSLayoutConstraint.activate([
+                        controls.view.centerXAnchor.constraint(equalTo: self.view.centerXAnchor),
+                        controls.view.topAnchor.constraint(equalTo: self.view.safeAreaLayoutGuide.topAnchor, constant: 20),
+                    ])
+                    controls.didMove(toParent: self)
+
+                    ttsViewModel.$state
+                        .receive(on: DispatchQueue.main)
+                        .sink { state in
+                            controls.view.isHidden = !state.showControls
+                        }
+                        .store(in: &self.subscriptions)
+
+                    // Refresh navigation bar to display TTS button now that the view model is ready
+                    self.navigationItem.rightBarButtonItems = self.makeNavigationBarButtons()
                 }
-                .store(in: &subscriptions)
+            }
         }
 
         // Register with WatchPageTurnService for remote page turn control

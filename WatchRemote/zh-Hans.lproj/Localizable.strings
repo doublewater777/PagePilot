@@ -1,5 +1,16 @@
 /* Watch Remote */
 "watch.connected" = "已连接";
+"watch.iphoneRelay" = "iPhone 中继";
+"watch.ipadConnected" = "iPad 已连接";
+"watch.iphoneConnected" = "iPhone 已连接";
 "watch.notConnected" = "未连接";
 "watch.crownHint" = "旋转表冠翻页";
-
+"watch.hint.openIPhone" = "请在 iPhone 上打开 PagePilot";
+"watch.hint.openIPad" = "请在 iPad 上打开 PagePilot";
+"watch.hint.openBookIPhone" = "请在 iPhone 上打开一本书";
+"watch.hint.openBookIPad" = "请在 iPad 上打开一本书";
+"watch.error.sendFailed" = "发送失败，请重试";
+"watch.error.ipadNotFound" = "请在 iPad 上打开 PagePilot，并保持同一 Wi-Fi";
+"watch.error.ipadTimeout" = "暂时连不上 iPad，请检查 Wi-Fi";
+"watch.error.openIPhone" = "请在 iPhone 上打开 PagePilot";
+"watch.error.generic" = "翻页失败，请重试";

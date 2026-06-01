@@ -24,7 +24,7 @@ protocol LibraryModuleAPI {
     @discardableResult
     func importPublication(
         from url: AbsoluteURL,
-        sender: UIViewController,
+        sender: UIViewController?,
         progress: @escaping (Double) -> Void
     ) async throws -> Book
 
@@ -60,7 +60,9 @@ final class LibraryModule: LibraryModuleAPI {
         let nav = UINavigationController(rootViewController: libraryViewController)
         let appearance = UINavigationBarAppearance()
         appearance.configureWithOpaqueBackground()
-        appearance.backgroundColor = .systemBackground
+        appearance.backgroundColor = .systemGroupedBackground
+        appearance.shadowColor = .clear
+        appearance.shadowImage = UIImage()
         nav.navigationBar.standardAppearance = appearance
         nav.navigationBar.scrollEdgeAppearance = appearance
         return nav
@@ -74,7 +76,7 @@ final class LibraryModule: LibraryModuleAPI {
 
     func importPublication(
         from url: AbsoluteURL,
-        sender: UIViewController,
+        sender: UIViewController?,
         progress: @escaping (Double) -> Void
     ) async throws -> Book {
         try await library.importPublication(from: url, sender: sender, progress: progress)
@@ -82,5 +84,16 @@ final class LibraryModule: LibraryModuleAPI {
 
     func openBook(_ book: Book, sender: UIViewController) async throws -> Publication? {
         try await library.openBook(book, sender: sender)
+    }
+}
+
+extension LibraryModuleAPI {
+    @discardableResult
+    func importPublication(
+        from url: AbsoluteURL,
+        sender: UIViewController? = nil,
+        progress: @escaping (Double) -> Void = { _ in }
+    ) async throws -> Book {
+        try await importPublication(from: url, sender: sender, progress: progress)
     }
 }

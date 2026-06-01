@@ -55,7 +55,7 @@ final class BookmarkRepository {
 
     @discardableResult
     func add(_ bookmark: Bookmark) async throws -> Bookmark.Id {
-        try await db.write { db in
+        return try await db.write { db in
             try bookmark.insert(db)
             return Bookmark.Id(rawValue: db.lastInsertedRowID)
         }

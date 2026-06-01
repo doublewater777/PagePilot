@@ -13,20 +13,61 @@ import UIKit
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
-    var window: UIWindow?
-
-    private let hasSeenOnboardingKey = "hasSeenOnboarding"
-    private var app: AppModule!
+    let hasSeenOnboardingKey = "hasSeenOnboarding"
+    private(set) var app: AppModule!
     private var subscriptions = Set<AnyCancellable>()
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+        StartupProfiler.shared.record("AppDelegate didFinishLaunching Start")
+        AppAppearancePreferences.configureLocalization()
         configureAudioSession()
+        WatchPageTurnSettings.migrateDefaultTargetIfNeeded()
         app = try! AppModule()
-
+        observeAppearancePreferences()
+ 
         // Activate Watch connectivity early so the session state is always
         // current, even before the reader is opened.
         WatchPageTurnService.shared.activate()
+ 
+        // Verify Pro entitlements on launch.
+        Task {
+            await ProPurchaseManager.shared.verifyCurrentEntitlements()
+        }
+ 
+        StartupProfiler.shared.record("AppDelegate didFinishLaunching End")
+        return true
+    }
 
+    func application(
+        _ application: UIApplication,
+        configurationForConnecting connectingSceneSession: UISceneSession,
+        options: UIScene.ConnectionOptions
+    ) -> UISceneConfiguration {
+        UISceneConfiguration(name: "Default Configuration", sessionRole: connectingSceneSession.role)
+    }
+
+    /// Configures the shared `AVAudioSession` so that audio features (audiobook
+    /// playback and text-to-speech) keep playing when the app is sent to the
+    /// background or the device is locked.
+    ///
+    /// Without this, the default `soloAmbient` category silences audio as soon
+    /// as the app is backgrounded, which makes the `audio` UIBackgroundMode
+    /// declared in Info.plist appear non-functional during App Review.
+    private func configureAudioSession() {
+        let session = AVAudioSession.sharedInstance()
+        do {
+            try session.setCategory(
+                .playback,
+                mode: .spokenAudio,
+                options: []
+            )
+            try session.setActive(true, options: [])
+        } catch {
+            print("Failed to configure AVAudioSession: \(error)")
+        }
+    }
+
+    func makeRootViewController() -> UITabBarController {
         func makeItem(title: String, systemImage: String) -> UITabBarItem {
             UITabBarItem(
                 title: NSLocalizedString(title, comment: "Tab bar item"),
@@ -64,44 +105,52 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
         let navBarAppearance = UINavigationBarAppearance()
         navBarAppearance.configureWithOpaqueBackground()
-        navBarAppearance.backgroundColor = .systemBackground
+        navBarAppearance.backgroundColor = .systemGroupedBackground
+        navBarAppearance.shadowColor = .clear
+        navBarAppearance.shadowImage = UIImage()
         UINavigationBar.appearance().standardAppearance = navBarAppearance
         UINavigationBar.appearance().scrollEdgeAppearance = navBarAppearance
 
-        window = UIWindow(frame: UIScreen.main.bounds)
-        window?.rootViewController = tabBarController
-        window?.makeKeyAndVisible()
-
         app.tabBarController = tabBarController
-        presentOnboardingIfNeeded(from: tabBarController)
-        importPreloadedBooks()
-
-        return true
+        return tabBarController
     }
 
-    /// Configures the shared `AVAudioSession` so that audio features (audiobook
-    /// playback and text-to-speech) keep playing when the app is sent to the
-    /// background or the device is locked.
-    ///
-    /// Without this, the default `soloAmbient` category silences audio as soon
-    /// as the app is backgrounded, which makes the `audio` UIBackgroundMode
-    /// declared in Info.plist appear non-functional during App Review.
-    private func configureAudioSession() {
-        let session = AVAudioSession.sharedInstance()
-        do {
-            try session.setCategory(
-                .playback,
-                mode: .spokenAudio,
-                options: []
-            )
-            try session.setActive(true, options: [])
-        } catch {
-            print("Failed to configure AVAudioSession: \(error)")
-        }
+    func updateTabBarLocalization() {
+        guard let tabBarItems = app.tabBarController?.tabBar.items, tabBarItems.count >= 3 else { return }
+
+        tabBarItems[0].title = NSLocalizedString("home_tab", comment: "Tab bar item")
+        tabBarItems[1].title = NSLocalizedString("bookshelf_tab", comment: "Tab bar item")
+        tabBarItems[2].title = NSLocalizedString("settings_tab", comment: "Tab bar item")
+    }
+
+    private func observeAppearancePreferences() {
+        NotificationCenter.default.publisher(for: AppAppearancePreferences.languageDidChange)
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                self?.updateTabBarLocalization()
+                self?.updateVisibleLocalization()
+            }
+            .store(in: &subscriptions)
+
+        NotificationCenter.default.publisher(for: AppAppearancePreferences.themeDidChange)
+            .receive(on: RunLoop.main)
+            .sink { _ in
+                UIApplication.shared.connectedScenes
+                    .compactMap { $0 as? UIWindowScene }
+                    .flatMap(\.windows)
+                    .forEach(AppAppearancePreferences.applyTheme(to:))
+            }
+            .store(in: &subscriptions)
+    }
+
+    private func updateVisibleLocalization() {
+        app.library.rootViewController.viewControllers
+            .compactMap { $0 as? LibraryViewController }
+            .forEach { $0.updateLocalizedContent() }
     }
 
     /// Imports preloaded sample books from the app bundle on first launch.
-    private func importPreloadedBooks() {
+    func importPreloadedBooks(sender rootVC: UIViewController) {
         let log = Logger(subsystem: "com.panyang.PagePilot", category: "PreloadedBooks")
         let preloadedBooksKey = "preloadedBooksImported"
         guard !UserDefaults.standard.bool(forKey: preloadedBooksKey) else {
@@ -113,53 +162,78 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             log.error("No resource URL")
             return
         }
-        let preloadedDir = resourceURL.appendingPathComponent("PreloadedBooks")
-        log.info("Preloaded dir: \(preloadedDir.path)")
-
-        guard let rootVC = window?.rootViewController else {
-            log.error("No root view controller, window=\(String(describing: self.window))")
-            return
-        }
 
         let fileManager = FileManager.default
+        var files: [URL] = []
+        
+        let preloadedDir = resourceURL.appendingPathComponent("PreloadedBooks")
         var isDir: ObjCBool = false
-        guard fileManager.fileExists(atPath: preloadedDir.path, isDirectory: &isDir), isDir.boolValue else {
-            log.error("PreloadedBooks dir does not exist at \(preloadedDir.path)")
-            return
+        if fileManager.fileExists(atPath: preloadedDir.path, isDirectory: &isDir), isDir.boolValue {
+            if let contents = try? fileManager.contentsOfDirectory(at: preloadedDir, includingPropertiesForKeys: nil) {
+                files = contents.filter { $0.pathExtension == "epub" }
+            }
         }
-
-        guard let files = try? fileManager.contentsOfDirectory(at: preloadedDir, includingPropertiesForKeys: nil) else {
-            log.error("Failed to list files at \(preloadedDir.path)")
+        
+        if files.isEmpty {
+            log.info("PreloadedBooks directory not found or empty. Searching bundle root...")
+            if let contents = try? fileManager.contentsOfDirectory(at: resourceURL, includingPropertiesForKeys: nil) {
+                files = contents.filter { $0.pathExtension == "epub" && $0.lastPathComponent == "pride_prejudice.epub" }
+            }
+        }
+        
+        if files.isEmpty, let fallbackURL = Bundle.main.url(forResource: "pride_prejudice", withExtension: "epub") {
+            log.info("Using Bundle.main.url fallback for pride_prejudice.epub")
+            files = [fallbackURL]
+        }
+        
+        guard !files.isEmpty else {
+            log.error("No preloaded epub files found")
             return
         }
 
         log.info("Found \(files.count) file(s) to import: \(files.map(\.lastPathComponent).joined(separator: ", "))")
 
-        Task {
+        let libraryService = app.library!
+        StartupProfiler.shared.record("importPreloadedBooks Triggered")
+        Task.detached(priority: .background) {
+            StartupProfiler.shared.record("importPreloadedBooks detached background Task Start")
+            // Delay for 0.4 seconds to allow the onboarding view dismissal animation to complete.
+            try? await Task.sleep(nanoseconds: 400_000_000)
+            
             for fileURL in files {
                 guard let absoluteURL = fileURL.anyURL.absoluteURL else {
                     log.error("Failed to create AbsoluteURL for \(fileURL.lastPathComponent)")
                     continue
                 }
-
+ 
                 log.info("Importing: \(absoluteURL.string)")
                 do {
-                    let book = try await app.library.importPublication(from: absoluteURL, sender: rootVC, progress: { _ in })
+                    StartupProfiler.shared.record("Start importing: \(fileURL.lastPathComponent)")
+                    let book = try await libraryService.importPublication(from: absoluteURL, sender: nil)
                     log.info("Imported book: \(book.title)")
+                    StartupProfiler.shared.record("Finish importing: \(book.title)")
                 } catch {
                     log.error("Import failed for \(fileURL.lastPathComponent): \(String(describing: error))")
+                    StartupProfiler.shared.record("Import failed for: \(fileURL.lastPathComponent)")
                 }
             }
             UserDefaults.standard.set(true, forKey: preloadedBooksKey)
             log.info("All preloaded books import finished")
+            StartupProfiler.shared.record("All preloaded books import finished")
+            StartupProfiler.shared.printSummary()
         }
     }
 
     func application(_ application: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {
-        guard let url = url.anyURL.absoluteURL, let vc = window?.rootViewController else {
+        guard let url = url.anyURL.absoluteURL, let vc = activeRootViewController else {
             return false
         }
 
+        importPublication(from: url, sender: vc)
+        return true
+    }
+
+    func importPublication(from url: AbsoluteURL, sender vc: UIViewController) {
         Task {
             do {
                 try await app.library.importPublication(from: url, sender: vc, progress: { _ in })
@@ -171,11 +245,17 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
                 vc.alert(error)
             }
         }
-
-        return true
     }
 
-    private func presentOnboardingIfNeeded(from presentingViewController: UIViewController) {
+    private var activeRootViewController: UIViewController? {
+        UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .flatMap(\.windows)
+            .first(where: \.isKeyWindow)?
+            .rootViewController
+    }
+
+    func presentOnboardingIfNeeded(from presentingViewController: UIViewController) {
         guard !UserDefaults.standard.bool(forKey: hasSeenOnboardingKey) else {
             return
         }
@@ -192,12 +272,78 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             let onboardingView = OnboardingView {
                 UserDefaults.standard.set(true, forKey: self.hasSeenOnboardingKey)
                 presentingViewController.dismiss(animated: true)
+                // 首次安装，在引导页完全结束后，在后台触发预载图书导入
+                self.importPreloadedBooks(sender: presentingViewController)
             }
 
             let hostingController = UIHostingController(rootView: onboardingView)
             hostingController.modalPresentationStyle = .fullScreen
-            presentingViewController.present(hostingController, animated: true)
+            // Present instantly without animation to prevent main tab bar flickering on cold start.
+            presentingViewController.present(hostingController, animated: false)
         }
+    }
+}
+
+final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
+    var window: UIWindow?
+
+    private var appDelegate: AppDelegate {
+        UIApplication.shared.delegate as! AppDelegate
+    }
+
+    func scene(
+        _ scene: UIScene,
+        willConnectTo session: UISceneSession,
+        options connectionOptions: UIScene.ConnectionOptions
+    ) {
+        StartupProfiler.shared.record("SceneDelegate willConnectTo Start")
+        guard let windowScene = scene as? UIWindowScene else { return }
+
+        let rootViewController = appDelegate.makeRootViewController()
+        let window = UIWindow(windowScene: windowScene)
+        window.rootViewController = rootViewController
+        window.makeKeyAndVisible()
+        AppAppearancePreferences.applyTheme(to: window)
+        self.window = window
+
+        if ProcessInfo.processInfo.arguments.contains("-SelectSettingsTab") {
+            if let tabBar = rootViewController as? UITabBarController {
+                tabBar.selectedIndex = 2
+            }
+        }
+
+        if ProcessInfo.processInfo.arguments.contains("-SelectLibraryTab") {
+            if let tabBar = rootViewController as? UITabBarController {
+                tabBar.selectedIndex = 1
+            }
+        }
+
+        appDelegate.presentOnboardingIfNeeded(from: rootViewController)
+        
+        // Performance Optimization: Only import preloaded books if the user has already seen onboarding.
+        // For fresh installs, it will be triggered when onboarding gets dismissed to prevent stuttering.
+        if UserDefaults.standard.bool(forKey: appDelegate.hasSeenOnboardingKey) {
+            appDelegate.importPreloadedBooks(sender: rootViewController)
+        } else {
+            StartupProfiler.shared.record("First launch: Skipping preloaded books import during onboarding")
+        }
+
+        if let urlContext = connectionOptions.urlContexts.first,
+           let url = urlContext.url.anyURL.absoluteURL {
+            appDelegate.importPublication(from: url, sender: rootViewController)
+        }
+        StartupProfiler.shared.record("SceneDelegate willConnectTo End")
+    }
+
+    func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) {
+        guard
+            let url = URLContexts.first?.url.anyURL.absoluteURL,
+            let rootViewController = window?.rootViewController
+        else {
+            return
+        }
+
+        appDelegate.importPublication(from: url, sender: rootViewController)
     }
 }
 
@@ -221,6 +367,11 @@ private struct OnboardingView: View {
             symbolName: "applewatch",
             titleKey: "onboarding_watch_title",
             messageKey: "onboarding_watch_message"
+        ),
+        OnboardingPage(
+            symbolName: "ipad.and.iphone",
+            titleKey: "onboarding_transfer_title",
+            messageKey: "onboarding_transfer_message"
         ),
     ]
 
@@ -249,20 +400,37 @@ private struct OnboardingView: View {
             }
             .tabViewStyle(.page(indexDisplayMode: .always))
 
-            Button(action: advance) {
-                Text(selectedPage == pages.count - 1
-                     ? NSLocalizedString("onboarding_start_button", comment: "Start using app button")
-                     : NSLocalizedString("onboarding_continue_button", comment: "Next onboarding page button"))
-                    .font(.headline)
-                    .frame(maxWidth: .infinity)
-                    .frame(minHeight: 52)
-            }
-            .buttonStyle(.borderedProminent)
-            .padding(.horizontal, 24)
-            .padding(.bottom, 30)
-            .accessibilityIdentifier("onboarding_primary_button")
+            primaryButton
+                .padding(.horizontal, 24)
+                .padding(.bottom, 30)
         }
         .background(Color(.systemGroupedBackground))
+        .onAppear {
+            if ProcessInfo.processInfo.arguments.contains("-AutoDismissOnboarding") {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                    onFinish()
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var primaryButton: some View {
+        Button(action: advance) {
+            Text(advanceTitle)
+                .font(.headline)
+                .frame(maxWidth: .infinity)
+                .frame(minHeight: 52)
+        }
+        .buttonStyle(.borderedProminent)
+        .accessibilityIdentifier("onboarding_primary_button")
+    }
+
+    private var advanceTitle: String {
+        if selectedPage == pages.count - 1 {
+            return NSLocalizedString("onboarding_start_button", comment: "")
+        }
+        return NSLocalizedString("onboarding_continue_button", comment: "")
     }
 
     private func advance() {
@@ -319,6 +487,63 @@ private struct OnboardingPageView: View {
             .padding(.horizontal, 34)
 
             Spacer(minLength: 92)
+        }
+    }
+}
+
+import QuartzCore
+
+final class StartupProfiler {
+    static let shared = StartupProfiler()
+    
+    struct Event: Codable {
+        let name: String
+        let timestamp: Double
+        let relativeTimeMs: Double
+    }
+    
+    private let startTime: Double
+    private var events: [Event] = []
+    private let queue = DispatchQueue(label: "com.pagepilot.startupprofiler", qos: .utility)
+    
+    private init() {
+        self.startTime = CACurrentMediaTime()
+        let startEvent = Event(name: "App Launch Start", timestamp: startTime, relativeTimeMs: 0.0)
+        events.append(startEvent)
+    }
+    
+    func record(_ eventName: String) {
+        let now = CACurrentMediaTime()
+        let elapsed = (now - startTime) * 1000.0
+        queue.async {
+            let event = Event(name: eventName, timestamp: now, relativeTimeMs: elapsed)
+            self.events.append(event)
+            self.saveToFile()
+        }
+    }
+    
+    func printSummary() {
+        queue.async {
+            print("=== StartupProfiler Summary ===")
+            for event in self.events {
+                print(String(format: "[%.3f ms] %@", event.relativeTimeMs, event.name))
+            }
+            print("===============================")
+        }
+    }
+    
+    private func saveToFile() {
+        guard let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
+            return
+        }
+        let fileURL = documentsDirectory.appendingPathComponent("startup_performance.json")
+        do {
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = .prettyPrinted
+            let data = try encoder.encode(self.events)
+            try data.write(to: fileURL, options: .atomic)
+        } catch {
+            print("Failed to save startup performance json: \(error)")
         }
     }
 }

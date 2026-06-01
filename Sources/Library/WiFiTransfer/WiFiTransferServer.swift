@@ -213,7 +213,7 @@ final class WiFiTransferServer {
     ]
 
     private func uploadPageHTML() -> String {
-        let preferredLang = Locale.preferredLanguages.first?.prefix(2).lowercased() ?? "en"
+        let preferredLang = AppAppearancePreferences.language.rawValue.prefix(2).lowercased()
         let strings = Self.localizedStrings[String(preferredLang)] ?? Self.localizedStrings["en"]!
 
         return """

@@ -24,20 +24,25 @@
 	<key>CFBundleShortVersionString</key>
 	<string>1.0.1</string>
 	<key>CFBundleVersion</key>
-	<string>7</string>
-	<key>MinimumOSVersion</key>
-	<string>8.0</string>
+	<string>14</string>
 	<key>WCAppIcon</key>
 	<string>AppIcon</string>
 	<key>WKApplication</key>
 	<true/>
 	<key>WKCompanionAppBundleIdentifier</key>
 	<string>com.panyang.PagePilot</string>
+	<key>WKRunsIndependentlyOfCompanionApp</key>
+	<true/>
 	<key>NSBonjourServices</key>
 	<array>
 		<string>_http._tcp</string>
 	</array>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>PagePilot uses the local network to find and connect to your iPad reader.</string>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
 </dict>
 </plist>

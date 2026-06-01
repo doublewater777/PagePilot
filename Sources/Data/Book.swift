@@ -72,6 +72,18 @@ struct Book: Codable {
         coverPath.map { Paths.covers.appendingPath($0, isDirectory: false) }
     }
 
+    /// Returns the absolute file URL for the book's local file, or nil if
+    /// the book is remote / the file can't be resolved.
+    func absoluteFileURL() throws -> URL? {
+        guard let anyURL = AnyURL(string: url) else { return nil }
+        switch anyURL {
+        case let .absolute(absURL):
+            return absURL.fileURL?.url
+        case let .relative(relURL):
+            return Paths.documents.resolve(relURL)?.url
+        }
+    }
+
     func preferences<P: Decodable>() throws -> P? {
         guard let data = preferencesJSON.flatMap({ $0.data(using: .utf8) }) else {
             return nil
@@ -113,6 +125,12 @@ final class BookRepository {
     func all() -> AnyPublisher<[Book], Error> {
         db.observe { db in
             try Book.order(Book.Columns.created).fetchAll(db)
+        }
+    }
+
+    func count() async throws -> Int {
+        try await db.read { db in
+            try Book.fetchCount(db)
         }
     }
 

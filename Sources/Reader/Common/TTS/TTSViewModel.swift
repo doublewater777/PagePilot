@@ -27,6 +27,12 @@ final class TTSViewModel: ObservableObject, Loggable {
         /// Voices supported by the synthesizer, for the selected language.
         let availableVoiceIds: [String]
 
+        init(config: PublicationSpeechSynthesizer.Configuration, availableLanguages: [Language] = [], availableVoiceIds: [String] = []) {
+            self.config = config
+            self.availableLanguages = availableLanguages
+            self.availableVoiceIds = availableVoiceIds
+        }
+
         init(synthesizer: PublicationSpeechSynthesizer) {
             let voicesByLanguage: [Language: [TTSVoice]] =
                 Dictionary(grouping: synthesizer.availableVoices, by: \.language)
@@ -74,11 +80,30 @@ final class TTSViewModel: ObservableObject, Loggable {
         }
         self.engineDelegate = engineDelegate
         self.synthesizer = synthesizer
-        settings = Settings(synthesizer: synthesizer)
+        settings = Settings(config: prefs.readiumConfig)
         self.navigator = navigator
         self.publication = publication
 
         synthesizer.delegate = self
+
+        // Asynchronously load available voices and languages to prevent blocking the main thread during init
+        Task { [weak self] in
+            guard let self = self else { return }
+            let loadedSettings = await Task.detached(priority: .userInitiated) {
+                let voices = synthesizer.availableVoices
+                let config = synthesizer.config
+                let voicesByLanguage = Dictionary(grouping: voices, by: \.language)
+                let availableLanguages = voicesByLanguage.keys.sorted { $0.localizedDescription() < $1.localizedDescription() }
+                let availableVoiceIds = config.defaultLanguage
+                    .flatMap { voicesByLanguage[$0]?.map(\.identifier) }
+                    ?? []
+                return Settings(config: config, availableLanguages: availableLanguages, availableVoiceIds: availableVoiceIds)
+            }.value
+
+            await MainActor.run {
+                self.settings = loadedSettings
+            }
+        }
 
         // Highlight the currently spoken utterance.
         if let navigator = navigator as? DecorableNavigator {

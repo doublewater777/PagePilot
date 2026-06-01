@@ -90,11 +90,42 @@ class EPUBViewController: VisualReaderViewController<EPUBNavigatorViewController
     }
 
     @objc func highlightSelection() {
-        if let selection = navigator.currentSelection {
-            let highlight = Highlight(bookId: bookId, locator: selection.locator, color: .yellow)
-            saveHighlight(highlight)
-            navigator.clearSelection()
+        guard let selection = navigator.currentSelection else { return }
+
+        let alert = UIAlertController(
+            title: NSLocalizedString("reader_highlight_select_color", comment: ""),
+            message: nil,
+            preferredStyle: .actionSheet
+        )
+
+        let colors: [(HighlightColor, String)] = [
+            (.yellow, NSLocalizedString("reader_highlight_color_yellow", comment: "")),
+            (.green, NSLocalizedString("reader_highlight_color_green", comment: "")),
+            (.blue, NSLocalizedString("reader_highlight_color_blue", comment: "")),
+            (.red, NSLocalizedString("reader_highlight_color_red", comment: "")),
+        ]
+
+        for (color, title) in colors {
+            let action = UIAlertAction(title: title, style: .default) { [weak self] _ in
+                guard let self = self else { return }
+                let highlight = Highlight(bookId: self.bookId, locator: selection.locator, color: color)
+                self.saveHighlight(highlight)
+                self.navigator.clearSelection()
+            }
+            alert.addAction(action)
         }
+
+        alert.addAction(UIAlertAction(title: NSLocalizedString("cancel_button", comment: ""), style: .cancel) { [weak self] _ in
+            self?.navigator.clearSelection()
+        })
+
+        if let presenter = alert.popoverPresentationController {
+            presenter.sourceView = view
+            presenter.sourceRect = CGRect(x: view.bounds.midX, y: view.bounds.midY, width: 0, height: 0)
+            presenter.permittedArrowDirections = []
+        }
+
+        present(alert, animated: true)
     }
 
     // MARK: - Footnotes

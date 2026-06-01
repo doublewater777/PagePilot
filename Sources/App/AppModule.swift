@@ -30,22 +30,28 @@ final class AppModule {
     weak var tabBarController: UITabBarController?
 
     let readium: Readium
+    let db: Database
 
-    private let books: BookRepository
+    let books: BookRepository
 
     fileprivate lazy var documentPickerDelegate = DocumentPickerDelegate(module: self)
 
     init() throws {
+        StartupProfiler.shared.record("AppModule Init Start")
+        
         let file = Paths.library.appendingPath("database.db", isDirectory: false)
-        let db = try Database(file: file.url)
+        StartupProfiler.shared.record("AppModule: Initializing SQLite Database Queue")
+        db = try Database(file: file.url)
         print("Created database at \(file.path)")
 
         let bookmarks = BookmarkRepository(db: db)
         let highlights = HighlightRepository(db: db)
 
+        StartupProfiler.shared.record("AppModule: Initializing Readium Opener & Server")
         readium = Readium()
         books = BookRepository(db: db)
 
+        StartupProfiler.shared.record("AppModule: Initializing Submodules (Library, Reader, Home)")
         library = LibraryModule(
             delegate: self,
             books: books,
@@ -67,6 +73,8 @@ final class AppModule {
 
         // Set Readium 2's logging minimum level.
         ReadiumEnableLog(withMinimumSeverityLevel: .debug)
+        
+        StartupProfiler.shared.record("AppModule Init End")
     }
 
 }

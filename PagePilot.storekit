@@ -1,0 +1,93 @@
+{
+  "identifier": "B4A4D182",
+  "environment": "Xcode",
+  "bundleId": "com.panyang.PagePilot",
+  "products": [
+    {
+      "type": "NonConsumable",
+      "id": "com.panyang.PagePilot.pro.lifetime",
+      "displayName": "Lifetime Pro",
+      "description": "Lifetime unlimited access to Pro features. Limited-time offer.",
+      "priceTier": 9,
+      "locale": {
+        "zh-Hans": {
+          "displayName": "终身会员",
+          "description": "一次购买，终身使用 Pro 功能。限时优惠。"
+        }
+      }
+    }
+  ],
+  "settings": {
+    "failTransactionsEnabled": false,
+    "interruptPurchasesEnabled": false,
+    "askToBuyEnabled": false,
+    "billingIssueEnabled": false
+  },
+  "subscriptionGroups": [
+    {
+      "id": "A4B1A7C2",
+      "localizations": [
+        {
+          "description": "PagePilot Pro Subscriptions",
+          "displayName": "PagePilot Pro Subscriptions",
+          "locale": "en_US"
+        }
+      ],
+      "name": "PagePilot Pro Subscriptions",
+      "subscriptions": [
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "0.29",
+          "familyShareable": false,
+          "groupNumber": 1,
+          "internalID": "D2E3F4A5",
+          "localizations": [
+            {
+              "description": "Unlock Pro features for one month.",
+              "displayName": "PagePilot Pro - Monthly",
+              "locale": "en_US"
+            },
+            {
+              "description": "按月解锁 PagePilot Pro 功能。",
+              "displayName": "PagePilot Pro - 月度订阅",
+              "locale": "zh_CN"
+            }
+          ],
+          "productID": "com.panyang.PagePilot.pro.monthly",
+          "recurringSubscriptionPeriod": "P1M",
+          "referenceName": "Monthly Pro",
+          "subscriptionGroupID": "A4B1A7C2",
+          "type": "RecurringSubscription"
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "2.99",
+          "familyShareable": false,
+          "groupNumber": 2,
+          "internalID": "E3F4A5B6",
+          "localizations": [
+            {
+              "description": "Unlock Pro features for one year. Recommended.",
+              "displayName": "PagePilot Pro - Yearly",
+              "locale": "en_US"
+            },
+            {
+              "description": "按年解锁 PagePilot Pro 功能，当前主推。",
+              "displayName": "PagePilot Pro - 年度订阅",
+              "locale": "zh_CN"
+            }
+          ],
+          "productID": "com.panyang.PagePilot.pro.yearly",
+          "recurringSubscriptionPeriod": "P1Y",
+          "referenceName": "Yearly Pro",
+          "subscriptionGroupID": "A4B1A7C2",
+          "type": "RecurringSubscription"
+        }
+      ]
+    }
+  ],
+  "introductoryOffers": [],
+  "promotionalOffers": []
+}

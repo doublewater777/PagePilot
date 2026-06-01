@@ -28,11 +28,16 @@ struct LastReadBook: Identifiable {
 final class HomeViewModel: ObservableObject {
     @Published var lastReadBook: LastReadBook?
     @Published var isEmpty: Bool = true
+    @Published var statsRefreshID = UUID()
 
     let readingTimeManager: ReadingTimeManager
+    private let statsStore: ReadingStatsStore
+    private let statsAccess: ReadingStatsAccess
 
-    /// Daily reading goal in minutes (default 30 min)
-    let dailyReadingGoalMinutes: Int = 30
+    /// Daily reading goal in minutes.
+    var dailyReadingGoalMinutes: Int {
+        ReadingPreferences.dailyGoalMinutes
+    }
 
     /// Returns time-based greeting emoji
     var greetingEmoji: String {
@@ -58,12 +63,33 @@ final class HomeViewModel: ObservableObject {
         }
     }
 
+    /// Formatted current date and weekday, e.g. "5月28日 · 周三" or "May 28 · Wed"
+    var dateText: String {
+        let formatter = DateFormatter()
+        formatter.locale = AppAppearancePreferences.locale
+        
+        formatter.setLocalizedDateFormatFromTemplate("MMMd")
+        let dateStr = formatter.string(from: Date())
+        
+        formatter.setLocalizedDateFormatFromTemplate("EEE")
+        let weekdayStr = formatter.string(from: Date())
+        
+        return "\(dateStr) · \(weekdayStr)"
+    }
+
     private let books: BookRepository
     private var cancellables = Set<AnyCancellable>()
 
-    init(books: BookRepository, readingTimeManager: ReadingTimeManager) {
+    init(
+        books: BookRepository,
+        readingTimeManager: ReadingTimeManager,
+        statsStore: ReadingStatsStore = .shared,
+        statsAccess: ReadingStatsAccess = .shared
+    ) {
         self.books = books
         self.readingTimeManager = readingTimeManager
+        self.statsStore = statsStore
+        self.statsAccess = statsAccess
 
         loadLastReadBook()
     }
@@ -78,6 +104,20 @@ final class HomeViewModel: ObservableObject {
             .sink { _ in } receiveValue: { [weak self] book in
                 self?.lastReadBook = book
                 self?.isEmpty = book == nil
+            }
+            .store(in: &cancellables)
+
+        NotificationCenter.default.publisher(for: .readingStatsDidChange)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.statsRefreshID = UUID()
+            }
+            .store(in: &cancellables)
+
+        NotificationCenter.default.publisher(for: ReadingPreferences.dailyGoalDidChange)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.statsRefreshID = UUID()
             }
             .store(in: &cancellables)
     }
@@ -96,11 +136,42 @@ final class HomeViewModel: ObservableObject {
     var formattedReadingTime: String {
         String(format: NSLocalizedString("home_minutes", comment: ""), todayReadingMinutes)
     }
+
+    func stats(for scope: ReadingStatsScope) -> ReadingStatsSnapshot {
+        statsStore.snapshot(for: scope)
+    }
+
+    func canAccessStats(_ scope: ReadingStatsScope) -> Bool {
+        !scope.requiresPro || statsAccess.hasProAccess
+    }
+}
+
+enum ReadingPreferences {
+    enum Keys {
+        static let dailyGoalMinutes = "reading_daily_goal_minutes"
+    }
+
+    static let defaultDailyGoalMinutes = 30
+    static let dailyGoalRange = 5...180
+    static let dailyGoalDidChange = Notification.Name("ReadingPreferencesDailyGoalDidChange")
+
+    static var dailyGoalMinutes: Int {
+        get {
+            let stored = UserDefaults.standard.integer(forKey: Keys.dailyGoalMinutes)
+            guard stored > 0 else { return defaultDailyGoalMinutes }
+            return min(max(stored, dailyGoalRange.lowerBound), dailyGoalRange.upperBound)
+        }
+        set {
+            let clamped = min(max(newValue, dailyGoalRange.lowerBound), dailyGoalRange.upperBound)
+            UserDefaults.standard.set(clamped, forKey: Keys.dailyGoalMinutes)
+            NotificationCenter.default.post(name: dailyGoalDidChange, object: clamped)
+        }
+    }
 }
 
 // MARK: - Adaptive Colors
 
-private struct AppColors {
+struct AppColors {
     // Background colors
     static let background = Color(.systemGroupedBackground)
     static let cardBackground = Color(.systemBackground)
@@ -111,52 +182,142 @@ private struct AppColors {
     static let tertiaryText = Color(.tertiaryLabel)
 
     // Accent gradient colors
-    static let accentGradientStart = Color(red: 0.4, green: 0.6, blue: 0.98)
-    static let accentGradientEnd = Color(red: 0.55, green: 0.45, blue: 0.95)
+    static let accentGradientStart = Color(red: 0.12, green: 0.47, blue: 0.85)
+    static let accentGradientEnd = Color(red: 0.08, green: 0.66, blue: 0.58)
 
     // Progress track
-    static let progressTrack = Color.gray.opacity(0.15)
+    static let progressTrack = Color.primary.opacity(0.06)
+
+    static let accentGradient = LinearGradient(
+        colors: [accentGradientStart, accentGradientEnd],
+        startPoint: .topLeading,
+        endPoint: .bottomTrailing
+    )
+
+    static let horizontalGradient = LinearGradient(
+        colors: [accentGradientStart, accentGradientEnd],
+        startPoint: .leading,
+        endPoint: .trailing
+    )
 }
+
+// MARK: - Reusable Styles and Helpers
+
+private struct PremiumButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.96 : 1.0)
+            .animation(.easeOut(duration: 0.15), value: configuration.isPressed)
+    }
+}
+
+struct CardStyleModifier: ViewModifier {
+    @Environment(\.colorScheme) var colorScheme
+
+    func body(content: Self.Content) -> some View {
+        content
+            .background(AppColors.cardBackground)
+            .cornerRadius(20)
+            .overlay(
+                RoundedRectangle(cornerRadius: 20)
+                    .stroke(colorScheme == .dark ? Color.white.opacity(0.08) : Color.white.opacity(0.7), lineWidth: 1)
+            )
+            .shadow(
+                color: Color.black.opacity(colorScheme == .dark ? 0.25 : 0.04),
+                radius: 16,
+                x: 0,
+                y: 6
+            )
+    }
+}
+
+extension View {
+    func cardStyle() -> some View {
+        self.modifier(CardStyleModifier())
+    }
+}
+
+// MARK: - Home View
 
 struct HomeView: View {
     @ObservedObject var viewModel: HomeViewModel
     weak var delegate: HomeModuleDelegate?
     @Environment(\.colorScheme) var colorScheme
 
+    @State private var appeared = false
+    @State private var progressAnimated = false
+    @State private var localizationRefreshID = AppAppearancePreferences.language.rawValue
     var body: some View {
-        ScrollView(.vertical, showsIndicators: false) {
-            VStack(spacing: 20) {
-                // Greeting Header
-                greetingHeader
+        VStack(spacing: 0) {
+            ScrollView(.vertical, showsIndicators: false) {
+                VStack(spacing: 18) {
+                    greetingHeader
+                        .opacity(appeared ? 1 : 0)
+                        .offset(y: appeared ? 0 : 10)
+                        .animation(.easeOut(duration: 0.5), value: appeared)
 
-                // Daily Reading Goal Card
-                dailyReadingGoalCard
+                    dailyReadingGoalCard
+                        .opacity(appeared ? 1 : 0)
+                        .offset(y: appeared ? 0 : 15)
+                        .animation(.easeOut(duration: 0.5).delay(0.1), value: appeared)
 
-                // Continue Reading Section
-                if !viewModel.isEmpty {
-                    continueReadingSection
-                } else {
-                    emptyStateView
+                    if !viewModel.isEmpty {
+                        continueReadingSection
+                            .opacity(appeared ? 1 : 0)
+                            .offset(y: appeared ? 0 : 15)
+                            .animation(.easeOut(duration: 0.5).delay(0.2), value: appeared)
+                    } else {
+                        emptyStateView
+                            .opacity(appeared ? 1 : 0)
+                            .offset(y: appeared ? 0 : 15)
+                            .animation(.easeOut(duration: 0.5).delay(0.2), value: appeared)
+                    }
+
+                    Spacer(minLength: 100)
                 }
-
-                Spacer(minLength: 100)
+                .padding(.horizontal, 24)
+                .padding(.top, 18)
             }
-            .padding(.horizontal, 20)
-            .padding(.top, 16)
         }
         .background(AppColors.background)
+        .id(localizationRefreshID)
+        .onAppear {
+            appeared = true
+            withAnimation(.easeOut(duration: 0.8).delay(0.3)) {
+                progressAnimated = true
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: AppAppearancePreferences.languageDidChange)) { _ in
+            localizationRefreshID = AppAppearancePreferences.language.rawValue
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .readingStatsDidChange)) { _ in
+            viewModel.statsRefreshID = UUID()
+        }
     }
 
     // MARK: - Greeting Header
 
     private var greetingHeader: some View {
-        HStack(spacing: 6) {
-            Text(viewModel.greetingEmoji)
-                .font(.system(size: 24))
+        HStack(alignment: .center, spacing: 14) {
+            ZStack {
+                Circle()
+                    .fill(AppColors.accentGradientStart.opacity(colorScheme == .dark ? 0.22 : 0.12))
+                    .frame(width: 44, height: 44)
 
-            Text(viewModel.greetingText)
-                .font(.system(size: 24, weight: .bold))
-                .foregroundColor(AppColors.primaryText)
+                Image(systemName: "book.closed")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(AppColors.accentGradientStart)
+            }
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(viewModel.greetingText)
+                    .font(.system(size: 30, weight: .bold))
+                    .foregroundColor(AppColors.primaryText)
+
+                Text(viewModel.dateText)
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(AppColors.secondaryText)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.top, 8)
@@ -165,51 +326,64 @@ struct HomeView: View {
     // MARK: - Daily Reading Goal Card
 
     private var dailyReadingGoalCard: some View {
-        HStack(spacing: 20) {
-            // Circular progress
-            ZStack {
-                Circle()
-                    .stroke(AppColors.progressTrack, lineWidth: 8)
-                    .frame(width: 80, height: 80)
+        let todayStats = viewModel.stats(for: .day)
 
-                Circle()
-                    .trim(from: 0, to: viewModel.dailyProgress)
-                    .stroke(
-                        LinearGradient(
-                            colors: [AppColors.accentGradientStart, AppColors.accentGradientEnd],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ),
-                        style: StrokeStyle(lineWidth: 8, lineCap: .round)
-                    )
-                    .frame(width: 80, height: 80)
-                    .rotationEffect(.degrees(-90))
+        return VStack(alignment: .leading, spacing: 18) {
+            HStack {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(NSLocalizedString("home_daily_goal", comment: ""))
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(AppColors.secondaryText)
+
+                    HStack(alignment: .firstTextBaseline, spacing: 6) {
+                        gradientText("\(viewModel.todayReadingMinutes)", font: .system(size: 46, weight: .bold))
+
+                        Text(String(format: NSLocalizedString("home_daily_goal_of", comment: ""), viewModel.dailyReadingGoalMinutes))
+                            .font(.system(size: 15, weight: .medium))
+                            .foregroundColor(AppColors.tertiaryText)
+                    }
+                }
+
+                Spacer()
 
                 Text("\(Int(viewModel.dailyProgress * 100))%")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(AppColors.primaryText)
+                    .font(.system(size: 14, weight: .bold))
+                    .monospacedDigit()
+                    .foregroundColor(AppColors.accentGradientStart)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(AppColors.accentGradientStart.opacity(colorScheme == .dark ? 0.2 : 0.11))
+                    .clipShape(Capsule())
             }
 
-            VStack(alignment: .leading, spacing: 4) {
-                Text(NSLocalizedString("home_daily_goal", comment: ""))
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(AppColors.secondaryText)
+            GeometryReader { geometry in
+                ZStack(alignment: .leading) {
+                    Capsule()
+                        .fill(AppColors.progressTrack)
 
-                Text(viewModel.formattedReadingTime)
-                    .font(.system(size: 32, weight: .bold))
-                    .foregroundColor(AppColors.primaryText)
-
-                Text(String(format: NSLocalizedString("home_daily_goal_of", comment: ""), viewModel.dailyReadingGoalMinutes))
-                    .font(.system(size: 13))
-                    .foregroundColor(AppColors.tertiaryText)
+                    Capsule()
+                        .fill(AppColors.horizontalGradient)
+                        .frame(width: geometry.size.width * (progressAnimated ? viewModel.dailyProgress : 0))
+                }
             }
+            .frame(height: 8)
 
-            Spacer()
+            HStack(spacing: 12) {
+                compactMetric(
+                    title: NSLocalizedString("stats_metric_sessions", comment: ""),
+                    value: "\(todayStats.sessions)",
+                    icon: "timer"
+                )
+
+                compactMetric(
+                    title: NSLocalizedString("home_daily_goal", comment: ""),
+                    value: "\(viewModel.dailyReadingGoalMinutes)",
+                    icon: "target"
+                )
+            }
         }
-        .padding(20)
-        .background(AppColors.cardBackground)
-        .cornerRadius(20)
-        .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.3 : 0.05), radius: 12, y: 4)
+        .padding(22)
+        .cardStyle()
     }
 
     // MARK: - Continue Reading Section
@@ -218,90 +392,107 @@ struct HomeView: View {
         VStack(spacing: 12) {
             HStack {
                 Text(NSLocalizedString("home_continue_reading", comment: ""))
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.system(size: 13, weight: .bold))
                     .foregroundColor(AppColors.secondaryText)
 
                 Spacer()
             }
+            .padding(.leading, 4)
 
             if let book = viewModel.lastReadBook {
                 VStack(spacing: 0) {
-                    HStack(spacing: 16) {
-                        // Book cover
+                    HStack(spacing: 18) {
                         coverImage(for: book)
-                            .frame(width: 75, height: 110)
-                            .cornerRadius(10)
-                            .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.2 : 0.08), radius: 8, y: 2)
+                            .frame(width: 85, height: 125)
+                            .clipped()
+                            .cornerRadius(8)
+                            .overlay(
+                                HStack {
+                                    Rectangle()
+                                        .fill(
+                                            LinearGradient(
+                                                colors: [Color.white.opacity(0.25), Color.black.opacity(0.1)],
+                                                startPoint: .leading,
+                                                endPoint: .trailing
+                                            )
+                                        )
+                                        .frame(width: 4)
+                                    Spacer()
+                                }
+                            )
+                            .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.35 : 0.12), radius: 10, x: -2, y: 4)
 
-                        // Book details
-                        VStack(alignment: .leading, spacing: 6) {
+                        VStack(alignment: .leading, spacing: 8) {
                             Text(book.title)
-                                .font(.system(size: 17, weight: .semibold))
+                                .font(.system(size: 18, weight: .bold))
                                 .foregroundColor(AppColors.primaryText)
                                 .lineLimit(2)
 
                             if let authors = book.authors {
                                 Text(authors)
-                                    .font(.system(size: 13))
+                                    .font(.system(size: 14))
                                     .foregroundColor(AppColors.secondaryText)
                                     .lineLimit(1)
+                                    .opacity(0.7)
                             }
 
                             Spacer()
 
-                            // Progress bar
-                            HStack(spacing: 10) {
+                            HStack(spacing: 12) {
                                 GeometryReader { geometry in
                                     ZStack(alignment: .leading) {
-                                        RoundedRectangle(cornerRadius: 3)
+                                        Capsule()
                                             .fill(AppColors.progressTrack)
-                                            .frame(height: 5)
+                                            .frame(height: 6)
 
-                                        RoundedRectangle(cornerRadius: 3)
-                                            .fill(
-                                                LinearGradient(
-                                                    colors: [AppColors.accentGradientStart, AppColors.accentGradientEnd],
-                                                    startPoint: .leading,
-                                                    endPoint: .trailing
-                                                )
-                                            )
-                                            .frame(width: geometry.size.width * book.progression, height: 5)
+                                        let progressWidth = geometry.size.width * book.progression
+
+                                        Capsule()
+                                            .fill(AppColors.horizontalGradient)
+                                            .frame(width: progressWidth, height: 6)
+
+                                        Capsule()
+                                            .fill(AppColors.horizontalGradient)
+                                            .frame(width: progressWidth, height: 6)
+                                            .blur(radius: 4)
+                                            .opacity(0.4)
                                     }
                                 }
-                                .frame(height: 5)
+                                .frame(height: 6)
 
                                 Text("\(Int(book.progression * 100))%")
-                                    .font(.system(size: 12, weight: .medium))
+                                    .font(.system(size: 13, weight: .bold))
                                     .foregroundColor(AppColors.accentGradientStart)
                             }
                         }
-
-                        Spacer()
                     }
                     .padding(20)
+                    .frame(height: 165)
 
-                    // Continue reading button
+                    Rectangle()
+                        .fill(Color.primary.opacity(0.06))
+                        .frame(height: 1)
+                        .padding(.horizontal, 20)
+
                     Button(action: {
                         delegate?.homeDidSelectContinueReading(bookId: book.id)
                     }) {
-                        Text(NSLocalizedString("home_continue_reading_button", comment: ""))
-                            .font(.system(size: 15, weight: .semibold))
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 14)
-                            .background(
-                                LinearGradient(
-                                    colors: [AppColors.accentGradientStart, AppColors.accentGradientEnd],
-                                    startPoint: .leading,
-                                    endPoint: .trailing
-                                )
-                            )
-                            .cornerRadius(12)
+                        HStack(spacing: 6) {
+                            Text(NSLocalizedString("home_continue_reading_button", comment: ""))
+                            Image(systemName: "arrow.right")
+                                .font(.system(size: 13, weight: .bold))
+                        }
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
+                        .background(AppColors.horizontalGradient)
+                        .cornerRadius(14)
                     }
+                    .buttonStyle(PremiumButtonStyle())
+                    .padding(20)
                 }
-                .background(AppColors.cardBackground)
-                .cornerRadius(20)
-                .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.3 : 0.05), radius: 12, y: 4)
+                .cardStyle()
             }
         }
     }
@@ -309,44 +500,120 @@ struct HomeView: View {
     // MARK: - Empty State
 
     private var emptyStateView: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: 24) {
             VStack(spacing: 12) {
-                Text("📚")
-                    .font(.system(size: 48))
+                ZStack {
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .fill(AppColors.accentGradientStart.opacity(colorScheme == .dark ? 0.22 : 0.12))
+                        .frame(width: 70, height: 70)
+
+                    Image(systemName: "books.vertical")
+                        .font(.system(size: 28, weight: .semibold))
+                        .foregroundColor(AppColors.accentGradientStart)
+                }
+                .padding(.bottom, 4)
 
                 Text(NSLocalizedString("home_empty_title", comment: ""))
-                    .font(.system(size: 18, weight: .semibold))
+                    .font(.system(size: 20, weight: .bold))
                     .foregroundColor(AppColors.primaryText)
 
                 Text(NSLocalizedString("home_empty_message", comment: ""))
-                    .font(.system(size: 14))
+                    .font(.system(size: 15))
                     .foregroundColor(AppColors.secondaryText)
+                    .lineSpacing(4)
                     .multilineTextAlignment(.center)
             }
-            .padding(.vertical, 32)
+            .padding(.top, 12)
 
             Button(action: {
                 delegate?.homeDidSelectGoToLibrary()
             }) {
-                Text(NSLocalizedString("home_import_button", comment: ""))
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 14)
-                    .background(
-                        LinearGradient(
-                            colors: [AppColors.accentGradientStart, AppColors.accentGradientEnd],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
-                    )
-                    .cornerRadius(12)
+                HStack(spacing: 6) {
+                    Text(NSLocalizedString("home_import_button", comment: ""))
+                    Image(systemName: "arrow.right")
+                        .font(.system(size: 13, weight: .bold))
+                }
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 14)
+                .background(AppColors.horizontalGradient)
+                .cornerRadius(14)
             }
+            .buttonStyle(PremiumButtonStyle())
         }
         .padding(24)
-        .background(AppColors.cardBackground)
-        .cornerRadius(20)
-        .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.3 : 0.05), radius: 12, y: 4)
+        .cardStyle()
+    }
+
+    // MARK: - Helper Views and Methods
+
+    private func gradientText(_ text: String, font: Font) -> some View {
+        Text(text)
+            .font(font)
+            .overlay(
+                AppColors.horizontalGradient
+            )
+            .mask(
+                Text(text)
+                    .font(font)
+            )
+    }
+
+    private func compactMetric(title: String, value: String, icon: String) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: icon)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(AppColors.accentGradientStart)
+                .frame(width: 28, height: 28)
+                .background(AppColors.accentGradientStart.opacity(colorScheme == .dark ? 0.18 : 0.09))
+                .clipShape(Circle())
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(value)
+                    .font(.system(size: 17, weight: .bold))
+                    .foregroundColor(AppColors.primaryText)
+
+                Text(title)
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(AppColors.tertiaryText)
+                    .lineLimit(1)
+            }
+
+            Spacer(minLength: 0)
+        }
+        .padding(12)
+        .background(Color.primary.opacity(colorScheme == .dark ? 0.08 : 0.035))
+        .cornerRadius(14)
+    }
+
+    private func formattedDuration(_ seconds: Int) -> String {
+        let hours = seconds / 3600
+        let minutes = (seconds % 3600) / 60
+
+        if hours > 0 {
+            return "\(hours)h \(minutes)m"
+        } else if minutes > 0 {
+            return "\(minutes)m"
+        } else {
+            return "0m"
+        }
+    }
+
+    private func formattedDate(_ dateKey: String) -> String {
+        let inputFormatter = DateFormatter()
+        inputFormatter.calendar = Calendar(identifier: .gregorian)
+        inputFormatter.locale = Locale(identifier: "en_US_POSIX")
+        inputFormatter.dateFormat = "yyyy-MM-dd"
+
+        guard let date = inputFormatter.date(from: dateKey) else {
+            return dateKey
+        }
+
+        let outputFormatter = DateFormatter()
+        outputFormatter.locale = AppAppearancePreferences.locale
+        outputFormatter.setLocalizedDateFormatFromTemplate("MMMd")
+        return outputFormatter.string(from: date)
     }
 
     // MARK: - Cover Image

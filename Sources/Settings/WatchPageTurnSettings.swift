@@ -13,70 +13,30 @@ struct WatchPageTurnSettings {
     // MARK: Keys
     private enum Keys {
         static let hapticFeedback = "watch_haptic_feedback"
-        static let autoPageInterval = "watch_auto_page_interval"
-        static let crownSensitivity = "watch_crown_sensitivity"
-        static let pageTurnAnimation = "watch_page_turn_animation"
+        static let controlTarget = "watch_control_target"
+        static let defaultTargetMigration = "watch_default_target_iphone_migrated"
     }
 
     // MARK: Enums
-    
-    enum CrownSensitivity: String, CaseIterable, Identifiable {
-        case low
-        case medium
-        case high
-        
+
+    enum ControlTarget: String, CaseIterable, Identifiable {
+        case iPhone = "iphone"
+        case iPad = "ipad"
+
         var id: String { rawValue }
-        
-        var threshold: Double {
-            switch self {
-            case .low: return 3.5
-            case .medium: return 2.0
-            case .high: return 0.8
-            }
-        }
-        
+
         var localizedName: String {
             switch self {
-            case .low:
-                return NSLocalizedString("watch_sensitivity_low", comment: "")
-            case .medium:
-                return NSLocalizedString("watch_sensitivity_medium", comment: "")
-            case .high:
-                return NSLocalizedString("watch_sensitivity_high", comment: "")
+            case .iPad:
+                return NSLocalizedString("watch_target_ipad", comment: "")
+            case .iPhone:
+                return NSLocalizedString("watch_target_iphone", comment: "")
             }
         }
+
     }
-    
-    enum PageTurnAnimation: String, CaseIterable, Identifiable {
-        case slide
-        case curl
-        case fade
-        case none
-        
-        var id: String { rawValue }
-        
-        var localizedName: String {
-            switch self {
-            case .slide:
-                return NSLocalizedString("watch_animation_slide", comment: "")
-            case .curl:
-                return NSLocalizedString("watch_animation_curl", comment: "")
-            case .fade:
-                return NSLocalizedString("watch_animation_fade", comment: "")
-            case .none:
-                return NSLocalizedString("watch_animation_none", comment: "")
-            }
-        }
-        
-        var icon: String {
-            switch self {
-            case .slide: return "arrow.left.and.right"
-            case .curl: return "book.closed"
-            case .fade: return "sparkles"
-            case .none: return "slash.circle"
-            }
-        }
-    }
+
+    init() {}
 
     // MARK: Storage
 
@@ -85,42 +45,25 @@ struct WatchPageTurnSettings {
         set { UserDefaults.standard.set(newValue, forKey: Keys.hapticFeedback) }
     }
 
-    var autoPageInterval: Double {
+    var controlTarget: ControlTarget {
         get {
-            let val = UserDefaults.standard.double(forKey: Keys.autoPageInterval)
-            return val > 0 ? val : 0
-        }
-        set { UserDefaults.standard.set(newValue, forKey: Keys.autoPageInterval) }
-    }
-
-    var crownSensitivity: CrownSensitivity {
-        get {
-            if let rawVal = UserDefaults.standard.string(forKey: Keys.crownSensitivity),
-               let val = CrownSensitivity(rawValue: rawVal) {
+            if let rawVal = UserDefaults.standard.string(forKey: Keys.controlTarget),
+               let val = ControlTarget(rawValue: rawVal) {
                 return val
             }
-            return .medium
+            return .iPhone
         }
-        set { UserDefaults.standard.set(newValue.rawValue, forKey: Keys.crownSensitivity) }
+        set { UserDefaults.standard.set(newValue.rawValue, forKey: Keys.controlTarget) }
     }
 
-    var pageTurnAnimation: PageTurnAnimation {
-        get {
-            if let rawVal = UserDefaults.standard.string(forKey: Keys.pageTurnAnimation),
-               let val = PageTurnAnimation(rawValue: rawVal) {
-                return val
-            }
-            return .slide
-        }
-        set { UserDefaults.standard.set(newValue.rawValue, forKey: Keys.pageTurnAnimation) }
-    }
+    /// Fixed crown sensitivity threshold (no longer configurable).
+    var crownSensitivity: Double { 2.0 }
 
     /// Returns a dictionary suitable for WCSession.updateApplicationContext
     var watchContext: [String: Any] {
         [
             Keys.hapticFeedback: hapticFeedback,
-            "watch_crown_sensitivity": crownSensitivity.threshold,
-            Keys.pageTurnAnimation: pageTurnAnimation.rawValue
+            Keys.controlTarget: controlTarget.rawValue
         ]
     }
 
@@ -132,5 +75,18 @@ struct WatchPageTurnSettings {
         else { return }
 
         try? WCSession.default.updateApplicationContext(watchContext)
+    }
+
+    /// Performs a one-time migration of the default control target from iPad to
+    /// iPhone. Call this once at app launch (e.g. from AppDelegate).
+    static func migrateDefaultTargetIfNeeded() {
+        let defaults = UserDefaults.standard
+        guard !defaults.bool(forKey: Keys.defaultTargetMigration) else { return }
+
+        let rawTarget = defaults.string(forKey: Keys.controlTarget)
+        if rawTarget == nil || rawTarget == ControlTarget.iPad.rawValue {
+            defaults.set(ControlTarget.iPhone.rawValue, forKey: Keys.controlTarget)
+        }
+        defaults.set(true, forKey: Keys.defaultTargetMigration)
     }
 }

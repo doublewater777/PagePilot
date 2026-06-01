@@ -8,26 +8,19 @@ import Foundation
 
 /// Manages reading time tracking via UserDefaults
 final class ReadingTimeManager {
-    private let defaults = UserDefaults.standard
+    private let statsStore: ReadingStatsStore
 
-    private enum Keys {
-        static let todayReadingTime = "home_todayReadingTime"
-        static let lastReadingDate = "home_lastReadingDate"
-        static let totalReadingTimeSeconds = "home_totalReadingTimeSeconds"
+    var todayReadingTimeSeconds: Int {
+        statsStore.todayReadingSeconds()
     }
 
-    private(set) var todayReadingTimeSeconds: Int = 0
-
-    init() {
-        resetTodayIfNeeded()
-        todayReadingTimeSeconds = defaults.integer(forKey: Keys.todayReadingTime)
+    init(statsStore: ReadingStatsStore = .shared) {
+        self.statsStore = statsStore
     }
 
-    /// Add reading time in seconds
-    func addReadingTime(seconds: Int) {
-        resetTodayIfNeeded()
-        todayReadingTimeSeconds += seconds
-        defaults.set(todayReadingTimeSeconds, forKey: Keys.todayReadingTime)
+    /// Add reading time in seconds.
+    func addReadingTime(seconds: Int, bookId: Book.Id) {
+        statsStore.recordReadingSession(seconds: seconds, bookId: bookId)
     }
 
     /// Returns formatted reading time string (e.g., "1h 23m")
@@ -41,17 +34,5 @@ final class ReadingTimeManager {
         } else {
             return "0m"
         }
-    }
-
-    private func resetTodayIfNeeded() {
-        let calendar = Calendar.current
-        let today = calendar.startOfDay(for: Date())
-
-        if let lastDate = defaults.object(forKey: Keys.lastReadingDate) as? Date {
-            if !calendar.isDate(lastDate, inSameDayAs: today) {
-                defaults.set(0, forKey: Keys.todayReadingTime)
-            }
-        }
-        defaults.set(today, forKey: Keys.lastReadingDate)
     }
 }

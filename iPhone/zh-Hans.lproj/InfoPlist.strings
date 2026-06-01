@@ -1,0 +1,4 @@
+/* InfoPlist.strings - Simplified Chinese */
+
+/* NSLocalNetworkUsageDescription */
+"NSLocalNetworkUsageDescription" = "PagePilot 需要使用本地网络来传输书籍，并连接 iPad 阅读器以实现 Apple Watch 翻页控制。";

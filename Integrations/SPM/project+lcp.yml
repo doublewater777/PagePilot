@@ -1,6 +1,9 @@
 name: PagePilot
 options:
   bundleIdPrefix: org.readium
+  schemePathPrefix: ../../../
+fileGroups:
+  - PagePilot.storekit
 packages:
   Readium:
     url: https://github.com/readium/swift-toolkit.git
@@ -19,6 +22,13 @@ packages:
   SwiftSoup:
     url: https://github.com/scinfu/SwiftSoup.git
     from: 2.3.2
+schemes:
+  PagePilot:
+    build:
+      targets:
+        PagePilot: all
+    run:
+      storeKitConfiguration: PagePilot.storekit
 targets:
   PagePilot:
     type: application
@@ -60,6 +70,7 @@ targets:
   PagePilotWatch:
     type: application
     platform: watchOS
+    deploymentTarget: "10.0"
     sources:
       - path: WatchRemote
       - path: Shared

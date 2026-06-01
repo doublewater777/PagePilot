@@ -99,7 +99,7 @@ final class HighlightRepository {
 
     @discardableResult
     func add(_ highlight: Highlight) async throws -> Highlight.Id {
-        try await db.write { db in
+        return try await db.write { db in
             try highlight.insert(db)
             return Highlight.Id(rawValue: db.lastInsertedRowID)
         }

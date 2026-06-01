@@ -5,27 +5,19 @@
 //
 
 import SwiftUI
-import WatchConnectivity
 
 // MARK: - Watch Settings View
 
 struct WatchSettingsView: View {
-    @State private var crownSensitivity: WatchPageTurnSettings.CrownSensitivity
-    @State private var pageTurnAnimation: WatchPageTurnSettings.PageTurnAnimation
     @State private var hapticFeedback: Bool
-
-    @State private var isWatchConnected = WatchPageTurnService.shared.isWatchConnected
-    @State private var isLANWatchConnected = WatchPageTurnService.shared.isLANWatchConnected
+    @State private var controlTarget: WatchPageTurnSettings.ControlTarget
+    @State private var hasProAccess = ProPurchaseManager.shared.hasProAccess
+    @State private var showsPaywall = false
 
     init() {
         let settings = WatchPageTurnSettings()
-        _crownSensitivity = State(initialValue: settings.crownSensitivity)
-        _pageTurnAnimation = State(initialValue: settings.pageTurnAnimation)
         _hapticFeedback = State(initialValue: settings.hapticFeedback)
-    }
-
-    private var isConnected: Bool {
-        isWatchConnected || isLANWatchConnected
+        _controlTarget = State(initialValue: settings.controlTarget)
     }
 
     var body: some View {
@@ -35,9 +27,8 @@ struct WatchSettingsView: View {
             }
             
             List {
-                connectionStatusSection
-                crownSection
-                animationSection
+                targetSection
+                guidanceSection
                 hapticSection
             }
             .listStyle(.insetGrouped)
@@ -50,114 +41,90 @@ struct WatchSettingsView: View {
         .background(Color(uiColor: .systemGroupedBackground))
         .navigationTitle(NSLocalizedString("watch_settings_title", comment: ""))
         .navigationBarTitleDisplayMode(.inline)
-        .onReceive(WatchPageTurnService.shared.$isWatchConnected) { connected in
-            isWatchConnected = connected
+        .sheet(isPresented: $showsPaywall) {
+            PaywallView()
         }
-        .onReceive(WatchPageTurnService.shared.$isLANWatchConnected) { connected in
-            isLANWatchConnected = connected
+        .onReceive(NotificationCenter.default.publisher(for: ProPurchaseManager.proAccessDidChange)) { _ in
+            hasProAccess = ProPurchaseManager.shared.hasProAccess
         }
     }
 
-    // MARK: - Connection Status
+    // MARK: - Target
 
-    private var connectionStatusSection: some View {
-        Section {
-            HStack(spacing: 12) {
-                Image(systemName: "applewatch")
-                    .font(.title2)
-                    .foregroundStyle(isConnected ? .green : .secondary)
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(NSLocalizedString("watch_connection_status", comment: ""))
-                        .font(.subheadline)
-                    
-                    let statusText: String = {
-                        if isLANWatchConnected {
-                            return "已连接 (LAN)"
-                        } else if isWatchConnected {
-                            return NSLocalizedString("watch_status_connected", comment: "")
-                        } else {
-                            return NSLocalizedString("watch_status_disconnected", comment: "")
+    private var targetSection: some View {
+        Section(
+            header: Text(NSLocalizedString("watch_target_section", comment: "")),
+            footer: Text(NSLocalizedString("watch_target_footer", comment: ""))
+        ) {
+            Picker(
+                NSLocalizedString("watch_target_picker", comment: ""),
+                selection: Binding(
+                    get: { controlTarget },
+                    set: { newValue in
+                        guard newValue != .iPad || hasProAccess else {
+                            showsPaywall = true
+                            return
                         }
-                    }()
-                    
-                    Text(statusText)
-                        .font(.caption)
-                        .foregroundStyle(isConnected ? .green : .secondary)
+
+                        controlTarget = newValue
+                        var settings = WatchPageTurnSettings()
+                        settings.controlTarget = newValue
+                        settings.syncToWatch()
+                    }
+                )
+            ) {
+                ForEach(WatchPageTurnSettings.ControlTarget.allCases) { target in
+                    Text(targetName(for: target))
+                        .tag(target)
                 }
+            }
+            .pickerStyle(.segmented)
+        }
+    }
 
-                Spacer()
+    private func targetName(for target: WatchPageTurnSettings.ControlTarget) -> String {
+        guard target == .iPad, !hasProAccess else {
+            return target.localizedName
+        }
+        return String(format: NSLocalizedString("watch_target_ipad_pro", comment: ""), target.localizedName)
+    }
 
-                Circle()
-                    .fill(isConnected ? Color.green : Color.red.opacity(0.6))
-                    .frame(width: 10, height: 10)
+    // MARK: - Guidance
+
+    private var guidanceSection: some View {
+        let footerKey = controlTarget == .iPad ? "watch_guidance_ipad_footer" : "watch_guidance_iphone_footer"
+
+        return Section(
+            header: Text(NSLocalizedString("watch_guidance_header", comment: "")),
+            footer: Text(NSLocalizedString(footerKey, comment: ""))
+        ) {
+            VStack(alignment: .leading, spacing: 12) {
+                if controlTarget == .iPad {
+                    stepRow(number: 1, textKey: "watch_guidance_ipad_step1")
+                    stepRow(number: 2, textKey: "watch_guidance_ipad_step2")
+                    stepRow(number: 3, textKey: "watch_guidance_ipad_step3")
+                } else {
+                    stepRow(number: 1, textKey: "watch_guidance_iphone_step1")
+                    stepRow(number: 2, textKey: "watch_guidance_iphone_step2")
+                }
             }
             .padding(.vertical, 4)
         }
     }
 
-    // MARK: - Crown Sensitivity
-
-    private var crownSection: some View {
-        Section(
-            header: Text(NSLocalizedString("watch_crown_section", comment: "")),
-            footer: Text(NSLocalizedString("watch_crown_footer", comment: ""))
-        ) {
-            ForEach(WatchPageTurnSettings.CrownSensitivity.allCases) { sensitivity in
-                Button {
-                    crownSensitivity = sensitivity
-                    var settings = WatchPageTurnSettings()
-                    settings.crownSensitivity = sensitivity
-                    settings.syncToWatch()
-                } label: {
-                    HStack {
-                        Text(sensitivity.localizedName)
-                            .foregroundStyle(.primary)
-                        Spacer()
-                        if crownSensitivity == sensitivity {
-                            Image(systemName: "checkmark")
-                                .foregroundStyle(.tint)
-                                .font(.system(size: 16, weight: .semibold))
-                        }
-                    }
-                }
+    private func stepRow(number: Int, textKey: String) -> some View {
+        HStack(spacing: 12) {
+            ZStack {
+                Circle()
+                    .fill(Color.accentColor.opacity(0.12))
+                    .frame(width: 24, height: 24)
+                Text("\(number)")
+                    .font(.caption2.bold())
+                    .foregroundColor(.accentColor)
             }
-        }
-    }
-
-    // MARK: - Page Turn Animation
-
-    private var animationSection: some View {
-        Section(
-            header: Text(NSLocalizedString("watch_animation_section", comment: "")),
-            footer: Text(NSLocalizedString("watch_animation_footer", comment: ""))
-        ) {
-            ForEach(WatchPageTurnSettings.PageTurnAnimation.allCases) { animation in
-                Button {
-                    pageTurnAnimation = animation
-                    var settings = WatchPageTurnSettings()
-                    settings.pageTurnAnimation = animation
-                    settings.syncToWatch()
-                } label: {
-                    HStack(spacing: 12) {
-                        Image(systemName: animation.icon)
-                            .font(.body)
-                            .frame(width: 28)
-                            .foregroundStyle(.tint)
-
-                        Text(animation.localizedName)
-                            .foregroundStyle(.primary)
-
-                        Spacer()
-
-                        if pageTurnAnimation == animation {
-                            Image(systemName: "checkmark")
-                                .foregroundStyle(.tint)
-                                .font(.system(size: 16, weight: .semibold))
-                        }
-                    }
-                }
-            }
+            Text(NSLocalizedString(textKey, comment: ""))
+                .font(.subheadline)
+            Spacer()
         }
     }
 

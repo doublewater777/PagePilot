@@ -1,0 +1,4 @@
+/* InfoPlist.strings - Simplified Chinese */
+
+/* NSLocalNetworkUsageDescription */
+"NSLocalNetworkUsageDescription" = "PagePilot 需要使用本地网络来查找并连接 iPad 阅读器。";

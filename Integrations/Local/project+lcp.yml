@@ -1,6 +1,9 @@
 name: PagePilot
 options:
   bundleIdPrefix: org.readium
+  schemePathPrefix: ../../../
+fileGroups:
+  - PagePilot.storekit
 packages:
   Readium:
     path: ..
@@ -22,11 +25,13 @@ schemes:
   PagePilot:
     build:
       targets:
-        PagePilot: none
+        PagePilot: all
     test:
       testPlans:
         - path: PagePilot.xctestplan
           defaultPlan: true
+    run:
+      storeKitConfiguration: PagePilot.storekit
 targets:
   PagePilot:
     type: application
@@ -68,6 +73,7 @@ targets:
   PagePilotWatch:
     type: application
     platform: watchOS
+    deploymentTarget: "10.0"
     sources:
       - path: WatchRemote
       - path: Shared
