@@ -900,13 +900,62 @@
                 text-align: center;
             }
 
+            .hero-info h1 {
+                font-size: 38px;
+                letter-spacing: -1px;
+            }
+
+            .hero-tagline {
+                font-size: 18px;
+                margin-bottom: 16px;
+            }
+
             .hero-desc {
                 margin-left: auto;
                 margin-right: auto;
+                font-size: 15px;
+                max-width: 100%;
             }
 
             .mockup-container {
                 margin-top: 20px;
+            }
+
+            .section-title h2 {
+                font-size: 30px;
+            }
+            
+            .section-title p {
+                font-size: 14px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .hero {
+                padding-top: 120px;
+                padding-bottom: 60px;
+            }
+
+            .hero-info h1 {
+                font-size: 28px;
+                line-height: 1.25;
+            }
+
+            .hero-tagline {
+                font-size: 15px;
+            }
+
+            .mockup-container {
+                flex-direction: column;
+                gap: 40px;
+            }
+
+            .click-prompt {
+                bottom: -32px;
+            }
+
+            .watch-mockup {
+                transform: scale(1.05);
             }
         }
     </style>
@@ -1240,13 +1289,15 @@
                     <div class="price-box">
                         <span class="price-currency lang-zh">¥</span>
                         <span class="price-currency lang-en">$</span>
-                        <span class="price-amount lang-zh">59.9</span>
-                        <span class="price-amount lang-en">8.99</span>
-                        <span class="price-duration lang-zh">/ 终身买断</span>
-                        <span class="price-duration lang-en">/ Lifetime Buy</span>
+                        <span class="price-amount lang-zh">19.9</span>
+                        <span class="price-amount lang-en">2.99</span>
+                        <span class="price-duration lang-zh">/ 年</span>
+                        <span class="price-duration lang-en">/ Year</span>
                     </div>
-                    <p class="lang-zh">（同时支持 ¥19.9/年 &amp; ¥2/月 灵活订阅，首月提供免费试用）</p>
-                    <p class="lang-en">(Also available at $2.99/yr &amp; $0.49/mo subscriptions, with a 1-month free trial)</p>
+                    <p class="lang-zh" style="font-weight: 600; color: var(--accent-teal); margin-bottom: 8px; font-size: 15px;">🎁 首月提供免费试用 (1-Month Free Trial)</p>
+                    <p class="lang-en" style="font-weight: 600; color: var(--accent-teal); margin-bottom: 8px; font-size: 15px;">🎁 1-Month Free Trial Included</p>
+                    <p class="lang-zh">（同时支持 ¥59.9 终身买断 &amp; ¥2/月 灵活订阅）</p>
+                    <p class="lang-en">(Also available at $8.99 Lifetime buy &amp; $0.49/mo subscription)</p>
                 </div>
                 
                 <div class="comparison-grid">
