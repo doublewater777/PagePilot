@@ -174,7 +174,7 @@ enum ReadingPreferences {
 struct AppColors {
     // Background colors
     static let background = Color(.systemGroupedBackground)
-    static let cardBackground = Color(.systemBackground)
+    static let cardBackground = Color(.secondarySystemGroupedBackground)
 
     // Text colors
     static let primaryText = Color(.label)
@@ -257,6 +257,7 @@ struct HomeView: View {
                         .animation(.easeOut(duration: 0.5), value: appeared)
 
                     dailyReadingGoalCard
+                        .id(viewModel.statsRefreshID)
                         .opacity(appeared ? 1 : 0)
                         .offset(y: appeared ? 0 : 15)
                         .animation(.easeOut(duration: 0.5).delay(0.1), value: appeared)
@@ -583,7 +584,7 @@ struct HomeView: View {
             Spacer(minLength: 0)
         }
         .padding(12)
-        .background(Color.primary.opacity(colorScheme == .dark ? 0.08 : 0.035))
+        .background(Color(.tertiarySystemGroupedBackground))
         .cornerRadius(14)
     }
 

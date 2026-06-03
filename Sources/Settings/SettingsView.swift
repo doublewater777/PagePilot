@@ -16,7 +16,6 @@ struct SettingsView: View {
     @AppStorage(ReadingPreferences.Keys.dailyGoalMinutes) private var dailyGoalMinutes = ReadingPreferences.defaultDailyGoalMinutes
     @State private var localizationRefreshID = AppAppearancePreferences.language.rawValue
     @State private var showPaywall = false
-    @State private var showDailyGoalPicker = false
     @State private var hasProAccess = ProPurchaseManager.shared.hasProAccess
     private static var hasAutoShownPaywall = false
 
@@ -59,6 +58,9 @@ struct SettingsView: View {
                 showPaywall = true
             }
         }
+        .onChange(of: dailyGoalMinutes) { _, newValue in
+            NotificationCenter.default.post(name: ReadingPreferences.dailyGoalDidChange, object: newValue)
+        }
     }
 
     // MARK: - Sections
@@ -93,44 +95,22 @@ struct SettingsView: View {
 
     private var readingSection: some View {
         Section(NSLocalizedString("settings_reading_section", comment: "")) {
-            VStack(spacing: 0) {
-                HStack {
-                    SettingsRow(
-                        icon: "target",
-                        iconColor: .blue,
-                        title: NSLocalizedString("settings_daily_goal", comment: "")
-                    )
-                    Spacer()
-                    Text(String(format: NSLocalizedString("home_minutes", comment: ""), dailyGoalMinutes))
-                        .foregroundStyle(.secondary)
-                    Image(systemName: "chevron.up.chevron.down")
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundStyle(.tertiary)
-                        .rotationEffect(.degrees(showDailyGoalPicker ? 180 : 0))
-                        .animation(.easeInOut(duration: 0.2), value: showDailyGoalPicker)
+            Picker(selection: $dailyGoalMinutes) {
+                ForEach(Array(stride(
+                    from: ReadingPreferences.dailyGoalRange.lowerBound,
+                    through: ReadingPreferences.dailyGoalRange.upperBound,
+                    by: 5
+                )), id: \.self) { minute in
+                    Text(String(format: NSLocalizedString("home_minutes", comment: ""), minute)).tag(minute)
                 }
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        showDailyGoalPicker.toggle()
-                    }
-                }
-
-                if showDailyGoalPicker {
-                    Picker("", selection: $dailyGoalMinutes) {
-                        ForEach(Array(stride(
-                            from: ReadingPreferences.dailyGoalRange.lowerBound,
-                            through: ReadingPreferences.dailyGoalRange.upperBound,
-                            by: 5
-                        )), id: \.self) { minute in
-                            Text(String(format: NSLocalizedString("home_minutes", comment: ""), minute))
-                        }
-                    }
-                    .pickerStyle(.wheel)
-                    .frame(height: 120)
-                    .clipped()
-                }
+            } label: {
+                SettingsRow(
+                    icon: "target",
+                    iconColor: .blue,
+                    title: NSLocalizedString("settings_daily_goal", comment: "")
+                )
             }
+            .pickerStyle(.menu)
         }
     }
 
