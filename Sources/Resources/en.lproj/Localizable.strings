@@ -295,8 +295,8 @@
 "stats_rank_bronze" = "Third Place";
 
 /* Paywall */
-"paywall_title" = "Unlock PagePilot Pro";
-"paywall_subtitle" = "Unlimited books, iPad Watch page turns, and advanced reading stats in one upgrade.";
+"paywall_title" = "Focus Reading, Get More";
+"paywall_subtitle" = "Unlimited library, Watch page turns, and deeper stats for freer reading.";
 "paywall_pro_badge" = "Yearly Recommended";
 "paywall_feature_unlimited_books" = "Unlimited books (free version keeps up to 10)";
 "paywall_feature_ipad_page_turn" = "Use Apple Watch to turn pages on iPad";
@@ -304,6 +304,17 @@
 "paywall_feature_streak" = "Reading streak tracking";
 "paywall_feature_premium_tts" = "Advanced TTS voices (coming soon)";
 "paywall_feature_ad_free" = "Ad-free reading experience";
+"paywall_feature_unlimited_title" = "Unlimited library";
+"paywall_feature_unlimited_subtitle" = "No 10-book limit";
+"paywall_feature_watch_title" = "Watch page turns";
+"paywall_feature_watch_subtitle" = "Control iPad reading";
+"paywall_feature_stats_title" = "Pro stats";
+"paywall_feature_stats_subtitle" = "See reading trends";
+"paywall_feature_clean_title" = "Clean reading";
+"paywall_feature_clean_subtitle" = "Less noise, more focus";
+"paywall_assurance_trial" = "1-month free trial";
+"paywall_assurance_cancel" = "Cancel anytime";
+"paywall_trial_note" = "Trial renews automatically after it ends. You can cancel anytime in Settings.";
 "paywall_one_time" = "One-time purchase, yours forever";
 "paywall_buy_button" = "Buy Now";
 "paywall_restore_button" = "Restore Purchases";
@@ -334,9 +345,10 @@
 "paywall_option_lifetime" = "Lifetime Plan";
 "paywall_price_monthly" = "¥2";
 "paywall_price_yearly" = "¥19.9";
+"paywall_price_yearly_monthly" = "¥1.66";
 "paywall_price_lifetime" = "¥59.9";
 "paywall_price_monthly_sub" = "Renews monthly";
-"paywall_price_yearly_sub" = "Best value, about %@/month";
+"paywall_price_yearly_sub" = "Only %@/month, save 17%";
 "paywall_price_lifetime_sub" = "One-time purchase, limited-time offer";
 "paywall_terms_of_use" = "Terms of Use";
 "paywall_privacy_policy" = "Privacy Policy";

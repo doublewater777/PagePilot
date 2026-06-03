@@ -166,6 +166,11 @@ class LibraryViewController: UIViewController, Loggable {
     override func viewDidLoad() {
         super.viewDidLoad()
 
+        // Setup UI components first so deleteButton/searchController exist
+        // before updateLocalizedContent() tries to reference them.
+        setupDeleteToolbar()
+        setupSearchController()
+
         updateLocalizedContent()
         view.backgroundColor = .systemGroupedBackground
         collectionView.backgroundColor = .systemGroupedBackground
@@ -198,12 +203,6 @@ class LibraryViewController: UIViewController, Loggable {
         recognizer.minimumPressDuration = 0.5
         recognizer.delaysTouchesBegan = true
         collectionView.addGestureRecognizer(recognizer)
-
-        // Setup bottom delete toolbar
-        setupDeleteToolbar()
-
-        // Setup native search controller
-        setupSearchController()
 
         // 注册书架顶部 Header View
         collectionView.register(LibraryHeaderView.self, forSupplementaryViewOfKind: UICollectionView.elementKindSectionHeader, withReuseIdentifier: "LibraryHeaderView")
@@ -481,17 +480,18 @@ class LibraryViewController: UIViewController, Loggable {
         let count = selectedBookIds.count
         if count > 0 {
             let formatString = NSLocalizedString("library_delete_selected_count", comment: "")
-            deleteButton.setTitle(String(format: formatString, count), for: .normal)
-            deleteButton.isEnabled = true
-            deleteButton.alpha = 1.0
+            deleteButton?.setTitle(String(format: formatString, count), for: .normal)
+            deleteButton?.isEnabled = true
+            deleteButton?.alpha = 1.0
         } else {
-            deleteButton.setTitle(NSLocalizedString("library_delete_books", comment: ""), for: .normal)
-            deleteButton.isEnabled = false
-            deleteButton.alpha = 0.5
+            deleteButton?.setTitle(NSLocalizedString("library_delete_books", comment: ""), for: .normal)
+            deleteButton?.isEnabled = false
+            deleteButton?.alpha = 0.5
         }
     }
 
     private func updateDeleteToolbarVisibility() {
+        guard deleteToolbarHiddenConstraint != nil, deleteToolbarBottomConstraint != nil else { return }
         if isEditingBooks {
             deleteToolbarHiddenConstraint.isActive = false
             deleteToolbarBottomConstraint.isActive = true
@@ -793,22 +793,34 @@ extension LibraryViewController: UICollectionViewDelegateFlowLayout, UICollectio
         cell.titleLabel.text = book.title
         cell.authorLabel.text = book.authors
 
-        // Load image (using cache to prevent blocking disk I/O on reload) and then apply the shadow.
+        // Load image asynchronously to avoid blocking the main thread with disk I/O.
+        let flowLayout = collectionView.collectionViewLayout as? UICollectionViewFlowLayout
         if let bookId = book.id?.rawValue, let cachedImage = coverCache[bookId] {
+            // Cache hit: set immediately, no I/O needed
             cell.coverImageView.image = cachedImage
-        } else if
-            let coverURL = book.cover,
-            let data = try? Data(contentsOf: coverURL.url),
-            let cover = UIImage(data: data)
-        {
-            if let bookId = book.id?.rawValue {
-                coverCache[bookId] = cover
+        } else if let coverURL = book.cover {
+            // Show placeholder immediately, then load cover in background
+            cell.coverImageView.image = defaultCover(layout: flowLayout, description: book.title)
+            let bookId = book.id?.rawValue
+            let coverFileURL = coverURL.url
+            DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+                guard let self = self,
+                      let data = try? Data(contentsOf: coverFileURL),
+                      let cover = UIImage(data: data) else { return }
+                DispatchQueue.main.async {
+                    // Cache for future reuse
+                    if let bookId = bookId {
+                        self.coverCache[bookId] = cover
+                    }
+                    // Only update the cell if it still represents the same book
+                    guard let currentIndexPath = self.collectionView.indexPath(for: cell),
+                          currentIndexPath.item < self.books.count,
+                          self.books[currentIndexPath.item].id?.rawValue == bookId else { return }
+                    cell.coverImageView.image = cover
+                }
             }
-            cell.coverImageView.image = cover
         } else {
-            let flowLayout = collectionView.collectionViewLayout as? UICollectionViewFlowLayout
-            let description = book.title
-            cell.coverImageView.image = defaultCover(layout: flowLayout, description: description)
+            cell.coverImageView.image = defaultCover(layout: flowLayout, description: book.title)
         }
 
         print("[PagePilot LOG] cellForItemAt.currentViewMode: \(currentViewMode.rawValue) for book: \(book.title)")

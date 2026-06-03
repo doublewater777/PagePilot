@@ -1,0 +1,1472 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PagePilot - 用手表翻页的阅读器 | Turn pages with your Apple Watch</title>
+    
+    <!-- Meta Descriptions -->
+    <meta name="description" content="PagePilot 是一款专为 iPhone 打造的书籍阅读器，支持用 Apple Watch 翻页、WiFi 传书、设备间传书、多格式阅读以及阅读统计，彻底解放您的双手。 PagePilot is a hands-free ebook reader for iPhone that lets you turn pages using your Apple Watch.">
+    <meta name="keywords" content="PagePilot, EPUB reader, Apple Watch page turn, PDF reader, Wifi transfer, ebook, 电子书, 翻页, 手表翻页, 电脑传书">
+    <link rel="icon" type="image/png" href="icon.png">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            /* Theme variables - Dark Theme (Default) */
+            --bg-color: #080c14;
+            --bg-grid: rgba(30, 120, 217, 0.03);
+            --text-primary: #f3f4f6;
+            --text-secondary: #9ca3af;
+            --accent-blue: #1e78d9;
+            --accent-teal: #15a894;
+            --accent-gradient: linear-gradient(135deg, #1e78d9 0%, #15a894 100%);
+            --accent-gradient-hover: linear-gradient(135deg, #2b88eb 0%, #1bc2ab 100%);
+            --card-bg: rgba(17, 24, 39, 0.6);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --card-hover-border: rgba(30, 120, 217, 0.3);
+            --shadow-color: rgba(0, 0, 0, 0.5);
+            --nav-bg: rgba(8, 12, 20, 0.7);
+            --badge-free-bg: rgba(156, 163, 175, 0.1);
+            --badge-free-text: #9ca3af;
+            --badge-pro-bg: rgba(21, 168, 148, 0.15);
+            --badge-pro-text: #1bc2ab;
+        }
+
+        [data-theme="light"] {
+            /* Theme variables - Light Theme */
+            --bg-color: #f8fafc;
+            --bg-grid: rgba(30, 120, 217, 0.02);
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --accent-blue: #1e78d9;
+            --accent-teal: #15a894;
+            --accent-gradient: linear-gradient(135deg, #1e78d9 0%, #15a894 100%);
+            --accent-gradient-hover: linear-gradient(135deg, #1663b5 0%, #0f8a79 100%);
+            --card-bg: rgba(255, 255, 255, 0.75);
+            --card-border: rgba(0, 0, 0, 0.06);
+            --card-hover-border: rgba(30, 120, 217, 0.2);
+            --shadow-color: rgba(15, 23, 42, 0.05);
+            --nav-bg: rgba(248, 258, 252, 0.8);
+            --badge-free-bg: rgba(71, 85, 105, 0.1);
+            --badge-free-text: #475569;
+            --badge-pro-bg: rgba(21, 168, 148, 0.1);
+            --badge-pro-text: #0f8a79;
+        }
+
+        /* Language Toggle Visibility Rules */
+        body[data-lang="en"] .lang-zh { display: none !important; }
+        body[data-lang="zh"] .lang-en { display: none !important; }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(var(--bg-grid) 1px, transparent 1px),
+                radial-gradient(var(--bg-grid) 1px, transparent 1px);
+            background-size: 40px 40px;
+            background-position: 0 0, 20px 20px;
+        }
+
+        /* Custom selection color */
+        ::selection {
+            background-color: rgba(30, 120, 217, 0.3);
+            color: var(--text-primary);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        /* Header Navigation */
+        header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 80px;
+            z-index: 1000;
+            background-color: var(--nav-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--card-border);
+        }
+
+        .nav-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 100%;
+        }
+
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+        }
+
+        .logo-img {
+            width: 40px;
+            height: 40px;
+            border-radius: 9px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+        }
+
+        .logo-text {
+            font-family: 'Outfit', sans-serif;
+            font-size: 24px;
+            font-weight: 700;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.5px;
+        }
+
+        .nav-controls {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        /* Controls Toggle Buttons */
+        .btn-control {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            color: var(--text-primary);
+            padding: 8px 14px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 2px 5px var(--shadow-color);
+        }
+
+        .btn-control:hover {
+            border-color: var(--accent-blue);
+            transform: translateY(-1px);
+        }
+
+        .btn-control svg {
+            width: 16px;
+            height: 16px;
+            fill: currentColor;
+        }
+
+        /* Hero Section */
+        .hero {
+            padding-top: 160px;
+            padding-bottom: 100px;
+            position: relative;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 20%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(30, 120, 217, 0.15) 0%, rgba(21, 168, 148, 0.05) 50%, transparent 100%);
+            z-index: -1;
+            filter: blur(40px);
+        }
+
+        .hero-grid {
+            display: grid;
+            grid-template-columns: 1.1fr 0.9fr;
+            gap: 64px;
+            align-items: center;
+        }
+
+        .hero-info h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 54px;
+            font-weight: 800;
+            line-height: 1.15;
+            letter-spacing: -1.5px;
+            margin-bottom: 16px;
+        }
+
+        .hero-info h1 span {
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero-tagline {
+            font-size: 22px;
+            font-weight: 600;
+            color: var(--accent-teal);
+            margin-bottom: 24px;
+        }
+
+        .hero-desc {
+            font-size: 17px;
+            color: var(--text-secondary);
+            margin-bottom: 40px;
+            max-width: 540px;
+        }
+
+        /* App Store Badge Button */
+        .btn-download {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            background: var(--accent-gradient);
+            color: #ffffff !important;
+            padding: 14px 28px;
+            border-radius: 30px;
+            font-size: 16px;
+            font-weight: 600;
+            text-decoration: none;
+            box-shadow: 0 10px 25px rgba(30, 120, 217, 0.3);
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .btn-download:hover {
+            background: var(--accent-gradient-hover);
+            transform: translateY(-3px);
+            box-shadow: 0 15px 30px rgba(30, 120, 217, 0.4);
+        }
+
+        .btn-download svg {
+            width: 22px;
+            height: 22px;
+            fill: currentColor;
+        }
+
+        /* Interactive Phone/Watch Mockup Area */
+        .mockup-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            position: relative;
+            user-select: none;
+        }
+
+        /* iPhone Mockup CSS */
+        .phone-mockup {
+            width: 250px;
+            height: 500px;
+            background: #000;
+            border-radius: 40px;
+            border: 8px solid #2d3748;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Notch / Dynamic Island */
+        .phone-notch {
+            width: 90px;
+            height: 22px;
+            background: #000;
+            border-radius: 12px;
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+        }
+
+        /* iPhone Screen Content */
+        .phone-screen {
+            flex: 1;
+            background: #111622;
+            color: #e2e8f0;
+            padding: 40px 20px 20px 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        /* Light mode adapted screen */
+        [data-theme="light"] .phone-screen {
+            background: #fdfdfd;
+            color: #1e293b;
+        }
+
+        .phone-book-header {
+            font-size: 11px;
+            color: #718096;
+            text-align: center;
+            margin-bottom: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding-bottom: 5px;
+        }
+        [data-theme="light"] .phone-book-header {
+            border-bottom-color: rgba(0, 0, 0, 0.05);
+        }
+
+        /* Custom book page curl/slider animation container */
+        .phone-book-content {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            line-height: 1.5;
+            font-size: 12px;
+        }
+
+        .book-page {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.5s ease;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+        }
+
+        .book-page.active {
+            opacity: 1;
+            transform: translateX(0);
+            z-index: 2;
+        }
+
+        .book-page.prev {
+            opacity: 0;
+            transform: translateX(-100%);
+            z-index: 1;
+        }
+
+        .book-page h3 {
+            font-size: 14px;
+            margin-bottom: 8px;
+            color: var(--accent-teal);
+        }
+
+        .book-page p {
+            margin-bottom: 10px;
+            color: inherit;
+            opacity: 0.85;
+            text-align: justify;
+        }
+
+        .phone-book-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 10px;
+            color: #718096;
+            margin-top: 10px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            padding-top: 8px;
+        }
+        [data-theme="light"] .phone-book-footer {
+            border-top-color: rgba(0, 0, 0, 0.05);
+        }
+
+        .page-indicator {
+            background: rgba(30, 120, 217, 0.1);
+            color: var(--accent-blue);
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        /* Apple Watch Mockup CSS */
+        .watch-mockup {
+            width: 120px;
+            height: 160px;
+            background: #1e293b;
+            border-radius: 26px;
+            border: 5px solid #475569;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 5;
+        }
+
+        /* Watch Straps */
+        .watch-strap-top {
+            width: 60px;
+            height: 40px;
+            background: #334155;
+            position: absolute;
+            top: -44px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-radius: 8px 8px 0 0;
+            z-index: -1;
+        }
+
+        .watch-strap-bottom {
+            width: 60px;
+            height: 40px;
+            background: #334155;
+            position: absolute;
+            bottom: -44px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-radius: 0 0 8px 8px;
+            z-index: -1;
+        }
+
+        /* Watch Crown Button */
+        .watch-crown {
+            width: 8px;
+            height: 26px;
+            background: #64748b;
+            border-radius: 0 3px 3px 0;
+            position: absolute;
+            right: -12px;
+            top: 30px;
+            border-left: 2px solid #334155;
+            transition: background 0.1s ease;
+        }
+
+        .watch-crown:active, .watch-mockup:active .watch-crown {
+            background: #1e78d9;
+        }
+
+        /* Watch Screen Content */
+        .watch-screen {
+            width: calc(100% - 10px);
+            height: calc(100% - 10px);
+            background: #000;
+            border-radius: 20px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            color: #fff;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .watch-logo {
+            width: 16px;
+            height: 16px;
+            margin-top: 4px;
+        }
+
+        /* Interactive Action Ripple indicator */
+        .watch-btn-action {
+            width: 50px;
+            height: 50px;
+            border-radius: 50px;
+            background: var(--accent-gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 18px;
+            position: relative;
+            box-shadow: 0 0 10px rgba(21, 168, 148, 0.4);
+            margin-bottom: 12px;
+        }
+
+        .watch-btn-action::after {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50px;
+            border: 2px solid var(--accent-teal);
+            animation: pulse-ring 2s infinite;
+            opacity: 0;
+        }
+
+        @keyframes pulse-ring {
+            0% {
+                transform: scale(0.95);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(1.6);
+                opacity: 0;
+            }
+        }
+
+        .watch-text {
+            font-size: 9px;
+            color: #9ca3af;
+            text-align: center;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 2px;
+        }
+
+        /* Prompt to guide users to click */
+        .click-prompt {
+            position: absolute;
+            bottom: -50px;
+            background: rgba(21, 168, 148, 0.15);
+            border: 1px solid rgba(21, 168, 148, 0.3);
+            color: var(--accent-teal);
+            font-size: 12px;
+            font-weight: 600;
+            padding: 6px 14px;
+            border-radius: 20px;
+            white-space: nowrap;
+            animation: bounce 2s infinite;
+            pointer-events: none;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {
+                transform: translateY(0);
+            }
+            40% {
+                transform: translateY(-8px);
+            }
+            60% {
+                transform: translateY(-4px);
+            }
+        }
+
+        /* Features Section */
+        .features {
+            padding: 100px 0;
+            background: relative;
+        }
+
+        .section-title {
+            text-align: center;
+            max-width: 700px;
+            margin: 0 auto 60px auto;
+        }
+
+        .section-title h2 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 40px;
+            font-weight: 800;
+            margin-bottom: 16px;
+            letter-spacing: -1px;
+        }
+
+        .section-title p {
+            font-size: 16px;
+            color: var(--text-secondary);
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 28px;
+        }
+
+        .feature-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            padding: 36px;
+            box-shadow: 0 10px 30px var(--shadow-color);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--card-hover-border);
+            box-shadow: 0 15px 35px rgba(30, 120, 217, 0.1);
+        }
+
+        .feature-icon-wrapper {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            background: rgba(30, 120, 217, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--accent-blue);
+        }
+
+        .feature-card:hover .feature-icon-wrapper {
+            background: var(--accent-gradient);
+            color: #ffffff;
+        }
+
+        .feature-icon-wrapper svg {
+            width: 24px;
+            height: 24px;
+            fill: currentColor;
+        }
+
+        .feature-card h3 {
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .feature-card p {
+            color: var(--text-secondary);
+            font-size: 15px;
+            line-height: 1.6;
+        }
+
+        /* How it works Section */
+        .how-it-works {
+            padding: 100px 0;
+            position: relative;
+        }
+
+        .steps-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 40px;
+            position: relative;
+            margin-top: 40px;
+        }
+
+        /* Flow line between steps */
+        .steps-container::after {
+            content: '';
+            position: absolute;
+            top: 40px;
+            left: 15%;
+            right: 15%;
+            height: 2px;
+            background: linear-gradient(90deg, var(--accent-blue) 0%, var(--accent-teal) 100%);
+            opacity: 0.2;
+            z-index: -1;
+        }
+
+        @media (max-width: 768px) {
+            .steps-container {
+                grid-template-columns: 1fr;
+                gap: 48px;
+            }
+            .steps-container::after {
+                display: none;
+            }
+        }
+
+        .step-item {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .step-number {
+            width: 60px;
+            height: 60px;
+            border-radius: 30px;
+            background: var(--card-bg);
+            border: 2px solid var(--accent-blue);
+            color: var(--accent-blue);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Outfit', sans-serif;
+            font-size: 24px;
+            font-weight: 800;
+            box-shadow: 0 4px 15px var(--shadow-color);
+        }
+
+        .step-item h3 {
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .step-item p {
+            color: var(--text-secondary);
+            font-size: 14px;
+            max-width: 280px;
+        }
+
+        /* Pro Pricing Plan Section */
+        .pricing {
+            padding: 100px 0;
+            background: relative;
+        }
+
+        .pricing-card {
+            max-width: 650px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            border: 2px solid var(--accent-teal);
+            border-radius: 24px;
+            padding: 48px;
+            box-shadow: 0 20px 40px rgba(21, 168, 148, 0.1);
+            position: relative;
+        }
+
+        .pricing-badge {
+            position: absolute;
+            top: -16px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--accent-gradient);
+            color: white;
+            padding: 6px 18px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        .pricing-header {
+            text-align: center;
+            margin-bottom: 36px;
+        }
+
+        .pricing-header h3 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 32px;
+            font-weight: 800;
+            margin-bottom: 8px;
+        }
+
+        .price-box {
+            font-family: 'Outfit', sans-serif;
+            margin-bottom: 12px;
+        }
+
+        .price-currency {
+            font-size: 24px;
+            font-weight: 700;
+            vertical-align: super;
+            margin-right: 2px;
+        }
+
+        .price-amount {
+            font-size: 54px;
+            font-weight: 800;
+        }
+
+        .price-duration {
+            font-size: 16px;
+            color: var(--text-secondary);
+        }
+
+        .pricing-header p {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 32px;
+            margin-bottom: 40px;
+        }
+
+        @media (max-width: 600px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+                gap: 24px;
+            }
+        }
+
+        .comparison-column h4 {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            color: var(--accent-blue);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid var(--card-border);
+            padding-bottom: 8px;
+        }
+
+        .comparison-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .comparison-list li {
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .list-badge {
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 6px;
+            border-radius: 4px;
+            text-transform: uppercase;
+        }
+        
+        .list-badge.free {
+            background-color: var(--badge-free-bg);
+            color: var(--badge-free-text);
+        }
+        .list-badge.pro {
+            background-color: var(--badge-pro-bg);
+            color: var(--badge-pro-text);
+        }
+
+        .pricing-list-icon {
+            color: var(--accent-teal);
+            flex-shrink: 0;
+        }
+
+        /* Download Banner Section */
+        .download-banner {
+            padding: 80px 0;
+            background: linear-gradient(135deg, rgba(30, 120, 217, 0.05) 0%, rgba(21, 168, 148, 0.05) 100%);
+            border-top: 1px solid var(--card-border);
+            border-bottom: 1px solid var(--card-border);
+            text-align: center;
+        }
+
+        .download-banner h2 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 36px;
+            font-weight: 800;
+            margin-bottom: 12px;
+        }
+
+        .download-banner p {
+            color: var(--text-secondary);
+            margin-bottom: 32px;
+            font-size: 16px;
+        }
+
+        /* Footer */
+        footer {
+            padding: 60px 0;
+            border-top: 1px solid var(--card-border);
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .footer-grid {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 24px;
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 24px;
+        }
+
+        .footer-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+        }
+
+        .footer-links a:hover {
+            color: var(--accent-blue);
+        }
+
+        /* Responsive styling for Hero and general layouts */
+        @media (max-width: 900px) {
+            .hero-grid {
+                grid-template-columns: 1fr;
+                gap: 48px;
+                text-align: center;
+            }
+
+            .hero-desc {
+                margin-left: auto;
+                margin-right: auto;
+            }
+
+            .mockup-container {
+                margin-top: 20px;
+            }
+        }
+    </style>
+</head>
+<body data-lang="zh" data-theme="dark">
+
+    <!-- Header Navigation -->
+    <header>
+        <div class="container nav-container">
+            <a href="#" class="logo-area">
+                <img src="icon.png" alt="PagePilot Logo" class="logo-img">
+                <span class="logo-text">PagePilot</span>
+            </a>
+            
+            <div class="nav-controls">
+                <!-- Language Toggle Button -->
+                <button class="btn-control" onclick="toggleLanguage()" id="langBtn" aria-label="Toggle Language">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M12.87 15.07l-2.54-2.51.03-.03c1.74-1.94 2.98-4.17 3.71-6.53H17V4h-7V2H8v2H1v2h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z"/>
+                    </svg>
+                    <span class="lang-zh">English</span>
+                    <span class="lang-en">简体中文</span>
+                </button>
+                
+                <!-- Theme Toggle Button -->
+                <button class="btn-control" onclick="toggleTheme()" id="themeBtn" aria-label="Toggle Theme">
+                    <!-- Sun SVG (visible in dark theme) -->
+                    <svg class="theme-icon-dark" viewBox="0 0 24 24" style="display: block;">
+                        <path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58c-.39-.39-1.03-.39-1.41 0s-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41L5.99 4.58zm12.37 12.37c-.39-.39-1.03-.39-1.41 0s-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41l-1.06-1.06zm1.06-10.96c.39-.39.39-1.03 0-1.41s-1.03-.39-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06zM7.05 18.01c.39-.39.39-1.03 0-1.41s-1.03-.39-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06z"/>
+                    </svg>
+                    <!-- Moon SVG (visible in light theme) -->
+                    <svg class="theme-icon-light" viewBox="0 0 24 24" style="display: none;">
+                        <path d="M12.3 2a10 10 0 0 0-1.9 14 10 10 0 0 0 14-1.9 1 1 0 0 1 .7 1.6 11 11 0 1 1-14.4-14.4 1 1 0 0 1 1.6.7z"/>
+                    </svg>
+                    <span class="lang-zh">浅色</span>
+                    <span class="lang-en">Light</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container hero-grid">
+            <div class="hero-info">
+                <h1 class="lang-zh">让阅读，在手腕间<span>自由翻篇</span></h1>
+                <h1 class="lang-en">Turn book pages, <span>from your wrist</span></h1>
+                
+                <p class="hero-tagline lang-zh">PagePilot - 用手表翻页的阅读器</p>
+                <p class="hero-tagline lang-en">PagePilot - Turn pages with your Apple Watch</p>
+                
+                <p class="hero-desc lang-zh">
+                    PagePilot 专为 iPhone/iPad 打造。躺着看书、吃饭读书、地铁上单手扶环，均可通过 Apple Watch 轻轻一按或手腕微转来遥控翻页，彻底解放你的双手。
+                </p>
+                <p class="hero-desc lang-en">
+                    PagePilot is a book reader built for iPhone & iPad. Whether reading in bed, eating a meal, or holding onto a rail on the subway, you can turn pages hands-free with a flick of your wrist or a click on your Apple Watch.
+                </p>
+                
+                <a href="https://apps.apple.com/app/id6503028286" class="btn-download" target="_blank" rel="noopener noreferrer">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M18.71 19.5C17.88 20.74 17 21.95 15.66 21.97C14.32 22 13.89 21.18 12.37 21.18C10.84 21.18 10.37 21.95 9.1 22C7.79 22.05 6.8 20.68 5.96 19.48C4.25 17 2.94 12.45 4.7 9.39C5.57 7.87 7.13 6.91 8.82 6.88C10.1 6.86 11.32 7.75 12.11 7.75C12.89 7.75 14.37 6.68 15.92 6.84C16.57 6.87 18.39 7.1 19.56 8.82C19.47 8.88 17.39 10.1 17.41 12.63C17.44 15.65 20.06 16.66 20.1 16.67C20.08 16.74 19.67 18.11 18.71 19.5M15.97 4.17C16.63 3.37 17.07 2.28 16.95 1C15.85 1.04 14.51 1.73 13.73 2.64C13.07 3.41 12.49 4.52 12.64 5.78C13.87 5.87 15.12 5.17 15.97 4.17Z"/>
+                    </svg>
+                    <span class="lang-zh">在 App Store 下载</span>
+                    <span class="lang-en">Download on App Store</span>
+                </a>
+            </div>
+            
+            <!-- Interactive Device Mockup -->
+            <div class="mockup-container">
+                <!-- Phone Mockup -->
+                <div class="phone-mockup">
+                    <div class="phone-notch"></div>
+                    <div class="phone-screen">
+                        <div class="phone-book-header">
+                            <span class="lang-zh">《小王子》 第一章</span>
+                            <span class="lang-en">"The Little Prince" - Ch 1</span>
+                        </div>
+                        
+                        <div class="phone-book-content">
+                            <!-- Page 1 (Active) -->
+                            <div class="book-page active" id="page-1">
+                                <h3 class="lang-zh">1. 彻底解放双手</h3>
+                                <h3 class="lang-en">1. Completely Hands-Free</h3>
+                                <p class="lang-zh">
+                                    我们总是在各种不便伸手戳屏幕的场景下看书。比如躺在温暖的被窝里把手机架在一旁、一边跑步/踩单车一边看文、或者边吃饭边看手机。
+                                </p>
+                                <p class="lang-en">
+                                    We often read in situations where tapping the screen is awkward. Think about lying in bed with the phone on a stand, running on a treadmill, or having a quick meal.
+                                </p>
+                                <p class="lang-zh">
+                                    <b>尝试点击右侧的 Apple Watch 按钮来翻页！</b>
+                                </p>
+                                <p class="lang-en">
+                                    <b>Try clicking the Digital Crown on the Apple Watch mockup to flip this page!</b>
+                                </p>
+                            </div>
+                            
+                            <!-- Page 2 -->
+                            <div class="book-page" id="page-2">
+                                <h3 class="lang-zh">2. 极致纯净阅读</h3>
+                                <h3 class="lang-en">2. Clean & Pure Reading</h3>
+                                <p class="lang-zh">
+                                    PagePilot 支持 EPUB、PDF、有声书和 CBZ 漫画等多种格式。我们追求简洁的界面设计，提供自定义字体、行高、背景色，保证沉浸式体验。
+                                </p>
+                                <p class="lang-en">
+                                    PagePilot supports EPUB, PDF, CBZ comics, and Audiobooks. We focus on distraction-free reader UI, customizable fonts, leading, and colors to make your reading immersive.
+                                </p>
+                                <p class="lang-zh">
+                                    内置 WiFi 传书和设备间传书，只需局域网电脑拖拽，即可极速导入书籍。
+                                </p>
+                                <p class="lang-en">
+                                    Built-in WiFi Transfer and Device Transfer allow dragging books from a computer browser directly into your phone.
+                                </p>
+                            </div>
+
+                            <!-- Page 3 -->
+                            <div class="book-page" id="page-3">
+                                <h3 class="lang-zh">3. 数据本地与 Pro 统计</h3>
+                                <h3 class="lang-en">3. Local Data & Stats</h3>
+                                <p class="lang-zh">
+                                    我们不建立云端服务器，所有书籍与阅读统计数据 100% 存储于您的本地设备，最大化保障隐私。
+                                </p>
+                                <p class="lang-en">
+                                    No cloud servers are used. All your imported books and reading stats are stored 100% locally on your own device for maximum privacy.
+                                </p>
+                                <p class="lang-zh">
+                                    升级 Pro 版可以解锁周、月、年阅读时长趋势统计，以及连续阅读天数（Streak）记录，让习惯养成可视化。
+                                </p>
+                                <p class="lang-en">
+                                    Upgrade to Pro to unlock weekly, monthly, and yearly reading trend stats, and keep your reading streak alive.
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div class="phone-book-footer">
+                            <span class="lang-zh">进度 45%</span>
+                            <span class="lang-en">Progress 45%</span>
+                            <span class="page-indicator"><span id="currPageNum">1</span> / 3</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Watch Mockup -->
+                <div class="watch-mockup" onclick="watchClickAction()" aria-label="Apple Watch control">
+                    <div class="watch-strap-top"></div>
+                    <div class="watch-crown"></div>
+                    <div class="watch-screen">
+                        <svg class="watch-logo" viewBox="0 0 24 24" fill="#1bc2ab">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+                        </svg>
+                        
+                        <div class="watch-btn-action">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:20px;height:20px;">
+                                <polyline points="9 18 15 12 9 6"></polyline>
+                            </svg>
+                        </div>
+                        
+                        <div>
+                            <div class="watch-text lang-zh">点击翻页</div>
+                            <div class="watch-text lang-en">TAP FLIP</div>
+                        </div>
+                    </div>
+                    
+                    <div class="click-prompt">
+                        <span class="lang-zh">👉 点我翻页</span>
+                        <span class="lang-en">👉 Click Me</span>
+                    </div>
+                    <div class="watch-strap-bottom"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features" id="features">
+        <div class="container">
+            <div class="section-title">
+                <h2 class="lang-zh">精心打造的核心功能</h2>
+                <h2 class="lang-en">Core Features Carefully Crafted</h2>
+                <p class="lang-zh">一切功能的设计，都旨在给您更纯粹、顺畅的电子书阅读体验。</p>
+                <p class="lang-en">Every single feature is designed to bring you the purest, smoothest reading experience.</p>
+            </div>
+            
+            <div class="features-grid">
+                <!-- Feature 1 -->
+                <div class="feature-card">
+                    <div class="feature-icon-wrapper">
+                        <!-- Apple Watch Icon SVG -->
+                        <svg viewBox="0 0 24 24">
+                            <path d="M17 5H7c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm-5 11c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zM8 1h8v3H8V1zm0 19h8v3H8v-3z"/>
+                        </svg>
+                    </div>
+                    <h3 class="lang-zh">Watch 遥控翻页</h3>
+                    <h3 class="lang-en">Watch Remote Page-Turn</h3>
+                    <p class="lang-zh">支持手腕轻微扭动、点击表盘或按下表冠等手势遥控。即使手机离手 5 米开外，也能从容翻页，阅读自由度瞬间飙升。</p>
+                    <p class="lang-en">Supports wrist gestures, crown presses, or tapping the watch screen. Control your page turns even if your phone is 5 meters away.</p>
+                </div>
+                
+                <!-- Feature 2 -->
+                <div class="feature-card">
+                    <div class="feature-icon-wrapper">
+                        <!-- Library / Book Icon SVG -->
+                        <svg viewBox="0 0 24 24">
+                            <path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0-2-.9-2-2V4c0-1.1-.9-2-2-2zm0 14H8V4h12v12z"/>
+                        </svg>
+                    </div>
+                    <h3 class="lang-zh">主流格式全支持</h3>
+                    <h3 class="lang-en">Multi-format Ebook Support</h3>
+                    <p class="lang-zh">兼容无版权保护的 EPUB、PDF、CBZ 格式漫画及有声书（Audiobooks），无需多款 App 切换，一站式管理整个电子书库。</p>
+                    <p class="lang-en">Full compatibility with EPUB, PDF, CBZ comics, and Audiobooks. Manage your unified library in one single application.</p>
+                </div>
+                
+                <!-- Feature 3 -->
+                <div class="feature-card">
+                    <div class="feature-icon-wrapper">
+                        <!-- WiFi Icon SVG -->
+                        <svg viewBox="0 0 24 24">
+                            <path d="M12.01 21.49L23.64 7c-.45-.34-4.93-4-11.64-4C5.28 3 .81 6.66.36 7l11.63 14.49.01.01.01-.01zM3.53 9.51c.3-.23 3.56-2.9 8.47-2.9s8.17 2.67 8.47 2.9L12 18.01 3.53 9.51z"/>
+                        </svg>
+                    </div>
+                    <h3 class="lang-zh">极速局域网 WiFi 传书</h3>
+                    <h3 class="lang-en">Lightning WiFi Transfer</h3>
+                    <p class="lang-zh">无需任何数据线或第三方云服务。只需在同一 Wi-Fi 下，通过电脑浏览器访问手机端地址，拖拽文件即可秒速导入书籍。</p>
+                    <p class="lang-en">No cables or third-party cloud tools. Visit the provided address on your PC's browser to drag and drop files directly into your library.</p>
+                </div>
+
+                <!-- Feature 4 -->
+                <div class="feature-card">
+                    <div class="feature-icon-wrapper">
+                        <!-- Device Sync Icon SVG -->
+                        <svg viewBox="0 0 24 24">
+                            <path d="M19 1H9c-1.1 0-2 .9-2 2v3h2V4h10v16H9v-2H7v3c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V3c0-1.1-.9-2-2-2zM5 7H1v10h4v3l5-4-5-4v3z"/>
+                        </svg>
+                    </div>
+                    <h3 class="lang-zh">设备间互传书</h3>
+                    <h3 class="lang-en">Device-to-Device Transfer</h3>
+                    <p class="lang-zh">支持 iPhone 和 iPad 在局域网下通过 Bonjour 服务自动发现对方，一键即可把图书发送到另一台设备，无需电脑中转。</p>
+                    <p class="lang-en">Discover near-by devices via Bonjour. Effortlessly send files between your iPhone and iPad on the local network without PC relays.</p>
+                </div>
+                
+                <!-- Feature 5 -->
+                <div class="feature-card">
+                    <div class="feature-icon-wrapper">
+                        <!-- Stats Icon SVG -->
+                        <svg viewBox="0 0 24 24">
+                            <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/>
+                        </svg>
+                    </div>
+                    <h3 class="lang-zh">本地阅读统计</h3>
+                    <h3 class="lang-en">Local Reading Insights</h3>
+                    <p class="lang-zh">内置周、月、年阅读时长数据和连续阅读天数（Streak）记录。100% 存储于本地数据库，绝不上传，充分保障您的隐私。</p>
+                    <p class="lang-en">Analyze weekly, monthly, and yearly reading durations. Features a custom reading streak tracker. Stored locally with 0 server uploads.</p>
+                </div>
+
+                <!-- Feature 6 -->
+                <div class="feature-card">
+                    <div class="feature-icon-wrapper">
+                        <!-- Volume/TTS Icon SVG -->
+                        <svg viewBox="0 0 24 24">
+                            <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+                        </svg>
+                    </div>
+                    <h3 class="lang-zh">系统级语音朗读 (TTS)</h3>
+                    <h3 class="lang-en">System Text-to-Speech</h3>
+                    <p class="lang-zh">支持 iOS 系统全语言的发音引擎，可自由调节朗读速度与音调。做家务、闭目养神、通勤时亦可开启听书模式。</p>
+                    <p class="lang-en">Unlock complete system voices. Support customizable pronunciation rates and pitches so you can listen to books on the go.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works Section -->
+    <section class="how-it-works">
+        <div class="container">
+            <div class="section-title">
+                <h2 class="lang-zh">三步开启双手自由</h2>
+                <h2 class="lang-en">Get Started In 3 Easy Steps</h2>
+                <p class="lang-zh">配置极其简单，一次设置，畅享轻松看书。</p>
+                <p class="lang-en">Zero configuration required. Configure once, read hands-free forever.</p>
+            </div>
+            
+            <div class="steps-container">
+                <!-- Step 1 -->
+                <div class="step-item">
+                    <div class="step-number">1</div>
+                    <h3 class="lang-zh">极速导入电子书</h3>
+                    <h3 class="lang-en">Import Your Books</h3>
+                    <p class="lang-zh">通过局域网 WiFi 传书或 iPhone/iPad 隔空互传，将您的 EPUB、PDF 书籍导入书架。</p>
+                    <p class="lang-en">Import your EPUB or PDF books using WiFi Transfer or direct device-to-device sharing.</p>
+                </div>
+                
+                <!-- Step 2 -->
+                <div class="step-item">
+                    <div class="step-number">2</div>
+                    <h3 class="lang-zh">打开手表端应用</h3>
+                    <h3 class="lang-en">Open Companion Watch App</h3>
+                    <p class="lang-zh">在 Apple Watch 上启动 PagePilot。手表与手机端会通过蓝牙/局域网自动建立安全连接。</p>
+                    <p class="lang-en">Launch PagePilot on your Apple Watch. Watch and phone connect automatically over Bluetooth.</p>
+                </div>
+                
+                <!-- Step 3 -->
+                <div class="step-item">
+                    <div class="step-number">3</div>
+                    <h3 class="lang-zh">舒适阅读与翻页</h3>
+                    <h3 class="lang-en">Read and Turn Pages</h3>
+                    <p class="lang-zh">点击表盘的翻页按钮，或转动表冠，即可随心遥控手机/平板上的阅读页面。</p>
+                    <p class="lang-en">Tap the watch control button or turn the Digital Crown to flip pages on your mobile device.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pro Pricing Section -->
+    <section class="pricing" id="pricing">
+        <div class="container">
+            <div class="section-title">
+                <h2 class="lang-zh">选择适合您的版本</h2>
+                <h2 class="lang-en">Choose Your Perfect Edition</h2>
+                <p class="lang-zh">我们坚守体验，核心翻页功能永远免费。升级 Pro 将解锁更多高级习惯管理与大屏支持。</p>
+                <p class="lang-en">Basic Watch page-turning is free forever. Pro unlocks advanced insights and tablet page-turning.</p>
+            </div>
+            
+            <div class="pricing-card">
+                <div class="pricing-badge">
+                    <span class="lang-zh">首选推荐</span>
+                    <span class="lang-en">BEST VALUE</span>
+                </div>
+                
+                <div class="pricing-header">
+                    <h3>PagePilot Pro</h3>
+                    <div class="price-box">
+                        <span class="price-currency lang-zh">¥</span>
+                        <span class="price-currency lang-en">$</span>
+                        <span class="price-amount lang-zh">59.9</span>
+                        <span class="price-amount lang-en">8.99</span>
+                        <span class="price-duration lang-zh">/ 终身买断</span>
+                        <span class="price-duration lang-en">/ Lifetime Buy</span>
+                    </div>
+                    <p class="lang-zh">（同时支持 ¥19.9/年 &amp; ¥2/月 灵活订阅，首月提供免费试用）</p>
+                    <p class="lang-en">(Also available at $2.99/yr &amp; $0.49/mo subscriptions, with a 1-month free trial)</p>
+                </div>
+                
+                <div class="comparison-grid">
+                    <!-- Column 1: Free Tier -->
+                    <div class="comparison-column">
+                        <h4 class="lang-zh">免费版免费体验</h4>
+                        <h4 class="lang-en">Free Edition</h4>
+                        <ul class="comparison-list">
+                            <li>
+                                <span class="list-badge free">Free</span>
+                                <span class="lang-zh">Watch 基础上一页/下一页</span>
+                                <span class="lang-en">Basic Watch Page Turning</span>
+                            </li>
+                            <li>
+                                <span class="list-badge free">Free</span>
+                                <span class="lang-zh">WiFi 局域网拖拽传书</span>
+                                <span class="lang-en">WiFi Local Drag &amp; Drop</span>
+                            </li>
+                            <li>
+                                <span class="list-badge free">Free</span>
+                                <span class="lang-zh">iPhone-iPad 设备互传</span>
+                                <span class="lang-en">iPhone to iPad transfer</span>
+                            </li>
+                            <li>
+                                <span class="list-badge free">Free</span>
+                                <span class="lang-zh">支持导入最多 10 本书籍</span>
+                                <span class="lang-en">Up to 10 books in shelf</span>
+                            </li>
+                            <li>
+                                <span class="list-badge free">Free</span>
+                                <span class="lang-zh">每日阅读时长基础统计</span>
+                                <span class="lang-en">Basic daily reading stats</span>
+                            </li>
+                        </ul>
+                    </div>
+                    
+                    <!-- Column 2: Pro Tier -->
+                    <div class="comparison-column">
+                        <h4 class="lang-zh">Pro 版尊享权益</h4>
+                        <h4 class="lang-en">Pro Benefits</h4>
+                        <ul class="comparison-list">
+                            <li>
+                                <span class="list-badge pro">Pro</span>
+                                <span class="pricing-list-icon">✓</span>
+                                <span class="lang-zh"><b>无限量图书导入</b>（不设上限）</span>
+                                <span class="lang-en"><b>Unlimited book imports</b></span>
+                            </li>
+                            <li>
+                                <span class="list-badge pro">Pro</span>
+                                <span class="pricing-list-icon">✓</span>
+                                <span class="lang-zh"><b>周 / 月 / 年阅读统计汇总</b></span>
+                                <span class="lang-en"><b>Weekly/Monthly/Yearly stats</b></span>
+                            </li>
+                            <li>
+                                <span class="list-badge pro">Pro</span>
+                                <span class="pricing-list-icon">✓</span>
+                                <span class="lang-zh"><b>连续阅读天数 (Streak) 追踪</b></span>
+                                <span class="lang-en"><b>Reading streak tracking</b></span>
+                            </li>
+                            <li>
+                                <span class="list-badge pro">Pro</span>
+                                <span class="pricing-list-icon">✓</span>
+                                <span class="lang-zh"><b>iPad 原生界面及 Apple Watch 翻页</b></span>
+                                <span class="lang-en"><b>iPad Watch remote support</b></span>
+                            </li>
+                            <li>
+                                <span class="list-badge pro">Pro</span>
+                                <span class="pricing-list-icon">✓</span>
+                                <span class="lang-zh"><b>Pro 用户优先反馈通道</b></span>
+                                <span class="lang-en"><b>Priority support channels</b></span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Download Banner -->
+    <section class="download-banner">
+        <div class="container">
+            <h2 class="lang-zh">立即下载 PagePilot</h2>
+            <h2 class="lang-en">Download PagePilot Now</h2>
+            <p class="lang-zh">体验躺在床上、运动踩车、单手轻松看书的新方式。</p>
+            <p class="lang-en">Redefine how you read in bed, on the subway, or during a workout.</p>
+            
+            <a href="https://apps.apple.com/app/id6503028286" class="btn-download" target="_blank" rel="noopener noreferrer">
+                <svg viewBox="0 0 24 24">
+                    <path d="M18.71 19.5C17.88 20.74 17 21.95 15.66 21.97C14.32 22 13.89 21.18 12.37 21.18C10.84 21.18 10.37 21.95 9.1 22C7.79 22.05 6.8 20.68 5.96 19.48C4.25 17 2.94 12.45 4.7 9.39C5.57 7.87 7.13 6.91 8.82 6.88C10.1 6.86 11.32 7.75 12.11 7.75C12.89 7.75 14.37 6.68 15.92 6.84C16.57 6.87 18.39 7.1 19.56 8.82C19.47 8.88 17.39 10.1 17.41 12.63C17.44 15.65 20.06 16.66 20.1 16.67C20.08 16.74 19.67 18.11 18.71 19.5M15.97 4.17C16.63 3.37 17.07 2.28 16.95 1C15.85 1.04 14.51 1.73 13.73 2.64C13.07 3.41 12.49 4.52 12.64 5.78C13.87 5.87 15.12 5.17 15.97 4.17Z"/>
+                </svg>
+                <span class="lang-zh">在 App Store 下载</span>
+                <span class="lang-en">Download on App Store</span>
+            </a>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container footer-grid">
+            <p>&copy; 2026 PagePilot. All rights reserved.</p>
+            
+            <div class="footer-links">
+                <a href="privacy.html" target="_blank" class="lang-zh">隐私政策</a>
+                <a href="privacy.html" target="_blank" class="lang-en">Privacy Policy</a>
+                
+                <a href="terms.html" target="_blank" class="lang-zh">服务条款</a>
+                <a href="terms.html" target="_blank" class="lang-en">Terms of Service</a>
+                
+                <a href="mailto:return_panyang@163.com">return_panyang@163.com</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Interactive Mockup & Toggle Controller Logic -->
+    <script>
+        // Language State Management
+        function toggleLanguage() {
+            const body = document.body;
+            const currentLang = body.getAttribute('data-lang');
+            const newLang = currentLang === 'zh' ? 'en' : 'zh';
+            body.setAttribute('data-lang', newLang);
+            localStorage.setItem('pagepilot-lang', newLang);
+        }
+
+        // Theme State Management
+        function toggleTheme() {
+            const body = document.body;
+            const currentTheme = body.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            body.setAttribute('data-theme', newTheme);
+            localStorage.setItem('pagepilot-theme', newTheme);
+            
+            // Adjust header button icon styles
+            const sunIcon = document.querySelector('.theme-icon-dark');
+            const moonIcon = document.querySelector('.theme-icon-light');
+            const themeBtnText = document.getElementById('themeBtn').querySelectorAll('span');
+            
+            if (newTheme === 'light') {
+                sunIcon.style.display = 'none';
+                moonIcon.style.display = 'block';
+            } else {
+                sunIcon.style.display = 'block';
+                moonIcon.style.display = 'none';
+            }
+        }
+
+        // Initialize state on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            const storedLang = localStorage.getItem('pagepilot-lang');
+            const storedTheme = localStorage.getItem('pagepilot-theme');
+            
+            // Detect browser language if not set
+            if (storedLang) {
+                document.body.setAttribute('data-lang', storedLang);
+            } else {
+                const userLang = navigator.language || navigator.userLanguage;
+                if (userLang.startsWith('en')) {
+                    document.body.setAttribute('data-lang', 'en');
+                } else {
+                    document.body.setAttribute('data-lang', 'zh');
+                }
+            }
+
+            // Apply light/dark settings
+            if (storedTheme === 'light') {
+                toggleTheme(); // will switch it to light
+            }
+        });
+
+        // Interactive Watch & Phone Mockup Logic
+        let currentPage = 1;
+        const totalPages = 3;
+
+        function watchClickAction() {
+            // Remove click prompt once clicked
+            const prompt = document.querySelector('.click-prompt');
+            if (prompt) {
+                prompt.style.display = 'none';
+            }
+
+            // Animate Crown
+            const crown = document.querySelector('.watch-crown');
+            crown.style.background = '#1e78d9';
+            setTimeout(() => {
+                crown.style.background = '';
+            }, 150);
+
+            // Animate Active Watch Button Feedback
+            const watchBtn = document.querySelector('.watch-btn-action');
+            watchBtn.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                watchBtn.style.transform = '';
+            }, 100);
+
+            // Navigate Mockup Pages on the Phone Screen
+            const currentActivePage = document.getElementById(`page-${currentPage}`);
+            currentActivePage.classList.remove('active');
+            currentActivePage.classList.add('prev');
+
+            // Calculate next page
+            currentPage = currentPage + 1;
+            if (currentPage > totalPages) {
+                currentPage = 1;
+            }
+
+            // Update UI page number indicator
+            document.getElementById('currPageNum').textContent = currentPage;
+
+            const nextActivePage = document.getElementById(`page-${currentPage}`);
+            
+            // If wrapping back to page 1, clear all 'prev' states
+            if (currentPage === 1) {
+                for (let i = 1; i <= totalPages; i++) {
+                    const p = document.getElementById(`page-${i}`);
+                    p.classList.remove('prev');
+                }
+            }
+            
+            nextActivePage.classList.add('active');
+        }
+    </script>
+</body>
+</html>

@@ -295,8 +295,8 @@
 "stats_rank_bronze" = "阅读季军";
 
 /* Paywall */
-"paywall_title" = "解锁 PagePilot Pro";
-"paywall_subtitle" = "无限书架、iPad 手表翻页和高级阅读统计都在这里。";
+"paywall_title" = "专注阅读，收获更多";
+"paywall_subtitle" = "无限书架、手表翻页和深度统计，让阅读更自由。";
 "paywall_pro_badge" = "年会员主推";
 "paywall_feature_unlimited_books" = "无限添加书籍（普通版最多 10 本）";
 "paywall_feature_ipad_page_turn" = "Apple Watch 可控制 iPad 翻页";
@@ -304,6 +304,17 @@
 "paywall_feature_streak" = "连续阅读天数追踪";
 "paywall_feature_premium_tts" = "高级 TTS 语言（即将到来）";
 "paywall_feature_ad_free" = "无广告阅读体验";
+"paywall_feature_unlimited_title" = "无限书架";
+"paywall_feature_unlimited_subtitle" = "不再限制 10 本";
+"paywall_feature_watch_title" = "手表翻页";
+"paywall_feature_watch_subtitle" = "控制 iPad 阅读";
+"paywall_feature_stats_title" = "Pro 统计";
+"paywall_feature_stats_subtitle" = "看见阅读趋势";
+"paywall_feature_clean_title" = "纯净阅读";
+"paywall_feature_clean_subtitle" = "少打扰、更沉浸";
+"paywall_assurance_trial" = "1 个月免费试用";
+"paywall_assurance_cancel" = "随时取消";
+"paywall_trial_note" = "试用结束后自动续费，可随时在设置中取消。";
 "paywall_one_time" = "一次性购买，终身使用";
 "paywall_buy_button" = "立即购买";
 "paywall_restore_button" = "恢复购买";
@@ -334,9 +345,10 @@
 "paywall_option_lifetime" = "终身会员";
 "paywall_price_monthly" = "¥2";
 "paywall_price_yearly" = "¥19.9";
+"paywall_price_yearly_monthly" = "¥1.66";
 "paywall_price_lifetime" = "¥59.9";
 "paywall_price_monthly_sub" = "按月续订，适合先试用";
-"paywall_price_yearly_sub" = "约 %@/月，当前主推";
+"paywall_price_yearly_sub" = "仅 %@/月，省 17%";
 "paywall_price_lifetime_sub" = "一次购买，限时优惠";
 "paywall_terms_of_use" = "使用条款";
 "paywall_privacy_policy" = "隐私政策";

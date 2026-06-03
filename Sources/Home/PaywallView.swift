@@ -25,185 +25,134 @@ struct PaywallView: View {
     private let accentTeal = Color(red: 0.16, green: 0.62, blue: 0.58)
 
     var body: some View {
-        NavigationView {
-            ScrollView(.vertical, showsIndicators: false) {
-                VStack(spacing: 18) {
-                    hero
-                    optionList
-                    purchasePanel
-                    featureList
-                    linksView
-                }
-                .frame(maxWidth: 440)
-                .frame(maxWidth: .infinity)
-                .padding(.horizontal, 20)
-                .padding(.top, 18)
-                .padding(.bottom, 42)
+        ScrollView(.vertical, showsIndicators: false) {
+            VStack(spacing: 12) {
+                closeRow
+                hero
+                featureList
+                optionList
+                purchasePanel
+                linksView
             }
-            .scrollContentBackground(.hidden)
-            .background(
-                ZStack {
-                    AppColors.background
-                    
-                    Circle()
-                        .fill(accentBlue.opacity(0.12))
-                        .frame(width: 300, height: 300)
-                        .blur(radius: 60)
-                        .offset(x: 150, y: -200)
-                    
-                    Circle()
-                        .fill(accentTeal.opacity(0.12))
-                        .frame(width: 300, height: 300)
-                        .blur(radius: 60)
-                        .offset(x: -150, y: 200)
-                }
-                .ignoresSafeArea()
-            )
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(NSLocalizedString("paywall_close", comment: "")) {
-                        dismiss()
-                    }
-                    .disabled(isPurchasing)
-                }
+            .frame(maxWidth: 440)
+            .frame(maxWidth: .infinity)
+            .padding(.horizontal, 16)
+            .padding(.top, 12)
+            .padding(.bottom, 16)
+        }
+        .scrollContentBackground(.hidden)
+        .background(AppColors.background.ignoresSafeArea())
+        .presentationDetents([.height(640)])
+        .presentationDragIndicator(.hidden)
+        .onAppear {
+            Analytics.shared.log(.paywallViewed(source: "paywall_sheet"))
+            Task {
+                await loadProductsIfNeeded()
             }
-            .onAppear {
-                Analytics.shared.log(.paywallViewed(source: "paywall_sheet"))
-                Task {
-                    await loadProductsIfNeeded()
-                }
+        }
+        .alert(NSLocalizedString("paywall_error_title", comment: ""), isPresented: $showError) {
+            Button(NSLocalizedString("ok_button", comment: ""), role: .cancel) {}
+        } message: {
+            if let error = purchaseError as? ProPurchaseError {
+                Text(error.localizedDescription)
+            } else {
+                Text(purchaseError?.localizedDescription ?? "")
             }
-            .alert(NSLocalizedString("paywall_error_title", comment: ""), isPresented: $showError) {
-                Button(NSLocalizedString("ok_button", comment: ""), role: .cancel) {}
-            } message: {
-                if let error = purchaseError as? ProPurchaseError {
-                    Text(error.localizedDescription)
-                } else {
-                    Text(purchaseError?.localizedDescription ?? "")
-                }
+        }
+        .overlay {
+            if showSuccess {
+                successOverlay
             }
-            .overlay {
-                if showSuccess {
-                    successOverlay
-                }
-            }
-            .onChange(of: selectedProductID) { oldValue, newValue in
-                updateEligibility(for: newValue)
-            }
+        }
+        .onChange(of: selectedProductID) { oldValue, newValue in
+            updateEligibility(for: newValue)
         }
     }
 
     // MARK: - Hero
 
-    private var hero: some View {
-        VStack(alignment: .leading, spacing: 22) {
-            HStack {
-                Label(
-                    NSLocalizedString("paywall_pro_badge", comment: ""),
-                    systemImage: "crown.fill"
-                )
-                .font(.system(size: 12, weight: .bold))
-                .foregroundColor(accentBlue)
-                .padding(.horizontal, 11)
-                .frame(height: 30)
-                .background(accentBlue.opacity(colorScheme == .dark ? 0.22 : 0.10))
-                .clipShape(Capsule())
+    private var closeRow: some View {
+        HStack {
+            Spacer()
 
-                Spacer()
-            }
-
-            VStack(alignment: .leading, spacing: 9) {
-                Text(NSLocalizedString("paywall_title", comment: ""))
-                    .font(.system(size: 32, weight: .bold))
-                    .foregroundColor(AppColors.primaryText)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                Text(NSLocalizedString("paywall_subtitle", comment: ""))
-                    .font(.system(size: 15))
+            Button {
+                dismiss()
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 12, weight: .semibold))
                     .foregroundColor(AppColors.secondaryText)
-                    .lineSpacing(3)
-                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(width: 30, height: 30)
+                    .background(Color(.secondarySystemGroupedBackground))
+                    .clipShape(Circle())
             }
-
-            readingChartPreview
+            .buttonStyle(.plain)
+            .accessibilityLabel(NSLocalizedString("paywall_close", comment: ""))
+            .disabled(isPurchasing)
         }
-        .padding(22)
-        .background(.ultraThinMaterial)
-        .cornerRadius(22)
-        .overlay(
-            RoundedRectangle(cornerRadius: 22)
-                .stroke(
-                    LinearGradient(
-                        colors: [
-                            Color.white.opacity(colorScheme == .dark ? 0.15 : 0.4),
-                            Color.white.opacity(0.0)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ),
-                    lineWidth: 1
-                )
-        )
-        .shadow(
-            color: Color.black.opacity(colorScheme == .dark ? 0.15 : 0.03),
-            radius: 18,
-            x: 0,
-            y: 8
-        )
+        .frame(height: 30)
     }
 
-    private var readingChartPreview: some View {
-        HStack(alignment: .bottom, spacing: 8) {
-            ForEach(Array([0.32, 0.48, 0.24, 0.72, 0.58, 0.86, 0.64].enumerated()), id: \.offset) { index, value in
-                RoundedRectangle(cornerRadius: 5, style: .continuous)
-                    .fill(index == 5 ? accentTeal : accentBlue.opacity(colorScheme == .dark ? 0.34 : 0.22))
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 34 + CGFloat(value * 58))
-            }
+    private var hero: some View {
+        VStack(spacing: 7) {
+            Image(systemName: "crown.fill")
+                .font(.system(size: 18, weight: .bold))
+                .foregroundColor(.orange)
+                .frame(width: 36, height: 36)
+                .background(Color.orange.opacity(colorScheme == .dark ? 0.18 : 0.12))
+                .clipShape(Circle())
+
+            Text(NSLocalizedString("paywall_title", comment: ""))
+                .font(.system(size: 23, weight: .bold))
+                .foregroundColor(AppColors.primaryText)
+                .multilineTextAlignment(.center)
+
+            Text(NSLocalizedString("paywall_subtitle", comment: ""))
+                .font(.system(size: 13, weight: .medium))
+                .foregroundColor(AppColors.secondaryText)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
         }
-        .frame(height: 112)
-        .padding(14)
-        .background(Color(.secondarySystemGroupedBackground))
-        .cornerRadius(16)
+        .padding(.horizontal, 10)
     }
 
     private var featureList: some View {
-        VStack(spacing: 0) {
-            featureRow(icon: "books.vertical.fill", iconColor: accentTeal, text: NSLocalizedString("paywall_feature_unlimited_books", comment: ""))
-            Divider().padding(.leading, 54)
-            featureRow(icon: "ipad.and.iphone", iconColor: .purple, text: NSLocalizedString("paywall_feature_ipad_page_turn", comment: ""))
-            Divider().padding(.leading, 54)
-            featureRow(icon: "chart.bar.fill", iconColor: accentBlue, text: NSLocalizedString("paywall_feature_stats", comment: ""))
-            Divider().padding(.leading, 54)
-            featureRow(icon: "flame.fill", iconColor: .orange, text: NSLocalizedString("paywall_feature_streak", comment: ""))
-            Divider().padding(.leading, 54)
-            featureRow(icon: "speaker.wave.2.fill", iconColor: .indigo, text: NSLocalizedString("paywall_feature_premium_tts", comment: ""))
-            Divider().padding(.leading, 54)
-            featureRow(icon: "rectangle.slash", iconColor: .green, text: NSLocalizedString("paywall_feature_ad_free", comment: ""))
-        }
-        .background(.thinMaterial)
-        .cornerRadius(18)
-        .overlay(
-            RoundedRectangle(cornerRadius: 18)
-                .stroke(
-                    LinearGradient(
-                        colors: [
-                            Color.white.opacity(colorScheme == .dark ? 0.15 : 0.4),
-                            Color.white.opacity(0.0)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ),
-                    lineWidth: 1
+        VStack(spacing: 10) {
+            HStack(alignment: .top, spacing: 0) {
+                miniFeature(
+                    icon: "books.vertical.fill",
+                    iconColor: accentTeal,
+                    title: NSLocalizedString("paywall_feature_unlimited_title", comment: ""),
+                    subtitle: NSLocalizedString("paywall_feature_unlimited_subtitle", comment: "")
                 )
-        )
+                miniFeature(
+                    icon: "applewatch.watchface",
+                    iconColor: .purple,
+                    title: NSLocalizedString("paywall_feature_watch_title", comment: ""),
+                    subtitle: NSLocalizedString("paywall_feature_watch_subtitle", comment: "")
+                )
+                miniFeature(
+                    icon: "chart.bar.xaxis",
+                    iconColor: accentBlue,
+                    title: NSLocalizedString("paywall_feature_stats_title", comment: ""),
+                    subtitle: NSLocalizedString("paywall_feature_stats_subtitle", comment: "")
+                )
+                miniFeature(
+                    icon: "sparkles",
+                    iconColor: .green,
+                    title: NSLocalizedString("paywall_feature_clean_title", comment: ""),
+                    subtitle: NSLocalizedString("paywall_feature_clean_subtitle", comment: "")
+                )
+            }
+
+            Divider()
+        }
+        .padding(.top, 4)
     }
 
     // MARK: - Option Cards List
 
     private var optionList: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 8) {
             if productsLoadFailed {
                 VStack(spacing: 10) {
                     Image(systemName: "exclamationmark.triangle")
@@ -241,7 +190,16 @@ struct PaywallView: View {
                 }
                 .padding(.vertical, 20)
             } else {
-                ForEach(products, id: \.id) { product in
+                // Fixed display order: yearly -> monthly -> lifetime
+                let ordered = products.sorted { a, b in
+                    let rank: (Product) -> Int = { p in
+                        if p.id.contains("yearly") { return 0 }
+                        if p.id.contains("monthly") { return 1 }
+                        return 2
+                    }
+                    return rank(a) < rank(b)
+                }
+                ForEach(ordered, id: \.id) { product in
                     optionCard(for: product)
                 }
             }
@@ -265,8 +223,7 @@ struct PaywallView: View {
             if isMonthly {
                 return NSLocalizedString("paywall_price_monthly_sub", comment: "")
             } else if isYearly {
-                let monthlyPrice = product.price / 12
-                let formattedMonthly = monthlyPrice.formatted(product.priceFormatStyle)
+                let formattedMonthly = localizedMonthlyPrice(for: product)
                 let formatString = NSLocalizedString("paywall_price_yearly_sub", comment: "")
                 return String(format: formatString, formattedMonthly)
             } else {
@@ -287,33 +244,34 @@ struct PaywallView: View {
                 selectedProductID = product.id
             }
         }) {
-            HStack(spacing: 16) {
+            HStack(spacing: 12) {
                 // Radio Selection indicator
                 ZStack {
                     Circle()
                         .stroke(isSelected ? accentBlue : Color.secondary.opacity(0.3), lineWidth: 2)
-                        .frame(width: 22, height: 22)
+                        .frame(width: 20, height: 20)
                     
                     if isSelected {
                         Circle()
                             .fill(accentBlue)
-                            .frame(width: 12, height: 12)
+                            .frame(width: 11, height: 11)
                             .transition(.scale.combined(with: .opacity))
                     }
                 }
                 
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack(spacing: 8) {
+                VStack(alignment: .leading, spacing: 3) {
+                    HStack(spacing: 6) {
                         Text(NSLocalizedString(titleKey, comment: ""))
-                            .font(.system(size: 16, weight: .bold))
+                            .font(.system(size: 15, weight: .bold))
                             .foregroundColor(AppColors.primaryText)
+                            .lineLimit(1)
                         
                         if let badgeText {
                             Text(badgeText)
-                                .font(.system(size: 10, weight: .bold))
+                                .font(.system(size: 9, weight: .bold))
                                 .foregroundColor(.white)
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 3)
+                                .padding(.horizontal, 5)
+                                .padding(.vertical, 2)
                                 .background(
                                     LinearGradient(
                                         colors: isLifetime 
@@ -328,20 +286,21 @@ struct PaywallView: View {
                     }
                     
                     Text(priceSubtext)
-                        .font(.system(size: 13))
-                        .foregroundColor(AppColors.secondaryText)
-                        .fixedSize(horizontal: false, vertical: true)
+                        .font(.system(size: 11.5, weight: isYearly ? .semibold : .regular))
+                        .foregroundColor(isYearly ? accentTeal : AppColors.secondaryText)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.85)
                 }
                 
                 Spacer()
                 
                 Text(displayPrice(for: product))
-                    .font(.system(size: 18, weight: .bold))
+                    .font(.system(size: 17, weight: .bold))
                     .foregroundColor(AppColors.primaryText)
                     .monospacedDigit()
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 16)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
             .background(
                 Group {
                     if isSelected {
@@ -354,14 +313,14 @@ struct PaywallView: View {
                 }
             )
             .background(.thinMaterial)
-            .cornerRadius(16)
+            .cornerRadius(14)
             .overlay(
-                RoundedRectangle(cornerRadius: 16)
+                RoundedRectangle(cornerRadius: 14)
                     .stroke(
                         isSelected 
                             ? LinearGradient(colors: [accentBlue, accentTeal], startPoint: .leading, endPoint: .trailing)
                             : LinearGradient(colors: [Color.white.opacity(colorScheme == .dark ? 0.08 : 0.3), Color.white.opacity(0.0)], startPoint: .topLeading, endPoint: .bottomTrailing),
-                        lineWidth: isSelected ? 2 : 1
+                        lineWidth: isSelected ? 1.5 : 1
                     )
             )
             .shadow(
@@ -391,7 +350,19 @@ struct PaywallView: View {
     }
 
     private var purchasePanel: some View {
-        VStack(spacing: 14) {
+        VStack(spacing: 9) {
+            HStack(spacing: 14) {
+                assuranceItem(icon: "checkmark.seal.fill", text: NSLocalizedString("paywall_assurance_trial", comment: ""))
+                assuranceItem(icon: "xmark.seal.fill", text: NSLocalizedString("paywall_assurance_cancel", comment: ""))
+            }
+
+            Text(NSLocalizedString("paywall_trial_note", comment: ""))
+                .font(.system(size: 10.5))
+                .foregroundColor(AppColors.secondaryText)
+                .multilineTextAlignment(.center)
+                .lineLimit(2)
+                .minimumScaleFactor(0.9)
+
             Button(action: purchase) {
                 HStack(spacing: 8) {
                     if isPurchasing {
@@ -404,7 +375,7 @@ struct PaywallView: View {
                 .font(.system(size: 16, weight: .semibold))
                 .foregroundColor(.white)
                 .frame(maxWidth: .infinity)
-                .frame(height: 54)
+                .frame(height: 48)
                 .background(
                     LinearGradient(
                         colors: [accentBlue, accentTeal],
@@ -412,7 +383,7 @@ struct PaywallView: View {
                         endPoint: .trailing
                     )
                 )
-                .cornerRadius(16)
+                .cornerRadius(15)
             }
             .buttonStyle(ScaleButtonStyle())
             .disabled(isPurchasing || selectedProductID.isEmpty)
@@ -420,34 +391,11 @@ struct PaywallView: View {
             Button(NSLocalizedString("paywall_restore_button", comment: "")) {
                 Task { await restore() }
             }
-            .font(.system(size: 14, weight: .medium))
-            .foregroundColor(accentBlue)
+            .font(.system(size: 12, weight: .medium))
+            .foregroundColor(AppColors.secondaryText.opacity(0.65))
             .disabled(isPurchasing)
-
-            Text(NSLocalizedString("paywall_subscription_billing_note", comment: ""))
-                .font(.system(size: 11))
-                .foregroundColor(AppColors.secondaryText)
-                .multilineTextAlignment(.center)
-                .padding(.top, 4)
-                .fixedSize(horizontal: false, vertical: true)
         }
-        .padding(18)
-        .background(.ultraThinMaterial)
-        .cornerRadius(18)
-        .overlay(
-            RoundedRectangle(cornerRadius: 18)
-                .stroke(
-                    LinearGradient(
-                        colors: [
-                            Color.white.opacity(colorScheme == .dark ? 0.15 : 0.4),
-                            Color.white.opacity(0.0)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ),
-                    lineWidth: 1
-                )
-        )
+        .padding(.top, 2)
     }
 
     private var successOverlay: some View {
@@ -502,27 +450,46 @@ struct PaywallView: View {
         }
     }
 
-    private func featureRow(icon: String, iconColor: Color, text: String) -> some View {
-        HStack(spacing: 14) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 11, style: .continuous)
-                    .fill(iconColor.opacity(colorScheme == .dark ? 0.22 : 0.12))
+    private func miniFeature(icon: String, iconColor: Color, title: String, subtitle: String) -> some View {
+        VStack(spacing: 7) {
+            Image(systemName: icon)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundColor(iconColor)
+                .frame(width: 32, height: 32)
+                .background(iconColor.opacity(colorScheme == .dark ? 0.20 : 0.11))
+                .clipShape(Circle())
 
-                Image(systemName: icon)
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(iconColor)
-            }
-            .frame(width: 40, height: 40)
+            Text(title)
+                .font(.system(size: 11.5, weight: .semibold))
+                .foregroundColor(AppColors.primaryText)
+                .multilineTextAlignment(.center)
+                .lineLimit(1)
+                .minimumScaleFactor(0.78)
+
+            Text(subtitle)
+                .font(.system(size: 9.5, weight: .medium))
+                .foregroundColor(AppColors.secondaryText)
+                .multilineTextAlignment(.center)
+                .lineLimit(2)
+                .minimumScaleFactor(0.75)
+        }
+        .frame(maxWidth: .infinity)
+        .frame(minHeight: 70, alignment: .top)
+    }
+
+    private func assuranceItem(icon: String, text: String) -> some View {
+        HStack(spacing: 5) {
+            Image(systemName: icon)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundColor(accentTeal)
 
             Text(text)
-                .font(.system(size: 15, weight: .medium))
+                .font(.system(size: 12, weight: .semibold))
                 .foregroundColor(AppColors.primaryText)
-                .fixedSize(horizontal: false, vertical: true)
-
-            Spacer(minLength: 0)
+                .lineLimit(1)
+                .minimumScaleFactor(0.85)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 14)
+        .frame(maxWidth: .infinity)
     }
 
     private var linksView: some View {
@@ -536,11 +503,29 @@ struct PaywallView: View {
         }
         .font(.system(size: 12))
         .foregroundColor(accentBlue)
-        .padding(.top, 8)
+        .padding(.top, 0)
     }
 
     private func displayPrice(for product: Product) -> String {
-        return product.displayPrice
+        if product.id.contains("monthly") {
+            return NSLocalizedString("paywall_price_monthly", comment: "")
+        } else if product.id.contains("yearly") {
+            return NSLocalizedString("paywall_price_yearly", comment: "")
+        } else if product.id.contains("lifetime") {
+            return NSLocalizedString("paywall_price_lifetime", comment: "")
+        } else {
+            return product.displayPrice
+        }
+    }
+
+    private func localizedMonthlyPrice(for product: Product) -> String {
+        if product.id.contains("yearly") {
+            return NSLocalizedString("paywall_price_yearly_monthly", comment: "")
+        } else if product.id.contains("monthly") {
+            return NSLocalizedString("paywall_price_monthly", comment: "")
+        } else {
+            return product.displayPrice
+        }
     }
 
     private func purchase() {
