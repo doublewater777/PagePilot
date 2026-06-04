@@ -95,7 +95,7 @@ final class ProPurchaseManager {
         case .success(let verification):
             let transaction = try checkVerified(verification)
             await transaction.finish()
-            await grantProAccess()
+            await syncCurrentEntitlements()
             Analytics.shared.log(.purchaseSucceeded)
 
         case .userCancelled:
@@ -117,16 +117,7 @@ final class ProPurchaseManager {
     func restorePurchases() async {
         do {
             try await AppStore.sync()
-            
-            var hasPro = false
-            for await result in Transaction.currentEntitlements {
-                let transaction = try checkVerified(result)
-                if Self.proProductIDs.contains(transaction.productID) {
-                    hasPro = true
-                    break
-                }
-            }
-            await updateProAccess(hasPro)
+            let hasPro = await syncCurrentEntitlements()
             if hasPro {
                 Analytics.shared.log(.purchaseRestored)
             }
@@ -138,19 +129,7 @@ final class ProPurchaseManager {
     // MARK: - Verification
 
     func verifyCurrentEntitlements() async {
-        do {
-            var hasPro = false
-            for await result in Transaction.currentEntitlements {
-                let transaction = try checkVerified(result)
-                if Self.proProductIDs.contains(transaction.productID) {
-                    hasPro = true
-                    break
-                }
-            }
-            await updateProAccess(hasPro)
-        } catch {
-            print("Verification failed: \(error)")
-        }
+        await syncCurrentEntitlements()
     }
 
     // MARK: - Helpers
@@ -162,7 +141,7 @@ final class ProPurchaseManager {
                 do {
                     let transaction = try self.checkVerified(result)
                     if Self.proProductIDs.contains(transaction.productID) {
-                        await self.grantProAccess()
+                        await self.syncCurrentEntitlements()
                     }
                     await transaction.finish()
                 } catch {
@@ -181,11 +160,28 @@ final class ProPurchaseManager {
         }
     }
 
-    @MainActor
-    private func grantProAccess() async {
-        defaults.set(true, forKey: proKey)
-        NotificationCenter.default.post(name: Self.proAccessDidChange, object: nil)
-        Analytics.shared.log(.proAccessGranted)
+    @discardableResult
+    private func syncCurrentEntitlements() async -> Bool {
+        var hasPro = false
+        do {
+            for await result in Transaction.currentEntitlements {
+                let transaction = try checkVerified(result)
+                guard Self.proProductIDs.contains(transaction.productID) else {
+                    continue
+                }
+
+                hasPro = true
+                break
+            }
+        } catch {
+            print("Entitlement sync failed: \(error)")
+        }
+
+        await updateProAccess(hasPro)
+        if hasPro {
+            Analytics.shared.log(.proAccessGranted)
+        }
+        return hasPro
     }
 
     @MainActor

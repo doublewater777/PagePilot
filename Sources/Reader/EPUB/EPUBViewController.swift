@@ -72,10 +72,13 @@ class EPUBViewController: VisualReaderViewController<EPUBNavigatorViewController
 
     override func presentUserPreferences() {
         Task {
+            do {
+                let preferences = try preferencesStore.preferences(for: bookId)
+
             let userPrefs = await UserPreferences(
                 model: UserPreferencesViewModel(
                     bookId: bookId,
-                    preferences: try! preferencesStore.preferences(for: bookId),
+                    preferences: preferences,
                     configurable: navigator,
                     store: preferencesStore
                 ),
@@ -86,6 +89,9 @@ class EPUBViewController: VisualReaderViewController<EPUBNavigatorViewController
             let vc = UIHostingController(rootView: userPrefs)
             vc.modalPresentationStyle = .formSheet
             present(vc, animated: true)
+            } catch {
+                moduleDelegate?.presentError(UserError(error), from: self)
+            }
         }
     }
 

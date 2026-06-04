@@ -25,6 +25,10 @@ schemes:
     build:
       targets:
         PagePilot: all
+        PagePilotTests: [test]
+    test:
+      targets:
+        - PagePilotTests
     run:
       storeKitConfiguration: PagePilot.storekit
 targets:
@@ -75,4 +79,16 @@ targets:
     settings:
       INFOPLIST_FILE: WatchRemote/Info.plist
       PRODUCT_BUNDLE_IDENTIFIER: com.panyang.PagePilot.WatchRemote
+      DEVELOPMENT_TEAM: ${RD_DEVELOPMENT_TEAM}
+
+  PagePilotTests:
+    type: bundle.unit-test
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: Tests
+    dependencies:
+      - target: PagePilot
+    settings:
+      PRODUCT_BUNDLE_IDENTIFIER: com.panyang.PagePilotTests
       DEVELOPMENT_TEAM: ${RD_DEVELOPMENT_TEAM}

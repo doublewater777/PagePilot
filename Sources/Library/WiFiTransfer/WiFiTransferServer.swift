@@ -12,6 +12,12 @@ import ReadiumGCDWebServer
 /// and drag-and-drop files to transfer them to the app's Documents directory.
 final class WiFiTransferServer {
     private var server: ReadiumGCDWebServer?
+    private var sessionToken: String?
+
+    private static let maxUploadBytes = 200 * 1024 * 1024
+    private static let allowedFileExtensions: Set<String> = [
+        "epub", "pdf", "cbz", "lcpdf", "webpub", "audiobook", "lcpa", "lcpl", "zip", "txt",
+    ]
 
     /// Called on the main thread when a file has been uploaded successfully.
     /// The parameter is the file URL in the Documents directory.
@@ -27,12 +33,15 @@ final class WiFiTransferServer {
             return displayURL(port: server.port) ?? ""
         }
 
+        let token = Self.makeSessionToken()
+        sessionToken = token
+
         let webServer = ReadiumGCDWebServer()
 
-        // GET / → serve the upload HTML page
+        // GET /<token> → serve the upload HTML page
         webServer.addHandler(
             forMethod: "GET",
-            path: "/",
+            path: "/\(token)",
             request: ReadiumGCDWebServerRequest.self,
             processBlock: { [weak self] _ in
                 guard let self else { return nil }
@@ -40,10 +49,10 @@ final class WiFiTransferServer {
             }
         )
 
-        // POST /upload → receive multipart file uploads
+        // POST /<token>/upload → receive multipart file uploads
         webServer.addHandler(
             forMethod: "POST",
-            path: "/upload",
+            path: "/\(token)/upload",
             request: ReadiumGCDWebServerMultiPartFormRequest.self,
             processBlock: { [weak self] request in
                 self?.handleUpload(request: request)
@@ -63,6 +72,7 @@ final class WiFiTransferServer {
     func stop() {
         server?.stop()
         server = nil
+        sessionToken = nil
     }
 
     var isRunning: Bool {
@@ -78,22 +88,41 @@ final class WiFiTransferServer {
 
     private func handleUpload(request: ReadiumGCDWebServerRequest?) -> ReadiumGCDWebServerResponse? {
         guard let multipart = request as? ReadiumGCDWebServerMultiPartFormRequest else {
-            let response = ReadiumGCDWebServerDataResponse(
-                data: Data("{\"error\":\"Invalid request\"}".utf8),
-                contentType: "application/json"
+            return jsonResponse(
+                [
+                    "success": false,
+                    "uploaded": [],
+                    "failed": [],
+                    "errors": ["request": "Invalid upload request"],
+                ],
+                statusCode: 400
             )
-            response.statusCode = 400
-            return response
         }
 
         var uploadedFiles: [String] = []
         var failedFiles: [String] = []
+        var errors: [String: String] = [:]
 
         for file in multipart.files {
             let originalName = file.fileName
             let tempPath = file.temporaryPath
 
             let sanitized = originalName.sanitizedPathComponent
+            let fileExtension = (sanitized as NSString).pathExtension.lowercased()
+            guard Self.allowedFileExtensions.contains(fileExtension) else {
+                failedFiles.append(originalName)
+                errors[originalName] = "Unsupported file type"
+                continue
+            }
+
+            let attributes = try? FileManager.default.attributesOfItem(atPath: tempPath)
+            let fileSize = (attributes?[.size] as? NSNumber)?.intValue ?? 0
+            guard fileSize <= Self.maxUploadBytes else {
+                failedFiles.append(originalName)
+                errors[originalName] = "File is larger than 200 MB"
+                continue
+            }
+
             let destURL = Paths.documents.appendingUniquePathComponent(sanitized).url
 
             do {
@@ -120,26 +149,51 @@ final class WiFiTransferServer {
                 } catch {
                     print("WiFiTransfer: failed to save \(originalName): \(error)")
                     failedFiles.append(originalName)
+                    errors[originalName] = "Could not save file"
                 }
             }
         }
 
-        let successJSON = uploadedFiles.map { "\"\($0)\"" }.joined(separator: ",")
-        let failedJSON = failedFiles.map { "\"\($0)\"" }.joined(separator: ",")
-        let json = "{\"success\":true,\"uploaded\":[\(successJSON)],\"failed\":[\(failedJSON)]}"
-        let response = ReadiumGCDWebServerDataResponse(
-            data: Data(json.utf8),
-            contentType: "application/json"
+        let statusCode = uploadedFiles.isEmpty && !failedFiles.isEmpty ? 400 : 200
+        return jsonResponse(
+            [
+                "success": failedFiles.isEmpty,
+                "uploaded": uploadedFiles,
+                "failed": failedFiles,
+                "errors": errors,
+            ],
+            statusCode: statusCode
         )
-        response.statusCode = 200
-        return response
     }
 
     // MARK: - Helpers
 
     private func displayURL(port: UInt) -> String? {
-        guard let ip = WiFiTransferServer.wifiIPAddress() else { return nil }
-        return "http://\(ip):\(port)"
+        guard let ip = WiFiTransferServer.wifiIPAddress(),
+              let sessionToken
+        else { return nil }
+        return "http://\(ip):\(port)/\(sessionToken)"
+    }
+
+    private static func makeSessionToken() -> String {
+        String(format: "%06d", Int.random(in: 0 ... 999_999))
+    }
+
+    private func jsonResponse(_ object: [String: Any], statusCode: Int) -> ReadiumGCDWebServerResponse? {
+        guard JSONSerialization.isValidJSONObject(object),
+              let data = try? JSONSerialization.data(withJSONObject: object)
+        else {
+            let response = ReadiumGCDWebServerDataResponse(
+                data: Data("{\"success\":false,\"error\":\"Invalid response\"}".utf8),
+                contentType: "application/json"
+            )
+            response.statusCode = 500
+            return response
+        }
+
+        let response = ReadiumGCDWebServerDataResponse(data: data, contentType: "application/json")
+        response.statusCode = statusCode
+        return response
     }
 
     static func wifiIPAddress() -> String? {
@@ -328,11 +382,11 @@ final class WiFiTransferServer {
                     const status = li.querySelector('.status');
                     const formData = new FormData();
                     formData.append('files', file, file.name);
-                    fetch('/upload', { method: 'POST', body: formData })
+                    fetch(window.location.pathname + '/upload', { method: 'POST', body: formData })
                         .then(r => r.json())
                         .then(data => {
                             if (data.failed && data.failed.includes(file.name)) {
-                                status.textContent = L10N.failed;
+                                status.textContent = data.errors && data.errors[file.name] ? data.errors[file.name] : L10N.failed;
                                 status.className = 'status error';
                             } else if (data.uploaded && data.uploaded.includes(file.name)) {
                                 status.textContent = L10N.done;

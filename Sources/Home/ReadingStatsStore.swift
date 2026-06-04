@@ -85,14 +85,20 @@ final class ReadingStatsStore {
 
     private let defaults: UserDefaults
     private let calendar: Calendar
+    private let storageURL: URL
     private let encoder = JSONEncoder()
     private let decoder = JSONDecoder()
 
     private enum Keys {
         static let dailyStats = "readingStats_dailyStats"
+        static let didMigrateDailyStats = "readingStats_didMigrateDailyStatsToFile"
     }
 
-    init(defaults: UserDefaults = .standard, calendar: Calendar = Calendar(identifier: .gregorian)) {
+    init(
+        defaults: UserDefaults = .standard,
+        calendar: Calendar = Calendar(identifier: .gregorian),
+        storageURL: URL? = nil
+    ) {
         self.defaults = defaults
         var cal = calendar
         if cal.identifier != .gregorian {
@@ -100,6 +106,7 @@ final class ReadingStatsStore {
         }
         cal.timeZone = .current
         self.calendar = cal
+        self.storageURL = storageURL ?? Self.defaultStorageURL()
     }
 
     func recordReadingSession(startDate: Date, endDate: Date = Date(), bookId: Book.Id) {
@@ -211,7 +218,9 @@ final class ReadingStatsStore {
     }
 
     private func loadStatsByDate() -> [String: DailyReadingStat] {
-        guard let data = defaults.data(forKey: Keys.dailyStats),
+        migrateUserDefaultsStatsIfNeeded()
+
+        guard let data = try? Data(contentsOf: storageURL),
               let stats = try? decoder.decode([String: DailyReadingStat].self, from: data)
         else {
             return [:]
@@ -222,7 +231,38 @@ final class ReadingStatsStore {
 
     private func save(_ stats: [String: DailyReadingStat]) {
         guard let data = try? encoder.encode(stats) else { return }
-        defaults.set(data, forKey: Keys.dailyStats)
+        do {
+            try FileManager.default.createDirectory(
+                at: storageURL.deletingLastPathComponent(),
+                withIntermediateDirectories: true
+            )
+            try data.write(to: storageURL, options: [.atomic])
+        } catch {
+            print("ReadingStatsStore: failed to save stats: \(error)")
+        }
+    }
+
+    private func migrateUserDefaultsStatsIfNeeded() {
+        guard !defaults.bool(forKey: Keys.didMigrateDailyStats) else {
+            return
+        }
+
+        guard let data = defaults.data(forKey: Keys.dailyStats) else {
+            defaults.set(true, forKey: Keys.didMigrateDailyStats)
+            return
+        }
+
+        do {
+            _ = try decoder.decode([String: DailyReadingStat].self, from: data)
+            try FileManager.default.createDirectory(
+                at: storageURL.deletingLastPathComponent(),
+                withIntermediateDirectories: true
+            )
+            try data.write(to: storageURL, options: [.atomic])
+            defaults.set(true, forKey: Keys.didMigrateDailyStats)
+        } catch {
+            print("ReadingStatsStore: failed to migrate stats: \(error)")
+        }
     }
 
     private func dateKey(for date: Date) -> String {
@@ -241,4 +281,10 @@ final class ReadingStatsStore {
         formatter.dateFormat = "yyyy-MM-dd"
         return formatter
     }()
+
+    private static func defaultStorageURL() -> URL {
+        Paths.library.url
+            .appendingPathComponent("ReadingStats", isDirectory: true)
+            .appendingPathComponent("daily-stats-v1.json", isDirectory: false)
+    }
 }

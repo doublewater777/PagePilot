@@ -42,10 +42,13 @@ final class PDFViewController: VisualReaderViewController<PDFNavigatorViewContro
 
     override func presentUserPreferences() {
         Task {
+            do {
+                let preferences = try preferencesStore.preferences(for: bookId)
+
             let userPrefs = await UserPreferences(
                 model: UserPreferencesViewModel(
                     bookId: bookId,
-                    preferences: try! preferencesStore.preferences(for: bookId),
+                    preferences: preferences,
                     configurable: navigator,
                     store: preferencesStore
                 ),
@@ -56,6 +59,9 @@ final class PDFViewController: VisualReaderViewController<PDFNavigatorViewContro
             let vc = UIHostingController(rootView: userPrefs)
             vc.modalPresentationStyle = .formSheet
             present(vc, animated: true)
+            } catch {
+                moduleDelegate?.presentError(UserError(error), from: self)
+            }
         }
     }
 }

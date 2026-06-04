@@ -12,6 +12,7 @@ Design: PagePilot Pro — 统计即 Pro
 3. **Grandfathering：** 不设，所有用户从 1.1 起统一看到 Paywall
 4. **iPad 支持：** 第一版不做 iPad 锁定，聚焦"统计即 Pro"
 5. **Paywall 触发：** 本地 Paywall 页 (`PaywallView`) 展示价值后再购买
+6. **Pro offer model：** 月度、年度、终身三档；年度订阅为默认推荐，终身为一次性购买选项。
 
 ## Files to Create
 
@@ -33,12 +34,14 @@ final class ProPurchaseManager {
     
     static let proAccessDidChange = Notification.Name("proAccessDidChange")
     
-    private let productID = "com.panyang.PagePilot.pro"
+    static let monthlyProductID = "com.panyang.PagePilot.pro.monthly"
+    static let yearlyProductID = "com.panyang.PagePilot.pro.yearly"
+    static let lifetimeProductID = "com.panyang.PagePilot.pro.lifetime"
     private let defaults = UserDefaults.standard
     private let proKey = "entitlements_isPro"
     
     private var updateListenerTask: Task<Void, Never>?
-    private(set) var product: Product?
+    private(set) var products: [Product] = []
     
     var hasProAccess: Bool {
         defaults.bool(forKey: proKey)
@@ -46,7 +49,7 @@ final class ProPurchaseManager {
     
     private init() {
         updateListenerTask = listenForTransactions()
-        Task { await loadProduct() }
+        Task { await loadProducts() }
     }
     
     deinit {
@@ -55,29 +58,28 @@ final class ProPurchaseManager {
     
     // MARK: - Product Loading
     
-    func loadProduct() async {
+    func loadProducts() async {
         do {
-            let products = try await Product.products(for: [productID])
-            product = products.first
+            products = try await Product.products(for: [
+                Self.monthlyProductID,
+                Self.yearlyProductID,
+                Self.lifetimeProductID,
+            ])
         } catch {
-            print("Failed to load product: \(error)")
+            print("Failed to load products: \(error)")
         }
     }
     
     // MARK: - Purchase
     
-    func purchase() async throws {
-        guard let product = product else {
-            throw ProPurchaseError.productNotFound
-        }
-        
+    func purchase(_ product: Product) async throws {
         let result = try await product.purchase()
         
         switch result {
         case .success(let verification):
             let transaction = try checkVerified(verification)
             await transaction.finish()
-            await grantProAccess()
+            await syncCurrentEntitlements()
             
         case .userCancelled:
             throw ProPurchaseError.purchaseFailed
@@ -94,13 +96,8 @@ final class ProPurchaseManager {
     
     func restorePurchases() async {
         do {
-            for await result in Transaction.currentEntitlements {
-                let transaction = try checkVerified(result)
-                if transaction.productID == productID {
-                    await grantProAccess()
-                    return
-                }
-            }
+            try await AppStore.sync()
+            await syncCurrentEntitlements()
         } catch {
             print("Restore failed: \(error)")
         }
@@ -109,19 +106,7 @@ final class ProPurchaseManager {
     // MARK: - Verification
     
     func verifyCurrentEntitlements() async {
-        do {
-            var hasPro = false
-            for await result in Transaction.currentEntitlements {
-                let transaction = try checkVerified(result)
-                if transaction.productID == productID {
-                    hasPro = true
-                    break
-                }
-            }
-            await updateProAccess(hasPro)
-        } catch {
-            print("Verification failed: \(error)")
-        }
+        await syncCurrentEntitlements()
     }
     
     // MARK: - Helpers
@@ -132,8 +117,8 @@ final class ProPurchaseManager {
                 guard let self = self else { return }
                 do {
                     let transaction = try self.checkVerified(result)
-                    if transaction.productID == self.productID {
-                        await self.grantProAccess()
+                    if Self.proProductIDs.contains(transaction.productID) {
+                        await self.syncCurrentEntitlements()
                     }
                     await transaction.finish()
                 } catch {
@@ -152,16 +137,31 @@ final class ProPurchaseManager {
         }
     }
     
-    @MainActor
-    private func grantProAccess() async {
-        defaults.set(true, forKey: proKey)
-        NotificationCenter.default.post(name: Self.proAccessDidChange, object: nil)
+    @discardableResult
+    private func syncCurrentEntitlements() async -> Bool {
+        var hasPro = false
+        for await result in Transaction.currentEntitlements {
+            guard let transaction = try? checkVerified(result),
+                  Self.proProductIDs.contains(transaction.productID)
+            else { continue }
+            hasPro = true
+            break
+        }
+
+        await updateProAccess(hasPro)
+        return hasPro
     }
     
     @MainActor
     private func updateProAccess(_ hasAccess: Bool) async {
         defaults.set(hasAccess, forKey: proKey)
         NotificationCenter.default.post(name: Self.proAccessDidChange, object: nil)
+    }
+}
+
+extension ProPurchaseManager {
+    static var proProductIDs: Set<String> {
+        [monthlyProductID, yearlyProductID, lifetimeProductID]
     }
 }
 ```
@@ -506,8 +506,8 @@ func application(_ application: UIApplication, didFinishLaunchingWithOptions lau
 ### Unit Tests
 1. `ProPurchaseManagerTests`:
    - `hasProAccess` 返回 UserDefaults 值
-   - `grantProAccess()` 写入 UserDefaults 并发送通知
-   - `updateProAccess(false)` 清除 UserDefaults
+   - `syncCurrentEntitlements()` 根据 verified current entitlements 同步 UserDefaults
+   - entitlement 为空、过期或撤销后 `updateProAccess(false)` 清除本地 Pro 状态
 
 ### Integration Tests (StoreKit Test Configuration)
 1. 购买成功流程：点击 Paywall → purchase() → transaction verified → UserDefaults 写入 → UI 刷新
@@ -523,11 +523,10 @@ func application(_ application: UIApplication, didFinishLaunchingWithOptions lau
 
 ## App Store Connect Configuration
 
-1. 创建 In-App Purchase：
-   - 类型：Non-Consumable（终身买断）
-   - Product ID：`com.panyang.PagePilot.pro`
-   - 定价：¥22（中国区首发价）
-   - 参考名称：PagePilot Pro
+1. 创建 In-App Purchase / Subscription：
+   - 月度订阅：`com.panyang.PagePilot.pro.monthly`，¥2
+   - 年度订阅：`com.panyang.PagePilot.pro.yearly`，¥19.9，Paywall 默认推荐
+   - 终身买断：`com.panyang.PagePilot.pro.lifetime`，¥59.9，一次性购买
    - 审核截图：需要一张展示 Pro 功能的截图
 
 2. 付费协议：确保 Apple Developer Account 已签署 Paid Apps Agreement
@@ -569,6 +568,6 @@ func application(_ application: UIApplication, didFinishLaunchingWithOptions lau
 
 ## Open Questions
 
-1. **Product ID 命名：** `com.panyang.PagePilot.pro` 是否合适？是否需要支持未来多个 Pro 等级？
-2. **价格显示：** Paywall 上显示 Apple 自动转换的本地价格，还是固定显示 ¥22？
+1. **Product ID 命名：** 当前采用 `com.panyang.PagePilot.pro.monthly/yearly/lifetime`，后续是否需要更多 Pro 等级？
+2. **价格显示：** Paywall 上显示 Apple 自动转换的本地价格，还是继续使用本地化文案中的价格？
 3. **App Review 准备：** 需要提供什么截图/视频来证明 Pro 功能的价值？

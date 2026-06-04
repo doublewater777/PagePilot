@@ -78,10 +78,13 @@ class AudiobookViewController: ReaderViewController<AudioNavigator>, AudioNaviga
 
     override func presentUserPreferences() {
         Task {
+            do {
+                let preferences = try preferencesStore.preferences(for: bookId)
+
             let userPrefs = await UserPreferences(
                 model: UserPreferencesViewModel(
                     bookId: bookId,
-                    preferences: try! preferencesStore.preferences(for: bookId),
+                    preferences: preferences,
                     configurable: navigator,
                     store: preferencesStore
                 ),
@@ -92,6 +95,9 @@ class AudiobookViewController: ReaderViewController<AudioNavigator>, AudioNaviga
             let vc = UIHostingController(rootView: userPrefs)
             vc.modalPresentationStyle = .formSheet
             present(vc, animated: true)
+            } catch {
+                moduleDelegate?.presentError(UserError(error), from: self)
+            }
         }
     }
 

@@ -1,4 +1,5 @@
-version = `git describe --tags --abbrev=0 2> /dev/null`
+DEFAULT_READIUM_VERSION = 3.9.0
+version = `git describe --tags --abbrev=0 2> /dev/null || echo $(DEFAULT_READIUM_VERSION)`
 ifdef commit
 	version = $(commit)
 endif
@@ -89,4 +90,3 @@ endif
 	@cp -r Integrations/Local/PagePilot.xctestplan . 2>/dev/null || true
 	xcodegen generate
 	@echo "\nopen PagePilot.xcworkspace"
-

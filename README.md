@@ -31,6 +31,18 @@ This project uses [XcodeGen](https://github.com/yonaskolb/XcodeGen) to generate 
 
 > [!IMPORTANT]
 > The Xcode project is not committed to the repository. Run `make spm` after pulling any changes.
+> By default, `make spm` uses Readium `3.9.0` when this repository has no tags. To pin another Readium revision, run `make spm commit=<tag-or-sha>`.
+
+## Signing
+
+Provisioning profiles are not committed to the repository. For local development, set `RD_DEVELOPMENT_TEAM` to your Apple Developer Team ID before generating the project:
+
+```sh
+export RD_DEVELOPMENT_TEAM=<your-team-id>
+make spm
+```
+
+Use Xcode's signing settings or your release automation to manage development, App Store, and Watch provisioning profiles locally.
 
 ## Terms of Use & Privacy Policy
 

@@ -36,6 +36,8 @@ xcuserdata/
 *.ipa
 *.dSYM.zip
 *.dSYM
+*.mobileprovision
+*.provisionprofile
 
 ## Playgrounds
 timeline.xctimeline

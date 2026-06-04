@@ -15,6 +15,7 @@ import UIKit
 class AppDelegate: UIResponder, UIApplicationDelegate {
     let hasSeenOnboardingKey = "hasSeenOnboarding"
     private(set) var app: AppModule!
+    private var launchError: Error?
     private var subscriptions = Set<AnyCancellable>()
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
@@ -22,8 +23,13 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         AppAppearancePreferences.configureLocalization()
         configureAudioSession()
         WatchPageTurnSettings.migrateDefaultTargetIfNeeded()
-        app = try! AppModule()
-        observeAppearancePreferences()
+        do {
+            app = try AppModule()
+            observeAppearancePreferences()
+        } catch {
+            launchError = error
+            print("Failed to initialize AppModule: \(error)")
+        }
  
         // Activate Watch connectivity early so the session state is always
         // current, even before the reader is opened.
@@ -67,7 +73,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         }
     }
 
-    func makeRootViewController() -> UITabBarController {
+    func makeRootViewController() -> UIViewController {
+        guard app != nil else {
+            return makeLaunchFailureViewController()
+        }
+
         func makeItem(title: String, systemImage: String) -> UITabBarItem {
             UITabBarItem(
                 title: NSLocalizedString(title, comment: "Tab bar item"),
@@ -115,7 +125,26 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         return tabBarController
     }
 
+    private func makeLaunchFailureViewController() -> UIViewController {
+        let message = launchError.map { UserError($0).message } ?? "error".localized
+        let view = VStack(spacing: 16) {
+            Image(systemName: "exclamationmark.triangle")
+                .font(.system(size: 44, weight: .regular))
+                .foregroundStyle(.red)
+            Text("PagePilot")
+                .font(.title2.bold())
+            Text(message)
+                .font(.body)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+        }
+        .padding(24)
+
+        return UIHostingController(rootView: view)
+    }
+
     func updateTabBarLocalization() {
+        guard app != nil else { return }
         guard let tabBarItems = app.tabBarController?.tabBar.items, tabBarItems.count >= 3 else { return }
 
         tabBarItems[0].title = NSLocalizedString("home_tab", comment: "Tab bar item")
@@ -144,6 +173,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
     private func updateVisibleLocalization() {
+        guard app != nil else { return }
         app.library.rootViewController.viewControllers
             .compactMap { $0 as? LibraryViewController }
             .forEach { $0.updateLocalizedContent() }
@@ -151,6 +181,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     /// Imports preloaded sample books from the app bundle on first launch.
     func importPreloadedBooks(sender rootVC: UIViewController) {
+        guard app != nil else { return }
+
         let log = Logger(subsystem: "com.panyang.PagePilot", category: "PreloadedBooks")
         let preloadedBooksKey = "preloadedBooksImported"
         guard !UserDefaults.standard.bool(forKey: preloadedBooksKey) else {
@@ -234,6 +266,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
     func importPublication(from url: AbsoluteURL, sender vc: UIViewController) {
+        guard app != nil else { return }
+
         Task {
             do {
                 try await app.library.importPublication(from: url, sender: vc, progress: { _ in })
@@ -256,6 +290,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
     func presentOnboardingIfNeeded(from presentingViewController: UIViewController) {
+        guard app != nil else { return }
+
         guard !UserDefaults.standard.bool(forKey: hasSeenOnboardingKey) else {
             return
         }
