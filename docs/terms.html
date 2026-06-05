@@ -12,16 +12,25 @@
             --primary-color: #3b82f6;
             --secondary-text: #4b5563;
             --border-color: #e5e7eb;
+            --button-bg: #eff6ff;
+            --button-border: #bfdbfe;
         }
         @media (prefers-color-scheme: dark) {
             :root {
                 --bg-color: #0b0f19;
                 --text-color: #f3f4f6;
                 --card-bg: #1f2937;
-                --primary-color: #3b82f6;
-                --secondary-text: #9ca3af;
+                --primary-color: #60a5fa;
+                --secondary-text: #d1d5db;
                 --border-color: #374151;
+                --button-bg: #172554;
+                --button-border: #1d4ed8;
             }
+        }
+        body[data-lang="en"] .lang-zh { display: none !important; }
+        body[data-lang="zh"] .lang-en { display: none !important; }
+        * {
+            box-sizing: border-box;
         }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -39,6 +48,27 @@
             border-radius: 16px;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
             border: 1px solid var(--border-color);
+        }
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+        .home-link, .lang-toggle {
+            min-height: 36px;
+            border-radius: 8px;
+            border: 1px solid var(--button-border);
+            background: var(--button-bg);
+            color: var(--primary-color);
+            font-size: 0.95rem;
+            font-weight: 600;
+            text-decoration: none;
+            padding: 7px 12px;
+        }
+        .lang-toggle {
+            cursor: pointer;
         }
         h1 {
             font-size: 2.2rem;
@@ -62,6 +92,9 @@
         li {
             margin-bottom: 8px;
         }
+        a {
+            color: var(--primary-color);
+        }
         .footer {
             margin-top: 40px;
             text-align: center;
@@ -70,45 +103,156 @@
             border-top: 1px solid var(--border-color);
             padding-top: 20px;
         }
+        @media (max-width: 640px) {
+            body {
+                padding: 20px 12px;
+            }
+            .container {
+                padding: 24px;
+                border-radius: 12px;
+            }
+            h1 {
+                font-size: 1.8rem;
+            }
+            .toolbar {
+                align-items: stretch;
+                flex-direction: column;
+            }
+            .home-link, .lang-toggle {
+                width: 100%;
+                text-align: center;
+            }
+        }
     </style>
 </head>
-<body>
+<body data-lang="zh">
     <div class="container">
-        <h1>使用条款 (Terms of Use)</h1>
-        <p>更新日期：2026年6月1日</p>
-        
-        <p>欢迎使用 PagePilot！在您使用 PagePilot 移动应用程序（以下简称“本服务”）前，请仔细阅读以下使用条款。通过下载或使用本应用程序，即表示您同意受本条款的约束。</p>
+        <div class="toolbar">
+            <a class="home-link" href="index.html">
+                <span class="lang-zh">返回首页</span>
+                <span class="lang-en">Back to Home</span>
+            </a>
+            <button class="lang-toggle" type="button" onclick="toggleLanguage()" aria-label="Switch language">
+                <span class="lang-zh">English</span>
+                <span class="lang-en">简体中文</span>
+            </button>
+        </div>
 
-        <h2>1. 接受条款</h2>
-        <p>本使用条款是您与 PagePilot 开发者（以下简称“我们”）之间就使用本软件所订立的法律协议。如果您不同意本条款 of 任何内容，请勿下载、安装或使用本软件。</p>
+        <h1>
+            <span class="lang-zh">使用条款</span>
+            <span class="lang-en">Terms of Use</span>
+        </h1>
+        <p>
+            <span class="lang-zh">更新日期：2026年6月1日</span>
+            <span class="lang-en">Last updated: June 1, 2026</span>
+        </p>
 
-        <h2>2. 服务内容</h2>
-        <p>PagePilot 是一款专为 iOS 设计的电子书与有声书阅读工具，支持导入本地的 EPUB、PDF 等格式文件，并提供 Apple Watch 翻页遥控功能。本服务的部分高级功能（如无限图书存储、多维度阅读统计、跨设备遥控等）需要购买 Pro 会员方可解锁。</p>
+        <p class="lang-zh">欢迎使用 PagePilot！在您使用 PagePilot 移动应用程序（以下简称“本服务”）前，请仔细阅读以下使用条款。通过下载或使用本应用程序，即表示您同意受本条款的约束。</p>
+        <p class="lang-en">Welcome to PagePilot. Please read these Terms of Use carefully before using the PagePilot mobile application (the "Service"). By downloading or using the app, you agree to be bound by these terms.</p>
 
-        <h2>3. 订阅与支付条款 (App Store EULA)</h2>
-        <p>根据苹果 App Store 的规定，PagePilot 采用 Apple 标准最终用户许可协议 (EULA) 作为基础条款：</p>
+        <h2>
+            <span class="lang-zh">1. 接受条款</span>
+            <span class="lang-en">1. Acceptance of Terms</span>
+        </h2>
+        <p class="lang-zh">本使用条款是您与 PagePilot 开发者（以下简称“我们”）之间就使用本软件所订立的法律协议。如果您不同意本条款的任何内容，请勿下载、安装或使用本软件。</p>
+        <p class="lang-en">These Terms of Use form a legal agreement between you and the PagePilot developer ("we", "us", or "our") regarding use of the software. If you do not agree to these terms, do not download, install, or use the software.</p>
+
+        <h2>
+            <span class="lang-zh">2. 服务内容</span>
+            <span class="lang-en">2. Service Description</span>
+        </h2>
+        <p class="lang-zh">PagePilot 是一款专为 iOS 设计的电子书与有声书阅读工具，支持导入本地的 EPUB、PDF 等格式文件，并提供 Apple Watch 翻页遥控功能。本服务的部分高级功能（如无限图书存储、多维度阅读统计、跨设备遥控等）需要购买 Pro 会员方可解锁。</p>
+        <p class="lang-en">PagePilot is an ebook and audiobook reader for iOS. It supports importing local files such as EPUB and PDF documents and provides Apple Watch page-turn remote control. Some premium features, such as unlimited book storage, advanced reading statistics, and cross-device remote control, require PagePilot Pro.</p>
+
+        <h2>
+            <span class="lang-zh">3. 订阅与支付条款 (App Store EULA)</span>
+            <span class="lang-en">3. Subscriptions and Payment Terms (App Store EULA)</span>
+        </h2>
+        <p class="lang-zh">根据苹果 App Store 的规定，PagePilot 采用 Apple 标准最终用户许可协议 (EULA) 作为基础条款：</p>
+        <p class="lang-en">In accordance with App Store requirements, PagePilot uses Apple's standard End User License Agreement (EULA) as the baseline license terms:</p>
         <ul>
-            <li><strong>订阅周期：</strong>我们提供按月续订、按年续订以及一次性买断的终身会员。</li>
-            <li><strong>自动续期：</strong>对于月度和年度自动续期订阅，您的 iTunes 帐户将在当前订阅期结束前 24 小时内自动扣款续期，除非您在当前订阅期结束前至少 24 小时关闭自动续期。</li>
-            <li><strong>取消订阅：</strong>您可以通过前往 iPhone 的「设置」-「Apple ID」-「订阅」随时管理和取消您的订阅。</li>
-            <li><strong>购买条款链接：</strong>关于苹果官方标准使用条款，请参阅 <a href="https://www.apple.com/legal/internet-services/itunes/dev/stdeula/" target="_blank">Apple Standard EULA</a>。</li>
+            <li>
+                <strong class="lang-zh">订阅周期：</strong>
+                <strong class="lang-en">Subscription periods: </strong>
+                <span class="lang-zh">我们提供按月续订、按年续订以及一次性买断的终身会员。</span>
+                <span class="lang-en">We offer monthly auto-renewable subscriptions, yearly auto-renewable subscriptions, and a one-time lifetime purchase.</span>
+            </li>
+            <li>
+                <strong class="lang-zh">自动续期：</strong>
+                <strong class="lang-en">Auto-renewal: </strong>
+                <span class="lang-zh">对于月度和年度自动续期订阅，您的 iTunes 帐户将在当前订阅期结束前 24 小时内自动扣款续期，除非您在当前订阅期结束前至少 24 小时关闭自动续期。</span>
+                <span class="lang-en">For monthly and yearly auto-renewable subscriptions, your iTunes account will be charged for renewal within 24 hours before the end of the current period unless auto-renewal is turned off at least 24 hours before the period ends.</span>
+            </li>
+            <li>
+                <strong class="lang-zh">取消订阅：</strong>
+                <strong class="lang-en">Cancellation: </strong>
+                <span class="lang-zh">您可以通过前往 iPhone 的“设置”-“Apple ID”-“订阅”随时管理和取消您的订阅。</span>
+                <span class="lang-en">You can manage or cancel subscriptions at any time in iPhone Settings under Apple ID > Subscriptions.</span>
+            </li>
+            <li>
+                <strong class="lang-zh">购买条款链接：</strong>
+                <strong class="lang-en">Purchase terms: </strong>
+                <span class="lang-zh">关于苹果官方标准使用条款，请参阅 <a href="https://www.apple.com/legal/internet-services/itunes/dev/stdeula/" target="_blank" rel="noopener">Apple Standard EULA</a>。</span>
+                <span class="lang-en">For Apple's standard terms, see the <a href="https://www.apple.com/legal/internet-services/itunes/dev/stdeula/" target="_blank" rel="noopener">Apple Standard EULA</a>.</span>
+            </li>
         </ul>
 
-        <h2>4. 用户行为规范</h2>
-        <p>您应保证导入并阅读的所有书籍和内容均拥有合法的版权或使用权。您不得利用本软件分发、传播任何侵犯他人知识产权或违反法律法规的内容。</p>
+        <h2>
+            <span class="lang-zh">4. 用户行为规范</span>
+            <span class="lang-en">4. User Responsibilities</span>
+        </h2>
+        <p class="lang-zh">您应保证导入并阅读的所有书籍和内容均拥有合法的版权或使用权。您不得利用本软件分发、传播任何侵犯他人知识产权或违反法律法规的内容。</p>
+        <p class="lang-en">You are responsible for ensuring that any books or content you import and read are lawfully owned or licensed by you. You may not use the software to distribute or transmit content that infringes intellectual property rights or violates applicable laws.</p>
 
-        <h2>5. 免责声明</h2>
-        <p>本软件按“现状”提供，我们不保证软件运行绝对无误或不发生中断。对于因使用或无法使用本软件而导致的任何间接、偶然或特殊的损失，我们不承担任何法律责任。</p>
+        <h2>
+            <span class="lang-zh">5. 免责声明</span>
+            <span class="lang-en">5. Disclaimer</span>
+        </h2>
+        <p class="lang-zh">本软件按“现状”提供，我们不保证软件运行绝对无误或不发生中断。对于因使用或无法使用本软件而导致的任何间接、偶然或特殊的损失，我们不承担任何法律责任。</p>
+        <p class="lang-en">The software is provided "as is". We do not guarantee that it will be error-free or uninterrupted. To the extent permitted by law, we are not liable for indirect, incidental, special, or consequential damages arising from use of or inability to use the software.</p>
 
-        <h2>6. 条款修改</h2>
-        <p>我们保留随时修改本条款的权利。修改后的条款一旦在应用内或网站上公布即代替原来的条款。继续使用本服务即代表您接受修改后的条款。</p>
+        <h2>
+            <span class="lang-zh">6. 条款修改</span>
+            <span class="lang-en">6. Changes to These Terms</span>
+        </h2>
+        <p class="lang-zh">我们保留随时修改本条款的权利。修改后的条款一旦在应用内或网站上公布即代替原来的条款。继续使用本服务即代表您接受修改后的条款。</p>
+        <p class="lang-en">We reserve the right to modify these terms at any time. Updated terms will replace the previous terms once posted in the app or on the website. Continued use of the Service means you accept the updated terms.</p>
 
-        <h2>7. 联系我们</h2>
-        <p>如果您对本使用条款有任何疑问，请通过电子邮件与我们联系：<strong>return_panyang@163.com</strong>。</p>
+        <h2>
+            <span class="lang-zh">7. 联系我们</span>
+            <span class="lang-en">7. Contact Us</span>
+        </h2>
+        <p class="lang-zh">如果您对本使用条款有任何疑问，请通过电子邮件与我们联系：<strong>return_panyang@163.com</strong>。</p>
+        <p class="lang-en">If you have questions about these Terms of Use, contact us at <strong>return_panyang@163.com</strong>.</p>
 
         <div class="footer">
-            <p>&copy; 2026 PagePilot. 保留所有权利。</p>
+            <p>
+                <span class="lang-zh">&copy; 2026 PagePilot. 保留所有权利。</span>
+                <span class="lang-en">&copy; 2026 PagePilot. All rights reserved.</span>
+            </p>
         </div>
     </div>
+    <script>
+        function applyLanguage(lang) {
+            document.body.setAttribute('data-lang', lang);
+            document.documentElement.lang = lang === 'en' ? 'en' : 'zh-CN';
+            localStorage.setItem('pagepilot-lang', lang);
+        }
+
+        function toggleLanguage() {
+            const current = document.body.getAttribute('data-lang') || 'zh';
+            applyLanguage(current === 'zh' ? 'en' : 'zh');
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const storedLang = localStorage.getItem('pagepilot-lang');
+            if (storedLang) {
+                applyLanguage(storedLang);
+                return;
+            }
+            const userLang = navigator.language || navigator.userLanguage || 'zh-CN';
+            applyLanguage(userLang.startsWith('en') ? 'en' : 'zh');
+        });
+    </script>
 </body>
 </html>

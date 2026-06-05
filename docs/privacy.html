@@ -12,16 +12,25 @@
             --primary-color: #3b82f6;
             --secondary-text: #4b5563;
             --border-color: #e5e7eb;
+            --button-bg: #eff6ff;
+            --button-border: #bfdbfe;
         }
         @media (prefers-color-scheme: dark) {
             :root {
                 --bg-color: #0b0f19;
                 --text-color: #f3f4f6;
                 --card-bg: #1f2937;
-                --primary-color: #3b82f6;
-                --secondary-text: #9ca3af;
+                --primary-color: #60a5fa;
+                --secondary-text: #d1d5db;
                 --border-color: #374151;
+                --button-bg: #172554;
+                --button-border: #1d4ed8;
             }
+        }
+        body[data-lang="en"] .lang-zh { display: none !important; }
+        body[data-lang="zh"] .lang-en { display: none !important; }
+        * {
+            box-sizing: border-box;
         }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -39,6 +48,27 @@
             border-radius: 16px;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
             border: 1px solid var(--border-color);
+        }
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+        .home-link, .lang-toggle {
+            min-height: 36px;
+            border-radius: 8px;
+            border: 1px solid var(--button-border);
+            background: var(--button-bg);
+            color: var(--primary-color);
+            font-size: 0.95rem;
+            font-weight: 600;
+            text-decoration: none;
+            padding: 7px 12px;
+        }
+        .lang-toggle {
+            cursor: pointer;
         }
         h1 {
             font-size: 2.2rem;
@@ -62,6 +92,9 @@
         li {
             margin-bottom: 8px;
         }
+        a {
+            color: var(--primary-color);
+        }
         .footer {
             margin-top: 40px;
             text-align: center;
@@ -70,50 +103,163 @@
             border-top: 1px solid var(--border-color);
             padding-top: 20px;
         }
+        @media (max-width: 640px) {
+            body {
+                padding: 20px 12px;
+            }
+            .container {
+                padding: 24px;
+                border-radius: 12px;
+            }
+            h1 {
+                font-size: 1.8rem;
+            }
+            .toolbar {
+                align-items: stretch;
+                flex-direction: column;
+            }
+            .home-link, .lang-toggle {
+                width: 100%;
+                text-align: center;
+            }
+        }
     </style>
 </head>
-<body>
+<body data-lang="zh">
     <div class="container">
-        <h1>隐私政策 (Privacy Policy)</h1>
-        <p>更新日期：2026年6月1日</p>
-        
-        <p>PagePilot（以下简称“我们”）非常重视您的隐私。本隐私政策阐明了我们在您使用 PagePilot 移动应用程序（以下简称“本服务”）时如何处理和保护您的个人信息。</p>
+        <div class="toolbar">
+            <a class="home-link" href="index.html">
+                <span class="lang-zh">返回首页</span>
+                <span class="lang-en">Back to Home</span>
+            </a>
+            <button class="lang-toggle" type="button" onclick="toggleLanguage()" aria-label="Switch language">
+                <span class="lang-zh">English</span>
+                <span class="lang-en">简体中文</span>
+            </button>
+        </div>
 
-        <h2>1. 信息收集与使用</h2>
-        <p>我们深知数据隐私的重要性，因此 PagePilot 秉承“本地优先”的设计原则：</p>
-        <ul>
-            <li><strong>个人身份信息：</strong>我们不收集、不存储、也不上传您的任何个人身份信息（如姓名、电子邮件、电话号码等）。</li>
-            <li><strong>图书与阅读进度：</strong>您导入本服务的书籍文件（EPUB、PDF 等）以及您的阅读进度、高亮和书签等数据，均100%保存在您的设备本地。我们没有任何云端服务器用于收集或存储这些书籍和阅读数据。</li>
-            <li><strong>阅读统计数据：</strong>您的每日阅读时间、连续天数等统计数据同样完全保留在设备本地数据库（使用 SQLite/GRDB）中。</li>
-        </ul>
-
-        <h2>2. 设备间连接与遥控 (Apple Watch)</h2>
-        <p>当您使用 Apple Watch 作为遥控器为 iPhone 或 iPad 上的阅读器翻页时，设备间的通信完全通过苹果官方的本地通信框架（WatchConnectivity）进行：</p>
-        <ul>
-            <li>该连接在局域网或蓝牙范围内进行，不经过任何外部服务器。</li>
-            <li>我们不会记录、上传或监视您的任何遥控指令或行为。</li>
-        </ul>
-
-        <h2>3. 第三方服务与数据</h2>
-        <p>本服务使用 Apple StoreKit 处理 Pro 会员的订阅与购买：
-            <ul>
-                <li>所有的支付过程均由 Apple 官方代为处理，我们无法获取也无法存储您的信用卡信息或真实交易凭证。</li>
-                <li>我们仅使用 StoreKit 接口查询您的订阅状态以解锁对应功能。</li>
-            </ul>
+        <h1>
+            <span class="lang-zh">隐私政策</span>
+            <span class="lang-en">Privacy Policy</span>
+        </h1>
+        <p>
+            <span class="lang-zh">更新日期：2026年6月1日</span>
+            <span class="lang-en">Last updated: June 1, 2026</span>
         </p>
 
-        <h2>4. 数据安全性</h2>
-        <p>由于您的所有数据均保存在本地，其安全性主要取决于您设备的系统安全保护。我们建议您为设备设置复杂的解锁密码或使用面容/指纹识别，以防他人未经授权访问您的阅读器。</p>
+        <p class="lang-zh">PagePilot（以下简称“我们”）非常重视您的隐私。本隐私政策阐明了我们在您使用 PagePilot 移动应用程序（以下简称“本服务”）时如何处理和保护您的个人信息。</p>
+        <p class="lang-en">PagePilot ("we", "us", or "our") respects your privacy. This Privacy Policy explains how we handle and protect information when you use the PagePilot mobile application (the "Service").</p>
 
-        <h2>5. 隐私政策的更新</h2>
-        <p>我们可能会不时更新本隐私政策。任何更新都将通过本页面公布。我们建议您定期查看本隐私政策以了解最新变化。</p>
+        <h2>
+            <span class="lang-zh">1. 信息收集与使用</span>
+            <span class="lang-en">1. Information Collection and Use</span>
+        </h2>
+        <p class="lang-zh">我们深知数据隐私的重要性，因此 PagePilot 秉承“本地优先”的设计原则：</p>
+        <p class="lang-en">PagePilot is designed around a local-first privacy model:</p>
+        <ul>
+            <li>
+                <strong class="lang-zh">个人身份信息：</strong>
+                <strong class="lang-en">Personal information: </strong>
+                <span class="lang-zh">我们不收集、不存储、也不上传您的任何个人身份信息（如姓名、电子邮件、电话号码等）。</span>
+                <span class="lang-en">We do not collect, store, or upload personally identifiable information such as your name, email address, or phone number.</span>
+            </li>
+            <li>
+                <strong class="lang-zh">图书与阅读进度：</strong>
+                <strong class="lang-en">Books and reading progress: </strong>
+                <span class="lang-zh">您导入本服务的书籍文件（EPUB、PDF 等）以及您的阅读进度、高亮和书签等数据，均 100% 保存在您的设备本地。我们没有任何云端服务器用于收集或存储这些书籍和阅读数据。</span>
+                <span class="lang-en">Book files you import, including EPUB and PDF files, along with reading progress, highlights, and bookmarks, remain on your device. We do not operate cloud servers to collect or store your books or reading data.</span>
+            </li>
+            <li>
+                <strong class="lang-zh">阅读统计数据：</strong>
+                <strong class="lang-en">Reading statistics: </strong>
+                <span class="lang-zh">您的每日阅读时间、连续天数等统计数据同样完全保留在设备本地数据库（使用 SQLite/GRDB）中。</span>
+                <span class="lang-en">Daily reading time, streaks, and other statistics are stored locally in the app database using SQLite/GRDB.</span>
+            </li>
+        </ul>
 
-        <h2>6. 联系我们</h2>
-        <p>如果您对本隐私政策或数据处理有任何疑问，请通过以下邮箱与我们取得联系：<strong>return_panyang@163.com</strong>。</p>
+        <h2>
+            <span class="lang-zh">2. 设备间连接与遥控 (Apple Watch)</span>
+            <span class="lang-en">2. Device Connections and Remote Control (Apple Watch)</span>
+        </h2>
+        <p class="lang-zh">当您使用 Apple Watch 作为遥控器为 iPhone 或 iPad 上的阅读器翻页时，设备间的通信完全通过苹果官方的本地通信框架（WatchConnectivity）进行：</p>
+        <p class="lang-en">When you use Apple Watch as a remote control to turn pages on iPhone or iPad, device communication is handled through Apple's local WatchConnectivity framework:</p>
+        <ul>
+            <li>
+                <span class="lang-zh">该连接在局域网或蓝牙范围内进行，不经过任何外部服务器。</span>
+                <span class="lang-en">The connection happens over local network or Bluetooth range and does not pass through external servers.</span>
+            </li>
+            <li>
+                <span class="lang-zh">我们不会记录、上传或监视您的任何遥控指令或行为。</span>
+                <span class="lang-en">We do not record, upload, or monitor your remote-control commands or behavior.</span>
+            </li>
+        </ul>
+
+        <h2>
+            <span class="lang-zh">3. 第三方服务与数据</span>
+            <span class="lang-en">3. Third-Party Services and Data</span>
+        </h2>
+        <p class="lang-zh">本服务使用 Apple StoreKit 处理 Pro 会员的订阅与购买：</p>
+        <p class="lang-en">The Service uses Apple StoreKit to process PagePilot Pro subscriptions and purchases:</p>
+        <ul>
+            <li>
+                <span class="lang-zh">所有的支付过程均由 Apple 官方代为处理，我们无法获取也无法存储您的信用卡信息或真实交易凭证。</span>
+                <span class="lang-en">All payments are processed by Apple. We cannot access or store your credit card information or raw payment credentials.</span>
+            </li>
+            <li>
+                <span class="lang-zh">我们仅使用 StoreKit 接口查询您的订阅状态以解锁对应功能。</span>
+                <span class="lang-en">We use StoreKit only to verify subscription status and unlock the corresponding app features.</span>
+            </li>
+        </ul>
+
+        <h2>
+            <span class="lang-zh">4. 数据安全性</span>
+            <span class="lang-en">4. Data Security</span>
+        </h2>
+        <p class="lang-zh">由于您的所有数据均保存在本地，其安全性主要取决于您设备的系统安全保护。我们建议您为设备设置复杂的解锁密码或使用面容/指纹识别，以防他人未经授权访问您的阅读器。</p>
+        <p class="lang-en">Because your data is stored locally, its security depends primarily on your device security. We recommend using a strong device passcode and biometric protection to prevent unauthorized access.</p>
+
+        <h2>
+            <span class="lang-zh">5. 隐私政策的更新</span>
+            <span class="lang-en">5. Changes to This Privacy Policy</span>
+        </h2>
+        <p class="lang-zh">我们可能会不时更新本隐私政策。任何更新都将通过本页面公布。我们建议您定期查看本隐私政策以了解最新变化。</p>
+        <p class="lang-en">We may update this Privacy Policy from time to time. Updates will be posted on this page, and we recommend reviewing it periodically.</p>
+
+        <h2>
+            <span class="lang-zh">6. 联系我们</span>
+            <span class="lang-en">6. Contact Us</span>
+        </h2>
+        <p class="lang-zh">如果您对本隐私政策或数据处理有任何疑问，请通过以下邮箱与我们取得联系：<strong>return_panyang@163.com</strong>。</p>
+        <p class="lang-en">If you have questions about this Privacy Policy or our data practices, contact us at <strong>return_panyang@163.com</strong>.</p>
 
         <div class="footer">
-            <p>&copy; 2026 PagePilot. 保留所有权利。</p>
+            <p>
+                <span class="lang-zh">&copy; 2026 PagePilot. 保留所有权利。</span>
+                <span class="lang-en">&copy; 2026 PagePilot. All rights reserved.</span>
+            </p>
         </div>
     </div>
+    <script>
+        function applyLanguage(lang) {
+            document.body.setAttribute('data-lang', lang);
+            document.documentElement.lang = lang === 'en' ? 'en' : 'zh-CN';
+            localStorage.setItem('pagepilot-lang', lang);
+        }
+
+        function toggleLanguage() {
+            const current = document.body.getAttribute('data-lang') || 'zh';
+            applyLanguage(current === 'zh' ? 'en' : 'zh');
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const storedLang = localStorage.getItem('pagepilot-lang');
+            if (storedLang) {
+                applyLanguage(storedLang);
+                return;
+            }
+            const userLang = navigator.language || navigator.userLanguage || 'zh-CN';
+            applyLanguage(userLang.startsWith('en') ? 'en' : 'zh');
+        });
+    </script>
 </body>
 </html>
