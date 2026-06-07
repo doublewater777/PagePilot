@@ -79,9 +79,9 @@ class AudiobookViewController: ReaderViewController<AudioNavigator>, AudioNaviga
     override func presentUserPreferences() {
         Task {
             do {
-                let preferences = try preferencesStore.preferences(for: bookId)
+                let preferences = try await preferencesStore.preferences(for: bookId)
 
-            let userPrefs = await UserPreferences(
+            let userPrefs = UserPreferences(
                 model: UserPreferencesViewModel(
                     bookId: bookId,
                     preferences: preferences,

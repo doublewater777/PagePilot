@@ -147,9 +147,7 @@ final class BookRepository {
     }
 
     func saveProgress(for id: Book.Id, locator: Locator) async throws {
-        guard let json = locator.jsonString else {
-            return
-        }
+        let json = try locator.jsonString()
 
         try await db.write { db in
             try db.execute(literal: """

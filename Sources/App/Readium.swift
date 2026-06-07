@@ -77,8 +77,12 @@ extension ReadiumShared.ReadError: UserErrorConvertible {
                 return error.userError().message
             case .decoding:
                 return "error_decoding".localized
+            case .outOfMemory:
+                return "error_read".localized
             case .unsupportedOperation:
                 return "error_read".localized
+            case .cancelled:
+                return "error_cancelled".localized
             }
         }
     }
