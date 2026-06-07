@@ -37,7 +37,7 @@ final class AudiobookModule: ReaderFormatModule {
             bookId: bookId,
             books: books,
             bookmarks: bookmarks,
-            initialPreferences: preferencesStore.preferences(for: bookId),
+            initialPreferences: try await preferencesStore.preferences(for: bookId),
             preferencesStore: preferencesStore
         )
         viewController.moduleDelegate = delegate

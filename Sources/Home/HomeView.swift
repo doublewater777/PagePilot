@@ -274,7 +274,7 @@ struct HomeView: View {
                             .animation(.easeOut(duration: 0.5).delay(0.2), value: appeared)
                     }
 
-                    Spacer(minLength: 100)
+                    Spacer(minLength: UIDevice.current.userInterfaceIdiom == .pad ? 24 : 100)
                 }
                 .padding(.horizontal, 24)
                 .padding(.top, 18)

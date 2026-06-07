@@ -74,7 +74,7 @@ class ReaderViewController<N: Navigator>: UIViewController,
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
 
-        tabBarController?.tabBar.isHidden = true
+        setMainTabBarHidden(true, animated: animated)
         startReadingSessionIfNeeded()
     }
 
@@ -82,7 +82,17 @@ class ReaderViewController<N: Navigator>: UIViewController,
         super.viewWillDisappear(animated)
 
         finishReadingSessionIfNeeded()
-        tabBarController?.tabBar.isHidden = false
+        setMainTabBarHidden(false, animated: animated)
+    }
+
+    private func setMainTabBarHidden(_ hidden: Bool, animated: Bool) {
+        guard let tabBarController else { return }
+
+        if #available(iOS 18.0, *) {
+            tabBarController.setTabBarHidden(hidden, animated: animated)
+        } else {
+            tabBarController.tabBar.isHidden = hidden
+        }
     }
 
     private func startReadingSessionIfNeeded() {

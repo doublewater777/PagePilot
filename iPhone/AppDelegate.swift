@@ -11,6 +11,12 @@ import ReadiumShared
 import SwiftUI
 import UIKit
 
+private enum MainTabIdentifier {
+    static let home = "home"
+    static let library = "library"
+    static let settings = "settings"
+}
+
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
     let hasSeenOnboardingKey = "hasSeenOnboarding"
@@ -78,6 +84,73 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             return makeLaunchFailureViewController()
         }
 
+        let homeViewController = app.home.rootViewController
+        let libraryViewController = app.library.rootViewController
+
+        let settingsView = NavigationView { SettingsView() }
+            .navigationViewStyle(.stack)
+        let settingsViewController = UIHostingController(rootView: settingsView)
+
+        let tabBarController: UITabBarController
+        if #available(iOS 18.0, *) {
+            tabBarController = makeModernTabBarController(
+                homeViewController: homeViewController,
+                libraryViewController: libraryViewController,
+                settingsViewController: settingsViewController
+            )
+        } else {
+            tabBarController = makeLegacyTabBarController(
+                homeViewController: homeViewController,
+                libraryViewController: libraryViewController,
+                settingsViewController: settingsViewController
+            )
+        }
+
+        configureTabBarAppearance(for: tabBarController)
+        app.tabBarController = tabBarController
+        return tabBarController
+    }
+
+    @available(iOS 18.0, *)
+    private func makeModernTabBarController(
+        homeViewController: UIViewController,
+        libraryViewController: UIViewController,
+        settingsViewController: UIViewController
+    ) -> UITabBarController {
+        func makeTab(
+            titleKey: String,
+            systemImage: String,
+            identifier: String,
+            viewController: UIViewController
+        ) -> UITab {
+            UITab(
+                title: NSLocalizedString(titleKey, comment: "Tab bar item"),
+                image: UIImage(systemName: systemImage),
+                identifier: identifier,
+                viewControllerProvider: { _ in viewController }
+            )
+        }
+
+        let tabBarController = UITabBarController(tabs: [
+            makeTab(titleKey: "home_tab", systemImage: "house", identifier: MainTabIdentifier.home, viewController: homeViewController),
+            makeTab(titleKey: "bookshelf_tab", systemImage: "books.vertical", identifier: MainTabIdentifier.library, viewController: libraryViewController),
+            makeTab(titleKey: "settings_tab", systemImage: "gearshape", identifier: MainTabIdentifier.settings, viewController: settingsViewController),
+        ])
+        tabBarController.customizationIdentifier = "com.panyang.PagePilot.main"
+
+        if UIDevice.current.userInterfaceIdiom == .pad {
+            tabBarController.mode = .tabSidebar
+            tabBarController.sidebar.preferredLayout = .tile
+        }
+
+        return tabBarController
+    }
+
+    private func makeLegacyTabBarController(
+        homeViewController: UIViewController,
+        libraryViewController: UIViewController,
+        settingsViewController: UIViewController
+    ) -> UITabBarController {
         func makeItem(title: String, systemImage: String) -> UITabBarItem {
             UITabBarItem(
                 title: NSLocalizedString(title, comment: "Tab bar item"),
@@ -86,18 +159,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             )
         }
 
-        // Home
-        let homeViewController = app.home.rootViewController
         homeViewController.tabBarItem = makeItem(title: "home_tab", systemImage: "house")
-
-        // Library
-        let libraryViewController = app.library.rootViewController
         libraryViewController.tabBarItem = makeItem(title: "bookshelf_tab", systemImage: "books.vertical")
-
-        // Settings
-        let settingsView = NavigationView { SettingsView() }
-            .navigationViewStyle(.stack)
-        let settingsViewController = UIHostingController(rootView: settingsView)
         settingsViewController.tabBarItem = makeItem(title: "settings_tab", systemImage: "gearshape")
 
         let tabBarController = UITabBarController()
@@ -106,7 +169,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             libraryViewController,
             settingsViewController,
         ]
+        return tabBarController
+    }
 
+    private func configureTabBarAppearance(for tabBarController: UITabBarController) {
         let tabBarAppearance = UITabBarAppearance()
         tabBarAppearance.configureWithOpaqueBackground()
         tabBarAppearance.backgroundColor = .systemBackground
@@ -120,9 +186,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         navBarAppearance.shadowImage = UIImage()
         UINavigationBar.appearance().standardAppearance = navBarAppearance
         UINavigationBar.appearance().scrollEdgeAppearance = navBarAppearance
-
-        app.tabBarController = tabBarController
-        return tabBarController
     }
 
     private func makeLaunchFailureViewController() -> UIViewController {
@@ -145,7 +208,19 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func updateTabBarLocalization() {
         guard app != nil else { return }
-        guard let tabBarItems = app.tabBarController?.tabBar.items, tabBarItems.count >= 3 else { return }
+        guard let tabBarController = app.tabBarController else { return }
+
+        if #available(iOS 18.0, *) {
+            tabBarController.tab(forIdentifier: MainTabIdentifier.home)?.title =
+                NSLocalizedString("home_tab", comment: "Tab bar item")
+            tabBarController.tab(forIdentifier: MainTabIdentifier.library)?.title =
+                NSLocalizedString("bookshelf_tab", comment: "Tab bar item")
+            tabBarController.tab(forIdentifier: MainTabIdentifier.settings)?.title =
+                NSLocalizedString("settings_tab", comment: "Tab bar item")
+            return
+        }
+
+        guard let tabBarItems = tabBarController.tabBar.items, tabBarItems.count >= 3 else { return }
 
         tabBarItems[0].title = NSLocalizedString("home_tab", comment: "Tab bar item")
         tabBarItems[1].title = NSLocalizedString("bookshelf_tab", comment: "Tab bar item")

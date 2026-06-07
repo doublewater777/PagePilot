@@ -56,7 +56,7 @@ struct ReadingStatsView: View {
             }
             .padding(.horizontal, 20)
             .padding(.top, 18)
-            .padding(.bottom, 96)
+            .padding(.bottom, UIDevice.current.userInterfaceIdiom == .pad ? 24 : 96)
         }
         .background(AppColors.background)
         .navigationTitle(NSLocalizedString("stats_title", comment: ""))
@@ -66,15 +66,20 @@ struct ReadingStatsView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: .readingStatsDidChange)) { _ in
             statsRefreshID = UUID()
+            updateStreakAnimation()
         }
         .onReceive(NotificationCenter.default.publisher(for: ProPurchaseManager.proAccessDidChange)) { _ in
             statsRefreshID = UUID()
         }
         .onAppear {
-            withAnimation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true)) {
-                streakScale = 1.12
-            }
             loadBooksData()
+            updateStreakAnimation()
+        }
+        .onChange(of: selectedStatsScope) { _, _ in
+            updateStreakAnimation()
+        }
+        .onChange(of: currentReferenceDate) { _, _ in
+            updateStreakAnimation()
         }
         .onChange(of: selectedChartDate) { oldDate, newDate in
             if newDate != nil && oldDate == nil {
@@ -851,9 +856,11 @@ struct ReadingStatsView: View {
     }
 
     struct HeatmapItem: Identifiable {
-        let id = UUID()
+        let stableId: String
         let date: Date?
         let seconds: Int
+
+        var id: String { stableId }
     }
 
     private func heatmapGrid(_ stats: ReadingStatsSnapshot) -> some View {
@@ -870,15 +877,15 @@ struct ReadingStatsView: View {
         
         var gridItems: [HeatmapItem] = []
         
-        for _ in 0..<leadingSpaces {
-            gridItems.append(HeatmapItem(date: nil, seconds: 0))
+        for index in 0..<leadingSpaces {
+            gridItems.append(HeatmapItem(stableId: "pad-\(index)", date: nil, seconds: 0))
         }
         
         for i in 0..<numberOfDays {
             if let date = calendar.date(byAdding: .day, value: i, to: monthRange.start) {
                 let key = dateFormatter.string(from: date)
                 let seconds = stats.dailyStats.first(where: { $0.dateKey == key })?.seconds ?? 0
-                gridItems.append(HeatmapItem(date: date, seconds: seconds))
+                gridItems.append(HeatmapItem(stableId: key, date: date, seconds: seconds))
             }
         }
         
@@ -1467,17 +1474,19 @@ struct ReadingStatsView: View {
     // Chart Data Helpers
     
     struct ChartDataItem: Identifiable {
-        let id = UUID()
         let label: String
         let date: Date
         let value: Double
+
+        var id: TimeInterval { date.timeIntervalSinceReferenceDate }
     }
     
     struct BookChartItem: Identifiable {
-        let id = UUID()
         let bookId: String
         let title: String
         let value: Double
+
+        var id: String { bookId }
     }
 
     private func makeWeekChartData(from stats: [DailyReadingStat]) -> [ChartDataItem] {
@@ -1570,6 +1579,25 @@ struct ReadingStatsView: View {
             return BookChartItem(bookId: bookId, title: title, value: Double(seconds) / 60.0)
         }
         .sorted { $0.value > $1.value }
+    }
+
+    private func updateStreakAnimation() {
+        let streakDays = statsStore.snapshot(
+            for: selectedStatsScope,
+            referenceDate: currentReferenceDate
+        ).currentStreakDays
+
+        if streakDays > 0 {
+            withAnimation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true)) {
+                streakScale = 1.12
+            }
+        } else {
+            var transaction = Transaction()
+            transaction.disablesAnimations = true
+            withTransaction(transaction) {
+                streakScale = 1.0
+            }
+        }
     }
 
     private func loadBooksData() {

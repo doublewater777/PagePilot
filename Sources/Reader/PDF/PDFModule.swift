@@ -38,7 +38,7 @@ final class PDFModule: ReaderFormatModule {
             books: books,
             bookmarks: bookmarks,
             highlights: highlights,
-            initialPreferences: preferencesStore.preferences(for: bookId),
+            initialPreferences: try await preferencesStore.preferences(for: bookId),
             preferencesStore: preferencesStore,
             httpServer: readium.httpServer
         )
