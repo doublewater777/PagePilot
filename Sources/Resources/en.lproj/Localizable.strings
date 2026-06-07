@@ -338,6 +338,8 @@
 "purchase_error_verification" = "Unable to verify purchase, please try again";
 "purchase_error_cancelled" = "Purchase cancelled";
 "purchase_error_pending" = "Purchase pending, requires parental approval";
+"purchase_error_restore_failed" = "Unable to restore purchases. Please try again.";
+"purchase_error_no_purchases_to_restore" = "No active PagePilot Pro purchase was found for this Apple ID.";
 
 /* Subscription & Purchase Tiers */
 "paywall_option_monthly" = "Monthly Plan";
@@ -348,7 +350,8 @@
 "paywall_price_yearly_monthly" = "¥1.66";
 "paywall_price_lifetime" = "¥59.9";
 "paywall_price_monthly_sub" = "Renews monthly";
-"paywall_price_yearly_sub" = "Only %@/month, save 17%";
+"paywall_price_yearly_sub" = "Only %@/month, save %@";
+"paywall_price_yearly_sub_no_savings" = "Only %@/month";
 "paywall_price_lifetime_sub" = "One-time purchase, limited-time offer";
 "paywall_terms_of_use" = "Terms of Use";
 "paywall_privacy_policy" = "Privacy Policy";

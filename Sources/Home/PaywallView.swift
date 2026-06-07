@@ -19,10 +19,19 @@ struct PaywallView: View {
     @State private var selectedProductID: String = ""
     @State private var isLoadingProducts = false
     @State private var productsLoadFailed = false
-    @State private var isEligibleForTrial = true
+    @State private var isEligibleForTrial = false
 
     private let accentBlue = Color(red: 0.22, green: 0.43, blue: 0.95)
     private let accentTeal = Color(red: 0.16, green: 0.62, blue: 0.58)
+
+    private var selectedProduct: Product? {
+        products.first(where: { $0.id == selectedProductID })
+    }
+
+    private var canStartFreeTrial: Bool {
+        guard let selectedProduct else { return false }
+        return freeTrialOffer(for: selectedProduct) != nil && isEligibleForTrial
+    }
 
     var body: some View {
         ScrollView(.vertical, showsIndicators: false) {
@@ -223,9 +232,7 @@ struct PaywallView: View {
             if isMonthly {
                 return NSLocalizedString("paywall_price_monthly_sub", comment: "")
             } else if isYearly {
-                let formattedMonthly = localizedMonthlyPrice(for: product)
-                let formatString = NSLocalizedString("paywall_price_yearly_sub", comment: "")
-                return String(format: formatString, formattedMonthly)
+                return yearlyPriceSubtext(for: product)
             } else {
                 return NSLocalizedString("paywall_price_lifetime_sub", comment: "")
             }
@@ -336,13 +343,13 @@ struct PaywallView: View {
     // MARK: - Purchase Panel
 
     private var buyButtonText: String {
-        guard let selectedProduct = products.first(where: { $0.id == selectedProductID }) else {
+        guard let selectedProduct else {
             return NSLocalizedString("paywall_buy_button_ineligible", comment: "")
         }
         
         if selectedProduct.id.contains("lifetime") {
             return NSLocalizedString("paywall_buy_button_lifetime", comment: "")
-        } else if isEligibleForTrial {
+        } else if canStartFreeTrial {
             return NSLocalizedString("paywall_buy_button_eligible", comment: "")
         } else {
             return NSLocalizedString("paywall_buy_button_ineligible", comment: "")
@@ -352,11 +359,13 @@ struct PaywallView: View {
     private var purchasePanel: some View {
         VStack(spacing: 9) {
             HStack(spacing: 14) {
-                assuranceItem(icon: "checkmark.seal.fill", text: NSLocalizedString("paywall_assurance_trial", comment: ""))
+                if canStartFreeTrial {
+                    assuranceItem(icon: "checkmark.seal.fill", text: NSLocalizedString("paywall_assurance_trial", comment: ""))
+                }
                 assuranceItem(icon: "xmark.seal.fill", text: NSLocalizedString("paywall_assurance_cancel", comment: ""))
             }
 
-            Text(NSLocalizedString("paywall_trial_note", comment: ""))
+            Text(NSLocalizedString(canStartFreeTrial ? "paywall_trial_note" : "paywall_subscription_billing_note", comment: ""))
                 .font(.system(size: 10.5))
                 .foregroundColor(AppColors.secondaryText)
                 .multilineTextAlignment(.center)
@@ -507,25 +516,42 @@ struct PaywallView: View {
     }
 
     private func displayPrice(for product: Product) -> String {
-        if product.id.contains("monthly") {
-            return NSLocalizedString("paywall_price_monthly", comment: "")
-        } else if product.id.contains("yearly") {
-            return NSLocalizedString("paywall_price_yearly", comment: "")
-        } else if product.id.contains("lifetime") {
-            return NSLocalizedString("paywall_price_lifetime", comment: "")
+        product.displayPrice
+    }
+
+    private func localizedMonthlyPrice(for product: Product) -> String {
+        if product.id.contains("yearly") {
+            let monthlyPrice = product.price / Decimal(12)
+            return monthlyPrice.formatted(product.priceFormatStyle)
+        } else if product.id.contains("monthly") {
+            return product.displayPrice
         } else {
             return product.displayPrice
         }
     }
 
-    private func localizedMonthlyPrice(for product: Product) -> String {
-        if product.id.contains("yearly") {
-            return NSLocalizedString("paywall_price_yearly_monthly", comment: "")
-        } else if product.id.contains("monthly") {
-            return NSLocalizedString("paywall_price_monthly", comment: "")
-        } else {
-            return product.displayPrice
+    private func yearlyPriceSubtext(for yearlyProduct: Product) -> String {
+        let formattedMonthly = localizedMonthlyPrice(for: yearlyProduct)
+        guard
+            let monthlyProduct = products.first(where: { $0.id == ProPurchaseManager.monthlyProductID }),
+            monthlyProduct.price > 0
+        else {
+            return String(format: NSLocalizedString("paywall_price_yearly_sub_no_savings", comment: ""), formattedMonthly)
         }
+
+        let monthlyAnnualPrice = monthlyProduct.price * Decimal(12)
+        guard monthlyAnnualPrice > yearlyProduct.price else {
+            return String(format: NSLocalizedString("paywall_price_yearly_sub_no_savings", comment: ""), formattedMonthly)
+        }
+
+        let savingsRatio = (monthlyAnnualPrice - yearlyProduct.price) / monthlyAnnualPrice
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .percent
+        formatter.maximumFractionDigits = 0
+        formatter.minimumFractionDigits = 0
+        let formattedSavings = formatter.string(from: NSDecimalNumber(decimal: savingsRatio)) ?? ""
+
+        return String(format: NSLocalizedString("paywall_price_yearly_sub", comment: ""), formattedMonthly, formattedSavings)
     }
 
     private func purchase() {
@@ -567,7 +593,7 @@ struct PaywallView: View {
         }
         
         Task {
-            if let subscription = selectedProduct.subscription {
+            if let subscription = selectedProduct.subscription, freeTrialOffer(for: selectedProduct) != nil {
                 let eligible = await subscription.isEligibleForIntroOffer
                 isEligibleForTrial = eligible
             } else {
@@ -576,18 +602,30 @@ struct PaywallView: View {
         }
     }
 
+    private func freeTrialOffer(for product: Product) -> Product.SubscriptionOffer? {
+        guard let offer = product.subscription?.introductoryOffer, offer.paymentMode == .freeTrial else {
+            return nil
+        }
+        return offer
+    }
+
     @MainActor
     private func restore() async {
         isPurchasing = true
-        Analytics.shared.log(.purchaseRestored)
-        await ProPurchaseManager.shared.restorePurchases()
-        if ProPurchaseManager.shared.hasProAccess {
+        do {
+            let hasProAccess = try await ProPurchaseManager.shared.restorePurchases()
+            guard hasProAccess else {
+                throw ProPurchaseError.noPurchasesToRestore
+            }
+
             withAnimation(.easeOut(duration: 0.3)) {
                 showSuccess = true
             }
             try? await Task.sleep(nanoseconds: 1_500_000_000)
             dismiss()
-        } else {
+        } catch {
+            purchaseError = error
+            showError = true
             isPurchasing = false
         }
     }

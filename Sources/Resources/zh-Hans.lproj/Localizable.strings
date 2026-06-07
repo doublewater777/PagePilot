@@ -338,6 +338,8 @@
 "purchase_error_verification" = "无法验证购买，请重试";
 "purchase_error_cancelled" = "已取消购买";
 "purchase_error_pending" = "购买等待中，需要家长批准";
+"purchase_error_restore_failed" = "无法恢复购买，请稍后重试。";
+"purchase_error_no_purchases_to_restore" = "当前 Apple ID 未找到有效的 PagePilot Pro 购买。";
 
 /* Subscription & Purchase Tiers */
 "paywall_option_monthly" = "月度订阅";
@@ -348,7 +350,8 @@
 "paywall_price_yearly_monthly" = "¥1.66";
 "paywall_price_lifetime" = "¥59.9";
 "paywall_price_monthly_sub" = "按月续订，适合先试用";
-"paywall_price_yearly_sub" = "仅 %@/月，省 17%";
+"paywall_price_yearly_sub" = "仅 %@/月，省 %@";
+"paywall_price_yearly_sub_no_savings" = "仅 %@/月";
 "paywall_price_lifetime_sub" = "一次购买，限时优惠";
 "paywall_terms_of_use" = "使用条款";
 "paywall_privacy_policy" = "隐私政策";

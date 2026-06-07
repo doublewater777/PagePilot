@@ -13,6 +13,8 @@ enum ProPurchaseError: Error, LocalizedError {
     case verificationFailed
     case userCancelled
     case pending
+    case restoreFailed
+    case noPurchasesToRestore
 
     var errorDescription: String? {
         switch self {
@@ -26,6 +28,10 @@ enum ProPurchaseError: Error, LocalizedError {
             return NSLocalizedString("purchase_error_cancelled", comment: "")
         case .pending:
             return NSLocalizedString("purchase_error_pending", comment: "")
+        case .restoreFailed:
+            return NSLocalizedString("purchase_error_restore_failed", comment: "")
+        case .noPurchasesToRestore:
+            return NSLocalizedString("purchase_error_no_purchases_to_restore", comment: "")
         }
     }
 }
@@ -66,8 +72,12 @@ final class ProPurchaseManager {
 
     @discardableResult
     func loadProducts() async -> [Product] {
+        let productIDs = [Self.monthlyProductID, Self.yearlyProductID, Self.lifetimeProductID]
         do {
-            let fetchedProducts = try await Product.products(for: [Self.monthlyProductID, Self.yearlyProductID, Self.lifetimeProductID])
+            var fetchedProducts = try await Product.products(for: productIDs)
+            if fetchedProducts.isEmpty {
+                fetchedProducts = try await loadProductsIndividually(productIDs)
+            }
             let orderedIds = [Self.monthlyProductID, Self.yearlyProductID, Self.lifetimeProductID]
             self.products = fetchedProducts.sorted { p1, p2 in
                 let idx1 = orderedIds.firstIndex(of: p1.id) ?? 99
@@ -75,17 +85,29 @@ final class ProPurchaseManager {
                 return idx1 < idx2
             }
             if self.products.isEmpty {
-                print("ProPurchaseManager: Product.products(for:) returned empty. Check StoreKit Configuration (.storekit file) or App Store Connect setup.")
+                print("ProPurchaseManager: Product.products(for:) returned empty. bundleID=\(Bundle.main.bundleIdentifier ?? "unknown"), appStoreReceiptURL=\(Bundle.main.appStoreReceiptURL?.absoluteString ?? "nil"), requestedIDs=\(productIDs)")
             } else {
                 print("ProPurchaseManager: loaded \(self.products.count) product(s): \(self.products.map { $0.id })")
             }
         } catch {
-            print("ProPurchaseManager: Failed to load products: \(error)")
+            print("ProPurchaseManager: Failed to load products: \(error), bundleID=\(Bundle.main.bundleIdentifier ?? "unknown"), requestedIDs=\(productIDs)")
         }
         return products
     }
 
     // MARK: - Purchase
+
+    private func loadProductsIndividually(_ productIDs: [String]) async throws -> [Product] {
+        var fetchedProducts: [Product] = []
+        for productID in productIDs {
+            let products = try await Product.products(for: [productID])
+            if products.isEmpty {
+                print("ProPurchaseManager: no product returned for \(productID)")
+            }
+            fetchedProducts.append(contentsOf: products)
+        }
+        return fetchedProducts
+    }
 
     func purchase(_ product: Product) async throws {
         Analytics.shared.log(.purchaseStarted)
@@ -114,15 +136,18 @@ final class ProPurchaseManager {
 
     // MARK: - Restore
 
-    func restorePurchases() async {
+    @discardableResult
+    func restorePurchases() async throws -> Bool {
         do {
             try await AppStore.sync()
             let hasPro = await syncCurrentEntitlements()
             if hasPro {
                 Analytics.shared.log(.purchaseRestored)
             }
+            return hasPro
         } catch {
             print("Restore failed: \(error)")
+            throw ProPurchaseError.restoreFailed
         }
     }
 
