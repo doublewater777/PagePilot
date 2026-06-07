@@ -3,11 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PagePilot - 用手表翻页的阅读器 | Turn pages with your Apple Watch</title>
+    <title>PagePilot - 用 Apple Watch 翻页的本地电子书阅读器 | Hands-Free EPUB & PDF Ebook Reader</title>
     
     <!-- Meta Descriptions -->
-    <meta name="description" content="PagePilot 是一款支持 Apple Watch 翻页的 iPhone/iPad 阅读器，适合躺着看书、健身房看书、高铁上看书，也支持 WiFi 传书、多格式阅读和阅读统计。 PagePilot is a hands-free ebook reader for bed, gym, and high-speed train reading with Apple Watch page turns.">
-    <meta name="keywords" content="PagePilot, EPUB reader, Apple Watch page turn, PDF reader, Wifi transfer, ebook, 电子书, 翻页, 手表翻页, 电脑传书">
+    <meta name="description" content="PagePilot 是一款支持 Apple Watch 遥控翻页的 iPhone/iPad 本地电子书阅读器 (EPUB, PDF, CBZ)。支持局域网 WiFi 极速传书、设备间 Bonjour 隔空互传、本地阅读进度与数据统计以及系统级 TTS 朗读听书，100% 数据保存在设备本地，完美保护隐私。 PagePilot is a local-first EPUB/PDF/CBZ ebook reader for iPhone & iPad. Turn pages from Apple Watch via tap or Digital Crown, featuring local WiFi transfer and offline reading stats.">
+    <meta name="keywords" content="PagePilot, EPUB reader, Apple Watch page turn, PDF reader, Wifi transfer, ebook, 电子书, 翻页, 手表翻页, 电脑传书, CBZ reader, hands-free reading">
+    <meta name="robots" content="index, follow">
     <link rel="canonical" href="https://doublewater777.github.io/PagePilot/">
 
     <!-- Social Cards -->
@@ -978,7 +979,101 @@
                 transform: scale(1.05);
             }
         }
+
+        /* WeChat Overlay */
+        .wechat-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(10, 15, 24, 0.95);
+            backdrop-filter: blur(10px);
+            z-index: 10000;
+            display: none;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: flex-end;
+            padding: 24px;
+            box-sizing: border-box;
+            color: white;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        .wechat-arrow {
+            color: var(--accent-teal);
+            margin-right: 20px;
+            animation: arrow-bounce 2s infinite;
+        }
+
+        @keyframes arrow-bounce {
+            0%, 100% {
+                transform: translate(0, 0);
+            }
+            50% {
+                transform: translate(8px, -8px);
+            }
+        }
+
+        .wechat-text {
+            width: 100%;
+            text-align: center;
+            margin-top: 40px;
+            padding: 0 20px;
+            box-sizing: border-box;
+        }
+
+        .wechat-text p {
+            font-size: 18px;
+            line-height: 1.6;
+            margin: 12px 0;
+        }
+
+        .wechat-text strong {
+            color: var(--accent-teal);
+            font-weight: 700;
+            background: rgba(27, 194, 171, 0.1);
+            padding: 4px 8px;
+            border-radius: 4px;
+            border: 1px solid rgba(27, 194, 171, 0.2);
+        }
+
+        .wechat-text span {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-weight: bold;
+            letter-spacing: 2px;
+            font-size: 14px;
+            vertical-align: middle;
+            margin-left: 4px;
+        }
     </style>
+    
+    <!-- Structured Data for App SEO -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "PagePilot",
+      "operatingSystem": "iOS",
+      "applicationCategory": "BooksApplication",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "downloadUrl": "https://apps.apple.com/app/pagepilot/id6760964443",
+      "installUrl": "https://apps.apple.com/app/pagepilot/id6760964443",
+      "description": "PagePilot is a local-first ebook reader for iPhone and iPad. Turn EPUB, PDF, and CBZ pages using your Apple Watch via Digital Crown or taps.",
+      "featureList": "Apple Watch Remote Page Turning, EPUB/PDF/CBZ support, Local WiFi Transfer, Device-to-Device Sharing, Local Reading Stats, System Text-to-Speech (TTS)",
+      "screenshot": "https://doublewater777.github.io/PagePilot/social-card.png",
+      "publisher": {
+        "@type": "Person",
+        "name": "Yang Pan"
+      }
+    }
+    </script>
 </head>
 <body data-lang="zh" data-theme="dark">
 
@@ -1485,6 +1580,20 @@
             if (storedTheme === 'light') {
                 toggleTheme(); // will switch it to light
             }
+
+            // WeChat Detection & Handling
+            const isWeChat = /MicroMessenger/i.test(navigator.userAgent);
+            if (isWeChat) {
+                document.querySelectorAll('.btn-download').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        document.getElementById('wechat-overlay').style.display = 'flex';
+                    });
+                });
+                document.getElementById('wechat-overlay').addEventListener('click', () => {
+                    document.getElementById('wechat-overlay').style.display = 'none';
+                });
+            }
         });
 
         // Interactive Watch & Phone Mockup Logic
@@ -1539,5 +1648,21 @@
             nextActivePage.classList.add('active');
         }
     </script>
+
+    <!-- WeChat Browser Guide Overlay -->
+    <div id="wechat-overlay" class="wechat-overlay">
+        <div class="wechat-arrow">
+            <svg width="80" height="80" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 80 C 40 80, 80 70, 80 20" />
+                <path d="M68 28 L 80 20 L 84 32" />
+            </svg>
+        </div>
+        <div class="wechat-text">
+            <p class="lang-zh">点击右上角菜单 <span>•••</span></p>
+            <p class="lang-zh">选择 <strong>“在浏览器中打开”</strong> 即可正常跳转下载</p>
+            <p class="lang-en">Click the top-right menu <span>•••</span></p>
+            <p class="lang-en">and select <strong>“Open in Browser”</strong> to download</p>
+        </div>
+    </div>
 </body>
 </html>
