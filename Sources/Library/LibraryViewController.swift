@@ -1135,6 +1135,292 @@ class PublicationIndicator: UIView {
     }
 }
 
+// MARK: - Premium Glassmorphic Empty Library View Components
+
+private class GradientView: UIView {
+    override class var layerClass: AnyClass {
+        return CAGradientLayer.self
+    }
+    
+    var gradientLayer: CAGradientLayer {
+        return layer as! CAGradientLayer
+    }
+    
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        setup()
+    }
+    
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        setup()
+    }
+    
+    private func setup() {
+        gradientLayer.startPoint = CGPoint(x: 0, y: 0)
+        gradientLayer.endPoint = CGPoint(x: 1, y: 1)
+    }
+}
+
+private class BounceButton: UIButton {
+    private let gradientView = GradientView()
+    
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        setup()
+    }
+    
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        setup()
+    }
+    
+    private func setup() {
+        // Configure gradient view
+        gradientView.translatesAutoresizingMaskIntoConstraints = false
+        gradientView.isUserInteractionEnabled = false
+        gradientView.layer.cornerRadius = 14
+        gradientView.clipsToBounds = true
+        gradientView.gradientLayer.colors = [
+            UIColor(red: 0.12, green: 0.47, blue: 0.85, alpha: 1).cgColor, // Vibrant Blue
+            UIColor(red: 0.08, green: 0.66, blue: 0.58, alpha: 1).cgColor  // Teal
+        ]
+        
+        insertSubview(gradientView, at: 0)
+        
+        NSLayoutConstraint.activate([
+            gradientView.leadingAnchor.constraint(equalTo: leadingAnchor),
+            gradientView.trailingAnchor.constraint(equalTo: trailingAnchor),
+            gradientView.topAnchor.constraint(equalTo: topAnchor),
+            gradientView.bottomAnchor.constraint(equalTo: bottomAnchor)
+        ])
+        
+        // Setup configuration and styling
+        var config = UIButton.Configuration.plain()
+        config.title = NSLocalizedString("library_import_local", comment: "")
+        config.image = UIImage(systemName: "folder")
+        config.imagePadding = 8
+        config.baseForegroundColor = .white
+        config.titleTextAttributesTransformer = UIConfigurationTextAttributesTransformer { incoming in
+            var outgoing = incoming
+            outgoing.font = UIFont.systemFont(ofSize: 15, weight: .semibold)
+            return outgoing
+        }
+        self.configuration = config
+        
+        // Button shadow
+        layer.shadowColor = UIColor(red: 0.12, green: 0.47, blue: 0.85, alpha: 0.3).cgColor
+        layer.shadowOpacity = 0.6
+        layer.shadowRadius = 10
+        layer.shadowOffset = CGSize(width: 0, height: 4)
+        layer.masksToBounds = false
+        
+        // Scale interactions
+        addTarget(self, action: #selector(animateTouchDown), for: .touchDown)
+        addTarget(self, action: #selector(animateTouchUp), for: [.touchUpInside, .touchUpOutside, .touchCancel])
+    }
+    
+    @objc private func animateTouchDown() {
+        UIView.animate(withDuration: 0.1, delay: 0, options: [.beginFromCurrentState], animations: {
+            self.transform = CGAffineTransform(scaleX: 0.95, y: 0.95)
+        })
+    }
+    
+    @objc private func animateTouchUp() {
+        UIView.animate(withDuration: 0.4, delay: 0, usingSpringWithDamping: 0.5, initialSpringVelocity: 0.5, options: [.beginFromCurrentState], animations: {
+            self.transform = .identity
+        })
+    }
+}
+
+private class EmptyLibraryView: UIView {
+    var onImportAction: (() -> Void)?
+    
+    private let shadowWrapper = UIView()
+    private let cardView = UIVisualEffectView(effect: UIBlurEffect(style: .systemUltraThinMaterial))
+    
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        setupViews()
+    }
+    
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        setupViews()
+    }
+    
+    private func setupViews() {
+        backgroundColor = .clear
+        
+        // 1. Add background glowing blobs
+        let blob1 = UIView()
+        blob1.translatesAutoresizingMaskIntoConstraints = false
+        blob1.backgroundColor = UIColor(red: 0.08, green: 0.66, blue: 0.58, alpha: 0.15) // Teal
+        blob1.layer.cornerRadius = 100
+        blob1.clipsToBounds = true
+        
+        let blob2 = UIView()
+        blob2.translatesAutoresizingMaskIntoConstraints = false
+        blob2.backgroundColor = UIColor(red: 0.12, green: 0.47, blue: 0.85, alpha: 0.15) // Blue
+        blob2.layer.cornerRadius = 120
+        blob2.clipsToBounds = true
+        
+        addSubview(blob1)
+        addSubview(blob2)
+        
+        // Full screen blur layer to diffuse blobs
+        let backdropBlur = UIVisualEffectView(effect: UIBlurEffect(style: .systemThinMaterial))
+        backdropBlur.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(backdropBlur)
+        
+        // 2. Card View with shadow wrapper
+        shadowWrapper.translatesAutoresizingMaskIntoConstraints = false
+        shadowWrapper.backgroundColor = .clear
+        shadowWrapper.layer.shadowColor = UIColor.black.cgColor
+        shadowWrapper.layer.shadowOffset = CGSize(width: 0, height: 8)
+        shadowWrapper.layer.shadowRadius = 18
+        shadowWrapper.layer.masksToBounds = false
+        
+        cardView.translatesAutoresizingMaskIntoConstraints = false
+        cardView.layer.cornerRadius = 24
+        cardView.layer.borderWidth = 1.0
+        cardView.clipsToBounds = true
+        
+        shadowWrapper.addSubview(cardView)
+        addSubview(shadowWrapper)
+        
+        // 3. Stack View inside card
+        let iconContainer = GradientView()
+        iconContainer.translatesAutoresizingMaskIntoConstraints = false
+        iconContainer.layer.cornerRadius = 20
+        iconContainer.clipsToBounds = true
+        iconContainer.gradientLayer.colors = [
+            UIColor(red: 0.29, green: 0.38, blue: 0.93, alpha: 1).cgColor, // Indigo
+            UIColor(red: 0.08, green: 0.66, blue: 0.58, alpha: 1).cgColor  // Teal
+        ]
+        
+        let icon = UIImageView(image: UIImage(systemName: "books.vertical"))
+        icon.translatesAutoresizingMaskIntoConstraints = false
+        icon.tintColor = .white
+        icon.contentMode = .scaleAspectFit
+        iconContainer.addSubview(icon)
+        
+        let titleLabel = UILabel()
+        titleLabel.translatesAutoresizingMaskIntoConstraints = false
+        titleLabel.text = NSLocalizedString("home_empty_title", comment: "")
+        titleLabel.font = .systemFont(ofSize: 20, weight: .bold)
+        titleLabel.textColor = .label
+        titleLabel.textAlignment = .center
+        
+        let messageLabel = UILabel()
+        messageLabel.translatesAutoresizingMaskIntoConstraints = false
+        messageLabel.text = NSLocalizedString("library_empty_message", comment: "")
+        messageLabel.font = .systemFont(ofSize: 14, weight: .regular)
+        messageLabel.textColor = .secondaryLabel
+        messageLabel.textAlignment = .center
+        messageLabel.numberOfLines = 0
+        
+        let button = BounceButton(type: .custom)
+        button.translatesAutoresizingMaskIntoConstraints = false
+        button.addTarget(self, action: #selector(buttonTapped), for: .touchUpInside)
+        
+        let stackView = UIStackView(arrangedSubviews: [iconContainer, titleLabel, messageLabel, button])
+        stackView.translatesAutoresizingMaskIntoConstraints = false
+        stackView.axis = .vertical
+        stackView.alignment = .center
+        stackView.spacing = 16
+        stackView.setCustomSpacing(24, after: messageLabel)
+        
+        cardView.contentView.addSubview(stackView)
+        
+        // 4. Constraints
+        NSLayoutConstraint.activate([
+            // Blobs
+            blob1.topAnchor.constraint(equalTo: topAnchor, constant: 100),
+            blob1.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -20),
+            blob1.widthAnchor.constraint(equalToConstant: 200),
+            blob1.heightAnchor.constraint(equalToConstant: 200),
+            
+            blob2.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -120),
+            blob2.leadingAnchor.constraint(equalTo: leadingAnchor, constant: -40),
+            blob2.widthAnchor.constraint(equalToConstant: 240),
+            blob2.heightAnchor.constraint(equalToConstant: 240),
+            
+            // Backdrop Blur
+            backdropBlur.leadingAnchor.constraint(equalTo: leadingAnchor),
+            backdropBlur.trailingAnchor.constraint(equalTo: trailingAnchor),
+            backdropBlur.topAnchor.constraint(equalTo: topAnchor),
+            backdropBlur.bottomAnchor.constraint(equalTo: bottomAnchor),
+            
+            // Shadow Wrapper & Card
+            shadowWrapper.centerXAnchor.constraint(equalTo: centerXAnchor),
+            shadowWrapper.centerYAnchor.constraint(equalTo: centerYAnchor, constant: -20),
+            shadowWrapper.widthAnchor.constraint(equalTo: widthAnchor, multiplier: 0.85).withPriority(.defaultHigh),
+            shadowWrapper.widthAnchor.constraint(lessThanOrEqualToConstant: 340),
+            
+            cardView.leadingAnchor.constraint(equalTo: shadowWrapper.leadingAnchor),
+            cardView.trailingAnchor.constraint(equalTo: shadowWrapper.trailingAnchor),
+            cardView.topAnchor.constraint(equalTo: shadowWrapper.topAnchor),
+            cardView.bottomAnchor.constraint(equalTo: shadowWrapper.bottomAnchor),
+            
+            // Stack View inside Card
+            stackView.topAnchor.constraint(equalTo: cardView.contentView.topAnchor, constant: 28),
+            stackView.bottomAnchor.constraint(equalTo: cardView.contentView.bottomAnchor, constant: -28),
+            stackView.leadingAnchor.constraint(equalTo: cardView.contentView.leadingAnchor, constant: 24),
+            stackView.trailingAnchor.constraint(equalTo: cardView.contentView.trailingAnchor, constant: -24),
+            
+            // Icon Container
+            iconContainer.widthAnchor.constraint(equalToConstant: 76),
+            iconContainer.heightAnchor.constraint(equalToConstant: 76),
+            
+            // Icon inside Container
+            icon.centerXAnchor.constraint(equalTo: iconContainer.centerXAnchor),
+            icon.centerYAnchor.constraint(equalTo: iconContainer.centerYAnchor),
+            icon.widthAnchor.constraint(equalToConstant: 36),
+            icon.heightAnchor.constraint(equalToConstant: 36),
+            
+            // Button inside Stack
+            button.heightAnchor.constraint(equalToConstant: 46),
+            button.leadingAnchor.constraint(equalTo: cardView.contentView.leadingAnchor, constant: 28),
+            button.trailingAnchor.constraint(equalTo: cardView.contentView.trailingAnchor, constant: -28)
+        ])
+        
+        updateAppearance()
+    }
+    
+    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+        super.traitCollectionDidChange(previousTraitCollection)
+        if traitCollection.hasDifferentColorAppearance(comparedTo: previousTraitCollection) {
+            updateAppearance()
+        }
+    }
+    
+    private func updateAppearance() {
+        let isDark = traitCollection.userInterfaceStyle == .dark
+        
+        // Card border color depending on Light/Dark mode
+        cardView.layer.borderColor = isDark ?
+            UIColor.white.withAlphaComponent(0.08).cgColor :
+            UIColor.white.withAlphaComponent(0.16).cgColor
+            
+        // Shadow opacity depending on Light/Dark mode
+        shadowWrapper.layer.shadowOpacity = isDark ? 0.25 : 0.09
+    }
+    
+    @objc private func buttonTapped() {
+        onImportAction?()
+    }
+}
+
+// Extension helper to set priority inline
+private extension NSLayoutConstraint {
+    func withPriority(_ priority: UILayoutPriority) -> NSLayoutConstraint {
+        self.priority = priority
+        return self
+    }
+}
+
+
 // MARK: - UISearchResultsUpdating
 extension LibraryViewController: UISearchResultsUpdating {
     func updateSearchResults(for searchController: UISearchController) {

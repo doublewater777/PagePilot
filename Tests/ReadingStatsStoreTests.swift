@@ -66,19 +66,23 @@ final class ReadingStatsStoreTests: XCTestCase {
         XCTAssertEqual(summary.distinctBooks, 2)
     }
 
-    func testCurrentStreakWhenUserReadTodayYesterdayOrNeither() {
-        let readToday = makeStore()
-        readToday.recordReadingSession(seconds: 60, bookId: Book.Id(rawValue: 1), date: date(2026, 6, 3))
-        readToday.recordReadingSession(seconds: 60, bookId: Book.Id(rawValue: 1), date: date(2026, 6, 4))
-        XCTAssertEqual(readToday.snapshot(for: .summary, referenceDate: date(2026, 6, 4)).currentStreakDays, 2)
+    func testCurrentStreakWhenUserReadToday() {
+        let store = makeStore()
+        store.recordReadingSession(seconds: 60, bookId: Book.Id(rawValue: 1), date: date(2026, 6, 3))
+        store.recordReadingSession(seconds: 60, bookId: Book.Id(rawValue: 1), date: date(2026, 6, 4))
+        XCTAssertEqual(store.snapshot(for: .summary, referenceDate: date(2026, 6, 4)).currentStreakDays, 2)
+    }
 
-        let readYesterday = makeStore()
-        readYesterday.recordReadingSession(seconds: 60, bookId: Book.Id(rawValue: 1), date: date(2026, 6, 3))
-        XCTAssertEqual(readYesterday.snapshot(for: .summary, referenceDate: date(2026, 6, 4)).currentStreakDays, 1)
+    func testCurrentStreakWhenUserReadYesterday() {
+        let store = makeStore()
+        store.recordReadingSession(seconds: 60, bookId: Book.Id(rawValue: 1), date: date(2026, 6, 3))
+        XCTAssertEqual(store.snapshot(for: .summary, referenceDate: date(2026, 6, 4)).currentStreakDays, 1)
+    }
 
-        let readNeither = makeStore()
-        readNeither.recordReadingSession(seconds: 60, bookId: Book.Id(rawValue: 1), date: date(2026, 6, 2))
-        XCTAssertEqual(readNeither.snapshot(for: .summary, referenceDate: date(2026, 6, 4)).currentStreakDays, 0)
+    func testCurrentStreakWhenUserReadNeither() {
+        let store = makeStore()
+        store.recordReadingSession(seconds: 60, bookId: Book.Id(rawValue: 1), date: date(2026, 6, 2))
+        XCTAssertEqual(store.snapshot(for: .summary, referenceDate: date(2026, 6, 4)).currentStreakDays, 0)
     }
 
     func testWeekMonthYearAndSummarySnapshots() {
