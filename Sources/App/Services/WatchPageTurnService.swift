@@ -453,29 +453,25 @@ final class WatchPageTurnService: NSObject, ObservableObject {
             forMethod: "GET",
             path: "/status",
             request: ReadiumGCDWebServerRequest.self,
-            processBlock: { _ in
-                var title = ""
-                var progress = 0.0
-                var sensitivity = 2.0
-                
-                DispatchQueue.main.sync {
-                    title = WatchPageTurnService.shared.currentBookTitle
-                    progress = WatchPageTurnService.shared.currentBookProgress
-                    sensitivity = WatchPageTurnSettings().crownSensitivity
+            asyncProcessBlock: { _, completionBlock in
+                DispatchQueue.main.async {
+                    let title = WatchPageTurnService.shared.currentBookTitle
+                    let progress = WatchPageTurnService.shared.currentBookProgress
+                    let sensitivity = WatchPageTurnSettings().crownSensitivity
                     WatchPageTurnService.shared.markLANWatchConnected()
+                    
+                    let responseDict: [String: Any] = [
+                        "status": "ok",
+                        "ok": true,
+                        "target": "ipad",
+                        "readerReady": WatchPageTurnService.shared.activeNavigator != nil,
+                        "bookTitle": title,
+                        "bookProgress": progress,
+                        "crownSensitivity": sensitivity
+                    ]
+                    
+                    completionBlock(WatchPageTurnService.shared.jsonResponse(responseDict))
                 }
-                
-                let responseDict: [String: Any] = [
-                    "status": "ok",
-                    "ok": true,
-                    "target": "ipad",
-                    "readerReady": WatchPageTurnService.shared.activeNavigator != nil,
-                    "bookTitle": title,
-                    "bookProgress": progress,
-                    "crownSensitivity": sensitivity
-                ]
-                
-                return WatchPageTurnService.shared.jsonResponse(responseDict)
             }
         )
         
@@ -484,64 +480,59 @@ final class WatchPageTurnService: NSObject, ObservableObject {
             forMethod: "POST",
             path: "/command",
             request: ReadiumGCDWebServerDataRequest.self,
-            processBlock: { request in
-                let semaphore = DispatchSemaphore(value: 0)
+            asyncProcessBlock: { request, completionBlock in
                 let json = (request as? ReadiumGCDWebServerDataRequest)?.jsonObject as? [String: Any]
                 let action = json?["action"] as? String
-                var responseDict = WatchPageTurnService.shared.errorPayload(
-                    route: WatchPageTurnRoute.direct,
-                    code: WatchPageTurnErrorCode.navigatorNotReady,
-                    message: "reader is not ready"
-                )
                 
-                DispatchQueue.main.async {
+                Task { @MainActor in
                     guard let navigator = WatchPageTurnService.shared.activeNavigator else {
-                        semaphore.signal()
+                        completionBlock(WatchPageTurnService.shared.jsonResponse(
+                            WatchPageTurnService.shared.errorPayload(
+                                route: WatchPageTurnRoute.direct,
+                                code: WatchPageTurnErrorCode.navigatorNotReady,
+                                message: "reader is not ready"
+                            ),
+                            statusCode: 409
+                        ))
                         return
                     }
                     
                     guard let command = action.flatMap(PageCommand.init(rawValue:)) else {
-                        responseDict = WatchPageTurnService.shared.errorPayload(
-                            route: WatchPageTurnRoute.direct,
-                            code: WatchPageTurnErrorCode.invalidCommand,
-                            message: "invalid page command"
-                        )
-                        semaphore.signal()
+                        completionBlock(WatchPageTurnService.shared.jsonResponse(
+                            WatchPageTurnService.shared.errorPayload(
+                                route: WatchPageTurnRoute.direct,
+                                code: WatchPageTurnErrorCode.invalidCommand,
+                                message: "invalid page command"
+                            ),
+                            statusCode: 409
+                        ))
                         return
                     }
-
-                    let settings = WatchPageTurnSettings()
                     
+                    let settings = WatchPageTurnSettings()
                     WatchPageTurnService.shared.markLANWatchConnected()
                     
-                    Task { @MainActor in
-                        let succeeded: Bool
-                        switch command {
-                        case .next:
-                            succeeded = await navigator.goForward(options: NavigatorGoOptions(animated: false))
-                        case .prev:
-                            succeeded = await navigator.goBackward(options: NavigatorGoOptions(animated: false))
-                        }
-                        
-                        responseDict = [
-                            "status": "ok",
-                            "ok": true,
-                            "target": "ipad",
-                            "route": WatchPageTurnRoute.direct,
-                            "readerReady": true,
-                            "bookTitle": WatchPageTurnService.shared.currentBookTitle,
-                            "bookProgress": navigator.currentLocation?.locations.totalProgression ?? 0.0,
-                            "crownSensitivity": settings.crownSensitivity,
-                            "pageDirection": command.rawValue,
-                            "didTurnPage": succeeded
-                        ]
-                        semaphore.signal()
+                    let succeeded: Bool
+                    switch command {
+                    case .next:
+                        succeeded = await navigator.goForward(options: NavigatorGoOptions(animated: false))
+                    case .prev:
+                        succeeded = await navigator.goBackward(options: NavigatorGoOptions(animated: false))
                     }
+                    
+                    completionBlock(WatchPageTurnService.shared.jsonResponse([
+                        "status": "ok",
+                        "ok": true,
+                        "target": "ipad",
+                        "route": WatchPageTurnRoute.direct,
+                        "readerReady": true,
+                        "bookTitle": WatchPageTurnService.shared.currentBookTitle,
+                        "bookProgress": navigator.currentLocation?.locations.totalProgression ?? 0.0,
+                        "crownSensitivity": settings.crownSensitivity,
+                        "pageDirection": command.rawValue,
+                        "didTurnPage": succeeded
+                    ]))
                 }
-                
-                _ = semaphore.wait(timeout: .now() + 1.5)
-                let statusCode = (responseDict["ok"] as? Bool) == true ? 200 : 409
-                return WatchPageTurnService.shared.jsonResponse(responseDict, statusCode: statusCode)
             }
         )
         

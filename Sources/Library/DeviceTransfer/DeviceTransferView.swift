@@ -41,6 +41,9 @@ private struct SendBooksView: View {
     @State private var isSending = false
     @State private var sendProgress: [Book.Id: SendState] = [:]
     @State private var errorMessage: String?
+    /// Resolved cover images, populated asynchronously so scrolling stays smooth.
+    @State private var coverImages: [Book.Id: UIImage] = [:]
+    private let coverLoader = CoverImageLoader()
 
     private enum SendState {
         case sending, done, failed
@@ -100,10 +103,17 @@ private struct SendBooksView: View {
                     .foregroundStyle(selectedBooks.contains(bookId) ? .blue : .secondary)
                     .font(.title3)
 
-                // Cover thumbnail
+                // Cover thumbnail — loaded asynchronously via CoverImageLoader
                 coverThumbnail(for: book)
                     .frame(width: 36, height: 52)
                     .clipShape(RoundedRectangle(cornerRadius: 4))
+                    .task(id: bookId) {
+                        guard let coverURL = book.cover?.url else { return }
+                        let image = await coverLoader.load(url: coverURL, bookId: bookId.rawValue)
+                        if let image {
+                            coverImages[bookId] = image
+                        }
+                    }
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(book.title)
@@ -238,9 +248,8 @@ private struct SendBooksView: View {
 
     @ViewBuilder
     private func coverThumbnail(for book: Book) -> some View {
-        if let coverPath = book.coverPath,
-           let data = try? Data(contentsOf: Paths.covers.appendingPath(coverPath, isDirectory: false).url),
-           let image = UIImage(data: data) {
+        if let bookId = book.id, let image = coverImages[bookId] {
+            // Cached/loaded image — no disk I/O on the main thread
             Image(uiImage: image).resizable().aspectRatio(contentMode: .fill)
         } else {
             ZStack {
