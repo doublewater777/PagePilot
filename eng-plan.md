@@ -526,7 +526,7 @@ func application(_ application: UIApplication, didFinishLaunchingWithOptions lau
 1. 创建 In-App Purchase / Subscription：
    - 月度订阅：`com.panyang.PagePilot.pro.monthly`，¥2
    - 年度订阅：`com.panyang.PagePilot.pro.yearly`，¥19.9，Paywall 默认推荐
-    - 终身买断：`com.panyang.PagePilot.pro.lifetime`，¥29.9，一次性购买
+    - 终身买断：`com.panyang.PagePilot.pro.lifetime`，¥30，一次性购买
    - 审核截图：需要一张展示 Pro 功能的截图
 
 2. 付费协议：确保 Apple Developer Account 已签署 Paid Apps Agreement

@@ -348,7 +348,7 @@
 "paywall_price_monthly" = "¥2";
 "paywall_price_yearly" = "¥19.9";
 "paywall_price_yearly_monthly" = "¥1.66";
-"paywall_price_lifetime" = "¥29.9";
+"paywall_price_lifetime" = "¥30";
 "paywall_price_monthly_sub" = "按月续订，适合先试用";
 "paywall_price_yearly_sub" = "仅 %@/月，省 %@";
 "paywall_price_yearly_sub_no_savings" = "仅 %@/月";
