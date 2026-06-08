@@ -79,4 +79,40 @@ final class ThrottledCommandQueueTests: XCTestCase {
 
         waitForExpectations(timeout: 0.3)
     }
+    func testQueuedCommandFiresImmediatelyIfCompletionIsLate() {
+        // If the in-flight command takes longer than the throttle interval,
+        // the queued command must fire immediately after completion — no extra wait.
+        var sentCommands: [PageCommand] = []
+        var completions: [() -> Void] = []
+
+        let queue = ThrottledCommandQueue(interval: 0.05) { command, completion in
+            sentCommands.append(command)
+            completions.append(completion)
+        }
+
+        // 1. Dispatch first command immediately
+        queue.enqueue(.next)
+        XCTAssertEqual(sentCommands.count, 1)
+
+        // 2. Enqueue a second command while first is in-flight
+        queue.enqueue(.prev)
+        XCTAssertEqual(sentCommands.count, 1)
+
+        // 3. Wait longer than the throttle interval (100ms > 50ms interval)
+        //    then call completion — queued command should fire right away
+        let expectation = self.expectation(description: "Second command fires immediately after late completion")
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            // Interval has already elapsed; complete first command
+            completions[0]()
+
+            // Give one run-loop tick for the async dispatch inside handleCompletion
+            DispatchQueue.main.async {
+                XCTAssertEqual(sentCommands, [.next, .prev],
+                    "Queued command should be dispatched immediately since interval already elapsed")
+                expectation.fulfill()
+            }
+        }
+
+        waitForExpectations(timeout: 0.5)
+    }
 }

@@ -27,8 +27,9 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
     private let defaultTargetMigrationKey = "watch_default_target_iphone_migrated"
     private let relayGraceInterval: TimeInterval = 8.0
     private var statusPollTimer: Timer?
-    private var isCommandInFlight = false
-    private var queuedCommand: PageCommand?
+    private lazy var commandQueue = ThrottledCommandQueue(interval: 0.2, queue: .main) { [weak self] command, completion in
+        self?.performSend(command, completion: completion)
+    }
 
     var isRelayConnected: Bool {
         relayReachable || hasRecentRelaySuccess
@@ -104,44 +105,32 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
     }
 
     func sendCommand(_ command: PageCommand) {
-        if isCommandInFlight {
-            queuedCommand = command
-            return
-        }
-
         guard WCSession.default.isReachable else {
             DispatchQueue.main.async {
                 self.lastError = self.localized("watch.error.openIPhone")
             }
             return
         }
+        commandQueue.enqueue(command)
+    }
 
+    private func performSend(_ command: PageCommand, completion: @escaping () -> Void) {
         var message = command.message
         message["target"] = controlTarget.rawValue
-        isCommandInFlight = true
 
         WCSession.default.sendMessage(
             message,
             replyHandler: { [weak self] reply in
                 self?.handleWatchConnectivityReply(reply)
-                self?.finishCommand()
+                completion()
             },
             errorHandler: { [weak self] _ in
                 DispatchQueue.main.async {
                     self?.lastError = self?.localized("watch.error.sendFailed") ?? ""
                 }
-                self?.finishCommand()
+                completion()
             }
         )
-    }
-
-    private func finishCommand() {
-        DispatchQueue.main.async {
-            self.isCommandInFlight = false
-            guard let nextCommand = self.queuedCommand else { return }
-            self.queuedCommand = nil
-            self.sendCommand(nextCommand)
-        }
     }
 
     private func startPolling() {
