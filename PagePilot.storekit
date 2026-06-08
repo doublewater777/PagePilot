@@ -8,7 +8,7 @@
       "id": "com.panyang.PagePilot.pro.lifetime",
       "displayName": "Lifetime Pro",
       "description": "Lifetime unlimited access to Pro features. Limited-time offer.",
-      "priceTier": 8,
+      "priceTier": 3,
       "locale": {
         "zh-Hans": {
           "displayName": "终身会员",
