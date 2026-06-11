@@ -7,6 +7,7 @@
 import AVFoundation
 import ObjectiveC
 import SwiftUI
+import StoreKit
 
 // MARK: - Root Settings View
 
@@ -515,17 +516,9 @@ private struct FeedbackRow: View {
 
             UIApplication.shared.open(url)
         case .feature, .other:
-            let allowed = CharacterSet.urlQueryAllowed
-            let subject = type.subject.addingPercentEncoding(withAllowedCharacters: allowed) ?? ""
-            let body = type.bodyTemplate.addingPercentEncoding(withAllowedCharacters: allowed) ?? ""
-            let mailto = "mailto:\(Self.feedbackEmail)?subject=\(subject)&body=\(body)"
-
-            guard let url = URL(string: mailto), UIApplication.shared.canOpenURL(url) else {
-                showMailError = true
-                return
+            if let url = URL(string: "itms-apps://apps.apple.com/app/id6760964443?action=write-review") {
+                UIApplication.shared.open(url)
             }
-
-            UIApplication.shared.open(url)
         }
     }
 }
@@ -535,8 +528,8 @@ private struct FeedbackRow: View {
 private struct RateAppRow: View {
     var body: some View {
         Button(action: {
-            if let url = URL(string: "https://apps.apple.com/app/id6760964443?action=write-review") {
-                UIApplication.shared.open(url)
+            if let scene = UIApplication.shared.connectedScenes.first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene {
+                SKStoreReviewController.requestReview(in: scene)
             }
         }) {
             HStack {
