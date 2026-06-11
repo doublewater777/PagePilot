@@ -32,15 +32,16 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         do {
             app = try AppModule()
             observeAppearancePreferences()
+            ReviewPromptManager.shared.recordAppLaunch()
         } catch {
             launchError = error
             print("Failed to initialize AppModule: \(error)")
         }
- 
+
         // Activate Watch connectivity early so the session state is always
         // current, even before the reader is opened.
         WatchPageTurnService.shared.activate()
- 
+
         // Verify Pro entitlements on launch.
         Task {
             await ProPurchaseManager.shared.verifyCurrentEntitlements()

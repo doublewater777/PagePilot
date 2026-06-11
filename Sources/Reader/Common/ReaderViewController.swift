@@ -83,6 +83,10 @@ class ReaderViewController<N: Navigator>: UIViewController,
 
         finishReadingSessionIfNeeded()
         setMainTabBarHidden(false, animated: animated)
+        if (isMovingFromParent || isBeingDismissed),
+           UIApplication.shared.applicationState == .active {
+            ReviewPromptManager.shared.tryPromptReview()
+        }
     }
 
     private func setMainTabBarHidden(_ hidden: Bool, animated: Bool) {

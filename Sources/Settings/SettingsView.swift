@@ -34,6 +34,7 @@ struct SettingsView: View {
             appearanceSection
             
             feedbackSection
+            aboutSection
         }
         .listStyle(.insetGrouped)
         .scrollContentBackground(.hidden)
@@ -233,7 +234,24 @@ struct SettingsView: View {
                 iconColor: .green,
                 title: NSLocalizedString("settings_feedback_other", comment: "")
             )
+            RateAppRow()
             ShareAppRow()
+        }
+    }
+
+    private var aboutSection: some View {
+        Section(NSLocalizedString("settings_about_section", comment: "")) {
+            NavigationLink {
+                AboutDetailView()
+                    .navigationTitle(NSLocalizedString("settings_about", comment: ""))
+                    .navigationBarTitleDisplayMode(.inline)
+            } label: {
+                SettingsRow(
+                    icon: "info.circle.fill",
+                    iconColor: .gray,
+                    title: NSLocalizedString("settings_about", comment: "")
+                )
+            }
         }
     }
 
@@ -483,17 +501,58 @@ private struct FeedbackRow: View {
     }
 
     private func sendFeedback() {
-        let allowed = CharacterSet.urlQueryAllowed
-        let subject = type.subject.addingPercentEncoding(withAllowedCharacters: allowed) ?? ""
-        let body = type.bodyTemplate.addingPercentEncoding(withAllowedCharacters: allowed) ?? ""
-        let mailto = "mailto:\(Self.feedbackEmail)?subject=\(subject)&body=\(body)"
+        switch type {
+        case .bug:
+            let allowed = CharacterSet.urlQueryAllowed
+            let subject = type.subject.addingPercentEncoding(withAllowedCharacters: allowed) ?? ""
+            let body = type.bodyTemplate.addingPercentEncoding(withAllowedCharacters: allowed) ?? ""
+            let mailto = "mailto:\(Self.feedbackEmail)?subject=\(subject)&body=\(body)"
 
-        guard let url = URL(string: mailto), UIApplication.shared.canOpenURL(url) else {
-            showMailError = true
-            return
+            guard let url = URL(string: mailto), UIApplication.shared.canOpenURL(url) else {
+                showMailError = true
+                return
+            }
+
+            UIApplication.shared.open(url)
+        case .feature, .other:
+            let allowed = CharacterSet.urlQueryAllowed
+            let subject = type.subject.addingPercentEncoding(withAllowedCharacters: allowed) ?? ""
+            let body = type.bodyTemplate.addingPercentEncoding(withAllowedCharacters: allowed) ?? ""
+            let mailto = "mailto:\(Self.feedbackEmail)?subject=\(subject)&body=\(body)"
+
+            guard let url = URL(string: mailto), UIApplication.shared.canOpenURL(url) else {
+                showMailError = true
+                return
+            }
+
+            UIApplication.shared.open(url)
         }
+    }
+}
 
-        UIApplication.shared.open(url)
+// MARK: - Rate App
+
+private struct RateAppRow: View {
+    var body: some View {
+        Button(action: {
+            if let url = URL(string: "https://apps.apple.com/app/id6760964443?action=write-review") {
+                UIApplication.shared.open(url)
+            }
+        }) {
+            HStack {
+                SettingsRow(
+                    icon: "star.bubble.fill",
+                    iconColor: .orange,
+                    title: NSLocalizedString("settings_rate_app", comment: "")
+                )
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(.tertiary)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 }
 
@@ -567,5 +626,85 @@ struct LazyView<Content: View>: View {
     
     var body: Content {
         build()
+    }
+}
+
+// MARK: - About Us Detail Page (二级页)
+private struct AboutDetailView: View {
+    var body: some View {
+        List {
+            Section {
+                HStack {
+                    SettingsRow(
+                        icon: "number",
+                        iconColor: .secondary,
+                        title: NSLocalizedString("settings_version", comment: "")
+                    )
+                    Spacer()
+                    Text("\(Bundle.main.appVersion) (\(Bundle.main.buildVersion))")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+
+                HStack {
+                    SettingsRow(
+                        icon: "doc.text",
+                        iconColor: .secondary,
+                        title: NSLocalizedString("settings_icp_filing", comment: "")
+                    )
+                    Spacer()
+                    Text("浙ICP备2026041359号-1A")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            Section {
+                // 隐私政策
+                Button(action: {
+                    if let url = URL(string: "https://pagepilot.doublewaterapps.com/privacy.html") {
+                        UIApplication.shared.open(url)
+                    }
+                }) {
+                    HStack {
+                        SettingsRow(
+                            icon: "lock.shield",
+                            iconColor: .blue,
+                            title: NSLocalizedString("paywall_privacy_policy", comment: "")
+                        )
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(.tertiary)
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+
+                // 使用条款
+                Button(action: {
+                    if let url = URL(string: "https://pagepilot.doublewaterapps.com/terms.html") {
+                        UIApplication.shared.open(url)
+                    }
+                }) {
+                    HStack {
+                        SettingsRow(
+                            icon: "doc.text",
+                            iconColor: .blue,
+                            title: NSLocalizedString("paywall_terms_of_use", comment: "")
+                        )
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(.tertiary)
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .listStyle(.insetGrouped)
+        .scrollContentBackground(.hidden)
+        .background(Color(uiColor: .systemGroupedBackground))
     }
 }

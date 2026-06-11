@@ -312,6 +312,10 @@ final class WatchPageTurnService: NSObject, ObservableObject {
                 hapticGenerator.impactOccurred()
             }
 
+            if succeeded {
+                ReviewPromptManager.shared.recordWatchPageTurn()
+            }
+
             var payload = self.localStatusPayload(route: WatchPageTurnRoute.direct)
             payload["pageDirection"] = command.rawValue
             payload["didTurnPage"] = succeeded
@@ -519,7 +523,11 @@ final class WatchPageTurnService: NSObject, ObservableObject {
                     case .prev:
                         succeeded = await navigator.goBackward(options: NavigatorGoOptions(animated: false))
                     }
-                    
+
+                    if succeeded {
+                        ReviewPromptManager.shared.recordWatchPageTurn()
+                    }
+
                     completionBlock(WatchPageTurnService.shared.jsonResponse([
                         "status": "ok",
                         "ok": true,
