@@ -16,6 +16,7 @@ final class ReviewPromptManager {
     private let readingStatsProvider: () -> TimeInterval
     private let sceneProvider: () -> UIWindowScene?
     private let reviewRequester: (UIWindowScene) -> Void
+    private var pendingReviewVersion: String?
 
     init(
         defaults: UserDefaults = .standard,
@@ -57,10 +58,15 @@ final class ReviewPromptManager {
         defaults.set(appLaunchCount + 1, forKey: Keys.appLaunchCount)
     }
 
-    func tryPromptReview() {
+    func tryPromptReview(delay: TimeInterval = 1.0) {
         let currentVersion = appVersionProvider()
+        guard !currentVersion.isEmpty else { return }
 
         if defaults.string(forKey: Keys.reviewRequestedVersion) == currentVersion {
+            return
+        }
+
+        if pendingReviewVersion == currentVersion {
             return
         }
 
@@ -71,8 +77,20 @@ final class ReviewPromptManager {
 
         guard appLaunchCount >= 2 else { return }
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [defaults, sceneProvider, reviewRequester] in
-            guard let scene = sceneProvider() else { return }
+        pendingReviewVersion = currentVersion
+
+        Task { @MainActor [weak self] in
+            if delay > 0 {
+                try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+            }
+
+            guard let self else { return }
+            defer { pendingReviewVersion = nil }
+
+            guard UIApplication.shared.applicationState == .active,
+                  let scene = sceneProvider()
+            else { return }
+
             defaults.set(currentVersion, forKey: Keys.reviewRequestedVersion)
             reviewRequester(scene)
         }

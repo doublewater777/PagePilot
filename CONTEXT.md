@@ -32,6 +32,14 @@ _Avoid_: Bookmark, cursor, page state
 Aggregated reading activity such as today's reading time and continue-reading state.
 _Avoid_: Analytics, metrics
 
+**Reading Achievement Dashboard**:
+The simplified reading stats experience that presents progress, streaks, weekly rhythm, cumulative achievement, and recent trends in one calm overview.
+_Avoid_: Detailed stats, analytics dashboard, report page
+
+**Reading Cockpit**:
+The home experience focused on helping the user resume reading quickly, with only lightweight reading context around the current book.
+_Avoid_: Home dashboard, stats overview, feature launcher
+
 **OPDS Feed**:
 A remote catalog feed used to browse and download publications from external sources.
 _Avoid_: Online library, feed URL
@@ -41,5 +49,13 @@ The Apple Watch remote-control capability that sends next-page or previous-page 
 _Avoid_: Watch remote, remote control
 
 **Pro Access**:
-The paid entitlement that unlocks limits such as the free bookshelf book count.
+The paid entitlement that unlocks limits such as the free bookshelf book count and deeper historical reading review.
 _Avoid_: Subscription, premium mode, purchase state
+
+**Pro Entitlement Card**:
+The settings experience that presents active Pro Access as owned reading benefits rather than as a small status badge.
+_Avoid_: Pro badge, membership label, upgrade banner
+
+**ICP Filing**:
+The public Chinese regulatory registration identifier shown for PagePilot's official website and app compliance information.
+_Avoid_: Record number, license number, footer text

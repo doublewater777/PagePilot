@@ -293,6 +293,24 @@
 "stats_rank_gold" = "Champion";
 "stats_rank_silver" = "Runner-up";
 "stats_rank_bronze" = "Third Place";
+"stats_today_progress" = "Today's Progress";
+"stats_progress_done" = "Done";
+"stats_goal_remaining_message" = "%d min left to reach today's goal";
+"stats_goal_complete_message" = "Today's goal is complete. Nicely done.";
+"stats_streak_sentence" = "%d-day reading streak";
+"stats_recent_7_days" = "Last 7 Days";
+"stats_recent_7_days_subtitle" = "A quiet look at your recent rhythm";
+"stats_total_reading" = "All-time";
+"stats_30_day_trend" = "Last 30 Days";
+"stats_30_day_trend_subtitle" = "A longer view of your reading rhythm";
+"stats_pro_depth_title" = "Pro Depth";
+"stats_pro_deeper_title" = "Unlock deeper reading review";
+"stats_pro_deeper_body" = "Keep the lightweight dashboard, then add 30-day trends, best day, and book distribution.";
+"stats_unlock_depth" = "Unlock Deeper Stats";
+"stats_book_mix" = "Book Distribution";
+"stats_book_mix_subtitle" = "See where your reading time goes";
+"stats_detailed_title" = "Detailed Stats";
+"stats_detailed_subtitle" = "View day, week, month, year, and all-time reading data";
 
 /* Paywall */
 "paywall_title" = "Focus Reading, Get More";
@@ -331,6 +349,11 @@
 "settings_pro_unlocked" = "PagePilot Pro";
 "settings_pro_badge" = "Unlocked";
 "settings_upgrade_pro" = "Upgrade to PagePilot Pro";
+"settings_pro_active_body" = "Your complete reading experience is unlocked.";
+"settings_pro_upgrade_body" = "Unlock unlimited library, deeper stats, and more reading power";
+"settings_pro_benefit_library" = "Unlimited Library";
+"settings_pro_benefit_stats" = "Deep Stats";
+"settings_pro_benefit_watch" = "Watch Page Turn Plus";
 
 /* Purchase Errors */
 "purchase_error_product_not_found" = "Product information not found";
@@ -559,8 +582,9 @@
 "home_daily_goal_of" = "of %d min";
 "home_minutes" = "%d min";
 "home_continue_reading" = "Continue Reading";
-"home_empty_title" = "No books yet";
-"home_empty_message" = "Head to your bookshelf to find something to read";
+"home_book_progress" = "Reading Progress";
+"home_empty_title" = "Start your first book";
+"home_empty_message" = "Choose or import an EPUB / PDF from your bookshelf, then turn pages with Apple Watch.";
 "home_import_button" = "Go to Bookshelf";
 "home_continue_reading_button" = "Continue Reading";
 
@@ -588,11 +612,13 @@
 "settings_feedback_mail_error_title" = "Cannot Send Email";
 "settings_feedback_mail_error_message" = "Mail is not configured on this device. You can send feedback manually to: %@";
 "settings_feedback_copy_email" = "Copy Email Address";
+"settings_rate_app" = "Rate PagePilot";
 "settings_share_app" = "Share PagePilot";
 "settings_share_app_message" = "Check out PagePilot — turn pages hands-free with your Apple Watch.";
 "settings_about_section" = "About";
-"settings_about" = "About PagePilot";
+"settings_about" = "About Us";
 "settings_version" = "Version";
+"settings_icp_filing" = "ICP Filing";
 
 /* TTS Settings */
 "tts_settings_title" = "Voice & Speed";

@@ -7,7 +7,6 @@
 import AVFoundation
 import ObjectiveC
 import SwiftUI
-import StoreKit
 
 // MARK: - Root Settings View
 
@@ -502,24 +501,17 @@ private struct FeedbackRow: View {
     }
 
     private func sendFeedback() {
-        switch type {
-        case .bug:
-            let allowed = CharacterSet.urlQueryAllowed
-            let subject = type.subject.addingPercentEncoding(withAllowedCharacters: allowed) ?? ""
-            let body = type.bodyTemplate.addingPercentEncoding(withAllowedCharacters: allowed) ?? ""
-            let mailto = "mailto:\(Self.feedbackEmail)?subject=\(subject)&body=\(body)"
+        let allowed = CharacterSet.urlQueryAllowed
+        let subject = type.subject.addingPercentEncoding(withAllowedCharacters: allowed) ?? ""
+        let body = type.bodyTemplate.addingPercentEncoding(withAllowedCharacters: allowed) ?? ""
+        let mailto = "mailto:\(Self.feedbackEmail)?subject=\(subject)&body=\(body)"
 
-            guard let url = URL(string: mailto), UIApplication.shared.canOpenURL(url) else {
-                showMailError = true
-                return
-            }
-
-            UIApplication.shared.open(url)
-        case .feature, .other:
-            if let url = URL(string: "itms-apps://apps.apple.com/app/id6760964443?action=write-review") {
-                UIApplication.shared.open(url)
-            }
+        guard let url = URL(string: mailto), UIApplication.shared.canOpenURL(url) else {
+            showMailError = true
+            return
         }
+
+        UIApplication.shared.open(url)
     }
 }
 
@@ -527,11 +519,7 @@ private struct FeedbackRow: View {
 
 private struct RateAppRow: View {
     var body: some View {
-        Button(action: {
-            if let scene = UIApplication.shared.connectedScenes.first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene {
-                SKStoreReviewController.requestReview(in: scene)
-            }
-        }) {
+        Button(action: AppStoreReviewLink.open) {
             HStack {
                 SettingsRow(
                     icon: "star.bubble.fill",
@@ -546,6 +534,20 @@ private struct RateAppRow: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+    }
+}
+
+private enum AppStoreReviewLink {
+    private static let nativeURL = URL(string: "itms-apps://apps.apple.com/app/id6760964443?action=write-review")
+    private static let webURL = URL(string: "https://apps.apple.com/app/id6760964443?action=write-review")
+
+    static func open() {
+        guard let nativeURL else { return }
+
+        UIApplication.shared.open(nativeURL) { success in
+            guard !success, let webURL else { return }
+            UIApplication.shared.open(webURL)
+        }
     }
 }
 

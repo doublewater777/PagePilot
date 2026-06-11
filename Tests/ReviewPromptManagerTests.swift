@@ -44,35 +44,25 @@ final class ReviewPromptManagerTests: XCTestCase {
     func testPromptSkippedWhenWatchPageTurnCountBelow10() {
         let manager = makeManager(watchPageTurns: 9)
 
-        manager.tryPromptReview()
+        manager.tryPromptReview(delay: 0)
 
         // Version should NOT be written (guard exits before dispatch)
         XCTAssertNil(defaults.string(forKey: "review_requestedVersion"))
     }
 
-    func testPromptPassesWhenWatchPageTurnCountAtThreshold() {
+    func testPromptDoesNotWriteVersionWhenSceneIsUnavailableAtThreshold() async {
         let manager = makeManager(watchPageTurns: 10)
 
-        manager.tryPromptReview()
+        manager.tryPromptReview(delay: 0)
+        await Task.yield()
 
-        // Guards pass; version is written inside async dispatch.
-        // Synchronously after tryPromptReview(), version is not yet written.
-        // Verify the guard did not early-return by checking we proceed past it.
-        // The absence of early-return is confirmed by the next gate being evaluated.
-        // We verify via expectation after the async block completes.
-        let expectation = self.expectation(description: "async dispatch")
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            // If scene is nil, version stays nil — which is expected in unit tests.
-            // The key is that no early-return guard fired.
-            expectation.fulfill()
-        }
-        wait(for: [expectation], timeout: 3.0)
+        XCTAssertNil(defaults.string(forKey: "review_requestedVersion"))
     }
 
     func testPromptSkippedWhenAppLaunchCountBelow2() {
         let manager = makeManager(appLaunches: 1)
 
-        manager.tryPromptReview()
+        manager.tryPromptReview(delay: 0)
 
         XCTAssertNil(defaults.string(forKey: "review_requestedVersion"))
     }
@@ -80,20 +70,18 @@ final class ReviewPromptManagerTests: XCTestCase {
     func testPromptSkippedWhenReadingTimeBelow20Minutes() {
         let manager = makeManager(readingStatsSeconds: 20 * 60 - 1)
 
-        manager.tryPromptReview()
+        manager.tryPromptReview(delay: 0)
 
         XCTAssertNil(defaults.string(forKey: "review_requestedVersion"))
     }
 
-    func testPromptPassesWhenReadingTimeAtThreshold() {
+    func testPromptDoesNotWriteVersionWhenReadingTimeIsAtThresholdButSceneUnavailable() async {
         let manager = makeManager(readingStatsSeconds: 20 * 60)
 
-        manager.tryPromptReview()
+        manager.tryPromptReview(delay: 0)
+        await Task.yield()
 
-        // Guard passes — no synchronous version write means the async path
-        // was reached. Verify guard didn't fire.
-        // In unit tests with no host scene, version won't be written by the
-        // closure, but that's the expected behavior (tested separately).
+        XCTAssertNil(defaults.string(forKey: "review_requestedVersion"))
     }
 
     // MARK: - Version gating tests
@@ -102,20 +90,20 @@ final class ReviewPromptManagerTests: XCTestCase {
         defaults.set("1.0.0", forKey: "review_requestedVersion")
         let manager = makeManager(appVersion: "1.0.0")
 
-        manager.tryPromptReview()
+        manager.tryPromptReview(delay: 0)
 
         // Early return at first guard — version unchanged, no dispatch
         XCTAssertEqual(defaults.string(forKey: "review_requestedVersion"), "1.0.0")
     }
 
-    func testPromptProceedsWhenCurrentVersionDiffersFromRequestedVersion() {
+    func testPromptDoesNotOverwritePreviousVersionWhenSceneUnavailable() async {
         defaults.set("0.9.0", forKey: "review_requestedVersion")
         let manager = makeManager(appVersion: "1.0.0")
 
-        manager.tryPromptReview()
+        manager.tryPromptReview(delay: 0)
+        await Task.yield()
 
-        // The version guard passes (1.0.0 != 0.9.0), so we proceed to
-        // counter/time gates and then the async dispatch.
+        XCTAssertEqual(defaults.string(forKey: "review_requestedVersion"), "0.9.0")
     }
 
     // MARK: - Version write timing tests
@@ -125,26 +113,43 @@ final class ReviewPromptManagerTests: XCTestCase {
         // It's only written inside the asyncAfter closure.
         let manager = makeManager()
 
-        manager.tryPromptReview()
+        manager.tryPromptReview(delay: 0)
 
         // Immediately after call: version is nil (not yet written)
         XCTAssertNil(defaults.string(forKey: "review_requestedVersion"))
     }
 
-    func testVersionNotWrittenWhenSceneIsUnavailable() {
+    func testVersionNotWrittenWhenSceneIsUnavailable() async {
         let manager = makeManager(
             scene: nil // no foreground scene available
         )
 
-        manager.tryPromptReview()
+        manager.tryPromptReview(delay: 0)
+        await Task.yield()
 
-        let expectation = self.expectation(description: "async dispatch completes")
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            // After delay: scene guard fails, version stays nil
-            XCTAssertNil(self.defaults.string(forKey: "review_requestedVersion"))
-            expectation.fulfill()
-        }
-        wait(for: [expectation], timeout: 3.0)
+        XCTAssertNil(defaults.string(forKey: "review_requestedVersion"))
+    }
+
+    func testDuplicatePromptRequestsOnlyScheduleOneSceneLookupWhilePending() async throws {
+        var sceneLookups = 0
+        let manager = ReviewPromptManager(
+            defaults: defaults!,
+            appVersionProvider: { "1.0.0" },
+            readingStatsProvider: { 20 * 60 },
+            sceneProvider: {
+                sceneLookups += 1
+                return nil
+            },
+            reviewRequester: { _ in }
+        )
+        defaults!.set(10, forKey: "review_watchPageTurnCount")
+        defaults!.set(2, forKey: "review_appLaunchCount")
+
+        manager.tryPromptReview(delay: 0.01)
+        manager.tryPromptReview(delay: 0.01)
+        try await Task.sleep(nanoseconds: 50_000_000)
+
+        XCTAssertEqual(sceneLookups, 1)
     }
 
     // MARK: - Counter record tests

@@ -293,6 +293,24 @@
 "stats_rank_gold" = "阅读冠军";
 "stats_rank_silver" = "阅读亚军";
 "stats_rank_bronze" = "阅读季军";
+"stats_today_progress" = "今日阅读进度";
+"stats_progress_done" = "完成";
+"stats_goal_remaining_message" = "还差 %d 分钟达成今日目标";
+"stats_goal_complete_message" = "今日目标已完成，做得不错";
+"stats_streak_sentence" = "已连续阅读 %d 天";
+"stats_recent_7_days" = "最近 7 天";
+"stats_recent_7_days_subtitle" = "看看最近的阅读节奏";
+"stats_total_reading" = "累计阅读";
+"stats_30_day_trend" = "最近 30 天";
+"stats_30_day_trend_subtitle" = "更长一点地回看你的阅读节奏";
+"stats_pro_depth_title" = "Pro 深度回看";
+"stats_pro_deeper_title" = "解锁更深的阅读回看";
+"stats_pro_deeper_body" = "保留当前的轻量仪表盘，再加入 30 天趋势、最佳单日和图书阅读分布。";
+"stats_unlock_depth" = "升级解锁深度统计";
+"stats_book_mix" = "图书阅读分布";
+"stats_book_mix_subtitle" = "看看时间主要花在哪些书上";
+"stats_detailed_title" = "详细统计";
+"stats_detailed_subtitle" = "查看日、周、月、年和累计阅读数据";
 
 /* Paywall */
 "paywall_title" = "专注阅读，收获更多";
@@ -331,6 +349,11 @@
 "settings_pro_unlocked" = "PagePilot Pro";
 "settings_pro_badge" = "已解锁";
 "settings_upgrade_pro" = "升级 PagePilot Pro";
+"settings_pro_active_body" = "完整阅读体验已解锁。";
+"settings_pro_upgrade_body" = "解锁无限书架、深度统计和更多阅读能力";
+"settings_pro_benefit_library" = "无限书架";
+"settings_pro_benefit_stats" = "深度统计";
+"settings_pro_benefit_watch" = "Watch 翻页增强";
 
 /* Purchase Errors */
 "purchase_error_product_not_found" = "找不到产品信息";
@@ -559,8 +582,9 @@
 "home_daily_goal_of" = "/ %d 分钟";
 "home_minutes" = "%d 分钟";
 "home_continue_reading" = "继续阅读";
-"home_empty_title" = "还没有在读书";
-"home_empty_message" = "去书架找本书开始阅读吧";
+"home_book_progress" = "阅读进度";
+"home_empty_title" = "开始你的第一本书";
+"home_empty_message" = "去书架选择或导入 EPUB / PDF，之后就可以用 Apple Watch 翻页阅读。";
 "home_import_button" = "去书架";
 "home_continue_reading_button" = "继续阅读";
 
@@ -588,11 +612,13 @@
 "settings_feedback_mail_error_title" = "无法发送邮件";
 "settings_feedback_mail_error_message" = "设备未配置邮件。你可以手动发送反馈到：%@";
 "settings_feedback_copy_email" = "复制邮箱地址";
+"settings_rate_app" = "给 PagePilot 评分";
 "settings_share_app" = "分享 PagePilot";
 "settings_share_app_message" = "推荐试试 PagePilot，戴上 Apple Watch 就能翻页，解放双手的阅读器。";
 "settings_about_section" = "关于";
-"settings_about" = "关于 PagePilot";
+"settings_about" = "关于我们";
 "settings_version" = "版本";
+"settings_icp_filing" = "备案信息";
 
 /* TTS Settings */
 "tts_settings_title" = "音色与语速";

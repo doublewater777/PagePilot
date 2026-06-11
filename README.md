@@ -48,8 +48,8 @@ Use Xcode's signing settings or your release automation to manage development, A
 
 The official terms of use and privacy policy pages are hosted in the `docs/` folder and deployed via GitHub Pages:
 
-*   **Terms of Use (EULA)**: [https://doublewater777.github.io/PagePilot/terms.html](https://doublewater777.github.io/PagePilot/terms.html) (aligned with Apple's Standard EULA)
-*   **Privacy Policy**: [https://doublewater777.github.io/PagePilot/privacy.html](https://doublewater777.github.io/PagePilot/privacy.html) (adheres to local-first privacy principles)
+*   **Terms of Use (EULA)**: [https://pagepilot.doublewaterapps.com/terms.html](https://pagepilot.doublewaterapps.com/terms.html) (aligned with Apple's Standard EULA)
+*   **Privacy Policy**: [https://pagepilot.doublewaterapps.com/privacy.html](https://pagepilot.doublewaterapps.com/privacy.html) (adheres to local-first privacy principles)
 
 ## License
 
