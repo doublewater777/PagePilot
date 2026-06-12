@@ -4,6 +4,7 @@
 //  available in the top-level LICENSE file of the project.
 //
 
+import SafariServices
 import StoreKit
 import SwiftUI
 
@@ -20,6 +21,7 @@ struct PaywallView: View {
     @State private var isLoadingProducts = false
     @State private var productsLoadFailed = false
     @State private var isEligibleForTrial = false
+    @State private var safariURL: IdentifiableURL?
 
     private let accentBlue = Color(red: 0.22, green: 0.43, blue: 0.95)
     private let accentTeal = Color(red: 0.16, green: 0.62, blue: 0.58)
@@ -75,6 +77,9 @@ struct PaywallView: View {
         }
         .onChange(of: selectedProductID) { oldValue, newValue in
             updateEligibility(for: newValue)
+        }
+        .sheet(item: $safariURL) { identifiableURL in
+            SafariView(url: identifiableURL.url)
         }
     }
 
@@ -503,12 +508,20 @@ struct PaywallView: View {
 
     private var linksView: some View {
         HStack(spacing: 16) {
-            Link(NSLocalizedString("paywall_terms_of_use", comment: ""), destination: URL(string: "https://doublewater777.github.io/PagePilot/terms.html")!)
-            
+            Button {
+                safariURL = IdentifiableURL(url: URL(string: "https://pagepilot.doublewaterapps.com/terms.html")!)
+            } label: {
+                Text(NSLocalizedString("paywall_terms_of_use", comment: ""))
+            }
+
             Text("•")
                 .foregroundColor(AppColors.secondaryText)
-            
-            Link(NSLocalizedString("paywall_privacy_policy", comment: ""), destination: URL(string: "https://doublewater777.github.io/PagePilot/privacy.html")!)
+
+            Button {
+                safariURL = IdentifiableURL(url: URL(string: "https://pagepilot.doublewaterapps.com/privacy.html")!)
+            } label: {
+                Text(NSLocalizedString("paywall_privacy_policy", comment: ""))
+            }
         }
         .font(.system(size: 12))
         .foregroundColor(accentBlue)

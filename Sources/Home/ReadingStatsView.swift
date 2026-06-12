@@ -1588,8 +1588,13 @@ struct ReadingStatsView: View {
         ).currentStreakDays
 
         if streakDays > 0 {
-            withAnimation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true)) {
+            withAnimation(.spring(response: 0.5, dampingFraction: 0.55)) {
                 streakScale = 1.12
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                withAnimation(.spring(response: 0.5, dampingFraction: 0.55)) {
+                    streakScale = 1.0
+                }
             }
         } else {
             var transaction = Transaction()

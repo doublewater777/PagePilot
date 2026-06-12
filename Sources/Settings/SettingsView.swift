@@ -6,6 +6,7 @@
 
 import AVFoundation
 import ObjectiveC
+import SafariServices
 import SwiftUI
 
 // MARK: - Root Settings View
@@ -626,6 +627,8 @@ struct LazyView<Content: View>: View {
 
 // MARK: - About Us Detail Page (二级页)
 private struct AboutDetailView: View {
+    @State private var safariURL: IdentifiableURL?
+
     var body: some View {
         List {
             Section {
@@ -657,9 +660,7 @@ private struct AboutDetailView: View {
             Section {
                 // 隐私政策
                 Button(action: {
-                    if let url = URL(string: "https://pagepilot.doublewaterapps.com/privacy.html") {
-                        UIApplication.shared.open(url)
-                    }
+                    safariURL = IdentifiableURL(url: URL(string: "https://pagepilot.doublewaterapps.com/privacy.html")!)
                 }) {
                     HStack {
                         SettingsRow(
@@ -678,9 +679,7 @@ private struct AboutDetailView: View {
 
                 // 使用条款
                 Button(action: {
-                    if let url = URL(string: "https://pagepilot.doublewaterapps.com/terms.html") {
-                        UIApplication.shared.open(url)
-                    }
+                    safariURL = IdentifiableURL(url: URL(string: "https://pagepilot.doublewaterapps.com/terms.html")!)
                 }) {
                     HStack {
                         SettingsRow(
@@ -701,5 +700,27 @@ private struct AboutDetailView: View {
         .listStyle(.insetGrouped)
         .scrollContentBackground(.hidden)
         .background(Color(uiColor: .systemGroupedBackground))
+        .sheet(item: $safariURL) { identifiableURL in
+            SafariView(url: identifiableURL.url)
+        }
     }
+}
+
+// MARK: - Identifiable URL Wrapper
+
+struct IdentifiableURL: Identifiable {
+    let id = UUID()
+    let url: URL
+}
+
+// MARK: - SFSafariViewController Wrapper
+
+struct SafariView: UIViewControllerRepresentable {
+    let url: URL
+
+    func makeUIViewController(context: Context) -> SFSafariViewController {
+        SFSafariViewController(url: url)
+    }
+
+    func updateUIViewController(_ uiViewController: SFSafariViewController, context: Context) {}
 }
