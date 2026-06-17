@@ -40,9 +40,9 @@ else
 	@cp Integrations/SPM/project.yml .
 endif
 ifdef commit
-	@sed -i '' -e "s>VERSION>revision: $(commit)>g" project.yml
+	@sed -i '' -e "s>PACKAGE_VERSION>revision: $(commit)>g" project.yml
 else
-	@sed -i '' -e "s>VERSION>from: $(version)>g" project.yml
+	@sed -i '' -e "s>PACKAGE_VERSION>from: $(version)>g" project.yml
 endif
 	xcodegen generate
 	@echo "\nopen PagePilot.xcodeproj"

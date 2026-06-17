@@ -14,6 +14,7 @@ struct ReadingStatsView: View {
     @State private var selectedStatsScope: ReadingStatsScope = .day
     @State private var currentReferenceDate = Date()
     @State private var showPaywall = false
+    @State private var showShareCard = false
     @State private var statsRefreshID = UUID()
     @State private var streakScale: CGFloat = 1.0
     @State private var booksMap: [String: Book] = [:]
@@ -63,6 +64,24 @@ struct ReadingStatsView: View {
         .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $showPaywall) {
             PaywallView()
+        }
+        .sheet(isPresented: $showShareCard) {
+            ReadingShareCardView(
+                todaySeconds: statsStore.todayReadingSeconds(),
+                streakDays: statsStore.snapshot(for: .summary).currentStreakDays,
+                books: Array(booksMap.values)
+            )
+        }
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button {
+                    showShareCard = true
+                } label: {
+                    Image(systemName: "square.and.arrow.up")
+                        .foregroundColor(AppColors.primaryText)
+                }
+                .buttonStyle(.plain)
+            }
         }
         .onReceive(NotificationCenter.default.publisher(for: .readingStatsDidChange)) { _ in
             statsRefreshID = UUID()
@@ -325,6 +344,9 @@ struct ReadingStatsView: View {
             if selectedStatsScope == .month {
                 heatmapGrid(stats)
             }
+            if selectedStatsScope == .summary {
+                badgesSection(stats)
+            }
             groupedTimelineCard(stats)
         }
     }
@@ -480,12 +502,12 @@ struct ReadingStatsView: View {
     private func chartCard(_ stats: ReadingStatsSnapshot) -> some View {
         VStack(alignment: .leading, spacing: 15) {
             // 动态信息面板与标题
-            HStack(alignment: .firstTextBaseline) {
-                if let selectedDate = selectedChartDate {
-                    let formattedDateStr = infoPanelDateString(for: selectedDate)
-                    let value = infoPanelValue(for: selectedDate, stats: stats)
-                    
-                    VStack(alignment: .leading, spacing: 2) {
+            HStack(alignment: .center) {
+                VStack(alignment: .leading, spacing: 2) {
+                    if let selectedDate = selectedChartDate {
+                        let formattedDateStr = infoPanelDateString(for: selectedDate)
+                        let value = infoPanelValue(for: selectedDate, stats: stats)
+                        
                         Text(formattedDateStr)
                             .font(.system(size: 11, weight: .bold))
                             .foregroundColor(Color(red: 0.16, green: 0.62, blue: 0.58))
@@ -494,9 +516,7 @@ struct ReadingStatsView: View {
                             .font(.system(size: 22, weight: .bold))
                             .foregroundColor(AppColors.primaryText)
                             .monospacedDigit()
-                    }
-                } else {
-                    VStack(alignment: .leading, spacing: 2) {
+                    } else {
                         Text(selectedStatsScope.summaryTitle)
                             .font(.system(size: 11, weight: .semibold))
                             .foregroundColor(AppColors.secondaryText)
@@ -509,6 +529,8 @@ struct ReadingStatsView: View {
                             .monospacedDigit()
                     }
                 }
+                .frame(height: 44, alignment: .leading) // Fixed height to prevent vertical layout shifts
+                
                 Spacer()
                 
                 if selectedStatsScope != .summary && selectedStatsScope != .day {
@@ -1602,6 +1624,98 @@ struct ReadingStatsView: View {
             withTransaction(transaction) {
                 streakScale = 1.0
             }
+        }
+    }
+
+    private func badgesSection(_ stats: ReadingStatsSnapshot) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(NSLocalizedString("badge_section_title", comment: ""))
+                .font(.system(size: 16, weight: .bold))
+                .foregroundColor(AppColors.primaryText)
+                .padding(.top, 8)
+                .padding(.leading, 4)
+            
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+                ForEach(stats.badges) { badge in
+                    badgeCard(badge)
+                }
+            }
+        }
+        .padding(.bottom, 8)
+    }
+    
+    private func badgeCard(_ badge: ReadingBadge) -> some View {
+        VStack(spacing: 8) {
+            ZStack {
+                Circle()
+                    .fill(badge.isUnlocked ? 
+                          AnyShapeStyle(LinearGradient(
+                              colors: [Color(red: 0.22, green: 0.43, blue: 0.95), Color(red: 0.16, green: 0.62, blue: 0.58)],
+                              startPoint: .topLeading,
+                              endPoint: .bottomTrailing
+                          )) :
+                          AnyShapeStyle(Color(.tertiarySystemGroupedBackground)))
+                    .frame(width: 44, height: 44)
+                
+                Image(systemName: badge.iconName)
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(badge.isUnlocked ? .white : AppColors.secondaryText)
+            }
+            .padding(.top, 12)
+            
+            Text(NSLocalizedString(badge.titleKey, comment: ""))
+                .font(.system(size: 13, weight: .bold))
+                .foregroundColor(AppColors.primaryText)
+                .lineLimit(1)
+            
+            Text(NSLocalizedString(badge.descKey, comment: ""))
+                .font(.system(size: 10))
+                .foregroundColor(AppColors.secondaryText)
+                .multilineTextAlignment(.center)
+                .lineLimit(2)
+                .frame(height: 28)
+                .padding(.horizontal, 8)
+            
+            // Progress text and bar
+            VStack(spacing: 4) {
+                ProgressView(value: badge.progress)
+                    .tint(badge.isUnlocked ? Color(red: 0.22, green: 0.43, blue: 0.95) : AppColors.secondaryText)
+                    .scaleEffect(x: 1, y: 0.5, anchor: .center)
+                    .padding(.horizontal, 16)
+                
+                Text(badgeProgressText(badge))
+                    .font(.system(size: 9, weight: .semibold))
+                    .foregroundColor(AppColors.secondaryText)
+            }
+            .padding(.bottom, 12)
+        }
+        .background(Color(.secondarySystemGroupedBackground))
+        .cornerRadius(16)
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(badge.isUnlocked ? Color(red: 0.22, green: 0.43, blue: 0.95).opacity(0.15) : Color.clear, lineWidth: 1)
+        )
+    }
+    
+    private func badgeProgressText(_ badge: ReadingBadge) -> String {
+        if badge.isUnlocked {
+            return NSLocalizedString("stats_progress_done", comment: "")
+        }
+        
+        if badge.id == "deep_reader" {
+            return String(format: NSLocalizedString("stats_minutes", comment: ""), badge.currentValue) + " / " + String(format: NSLocalizedString("stats_minutes", comment: ""), badge.targetValue)
+        }
+        
+        switch badge.id {
+        case "early_bird", "night_owl", "super_streak":
+            let format = NSLocalizedString("stats_days_value", comment: "")
+            return "\(badge.currentValue) / \(String(format: format, badge.targetValue))"
+        case "book_collector":
+            return "\(badge.currentValue) / \(badge.targetValue)"
+        case "watch_pilot":
+            return "\(badge.currentValue) / \(badge.targetValue)"
+        default:
+            return "\(badge.currentValue)/\(badge.targetValue)"
         }
     }
 

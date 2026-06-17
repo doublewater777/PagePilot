@@ -129,6 +129,58 @@ final class ReadingStatsStoreTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: storageURL.path))
     }
 
+    func testBadgeCalculations() {
+        let store = makeStore()
+
+        // 1. Record morning reading (6:00 AM) on 5 different days
+        store.recordReadingSession(seconds: 100, bookId: Book.Id(rawValue: 1), date: date(2026, 6, 1, 6, 0, 0))
+        store.recordReadingSession(seconds: 100, bookId: Book.Id(rawValue: 1), date: date(2026, 6, 2, 7, 0, 0))
+        store.recordReadingSession(seconds: 100, bookId: Book.Id(rawValue: 1), date: date(2026, 6, 3, 8, 0, 0))
+        store.recordReadingSession(seconds: 100, bookId: Book.Id(rawValue: 1), date: date(2026, 6, 4, 5, 30, 0))
+        store.recordReadingSession(seconds: 100, bookId: Book.Id(rawValue: 1), date: date(2026, 6, 5, 6, 15, 0))
+
+        // 2. Record night reading (11:00 PM) on 2 different days
+        store.recordReadingSession(seconds: 100, bookId: Book.Id(rawValue: 1), date: date(2026, 6, 1, 23, 0, 0))
+        store.recordReadingSession(seconds: 100, bookId: Book.Id(rawValue: 1), date: date(2026, 6, 2, 22, 15, 0))
+
+        // 3. Record deep reading session on 1 day (seconds: 2800 >= 2700)
+        store.recordReadingSession(seconds: 2800, bookId: Book.Id(rawValue: 1), date: date(2026, 6, 5, 12, 0, 0))
+
+        // 4. Record 3 distinct books (bookId: 1, 2, 3)
+        store.recordReadingSession(seconds: 60, bookId: Book.Id(rawValue: 2), date: date(2026, 6, 6))
+        store.recordReadingSession(seconds: 60, bookId: Book.Id(rawValue: 3), date: date(2026, 6, 7))
+
+        let snapshot = store.snapshot(for: .summary, referenceDate: date(2026, 6, 7))
+        let badges = snapshot.badges
+
+        // Verify Early Bird (unlocked)
+        let earlyBird = badges.first { $0.id == "early_bird" }
+        XCTAssertNotNil(earlyBird)
+        XCTAssertEqual(earlyBird?.isUnlocked, true)
+        XCTAssertEqual(earlyBird?.progress, 1.0)
+        XCTAssertEqual(earlyBird?.currentValue, 5)
+
+        // Verify Night Owl (locked, 2/5)
+        let nightOwl = badges.first { $0.id == "night_owl" }
+        XCTAssertNotNil(nightOwl)
+        XCTAssertEqual(nightOwl?.isUnlocked, false)
+        XCTAssertEqual(nightOwl?.progress, 0.4)
+        XCTAssertEqual(nightOwl?.currentValue, 2)
+
+        // Verify Deep Reader (unlocked, max daily > 2700)
+        let deepReader = badges.first { $0.id == "deep_reader" }
+        XCTAssertNotNil(deepReader)
+        XCTAssertEqual(deepReader?.isUnlocked, true)
+        XCTAssertEqual(deepReader?.progress, 1.0)
+
+        // Verify Book Collector (unlocked, 3 books)
+        let collector = badges.first { $0.id == "book_collector" }
+        XCTAssertNotNil(collector)
+        XCTAssertEqual(collector?.isUnlocked, true)
+        XCTAssertEqual(collector?.progress, 1.0)
+        XCTAssertEqual(collector?.currentValue, 3)
+    }
+
     private func makeStore() -> ReadingStatsStore {
         ReadingStatsStore(defaults: defaults, calendar: calendar, storageURL: storageURL)
     }

@@ -690,3 +690,29 @@
 /* MARK: Device Transfer */
 "onboarding_transfer_title" = "局域网传书";
 "onboarding_transfer_message" = "iPhone 和 iPad 在同一个 Wi-Fi 下时，可以直接在设备之间发送书籍。";
+
+/* Achievements & Share Poster */
+"badge_section_title" = "成就勋章";
+"badge_early_bird_title" = "晨读使者";
+"badge_early_bird_desc" = "晨读打卡 5 天（5:00 - 8:59）";
+"badge_night_owl_title" = "暗夜之曜";
+"badge_night_owl_desc" = "夜读打卡 5 天（22:00 - 4:59）";
+"badge_deep_reader_title" = "极客专注";
+"badge_deep_reader_desc" = "单日阅读时间达到 45 分钟";
+"badge_super_streak_title" = "终极自律";
+"badge_super_streak_desc" = "连续 7 天进行阅读打卡";
+"badge_book_collector_title" = "博览群书";
+"badge_book_collector_desc" = "阅读书架上的 3 本不同图书";
+"badge_watch_pilot_title" = "腕上领航";
+"badge_watch_pilot_desc" = "使用 Apple Watch 翻页 10 次";
+
+"share_card_title" = "生成阅读海报";
+"share_card_save" = "保存到相册";
+"share_card_saved_success" = "海报已成功保存到相册！";
+"share_card_saved_error" = "保存失败，请检查相册访问权限";
+"share_card_quote" = "“书犹药也，善读之可以医愚。”";
+"share_card_reading_today" = "今日阅读";
+"share_card_streak" = "连续阅读";
+"share_card_days" = "天";
+"share_card_subtitle" = "静心阅读，翻页自如";
+

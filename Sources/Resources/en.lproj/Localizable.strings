@@ -690,3 +690,29 @@
 /* MARK: Device Transfer */
 "onboarding_transfer_title" = "Send Books Locally";
 "onboarding_transfer_message" = "Move books between your iPhone and iPad over the same Wi-Fi network when both devices are nearby.";
+
+/* Achievements & Share Poster */
+"badge_section_title" = "Achievements & Badges";
+"badge_early_bird_title" = "Early Bird";
+"badge_early_bird_desc" = "Read 5 mornings (5:00 - 8:59 AM)";
+"badge_night_owl_title" = "Night Owl";
+"badge_night_owl_desc" = "Read 5 nights (10:00 PM - 4:59 AM)";
+"badge_deep_reader_title" = "Deep Reader";
+"badge_deep_reader_desc" = "Read for 45 minutes in a single day";
+"badge_super_streak_title" = "Super Streak";
+"badge_super_streak_desc" = "Reach a 7-day reading streak";
+"badge_book_collector_title" = "Book Collector";
+"badge_book_collector_desc" = "Read 3 distinct books in your shelf";
+"badge_watch_pilot_title" = "Watch Pilot";
+"badge_watch_pilot_desc" = "Turn pages with Apple Watch 10 times";
+
+"share_card_title" = "Generate Poster";
+"share_card_save" = "Save to Photos";
+"share_card_saved_success" = "Poster saved to Photos!";
+"share_card_saved_error" = "Failed to save: check Photo permissions";
+"share_card_quote" = "“A room without books is like a body without a soul.”";
+"share_card_reading_today" = "Today's Reading";
+"share_card_streak" = "Streak";
+"share_card_days" = "days";
+"share_card_subtitle" = "Quiet reading companion";
+

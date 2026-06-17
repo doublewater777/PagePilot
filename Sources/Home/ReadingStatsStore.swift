@@ -45,8 +45,20 @@ struct DailyReadingStat: Codable, Identifiable {
     var sessions: Int
     var bookIds: [String]
     var bookSeconds: [String: Int]?
+    var hourlySeconds: [Int: Int]? // Key: hour (0-23), Value: seconds read in that hour
 
     var id: String { dateKey }
+}
+
+struct ReadingBadge: Identifiable, Codable, Equatable {
+    let id: String // e.g., "early_bird", "night_owl"
+    let titleKey: String
+    let descKey: String
+    let iconName: String
+    let isUnlocked: Bool
+    let progress: Double // 0.0 to 1.0
+    let currentValue: Int
+    let targetValue: Int
 }
 
 struct ReadingStatsSnapshot {
@@ -58,6 +70,7 @@ struct ReadingStatsSnapshot {
     var currentStreakDays: Int = 0
     var bestDaySeconds: Int = 0
     var dailyStats: [DailyReadingStat] = []
+    var badges: [ReadingBadge] = []
 
     static let empty = ReadingStatsSnapshot()
 }
@@ -128,7 +141,7 @@ final class ReadingStatsStore {
 
         var statsByDate = loadStatsByDate()
         let key = dateKey(for: date)
-        var stat = statsByDate[key] ?? DailyReadingStat(dateKey: key, seconds: 0, sessions: 0, bookIds: [], bookSeconds: [:])
+        var stat = statsByDate[key] ?? DailyReadingStat(dateKey: key, seconds: 0, sessions: 0, bookIds: [], bookSeconds: [:], hourlySeconds: [:])
 
         stat.seconds += seconds
         stat.sessions += 1
@@ -141,6 +154,12 @@ final class ReadingStatsStore {
         var bSeconds = stat.bookSeconds ?? [:]
         bSeconds[bookIdString] = (bSeconds[bookIdString] ?? 0) + seconds
         stat.bookSeconds = bSeconds
+
+        // Record hourly seconds
+        let hour = calendar.component(.hour, from: date)
+        var hSeconds = stat.hourlySeconds ?? [:]
+        hSeconds[hour] = (hSeconds[hour] ?? 0) + seconds
+        stat.hourlySeconds = hSeconds
 
         statsByDate[key] = stat
         save(statsByDate)
@@ -179,6 +198,8 @@ final class ReadingStatsStore {
         let sessions = stats.reduce(0) { $0 + $1.sessions }
         let distinctBooks = Set(stats.flatMap(\.bookIds)).count
         let bestDaySeconds = stats.map(\.seconds).max() ?? 0
+        let currentStreak = currentStreakDays(from: streakSource, referenceDate: referenceDate)
+        let badges = calculateBadges(from: streakSource, currentStreak: currentStreak)
 
         return ReadingStatsSnapshot(
             totalSeconds: totalSeconds,
@@ -186,10 +207,116 @@ final class ReadingStatsStore {
             sessions: sessions,
             distinctBooks: distinctBooks,
             averageSecondsPerActiveDay: activeDays == 0 ? 0 : totalSeconds / activeDays,
-            currentStreakDays: currentStreakDays(from: streakSource, referenceDate: referenceDate),
+            currentStreakDays: currentStreak,
             bestDaySeconds: bestDaySeconds,
-            dailyStats: stats.sorted { $0.dateKey > $1.dateKey }
+            dailyStats: stats.sorted { $0.dateKey > $1.dateKey },
+            badges: badges
         )
+    }
+
+    private func calculateBadges(from allStats: [DailyReadingStat], currentStreak: Int) -> [ReadingBadge] {
+        // 1. Early Bird (5 mornings)
+        var morningDays = 0
+        for stat in allStats {
+            if let hourly = stat.hourlySeconds {
+                let morningSec = hourly.filter { (5...8).contains($0.key) }.values.reduce(0, +)
+                if morningSec >= 60 { // at least 1 minute in the morning
+                    morningDays += 1
+                }
+            }
+        }
+        let earlyBirdProgress = min(Double(morningDays) / 5.0, 1.0)
+        let earlyBird = ReadingBadge(
+            id: "early_bird",
+            titleKey: "badge_early_bird_title",
+            descKey: "badge_early_bird_desc",
+            iconName: "sun.and.horizon.fill",
+            isUnlocked: earlyBirdProgress >= 1.0,
+            progress: earlyBirdProgress,
+            currentValue: morningDays,
+            targetValue: 5
+        )
+
+        // 2. Night Owl (5 nights)
+        var nightDays = 0
+        let nightHours = Set([22, 23, 0, 1, 2, 3, 4])
+        for stat in allStats {
+            if let hourly = stat.hourlySeconds {
+                let nightSec = hourly.filter { nightHours.contains($0.key) }.values.reduce(0, +)
+                if nightSec >= 60 { // at least 1 minute at night
+                    nightDays += 1
+                }
+            }
+        }
+        let nightOwlProgress = min(Double(nightDays) / 5.0, 1.0)
+        let nightOwl = ReadingBadge(
+            id: "night_owl",
+            titleKey: "badge_night_owl_title",
+            descKey: "badge_night_owl_desc",
+            iconName: "moon.stars.fill",
+            isUnlocked: nightOwlProgress >= 1.0,
+            progress: nightOwlProgress,
+            currentValue: nightDays,
+            targetValue: 5
+        )
+
+        // 3. Deep Reader (1 day with >= 45 mins)
+        let maxDailySeconds = allStats.map(\.seconds).max() ?? 0
+        let targetSeconds = 2700 // 45 minutes
+        let deepReaderProgress = min(Double(maxDailySeconds) / Double(targetSeconds), 1.0)
+        let deepReader = ReadingBadge(
+            id: "deep_reader",
+            titleKey: "badge_deep_reader_title",
+            descKey: "badge_deep_reader_desc",
+            iconName: "brain.head.profile",
+            isUnlocked: deepReaderProgress >= 1.0,
+            progress: deepReaderProgress,
+            currentValue: maxDailySeconds / 60,
+            targetValue: 45
+        )
+
+        // 4. Super Streak (7 days streak)
+        let superStreakProgress = min(Double(currentStreak) / 7.0, 1.0)
+        let superStreak = ReadingBadge(
+            id: "super_streak",
+            titleKey: "badge_super_streak_title",
+            descKey: "badge_super_streak_desc",
+            iconName: "flame.fill",
+            isUnlocked: superStreakProgress >= 1.0,
+            progress: superStreakProgress,
+            currentValue: currentStreak,
+            targetValue: 7
+        )
+
+        // 5. Book Collector (3 books)
+        let distinctBooks = Set(allStats.flatMap(\.bookIds)).count
+        let collectorProgress = min(Double(distinctBooks) / 3.0, 1.0)
+        let bookCollector = ReadingBadge(
+            id: "book_collector",
+            titleKey: "badge_book_collector_title",
+            descKey: "badge_book_collector_desc",
+            iconName: "books.vertical.fill",
+            isUnlocked: collectorProgress >= 1.0,
+            progress: collectorProgress,
+            currentValue: distinctBooks,
+            targetValue: 3
+        )
+
+        // 6. Watch Pilot (10 watch turns)
+        let watchTurns = UserDefaults.standard.integer(forKey: "review_watchPageTurnCount")
+        let watchProgress = min(Double(watchTurns) / 10.0, 1.0)
+        let watchPilot = ReadingBadge(
+            id: "watch_pilot",
+            titleKey: "badge_watch_pilot_title",
+            descKey: "badge_watch_pilot_desc",
+            iconName: "applewatch.watchface",
+            isUnlocked: watchProgress >= 1.0,
+            progress: watchProgress,
+            currentValue: watchTurns,
+            targetValue: 10
+        )
+
+        return [earlyBird, nightOwl, deepReader, superStreak, bookCollector, watchPilot]
     }
 
     private func currentStreakDays(from stats: [DailyReadingStat], referenceDate: Date) -> Int {
