@@ -41,7 +41,7 @@ struct ReadingStatsView: View {
                         VStack {
                             Spacer()
                             ProgressView()
-                                .tint(Color(red: 0.22, green: 0.43, blue: 0.95))
+                                .tint(AppColors.accentBlue)
                                 .scaleEffect(1.2)
                             Spacer()
                         }
@@ -162,7 +162,7 @@ struct ReadingStatsView: View {
     private func scopeBackground(for scope: ReadingStatsScope) -> some View {
         if selectedStatsScope == scope {
             LinearGradient(
-                colors: [Color(red: 0.22, green: 0.43, blue: 0.95), Color(red: 0.16, green: 0.62, blue: 0.58)],
+                colors: [AppColors.accentBlue, AppColors.accentTeal],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
@@ -228,7 +228,7 @@ struct ReadingStatsView: View {
                                 .padding(.horizontal, 10)
                                 .padding(.vertical, 5)
                                 .background(LinearGradient(
-                                    colors: [Color(red: 0.22, green: 0.43, blue: 0.95), Color(red: 0.16, green: 0.62, blue: 0.58)],
+                                    colors: [AppColors.accentBlue, AppColors.accentTeal],
                                     startPoint: .leading,
                                     endPoint: .trailing
                                 ))
@@ -371,11 +371,11 @@ struct ReadingStatsView: View {
 
                 ZStack {
                     RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .fill(Color(red: 0.16, green: 0.62, blue: 0.58).opacity(colorScheme == .dark ? 0.24 : 0.13))
+                        .fill(AppColors.accentTeal.opacity(colorScheme == .dark ? 0.24 : 0.13))
 
                     Image(systemName: selectedStatsScope.symbolName)
                         .font(.system(size: 22, weight: .semibold))
-                        .foregroundColor(Color(red: 0.16, green: 0.62, blue: 0.58))
+                        .foregroundColor(AppColors.accentTeal)
                 }
                 .frame(width: 52, height: 52)
             }
@@ -510,7 +510,7 @@ struct ReadingStatsView: View {
                         
                         Text(formattedDateStr)
                             .font(.system(size: 11, weight: .bold))
-                            .foregroundColor(Color(red: 0.16, green: 0.62, blue: 0.58))
+                            .foregroundColor(AppColors.accentTeal)
                         
                         Text(formattedDuration(Int(value * 60)))
                             .font(.system(size: 22, weight: .bold))
@@ -576,7 +576,7 @@ struct ReadingStatsView: View {
                     .trim(from: 0.0, to: CGFloat(percentage))
                     .stroke(
                         LinearGradient(
-                            colors: [Color(red: 0.22, green: 0.43, blue: 0.95), Color(red: 0.16, green: 0.62, blue: 0.58)],
+                            colors: [AppColors.accentBlue, AppColors.accentTeal],
                             startPoint: .top,
                             endPoint: .bottom
                         ),
@@ -584,7 +584,7 @@ struct ReadingStatsView: View {
                     )
                     .rotationEffect(.degrees(-90))
                     .animation(.spring(response: 0.6, dampingFraction: 0.8), value: percentage)
-                    .shadow(color: Color(red: 0.22, green: 0.43, blue: 0.95).opacity(percentage > 0.8 ? 0.3 : 0), radius: 6, x: 0, y: 3)
+                    .shadow(color: AppColors.accentBlue.opacity(percentage > 0.8 ? 0.3 : 0), radius: 6, x: 0, y: 3)
                 
                 VStack {
                     Text(String(format: "%.0f%%", percentage * 100))
@@ -641,12 +641,12 @@ struct ReadingStatsView: View {
                 .foregroundStyle(
                     item.value >= goalMinutes ?
                     LinearGradient(
-                        colors: [Color(red: 0.16, green: 0.62, blue: 0.58), Color(red: 0.22, green: 0.65, blue: 0.43)],
+                        colors: [AppColors.accentTeal, Color(red: 0.22, green: 0.65, blue: 0.43)],
                         startPoint: .bottom,
                         endPoint: .top
                     ) :
                     LinearGradient(
-                        colors: [Color(red: 0.22, green: 0.43, blue: 0.95), Color(red: 0.16, green: 0.62, blue: 0.58)],
+                        colors: [AppColors.accentBlue, AppColors.accentTeal],
                         startPoint: .bottom,
                         endPoint: .top
                     )
@@ -665,14 +665,14 @@ struct ReadingStatsView: View {
                     x: .value("Selected", selectedDate, unit: .day)
                 )
                 .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [2, 2]))
-                .foregroundStyle(Color(red: 0.16, green: 0.62, blue: 0.58))
+                .foregroundStyle(AppColors.accentTeal)
                 
                 if let matchedItem = data.first(where: { Calendar.current.isDate($0.date, inSameDayAs: selectedDate) }) {
                     PointMark(
                         x: .value("SelectedX", matchedItem.date, unit: .day),
                         y: .value("SelectedY", matchedItem.value)
                     )
-                    .foregroundStyle(Color(red: 0.16, green: 0.62, blue: 0.58))
+                    .foregroundStyle(AppColors.accentTeal)
                     .symbolSize(100)
                 }
             }
@@ -693,7 +693,7 @@ struct ReadingStatsView: View {
                 )
                 .foregroundStyle(
                     LinearGradient(
-                        colors: [Color(red: 0.22, green: 0.43, blue: 0.95).opacity(0.4), Color(red: 0.22, green: 0.43, blue: 0.95).opacity(0.0)],
+                        colors: [AppColors.accentBlue.opacity(0.4), AppColors.accentBlue.opacity(0.0)],
                         startPoint: .top,
                         endPoint: .bottom
                     )
@@ -707,7 +707,7 @@ struct ReadingStatsView: View {
                 .lineStyle(StrokeStyle(lineWidth: 3))
                 .foregroundStyle(
                     LinearGradient(
-                        colors: [Color(red: 0.22, green: 0.43, blue: 0.95), Color(red: 0.16, green: 0.62, blue: 0.58)],
+                        colors: [AppColors.accentBlue, AppColors.accentTeal],
                         startPoint: .leading,
                         endPoint: .trailing
                     )
@@ -720,14 +720,14 @@ struct ReadingStatsView: View {
                     x: .value("Selected", selectedDate, unit: .day)
                 )
                 .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [2, 2]))
-                .foregroundStyle(Color(red: 0.16, green: 0.62, blue: 0.58))
+                .foregroundStyle(AppColors.accentTeal)
                 
                 if let matchedItem = data.first(where: { Calendar.current.isDate($0.date, inSameDayAs: selectedDate) }) {
                     PointMark(
                         x: .value("SelectedX", matchedItem.date, unit: .day),
                         y: .value("SelectedY", matchedItem.value)
                     )
-                    .foregroundStyle(Color(red: 0.16, green: 0.62, blue: 0.58))
+                    .foregroundStyle(AppColors.accentTeal)
                     .symbolSize(100)
                 }
             }
@@ -749,7 +749,7 @@ struct ReadingStatsView: View {
                 )
                 .foregroundStyle(
                     LinearGradient(
-                        colors: [Color(red: 0.22, green: 0.43, blue: 0.95), Color(red: 0.16, green: 0.62, blue: 0.58)],
+                        colors: [AppColors.accentBlue, AppColors.accentTeal],
                         startPoint: .bottom,
                         endPoint: .top
                     )
@@ -762,14 +762,14 @@ struct ReadingStatsView: View {
                     x: .value("Selected", selectedDate, unit: .month)
                 )
                 .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [2, 2]))
-                .foregroundStyle(Color(red: 0.16, green: 0.62, blue: 0.58))
+                .foregroundStyle(AppColors.accentTeal)
                 
                 if let matchedItem = data.first(where: { Calendar.current.isDate($0.date, equalTo: selectedDate, toGranularity: .month) }) {
                     PointMark(
                         x: .value("SelectedX", matchedItem.date, unit: .month),
                         y: .value("SelectedY", matchedItem.value)
                     )
-                    .foregroundStyle(Color(red: 0.16, green: 0.62, blue: 0.58))
+                    .foregroundStyle(AppColors.accentTeal)
                     .symbolSize(100)
                 }
             }
@@ -928,7 +928,7 @@ struct ReadingStatsView: View {
                                 .aspectRatio(1.0, contentMode: .fit)
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 4)
-                                        .stroke(Color(red: 0.16, green: 0.62, blue: 0.58), lineWidth: isSelected ? 2 : 0)
+                                        .stroke(AppColors.accentTeal, lineWidth: isSelected ? 2 : 0)
                                 )
                                 .onTapGesture {
                                     UIImpactFeedbackGenerator(style: .light).impactOccurred()
@@ -958,11 +958,11 @@ struct ReadingStatsView: View {
         if minutes <= 0 {
             return colorScheme == .dark ? Color.white.opacity(0.06) : Color.black.opacity(0.04)
         } else if minutes < 10 {
-            return Color(red: 0.22, green: 0.43, blue: 0.95).opacity(0.2)
+            return AppColors.accentBlue.opacity(0.2)
         } else if minutes < 30 {
-            return Color(red: 0.22, green: 0.43, blue: 0.95).opacity(0.5)
+            return AppColors.accentBlue.opacity(0.5)
         } else {
-            return Color(red: 0.16, green: 0.62, blue: 0.58)
+            return AppColors.accentTeal
         }
     }
 
@@ -1136,7 +1136,7 @@ struct ReadingStatsView: View {
                                 
                                 RoundedRectangle(cornerRadius: 2)
                                     .fill(LinearGradient(
-                                        colors: [Color(red: 0.22, green: 0.43, blue: 0.95), Color(red: 0.16, green: 0.62, blue: 0.58)],
+                                        colors: [AppColors.accentBlue, AppColors.accentTeal],
                                         startPoint: .leading,
                                         endPoint: .trailing
                                     ))
@@ -1396,8 +1396,8 @@ struct ReadingStatsView: View {
                     RoundedRectangle(cornerRadius: 18, style: .continuous)
                         .fill(LinearGradient(
                             colors: [
-                                Color(red: 0.22, green: 0.43, blue: 0.95).opacity(colorScheme == .dark ? 0.28 : 0.14),
-                                Color(red: 0.16, green: 0.62, blue: 0.58).opacity(colorScheme == .dark ? 0.24 : 0.12)
+                                AppColors.accentBlue.opacity(colorScheme == .dark ? 0.28 : 0.14),
+                                AppColors.accentTeal.opacity(colorScheme == .dark ? 0.24 : 0.12)
                             ],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
@@ -1405,7 +1405,7 @@ struct ReadingStatsView: View {
 
                     Image(systemName: "lock.open.rotation")
                         .font(.system(size: 28, weight: .semibold))
-                        .foregroundColor(Color(red: 0.22, green: 0.43, blue: 0.95))
+                        .foregroundColor(AppColors.accentBlue)
                 }
                 .frame(width: 64, height: 64)
 
@@ -1438,7 +1438,7 @@ struct ReadingStatsView: View {
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 15)
                     .background(LinearGradient(
-                        colors: [Color(red: 0.22, green: 0.43, blue: 0.95), Color(red: 0.16, green: 0.62, blue: 0.58)],
+                        colors: [AppColors.accentBlue, AppColors.accentTeal],
                         startPoint: .leading,
                         endPoint: .trailing
                     ))
@@ -1454,7 +1454,7 @@ struct ReadingStatsView: View {
         HStack(spacing: 12) {
             Image(systemName: icon)
                 .font(.system(size: 16, weight: .semibold))
-                .foregroundColor(Color(red: 0.22, green: 0.43, blue: 0.95))
+                .foregroundColor(AppColors.accentBlue)
                 .frame(width: 30, height: 30)
 
             Text(text)
@@ -1650,7 +1650,7 @@ struct ReadingStatsView: View {
                 Circle()
                     .fill(badge.isUnlocked ? 
                           AnyShapeStyle(LinearGradient(
-                              colors: [Color(red: 0.22, green: 0.43, blue: 0.95), Color(red: 0.16, green: 0.62, blue: 0.58)],
+                              colors: [AppColors.accentBlue, AppColors.accentTeal],
                               startPoint: .topLeading,
                               endPoint: .bottomTrailing
                           )) :
@@ -1679,7 +1679,7 @@ struct ReadingStatsView: View {
             // Progress text and bar
             VStack(spacing: 4) {
                 ProgressView(value: badge.progress)
-                    .tint(badge.isUnlocked ? Color(red: 0.22, green: 0.43, blue: 0.95) : AppColors.secondaryText)
+                    .tint(badge.isUnlocked ? AppColors.accentBlue : AppColors.secondaryText)
                     .scaleEffect(x: 1, y: 0.5, anchor: .center)
                     .padding(.horizontal, 16)
                 
@@ -1693,7 +1693,7 @@ struct ReadingStatsView: View {
         .cornerRadius(16)
         .overlay(
             RoundedRectangle(cornerRadius: 16)
-                .stroke(badge.isUnlocked ? Color(red: 0.22, green: 0.43, blue: 0.95).opacity(0.15) : Color.clear, lineWidth: 1)
+                .stroke(badge.isUnlocked ? AppColors.accentBlue.opacity(0.15) : Color.clear, lineWidth: 1)
         )
     }
     

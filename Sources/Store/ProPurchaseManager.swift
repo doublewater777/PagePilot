@@ -48,6 +48,7 @@ final class ProPurchaseManager {
     private let proKey = "entitlements_isPro"
 
     private var updateListenerTask: Task<Void, Never>?
+    private var foregroundObserver: NSObjectProtocol?
     private(set) var products: [Product] = []
 
     // MARK: - Access
@@ -61,11 +62,15 @@ final class ProPurchaseManager {
 
     private init() {
         updateListenerTask = listenForTransactions()
+        setupForegroundObservation()
         Task { await loadProducts() }
     }
 
     deinit {
         updateListenerTask?.cancel()
+        if let observer = foregroundObserver {
+            NotificationCenter.default.removeObserver(observer)
+        }
     }
 
     // MARK: - Products Loading
@@ -155,6 +160,20 @@ final class ProPurchaseManager {
 
     func verifyCurrentEntitlements() async {
         await syncCurrentEntitlements()
+    }
+
+    // MARK: - Foreground Re-verification
+
+    private func setupForegroundObservation() {
+        foregroundObserver = NotificationCenter.default.addObserver(
+            forName: UIApplication.didBecomeActiveNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { [weak self] in
+                await self?.verifyCurrentEntitlements()
+            }
+        }
     }
 
     // MARK: - Helpers

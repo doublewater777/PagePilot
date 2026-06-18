@@ -23,9 +23,6 @@ struct PaywallView: View {
     @State private var isEligibleForTrial = false
     @State private var safariURL: IdentifiableURL?
 
-    private let accentBlue = Color(red: 0.22, green: 0.43, blue: 0.95)
-    private let accentTeal = Color(red: 0.16, green: 0.62, blue: 0.58)
-
     private var selectedProduct: Product? {
         products.first(where: { $0.id == selectedProductID })
     }
@@ -134,7 +131,7 @@ struct PaywallView: View {
             HStack(alignment: .top, spacing: 0) {
                 miniFeature(
                     icon: "books.vertical.fill",
-                    iconColor: accentTeal,
+                    iconColor: AppColors.accentTeal,
                     title: NSLocalizedString("paywall_feature_unlimited_title", comment: ""),
                     subtitle: NSLocalizedString("paywall_feature_unlimited_subtitle", comment: "")
                 )
@@ -146,7 +143,7 @@ struct PaywallView: View {
                 )
                 miniFeature(
                     icon: "chart.bar.xaxis",
-                    iconColor: accentBlue,
+                    iconColor: AppColors.accentBlue,
                     title: NSLocalizedString("paywall_feature_stats_title", comment: ""),
                     subtitle: NSLocalizedString("paywall_feature_stats_subtitle", comment: "")
                 )
@@ -187,7 +184,7 @@ struct PaywallView: View {
                             .foregroundColor(.white)
                             .padding(.horizontal, 24)
                             .padding(.vertical, 12)
-                            .background(accentBlue)
+                            .background(AppColors.accentBlue)
                             .cornerRadius(12)
                     }
                     .buttonStyle(.plain)
@@ -260,12 +257,12 @@ struct PaywallView: View {
                 // Radio Selection indicator
                 ZStack {
                     Circle()
-                        .stroke(isSelected ? accentBlue : Color.secondary.opacity(0.3), lineWidth: 2)
+                        .stroke(isSelected ? AppColors.accentBlue : Color.secondary.opacity(0.3), lineWidth: 2)
                         .frame(width: 20, height: 20)
                     
                     if isSelected {
                         Circle()
-                            .fill(accentBlue)
+                            .fill(AppColors.accentBlue)
                             .frame(width: 11, height: 11)
                             .transition(.scale.combined(with: .opacity))
                     }
@@ -288,7 +285,7 @@ struct PaywallView: View {
                                     LinearGradient(
                                         colors: isLifetime 
                                             ? [Color.orange, Color.red] 
-                                            : (isYearly ? [accentTeal, accentBlue] : [accentBlue, accentTeal]),
+                                            : (isYearly ? [AppColors.accentTeal, AppColors.accentBlue] : [AppColors.accentBlue, AppColors.accentTeal]),
                                         startPoint: .leading,
                                         endPoint: .trailing
                                     )
@@ -299,7 +296,7 @@ struct PaywallView: View {
                     
                     Text(priceSubtext)
                         .font(.system(size: 11.5, weight: isYearly ? .semibold : .regular))
-                        .foregroundColor(isYearly ? accentTeal : AppColors.secondaryText)
+                        .foregroundColor(isYearly ? AppColors.accentTeal : AppColors.secondaryText)
                         .lineLimit(1)
                         .minimumScaleFactor(0.85)
                 }
@@ -317,7 +314,7 @@ struct PaywallView: View {
                 Group {
                     if isSelected {
                         LinearGradient(
-                            colors: [accentBlue.opacity(colorScheme == .dark ? 0.20 : 0.08), accentTeal.opacity(colorScheme == .dark ? 0.10 : 0.04)],
+                            colors: [AppColors.accentBlue.opacity(colorScheme == .dark ? 0.20 : 0.08), AppColors.accentTeal.opacity(colorScheme == .dark ? 0.10 : 0.04)],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         )
@@ -330,7 +327,7 @@ struct PaywallView: View {
                 RoundedRectangle(cornerRadius: 14)
                     .stroke(
                         isSelected 
-                            ? LinearGradient(colors: [accentBlue, accentTeal], startPoint: .leading, endPoint: .trailing)
+                            ? LinearGradient(colors: [AppColors.accentBlue, AppColors.accentTeal], startPoint: .leading, endPoint: .trailing)
                             : LinearGradient(colors: [Color.white.opacity(colorScheme == .dark ? 0.08 : 0.3), Color.white.opacity(0.0)], startPoint: .topLeading, endPoint: .bottomTrailing),
                         lineWidth: isSelected ? 1.5 : 1
                     )
@@ -392,7 +389,7 @@ struct PaywallView: View {
                 .frame(height: 48)
                 .background(
                     LinearGradient(
-                        colors: [accentBlue, accentTeal],
+                        colors: [AppColors.accentBlue, AppColors.accentTeal],
                         startPoint: .leading,
                         endPoint: .trailing
                     )
@@ -495,7 +492,7 @@ struct PaywallView: View {
         HStack(spacing: 5) {
             Image(systemName: icon)
                 .font(.system(size: 12, weight: .semibold))
-                .foregroundColor(accentTeal)
+                .foregroundColor(AppColors.accentTeal)
 
             Text(text)
                 .font(.system(size: 12, weight: .semibold))
@@ -524,7 +521,7 @@ struct PaywallView: View {
             }
         }
         .font(.system(size: 12))
-        .foregroundColor(accentBlue)
+        .foregroundColor(AppColors.accentBlue)
         .padding(.top, 0)
     }
 

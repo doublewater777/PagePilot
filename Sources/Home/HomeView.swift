@@ -30,7 +30,6 @@ final class HomeViewModel: ObservableObject {
     @Published var isEmpty: Bool = true
     @Published var statsRefreshID = UUID()
 
-    let readingTimeManager: ReadingTimeManager
     private let statsStore: ReadingStatsStore
     private let statsAccess: ReadingStatsAccess
 
@@ -82,12 +81,10 @@ final class HomeViewModel: ObservableObject {
 
     init(
         books: BookRepository,
-        readingTimeManager: ReadingTimeManager,
         statsStore: ReadingStatsStore = .shared,
         statsAccess: ReadingStatsAccess = .shared
     ) {
         self.books = books
-        self.readingTimeManager = readingTimeManager
         self.statsStore = statsStore
         self.statsAccess = statsAccess
 
@@ -124,7 +121,7 @@ final class HomeViewModel: ObservableObject {
 
     /// Today's reading time in minutes
     var todayReadingMinutes: Int {
-        readingTimeManager.todayReadingTimeSeconds / 60
+        statsStore.todayReadingSeconds() / 60
     }
 
     /// Progress towards daily goal (0.0 to 1.0+)
@@ -167,38 +164,6 @@ enum ReadingPreferences {
             NotificationCenter.default.post(name: dailyGoalDidChange, object: clamped)
         }
     }
-}
-
-// MARK: - Adaptive Colors
-
-struct AppColors {
-    // Background colors
-    static let background = Color(.systemGroupedBackground)
-    static let cardBackground = Color(.secondarySystemGroupedBackground)
-
-    // Text colors
-    static let primaryText = Color(.label)
-    static let secondaryText = Color(.secondaryLabel)
-    static let tertiaryText = Color(.tertiaryLabel)
-
-    // Accent gradient colors
-    static let accentGradientStart = Color(red: 0.12, green: 0.47, blue: 0.85)
-    static let accentGradientEnd = Color(red: 0.08, green: 0.66, blue: 0.58)
-
-    // Progress track
-    static let progressTrack = Color.primary.opacity(0.06)
-
-    static let accentGradient = LinearGradient(
-        colors: [accentGradientStart, accentGradientEnd],
-        startPoint: .topLeading,
-        endPoint: .bottomTrailing
-    )
-
-    static let horizontalGradient = LinearGradient(
-        colors: [accentGradientStart, accentGradientEnd],
-        startPoint: .leading,
-        endPoint: .trailing
-    )
 }
 
 // MARK: - Reusable Styles and Helpers

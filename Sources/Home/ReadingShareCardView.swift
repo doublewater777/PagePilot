@@ -20,9 +20,6 @@ struct ReadingShareCardView: View {
     @State private var saveMessage: String?
     @State private var showToast = false
     
-    private let accentBlue = Color(red: 0.22, green: 0.43, blue: 0.95)
-    private let accentTeal = Color(red: 0.16, green: 0.62, blue: 0.58)
-    
     init(todaySeconds: Int, streakDays: Int, books: [Book]) {
         self.todaySeconds = todaySeconds
         self.streakDays = streakDays
@@ -48,7 +45,7 @@ struct ReadingShareCardView: View {
                                         .foregroundColor(selectedBook?.url == book.url ? .white : AppColors.primaryText)
                                         .padding(.horizontal, 12)
                                         .padding(.vertical, 8)
-                                        .background(selectedBook?.url == book.url ? accentBlue : Color(.secondarySystemGroupedBackground))
+                                        .background(selectedBook?.url == book.url ? AppColors.accentBlue : Color(.secondarySystemGroupedBackground))
                                         .cornerRadius(12)
                                 }
                                 .buttonStyle(.plain)
@@ -86,7 +83,7 @@ struct ReadingShareCardView: View {
                     .padding(.vertical, 15)
                     .background(
                         LinearGradient(
-                            colors: [accentBlue, accentTeal],
+                            colors: [AppColors.accentBlue, AppColors.accentTeal],
                             startPoint: .leading,
                             endPoint: .trailing
                         )
@@ -117,21 +114,35 @@ struct ReadingShareCardView: View {
             // Header: Cover Background and Title
             ZStack {
                 LinearGradient(
-                    colors: [accentBlue.opacity(0.85), accentTeal.opacity(0.85)],
+                    colors: [AppColors.accentBlue.opacity(0.85), AppColors.accentTeal.opacity(0.85)],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 )
                 
                 VStack(spacing: 14) {
-                    // Book Icon or cover placeholder
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .fill(Color.white.opacity(0.2))
-                            .frame(width: 72, height: 96)
-                        
-                        Image(systemName: "book.closed.fill")
-                            .font(.system(size: 32))
-                            .foregroundColor(.white)
+                    // Book Cover
+                    if let cover = selectedBook?.cover, let coverURL = cover.url {
+                        AsyncImage(url: coverURL) { phase in
+                            switch phase {
+                            case .success(let image):
+                                image
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
+                                    .frame(width: 72, height: 96)
+                                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                            case .failure:
+                                fallbackCover
+                            case .empty:
+                                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                    .fill(Color.white.opacity(0.2))
+                                    .frame(width: 72, height: 96)
+                                    .overlay(ProgressView().tint(.white))
+                            @unknown default:
+                                fallbackCover
+                            }
+                        }
+                    } else {
+                        fallbackCover
                     }
                     
                     VStack(spacing: 4) {
@@ -241,7 +252,7 @@ struct ReadingShareCardView: View {
                             VStack(spacing: 2) {
                                 ForEach(0..<4) { _ in
                                     Circle()
-                                        .fill(accentBlue.opacity(Double.random(in: 0.4...1.0)))
+                                        .fill(AppColors.accentBlue.opacity(Double.random(in: 0.4...1.0)))
                                         .frame(width: 3, height: 3)
                                 }
                             }
@@ -259,6 +270,17 @@ struct ReadingShareCardView: View {
         }
     }
     
+    private var fallbackCover: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(Color.white.opacity(0.2))
+                .frame(width: 72, height: 96)
+            Image(systemName: "book.closed.fill")
+                .font(.system(size: 32))
+                .foregroundColor(.white)
+        }
+    }
+
     // MARK: - Time Formatter
     private var formattedTodayTime: String {
         let hours = todaySeconds / 3600

@@ -55,6 +55,7 @@ struct SettingsView: View {
             hasProAccess = ProPurchaseManager.shared.hasProAccess
         }
         .onAppear {
+            hasProAccess = ProPurchaseManager.shared.hasProAccess
             if ProcessInfo.processInfo.arguments.contains("-ShowPaywall") && !Self.hasAutoShownPaywall {
                 Self.hasAutoShownPaywall = true
                 showPaywall = true

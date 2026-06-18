@@ -27,17 +27,15 @@ final class HomeModule: HomeModuleAPI {
     weak var delegate: HomeModuleDelegate?
 
     private let books: BookRepository
-    let readingTimeManager: ReadingTimeManager
 
     init(delegate: HomeModuleDelegate?, books: BookRepository) {
         self.delegate = delegate
         self.books = books
-        self.readingTimeManager = ReadingTimeManager()
     }
 
     private(set) lazy var rootViewController: UINavigationController = {
         let homeView = HomeView(
-            viewModel: HomeViewModel(books: books, readingTimeManager: readingTimeManager),
+            viewModel: HomeViewModel(books: books),
             delegate: delegate
         )
         let hostingController = UIHostingController(rootView: homeView)

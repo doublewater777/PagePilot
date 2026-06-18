@@ -71,10 +71,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         do {
             try session.setCategory(
                 .playback,
-                mode: .spokenAudio,
-                options: []
+                mode: .spokenAudio
             )
-            try session.setActive(true, options: [])
         } catch {
             print("Failed to configure AVAudioSession: \(error)")
         }
