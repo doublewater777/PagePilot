@@ -14,7 +14,6 @@ struct SettingsView: View {
     @AppStorage(AppAppearancePreferences.Keys.language) private var selectedLanguage = AppAppearancePreferences.language.rawValue
     @AppStorage(AppAppearancePreferences.Keys.theme) private var selectedTheme = AppTheme.system.rawValue
     @AppStorage(ReadingPreferences.Keys.dailyGoalMinutes) private var dailyGoalMinutes = ReadingPreferences.defaultDailyGoalMinutes
-    @AppStorage(VolumeKeyService.volumeKeyEnabledKey) private var volumeKeyEnabled = false
     @State private var localizationRefreshID = AppAppearancePreferences.language.rawValue
     @State private var showPaywall = false
     @State private var hasProAccess = ProPurchaseManager.shared.hasProAccess
@@ -134,16 +133,11 @@ struct SettingsView: View {
                 LazyView(VolumeKeySettingsView())
                     .navigationBarTitleDisplayMode(.inline)
             } label: {
-                HStack {
-                    SettingsRow(
-                        icon: "speaker.wave.2",
-                        iconColor: .orange,
-                        title: NSLocalizedString("settings_volume_key_turn_page", comment: "")
-                    )
-                    Spacer()
-                    Toggle("", isOn: $volumeKeyEnabled)
-                        .labelsHidden()
-                }
+                SettingsRow(
+                    icon: "speaker.wave.2",
+                    iconColor: .orange,
+                    title: NSLocalizedString("settings_volume_key_turn_page", comment: "")
+                )
             }
         }
     }

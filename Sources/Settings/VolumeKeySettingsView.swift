@@ -7,6 +7,7 @@
 import SwiftUI
 
 struct VolumeKeySettingsView: View {
+    @AppStorage(VolumeKeyService.volumeKeyEnabledKey) private var volumeKeyEnabled = false
     @AppStorage(VolumeKeyService.volumeKeyMappingKey) private var volumeKeyMapping = VolumeKeyService.defaultVolumeKeyMapping.rawValue
 
     var body: some View {
@@ -16,6 +17,7 @@ struct VolumeKeySettingsView: View {
             }
 
             List {
+                toggleSection
                 explanationSection
                 mappingSection
             }
@@ -29,6 +31,14 @@ struct VolumeKeySettingsView: View {
         .background(Color(uiColor: .systemGroupedBackground))
         .navigationTitle(NSLocalizedString("settings_volume_key_turn_page", comment: ""))
         .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private var toggleSection: some View {
+        Section {
+            Toggle(isOn: $volumeKeyEnabled) {
+                Text(NSLocalizedString("settings_volume_key_turn_page", comment: ""))
+            }
+        }
     }
 
     private var explanationSection: some View {
