@@ -85,7 +85,13 @@ struct MyNotesView: View {
                         .foregroundStyle(filter == f ? Color.white : AppColors.secondaryText)
                         .padding(.horizontal, 14)
                         .padding(.vertical, 6)
-                        .background(filter == f ? AppColors.accentBlue : AppColors.cardBackground)
+                        .background {
+                            if filter == f {
+                                AppColors.horizontalGradient
+                            } else {
+                                AppColors.cardBackground
+                            }
+                        }
                         .cornerRadius(999)
                 }
                 .buttonStyle(.plain)
