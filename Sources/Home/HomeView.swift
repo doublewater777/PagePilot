@@ -588,13 +588,14 @@ struct HomeView: View {
     private func coverImage(for book: LastReadBook) -> some View {
         if let coverPath = book.coverPath {
             let coverURL = Paths.covers.appendingPath(coverPath, isDirectory: false).url
-            if let data = try? Data(contentsOf: coverURL),
-               let image = UIImage(data: data) {
-                Image(uiImage: image)
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-            } else {
-                placeholderCover(for: book)
+            AsyncImage(url: coverURL) { phase in
+                if let image = phase.image {
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                } else {
+                    placeholderCover(for: book)
+                }
             }
         } else {
             placeholderCover(for: book)

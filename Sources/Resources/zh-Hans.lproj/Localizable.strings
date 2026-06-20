@@ -716,3 +716,29 @@
 "share_card_days" = "天";
 "share_card_subtitle" = "静心阅读，翻页自如";
 
+/* My Notes */
+"settings_my_notes" = "我的笔记";
+"my_notes_title" = "我的笔记";
+"my_notes_subtitle" = "沉淀下来的阅读痕迹";
+"my_notes_books_label" = "本书";
+"my_notes_highlights_label" = "高亮";
+"my_notes_bookmark_label" = "书签";
+"my_notes_bookmarks_label" = "书签";
+"my_notes_filter_all" = "全部";
+"my_notes_filter_week" = "本周";
+"my_notes_filter_month" = "本月";
+"my_notes_filtered_empty" = "该时间段内没有笔记。";
+"my_notes_empty" = "还没有笔记。在阅读中添加书签和高亮吧。";
+"delete_button" = "删除";
+
+/* Page Turn Settings */
+"settings_page_turn_section" = "翻页设置";
+
+/* Volume Key Page Turn */
+"settings_volume_key_turn_page" = "音量键翻页";
+"settings_tts_volume_key_turn_page" = "朗读时也翻页";
+"settings_volume_key_mapping_title" = "音量键映射";
+"settings_volume_key_down_forward" = "下键下一页，上键上一页";
+"settings_volume_key_up_forward" = "上键下一页，下键下一页";
+"settings_volume_key_explanation" = "普通阅读时使用音量键翻页。朗读、有声书、耳机或车载播放时，音量键仍控制音量。";
+

@@ -22,10 +22,18 @@ protocol ModuleDelegate: AnyObject {
 /// - owns the sub-modules (library, reader, etc.)
 /// - orchestrates the communication between its sub-modules, through the modules' delegates.
 final class AppModule {
+    static weak var shared: AppModule?
+
     // App modules
     var library: LibraryModuleAPI!
     var reader: ReaderModuleAPI!
     var home: HomeModuleAPI!
+
+    /// Pending locator to navigate to when opening a book (from MyNotes, etc.)
+    var pendingNavigationTarget: (bookId: Book.Id, locator: Locator)?
+
+    /// Set when opening a reader from MyNotes; the reader will switch back to the Settings tab on back.
+    var didNavigateFromNotes: Bool = false
 
     weak var tabBarController: UITabBarController?
 
@@ -33,6 +41,8 @@ final class AppModule {
     let db: Database
 
     let books: BookRepository
+    let bookmarkRepository: BookmarkRepository
+    let highlightRepository: HighlightRepository
 
     fileprivate lazy var documentPickerDelegate = DocumentPickerDelegate(module: self)
 
@@ -46,6 +56,8 @@ final class AppModule {
 
         let bookmarks = BookmarkRepository(db: db)
         let highlights = HighlightRepository(db: db)
+        bookmarkRepository = bookmarks
+        highlightRepository = highlights
 
         StartupProfiler.shared.record("AppModule: Initializing Readium Opener & Server")
         readium = Readium()
@@ -72,7 +84,11 @@ final class AppModule {
         )
 
         // Set Readium 2's logging minimum level.
+        #if DEBUG
         ReadiumEnableLog(withMinimumSeverityLevel: .debug)
+        #endif
+
+        Self.shared = self
         
         StartupProfiler.shared.record("AppModule Init End")
     }

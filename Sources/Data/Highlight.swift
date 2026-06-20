@@ -116,6 +116,23 @@ final class HighlightRepository {
     func remove(_ id: Highlight.Id) async throws {
         try await db.write { db in try Highlight.deleteOne(db, key: id) }
     }
+
+    func distinctBookIds() async throws -> [Book.Id] {
+        try await db.read { db in
+            try Highlight
+                .select(Highlight.Columns.bookId, as: Book.Id.self)
+                .distinct()
+                .fetchAll(db)
+        }
+    }
+
+    func count(for bookId: Book.Id) async throws -> Int {
+        try await db.read { db in
+            try Highlight
+                .filter(Highlight.Columns.bookId == bookId)
+                .fetchCount(db)
+        }
+    }
 }
 
 /// for the default SwiftUI support

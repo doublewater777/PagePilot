@@ -71,6 +71,17 @@ class ReaderViewController<N: Navigator>: UIViewController,
         UserDefaults.standard.set(list, forKey: "lastReadBookIds")
     }
 
+    override func viewDidDisappear(_ animated: Bool) {
+        super.viewDidDisappear(animated)
+
+        if isMovingFromParent,
+           let app = AppModule.shared,
+           app.didNavigateFromNotes {
+            app.didNavigateFromNotes = false
+            app.tabBarController?.selectedIndex = 2
+        }
+    }
+
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
 

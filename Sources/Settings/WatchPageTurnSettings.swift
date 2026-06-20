@@ -71,10 +71,17 @@ struct WatchPageTurnSettings {
     func syncToWatch() {
         guard WCSession.isSupported(),
               WCSession.default.activationState == .activated,
-              WCSession.default.isPaired
+              WCSession.default.isPaired,
+              WCSession.default.isWatchAppInstalled
         else { return }
 
-        try? WCSession.default.updateApplicationContext(watchContext)
+        do {
+            try WCSession.default.updateApplicationContext(watchContext)
+        } catch let error as WCError where error.code == .watchAppNotInstalled {
+            // Expected when the Watch app is not installed; ignore.
+        } catch {
+            print("WatchPageTurnSettings: Failed to sync to watch: \(error)")
+        }
     }
 
     /// Performs a one-time migration of the default control target from iPad to

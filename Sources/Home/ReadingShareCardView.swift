@@ -121,8 +121,8 @@ struct ReadingShareCardView: View {
                 
                 VStack(spacing: 14) {
                     // Book Cover
-                    if let cover = selectedBook?.cover, let coverURL = cover.url {
-                        AsyncImage(url: coverURL) { phase in
+                    if let cover = selectedBook?.cover {
+                        AsyncImage(url: cover.url) { phase in
                             switch phase {
                             case .success(let image):
                                 image

@@ -29,8 +29,7 @@ class EPUBViewController: VisualReaderViewController<EPUBNavigatorViewController
         initialPreferences: EPUBPreferences,
         preferencesStore: AnyUserPreferencesStore<EPUBPreferences>
     ) throws {
-        var templates = HTMLDecorationTemplate.defaultTemplates()
-        templates[.pageList] = .pageList
+        let templates = HTMLDecorationTemplate.defaultTemplates()
 
         let resources = FileURL(url: Bundle.main.resourceURL!)!
         let navigator = try EPUBNavigatorViewController(

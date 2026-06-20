@@ -89,7 +89,7 @@ final class ReadingStatsAccess {
     }
 
     var hasProAccess: Bool {
-        ProPurchaseManager.shared.hasProAccess
+        defaults.bool(forKey: Keys.isPro)
     }
 }
 

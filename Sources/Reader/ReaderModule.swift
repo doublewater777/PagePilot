@@ -67,11 +67,13 @@ final class ReaderModule: ReaderModuleAPI {
                 navigationController.pushViewController(viewController, animated: true)
             }
 
+            StartupProfiler.shared.record("ReaderModule: selecting format module")
             guard let module = self.formatModules.first(where: { $0.supports(publication) }) else {
                 delegate.presentError(ReaderError.formatNotSupported, from: navigationController)
                 return
             }
 
+            StartupProfiler.shared.record("ReaderModule: making reader view controller")
             do {
                 let readerViewController = try await module.makeReaderViewController(
                     for: publication,
@@ -82,6 +84,7 @@ final class ReaderModule: ReaderModuleAPI {
                     highlights: highlights,
                     readium: readium
                 )
+                StartupProfiler.shared.record("ReaderModule: reader view controller ready")
                 await present(readerViewController)
             } catch {
                 delegate.presentError(UserError(error), from: navigationController)
@@ -120,3 +123,4 @@ extension ReaderModule: ReaderFormatModuleDelegate {
         delegate?.presentError(error, from: viewController)
     }
 }
+

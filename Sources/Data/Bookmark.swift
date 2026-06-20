@@ -64,6 +64,23 @@ final class BookmarkRepository {
     func remove(_ id: Bookmark.Id) async throws {
         try await db.write { db in try Bookmark.deleteOne(db, key: id) }
     }
+
+    func distinctBookIds() async throws -> [Book.Id] {
+        try await db.read { db in
+            try Bookmark
+                .select(Bookmark.Columns.bookId, as: Book.Id.self)
+                .distinct()
+                .fetchAll(db)
+        }
+    }
+
+    func count(for bookId: Book.Id) async throws -> Int {
+        try await db.read { db in
+            try Bookmark
+                .filter(Bookmark.Columns.bookId == bookId)
+                .fetchCount(db)
+        }
+    }
 }
 
 /// for the default SwiftUI support

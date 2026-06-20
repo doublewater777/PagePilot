@@ -266,7 +266,7 @@ final class WatchPageTurnService: NSObject, ObservableObject {
         var context = WatchPageTurnSettings().watchContext
         context["currentBookTitle"] = ""
         context["currentBookProgress"] = 0.0
-        try? WCSession.default.updateApplicationContext(context)
+        updateApplicationContextSafely(context)
         // Keep the LAN server running so the Watch keeps showing connected.
         // The /command handler will simply early-return when no navigator is active.
     }
@@ -278,13 +278,26 @@ final class WatchPageTurnService: NSObject, ObservableObject {
 
         guard WCSession.isSupported() else { return }
         let session = WCSession.default
-        guard session.activationState == .activated else { return }
+        guard session.activationState == .activated,
+              session.isPaired,
+              session.isWatchAppInstalled
+        else { return }
 
         var context = WatchPageTurnSettings().watchContext
         context["currentBookTitle"] = title
         context["currentBookProgress"] = progression ?? 0.0
-        
-        try? session.updateApplicationContext(context)
+
+        updateApplicationContextSafely(context)
+    }
+
+    private func updateApplicationContextSafely(_ context: [String: Any]) {
+        do {
+            try WCSession.default.updateApplicationContext(context)
+        } catch let error as WCError where error.code == .watchAppNotInstalled {
+            // Expected when the Watch app is not installed; no need to log.
+        } catch {
+            print("WatchPageTurnService: Failed to update application context: \(error)")
+        }
     }
 
     private func handleCommand(_ command: PageCommand, completion: (([String: Any]) -> Void)? = nil) {

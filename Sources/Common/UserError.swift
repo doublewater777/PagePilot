@@ -67,7 +67,7 @@ extension UIViewController {
         DispatchQueue.main.async {
             let alert = UIAlertController(
                 title: error.message,
-                message: dumpDescription,
+                message: nil,
                 preferredStyle: .alert
             )
 

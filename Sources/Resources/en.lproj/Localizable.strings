@@ -716,3 +716,29 @@
 "share_card_days" = "days";
 "share_card_subtitle" = "Quiet reading companion";
 
+/* My Notes */
+"settings_my_notes" = "My Notes";
+"my_notes_title" = "My Notes";
+"my_notes_subtitle" = "Your reading traces";
+"my_notes_books_label" = "Books";
+"my_notes_highlights_label" = "Highlights";
+"my_notes_bookmark_label" = "Bookmark";
+"my_notes_bookmarks_label" = "Bookmarks";
+"my_notes_filter_all" = "All";
+"my_notes_filter_week" = "Week";
+"my_notes_filter_month" = "Month";
+"my_notes_filtered_empty" = "No notes in this period.";
+"my_notes_empty" = "No notes yet. Add bookmarks and highlights while reading.";
+"delete_button" = "Delete";
+
+/* Page Turn Settings */
+"settings_page_turn_section" = "Page Turn Settings";
+
+/* Volume Key Page Turn */
+"settings_volume_key_turn_page" = "Volume Key Page Turn";
+"settings_tts_volume_key_turn_page" = "While Reading Aloud";
+"settings_volume_key_mapping_title" = "Volume Key Mapping";
+"settings_volume_key_down_forward" = "Down: Next, Up: Previous";
+"settings_volume_key_up_forward" = "Up: Next, Down: Previous";
+"settings_volume_key_explanation" = "Use volume keys to turn pages while reading normally. Volume keys remain volume controls during read-aloud, audiobooks, headphone, or car playback.";
+

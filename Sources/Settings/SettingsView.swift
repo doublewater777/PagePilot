@@ -4,7 +4,6 @@
 //  available in the top-level LICENSE file of the project.
 //
 
-import AVFoundation
 import ObjectiveC
 import SafariServices
 import SwiftUI
@@ -15,6 +14,7 @@ struct SettingsView: View {
     @AppStorage(AppAppearancePreferences.Keys.language) private var selectedLanguage = AppAppearancePreferences.language.rawValue
     @AppStorage(AppAppearancePreferences.Keys.theme) private var selectedTheme = AppTheme.system.rawValue
     @AppStorage(ReadingPreferences.Keys.dailyGoalMinutes) private var dailyGoalMinutes = ReadingPreferences.defaultDailyGoalMinutes
+    @AppStorage(VolumeKeyService.volumeKeyEnabledKey) private var volumeKeyEnabled = false
     @State private var localizationRefreshID = AppAppearancePreferences.language.rawValue
     @State private var showPaywall = false
     @State private var hasProAccess = ProPurchaseManager.shared.hasProAccess
@@ -28,7 +28,7 @@ struct SettingsView: View {
             statsSection
             
             if UIDevice.current.userInterfaceIdiom == .phone {
-                watchSection
+                pageTurnSection
             }
             ttsSection
             
@@ -117,8 +117,8 @@ struct SettingsView: View {
         }
     }
 
-    private var watchSection: some View {
-        Section(NSLocalizedString("settings_watch_section", comment: "")) {
+    private var pageTurnSection: some View {
+        Section(NSLocalizedString("settings_page_turn_section", comment: "")) {
             NavigationLink {
                 LazyView(WatchSettingsView())
                     .navigationBarTitleDisplayMode(.inline)
@@ -126,8 +126,24 @@ struct SettingsView: View {
                 SettingsRow(
                     icon: "applewatch",
                     iconColor: Color(uiColor: .label),
-                    title: NSLocalizedString("settings_watch_page_turn", comment: "")
+                    title: NSLocalizedString("settings_watch_section", comment: "")
                 )
+            }
+
+            NavigationLink {
+                LazyView(VolumeKeySettingsView())
+                    .navigationBarTitleDisplayMode(.inline)
+            } label: {
+                HStack {
+                    SettingsRow(
+                        icon: "speaker.wave.2",
+                        iconColor: .orange,
+                        title: NSLocalizedString("settings_volume_key_turn_page", comment: "")
+                    )
+                    Spacer()
+                    Toggle("", isOn: $volumeKeyEnabled)
+                        .labelsHidden()
+                }
             }
         }
     }
@@ -211,6 +227,17 @@ struct SettingsView: View {
                     icon: "chart.bar.xaxis",
                     iconColor: .blue,
                     title: NSLocalizedString("settings_stats", comment: "")
+                )
+            }
+
+            NavigationLink {
+                LazyView(MyNotesView())
+                    .navigationBarTitleDisplayMode(.inline)
+            } label: {
+                SettingsRow(
+                    icon: "bookmark.fill",
+                    iconColor: .blue,
+                    title: NSLocalizedString("settings_my_notes", comment: "")
                 )
             }
         }

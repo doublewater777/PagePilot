@@ -80,3 +80,5 @@ docs-site
 *.p8
 .asc
 .gstack/
+
+design-demos
