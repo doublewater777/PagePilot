@@ -280,7 +280,7 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
 
     // MARK: - Highlights
 
-    private let highlights: HighlightRepository?
+    let highlights: HighlightRepository?
     private var highlightContextMenu: UIHostingController<HighlightContextMenu>?
     private let highlightDecorationGroup = "highlights"
     private var currentHighlightCancellable: AnyCancellable?
@@ -304,6 +304,14 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
 
         Task {
             try! await highlights.update(highlightID, color: color)
+        }
+    }
+
+    func updateHighlightNote(_ highlightID: Highlight.Id, note: String?) {
+        guard let highlights = highlights else { return }
+
+        Task {
+            try! await highlights.update(highlightID, note: note)
         }
     }
 
@@ -372,18 +380,21 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
         }
         .store(in: &subscriptions)
 
-        highlightContextMenu = UIHostingController(rootView: menuView)
+        let hosting = UIHostingController(rootView: menuView)
+        hosting.modalPresentationStyle = .popover
+        hosting.preferredContentSize = menuView.preferredSize
+        if #available(iOS 16.4, *) {
+            hosting.sizingOptions = [.intrinsicContentSize]
+        }
 
-        highlightContextMenu!.preferredContentSize = menuView.preferredSize
-        highlightContextMenu!.modalPresentationStyle = .popover
+        highlightContextMenu = hosting
 
-        if let popoverController = highlightContextMenu!.popoverPresentationController {
+        if let popoverController = hosting.popoverPresentationController {
             popoverController.permittedArrowDirections = .down
             popoverController.sourceRect = event.rect ?? .zero
             popoverController.sourceView = view
-            popoverController.backgroundColor = .cyan
             popoverController.delegate = self
-            present(highlightContextMenu!, animated: true, completion: nil)
+            present(hosting, animated: true, completion: nil)
         }
     }
 }

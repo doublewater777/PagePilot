@@ -568,6 +568,14 @@
 "reader_highlight_color_green" = "Green";
 "reader_highlight_color_blue" = "Blue";
 "reader_highlight_color_red" = "Red";
+"reader_add_note" = "Add Note";
+"reader_copy" = "Copy";
+"reader_more" = "More";
+"reader_lookup" = "Look Up";
+"reader_translate" = "Translate";
+"reader_share" = "Share";
+"highlight_note_title" = "Add Note";
+"save_button" = "Save";
 
 /* MARK: Launch */
 "launch_tagline_1" = "Read with your Apple Watch";
@@ -741,4 +749,3 @@
 "settings_volume_key_down_forward" = "Down: Next, Up: Previous";
 "settings_volume_key_up_forward" = "Up: Next, Down: Previous";
 "settings_volume_key_explanation" = "Use volume keys to turn pages while reading normally. Volume keys remain volume controls during read-aloud, audiobooks, headphone, or car playback.";
-

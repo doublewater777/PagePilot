@@ -10,6 +10,7 @@ import SwiftUI
 struct HighlightContextMenu: View {
     let colors: [HighlightColor]
     let systemFontSize: CGFloat
+    var showsDeleteButton: Bool = true
 
     private let colorSubject = PassthroughSubject<HighlightColor, Never>()
     var selectedColorPublisher: AnyPublisher<HighlightColor, Never> {
@@ -30,21 +31,27 @@ struct HighlightContextMenu: View {
                     Text(emoji(for: color))
                         .font(.system(size: systemFontSize))
                 }
-                Divider()
+
+                if color != colors.last || showsDeleteButton {
+                    Divider()
+                }
             }
 
-            Button {
-                deleteSubject.send()
-            } label: {
-                Image(systemName: "xmark.bin")
-                    .font(.system(size: systemFontSize))
+            if showsDeleteButton {
+                Button {
+                    deleteSubject.send()
+                } label: {
+                    Image(systemName: "xmark.bin")
+                        .font(.system(size: systemFontSize))
+                }
             }
         }
+        .fixedSize()
     }
 
     var preferredSize: CGSize {
         let itemSide = itemSideSize
-        let itemsCount = colors.count + 1 // 1 is for "delete"
+        let itemsCount = colors.count + (showsDeleteButton ? 1 : 0)
         return CGSize(width: itemSide * CGFloat(itemsCount), height: itemSide)
     }
 

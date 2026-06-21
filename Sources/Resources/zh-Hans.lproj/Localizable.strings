@@ -562,12 +562,20 @@
 "metadata_show_descriptive_statements" = "显示描述性说明";
 
 /* MARK: Reader */
-"reader_highlight" = "高亮";
+"reader_highlight" = "高亮标记";
 "reader_highlight_select_color" = "选择高亮颜色";
 "reader_highlight_color_yellow" = "黄色";
 "reader_highlight_color_green" = "绿色";
 "reader_highlight_color_blue" = "蓝色";
 "reader_highlight_color_red" = "红色";
+"reader_add_note" = "添加笔记";
+"reader_copy" = "拷贝";
+"reader_more" = "更多";
+"reader_lookup" = "查词";
+"reader_translate" = "翻译";
+"reader_share" = "分享";
+"highlight_note_title" = "添加笔记";
+"save_button" = "保存";
 
 /* MARK: Launch */
 "launch_tagline_1" = "用手表翻页，畅快阅读";
@@ -741,4 +749,3 @@
 "settings_volume_key_down_forward" = "下键下一页，上键上一页";
 "settings_volume_key_up_forward" = "上键下一页，下键下一页";
 "settings_volume_key_explanation" = "普通阅读时使用音量键翻页。朗读、有声书、耳机或车载播放时，音量键仍控制音量。";
-

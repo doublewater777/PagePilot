@@ -4,6 +4,7 @@
 //  available in the top-level LICENSE file of the project.
 //
 
+import Combine
 import ReadiumNavigator
 import ReadiumShared
 import SwiftSoup
@@ -18,6 +19,9 @@ public extension FontFamily {
 
 class EPUBViewController: VisualReaderViewController<EPUBNavigatorViewController> {
     private let preferencesStore: AnyUserPreferencesStore<EPUBPreferences>
+    private var pendingNoteHighlightID: Highlight.Id?
+    private let selectionMenuPresenter = ReaderTextSelectionMenuPresenter()
+    private var colorPickerPopover: UIHostingController<HighlightContextMenu>?
 
     init(
         publication: Publication,
@@ -32,15 +36,13 @@ class EPUBViewController: VisualReaderViewController<EPUBNavigatorViewController
         let templates = HTMLDecorationTemplate.defaultTemplates()
 
         let resources = FileURL(url: Bundle.main.resourceURL!)!
+
         let navigator = try EPUBNavigatorViewController(
             publication: publication,
             initialLocation: locator,
             config: EPUBNavigatorViewController.Configuration(
                 preferences: initialPreferences,
-                editingActions: [EditingAction(
-                    title: NSLocalizedString("reader_highlight", comment: ""),
-                    action: #selector(highlightSelection)
-                )] + [EditingAction.copy, EditingAction.share, EditingAction.translate],
+                editingActions: ReaderEditingActions.epubConfiguration,
                 decorationTemplates: templates,
                 fontFamilyDeclarations: [
                     CSSFontFamilyDeclaration(
@@ -68,6 +70,11 @@ class EPUBViewController: VisualReaderViewController<EPUBNavigatorViewController
         navigator.delegate = self
     }
 
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        selectionMenuPresenter.attach(to: navigator.view, viewController: self)
+    }
+
     override func presentUserPreferences() {
         Task {
             do {
@@ -93,43 +100,125 @@ class EPUBViewController: VisualReaderViewController<EPUBNavigatorViewController
         }
     }
 
-    @objc func highlightSelection() {
+    func highlightSelection() {
         guard let selection = navigator.currentSelection else { return }
 
-        let alert = UIAlertController(
-            title: NSLocalizedString("reader_highlight_select_color", comment: ""),
-            message: nil,
-            preferredStyle: .actionSheet
+        colorPickerPopover?.dismiss(animated: false)
+
+        let menuView = HighlightContextMenu(
+            colors: [.red, .green, .blue, .yellow],
+            systemFontSize: 20,
+            showsDeleteButton: false
         )
+        menuView.selectedColorPublisher.sink { [weak self] color in
+            guard let self else { return }
+            let highlight = Highlight(bookId: self.bookId, locator: selection.locator, color: color)
+            self.saveHighlight(highlight)
+            self.navigator.clearSelection()
+            self.colorPickerPopover?.dismiss(animated: true)
+            self.colorPickerPopover = nil
+        }
+        .store(in: &subscriptions)
 
-        let colors: [(HighlightColor, String)] = [
-            (.yellow, NSLocalizedString("reader_highlight_color_yellow", comment: "")),
-            (.green, NSLocalizedString("reader_highlight_color_green", comment: "")),
-            (.blue, NSLocalizedString("reader_highlight_color_blue", comment: "")),
-            (.red, NSLocalizedString("reader_highlight_color_red", comment: "")),
-        ]
-
-        for (color, title) in colors {
-            let action = UIAlertAction(title: title, style: .default) { [weak self] _ in
-                guard let self = self else { return }
-                let highlight = Highlight(bookId: self.bookId, locator: selection.locator, color: color)
-                self.saveHighlight(highlight)
-                self.navigator.clearSelection()
-            }
-            alert.addAction(action)
+        let hosting = UIHostingController(rootView: menuView)
+        hosting.modalPresentationStyle = .popover
+        hosting.preferredContentSize = menuView.preferredSize
+        if #available(iOS 16.4, *) {
+            hosting.sizingOptions = [.intrinsicContentSize]
         }
 
-        alert.addAction(UIAlertAction(title: NSLocalizedString("cancel_button", comment: ""), style: .cancel) { [weak self] _ in
-            self?.navigator.clearSelection()
-        })
+        if let popover = hosting.popoverPresentationController {
+            popover.sourceView = view
+            popover.sourceRect = selection.frame ?? .zero
+            popover.permittedArrowDirections = .down
+            popover.delegate = self
+        }
 
-        if let presenter = alert.popoverPresentationController {
+        colorPickerPopover = hosting
+        present(hosting, animated: true)
+    }
+
+    func addNoteToSelection() {
+        guard let selection = navigator.currentSelection, let highlights = highlights else { return }
+
+        let quotedText = selection.locator.text.sanitized().highlight ?? ""
+        let highlight = Highlight(bookId: bookId, locator: selection.locator, color: .yellow)
+        Task {
+            do {
+                let highlightID = try await highlights.add(highlight)
+                navigator.clearSelection()
+                await MainActor.run {
+                    presentNoteEditor(for: highlightID, quotedText: quotedText)
+                }
+            } catch {
+                await MainActor.run {
+                    moduleDelegate?.presentError(UserError(error), from: self)
+                }
+            }
+        }
+    }
+
+    func copySelection() async {
+        guard let text = navigator.currentSelection?.locator.text.highlight else { return }
+        guard await publication.rights.copy(text: text) else {
+            moduleDelegate?.presentError(UserError(NavigatorError.copyForbidden), from: self)
+            return
+        }
+        UIPasteboard.general.string = text
+        navigator.clearSelection()
+    }
+
+    func shareCurrentSelection() {
+        guard let text = navigator.currentSelection?.locator.text.highlight else { return }
+        let activity = UIActivityViewController(activityItems: [text], applicationActivities: nil)
+        if let presenter = activity.popoverPresentationController {
             presenter.sourceView = view
             presenter.sourceRect = CGRect(x: view.bounds.midX, y: view.bounds.midY, width: 0, height: 0)
             presenter.permittedArrowDirections = []
         }
+        present(activity, animated: true)
+    }
 
-        present(alert, animated: true)
+    func performWebViewAction(_ selectors: [String]) {
+        guard let webView = findWebView(in: navigator.view) else { return }
+        for name in selectors {
+            let selector = NSSelectorFromString(name)
+            if webView.responds(to: selector) {
+                webView.perform(selector)
+                return
+            }
+        }
+    }
+
+    private func findWebView(in view: UIView) -> WKWebView? {
+        if let webView = view as? WKWebView {
+            return webView
+        }
+        for subview in view.subviews {
+            if let found = findWebView(in: subview) {
+                return found
+            }
+        }
+        return nil
+    }
+
+    private func presentNoteEditor(for highlightID: Highlight.Id, quotedText: String) {
+        pendingNoteHighlightID = highlightID
+        let editor = HighlightNoteEditor(
+            highlightID: highlightID,
+            quotedText: quotedText,
+            onSave: { [weak self] text in
+                self?.dismiss(animated: true)
+                guard let self = self else { return }
+                self.updateHighlightNote(highlightID, note: text.trimmingCharacters(in: .whitespacesAndNewlines))
+            },
+            onCancel: { [weak self] in
+                self?.dismiss(animated: true)
+            }
+        )
+        let hosting = UIHostingController(rootView: editor)
+        hosting.modalPresentationStyle = .formSheet
+        present(hosting, animated: true)
     }
 
     // MARK: - Footnotes
@@ -191,6 +280,11 @@ class EPUBViewController: VisualReaderViewController<EPUBNavigatorViewController
 extension EPUBViewController: EPUBNavigatorDelegate {
     func navigator(_ navigator: Navigator, shouldNavigateToNoteAt link: ReadiumShared.Link, content: String, referrer: String?) -> Bool {
         presentFootnote(content: content, referrer: referrer)
+    }
+
+    func navigator(_ navigator: SelectableNavigator, shouldShowMenuForSelection selection: Selection) -> Bool {
+        selectionMenuPresenter.present(selection: selection)
+        return false
     }
 }
 

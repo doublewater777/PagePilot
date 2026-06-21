@@ -57,6 +57,12 @@ final class Database {
             try db.create(index: "index_bookmark_progression", on: "bookmark", columns: ["bookId", "progression"], ifNotExists: true)
         }
 
+        migrator.registerMigration("addHighlightNote") { db in
+            try db.alter(table: "highlight") { t in
+                t.add(column: "note", .text)
+            }
+        }
+
         try migrator.migrate(writer)
     }
 

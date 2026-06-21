@@ -47,13 +47,16 @@ struct Highlight: Codable {
     var created: Date = .init()
     /// Total progression in the publication.
     var progression: Double?
+    /// Optional user note attached to this highlight.
+    var note: String?
 
     init(
         id: Id? = nil,
         bookId: Book.Id,
         locator: Locator,
         color: HighlightColor,
-        created: Date = Date()
+        created: Date = Date(),
+        note: String? = nil
     ) {
         self.id = id
         self.bookId = bookId
@@ -61,12 +64,13 @@ struct Highlight: Codable {
         progression = locator.locations.totalProgression
         self.color = color
         self.created = created
+        self.note = note
     }
 }
 
 extension Highlight: TableRecord, FetchableRecord, PersistableRecord {
     enum Columns: String, ColumnExpression {
-        case id, bookId, locator, color, created, progression
+        case id, bookId, locator, color, created, progression, note
     }
 }
 
@@ -109,6 +113,14 @@ final class HighlightRepository {
         try await db.write { db in
             let filtered = Highlight.filter(Highlight.Columns.id == id)
             let assignment = Highlight.Columns.color.set(to: color)
+            try filtered.updateAll(db, onConflict: nil, assignment)
+        }
+    }
+
+    func update(_ id: Highlight.Id, note: String?) async throws {
+        try await db.write { db in
+            let filtered = Highlight.filter(Highlight.Columns.id == id)
+            let assignment = Highlight.Columns.note.set(to: note)
             try filtered.updateAll(db, onConflict: nil, assignment)
         }
     }

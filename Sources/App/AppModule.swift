@@ -32,9 +32,6 @@ final class AppModule {
     /// Pending locator to navigate to when opening a book (from MyNotes, etc.)
     var pendingNavigationTarget: (bookId: Book.Id, locator: Locator)?
 
-    /// Set when opening a reader from MyNotes; the reader will switch back to the Settings tab on back.
-    var didNavigateFromNotes: Bool = false
-
     weak var tabBarController: UITabBarController?
 
     let readium: Readium

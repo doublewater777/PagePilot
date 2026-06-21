@@ -114,7 +114,6 @@ struct MyNotesView: View {
         guard let app = AppModule.shared, let bookId = note.book.id else { return }
 
         app.pendingNavigationTarget = (bookId, note.item.locator)
-        app.didNavigateFromNotes = true
 
         let tabBar = app.tabBarController
         let nav = app.library.rootViewController
@@ -345,6 +344,21 @@ private struct TimelineRow: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(highlightColor.opacity(0.08))
                 .cornerRadius(12)
+
+            if let note = hl.note, !note.isEmpty {
+                HStack(spacing: 6) {
+                    Image(systemName: "note.text")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.tertiary)
+                    Text(note)
+                        .font(.system(size: 13))
+                        .foregroundStyle(.secondary)
+                        .lineSpacing(2)
+                        .lineLimit(4)
+                }
+                .padding(.top, 10)
+                .padding(.horizontal, 4)
+            }
 
             if let title = hl.locator.title, !title.isEmpty {
                 Text(title)
