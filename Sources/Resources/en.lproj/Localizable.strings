@@ -737,6 +737,9 @@
 "my_notes_filter_month" = "Month";
 "my_notes_filtered_empty" = "No notes in this period.";
 "my_notes_empty" = "No notes yet. Add bookmarks and highlights while reading.";
+"my_notes_delete_confirm_title" = "Delete this note?";
+"my_notes_delete_error_title" = "Couldn't Delete";
+"my_notes_delete_error_message" = "Couldn't delete the note. Please try again.";
 "delete_button" = "Delete";
 
 /* Page Turn Settings */

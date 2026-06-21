@@ -737,6 +737,9 @@
 "my_notes_filter_month" = "本月";
 "my_notes_filtered_empty" = "该时间段内没有笔记。";
 "my_notes_empty" = "还没有笔记。在阅读中添加书签和高亮吧。";
+"my_notes_delete_confirm_title" = "删除这条笔记？";
+"my_notes_delete_error_title" = "删除失败";
+"my_notes_delete_error_message" = "删除失败，请重试。";
 "delete_button" = "删除";
 
 /* Page Turn Settings */

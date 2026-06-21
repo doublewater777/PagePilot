@@ -75,9 +75,17 @@ final class ReaderModule: ReaderModuleAPI {
 
             StartupProfiler.shared.record("ReaderModule: making reader view controller")
             do {
+                let initialLocator: Locator? = {
+                    if let target = AppModule.shared?.pendingNavigationTarget,
+                       target.bookId == bookId {
+                        return target.locator
+                    }
+                    return book.locator
+                }()
+
                 let readerViewController = try await module.makeReaderViewController(
                     for: publication,
-                    locator: book.locator,
+                    locator: initialLocator,
                     bookId: bookId,
                     books: books,
                     bookmarks: bookmarks,

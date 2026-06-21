@@ -9,6 +9,9 @@ struct MyNotesView: View {
     @State private var notes: [TimelineNote] = []
     @State private var isLoading = true
     @State private var filter: TimelineFilter = .all
+    @State private var notePendingDeletion: TimelineNote?
+    @State private var showDeleteConfirmation = false
+    @State private var deleteErrorMessage: String?
 
     private let bookmarkRepo: BookmarkRepository
     private let highlightRepo: HighlightRepository
@@ -30,23 +33,28 @@ struct MyNotesView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if filteredNotes.isEmpty {
                 emptyState
+                    .padding(.bottom, notesBottomClearance)
             } else {
-                ScrollView(.vertical, showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: 0) {
-                        header
-                        filterBar
-                        notesList
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.top, 12)
-                    .padding(.bottom, 40)
-                }
+                notesList
             }
         }
         .background(AppColors.background)
         .navigationTitle(NSLocalizedString("my_notes_title", comment: ""))
         .navigationBarTitleDisplayMode(.inline)
         .task { await loadNotes() }
+        .alert(
+            NSLocalizedString("my_notes_delete_error_title", comment: ""),
+            isPresented: Binding(
+                get: { deleteErrorMessage != nil },
+                set: { if !$0 { deleteErrorMessage = nil } }
+            )
+        ) {
+            Button(NSLocalizedString("ok_button", comment: ""), role: .cancel) {
+                deleteErrorMessage = nil
+            }
+        } message: {
+            Text(deleteErrorMessage ?? "")
+        }
     }
 
     private var filteredNotes: [TimelineNote] {
@@ -60,53 +68,120 @@ struct MyNotesView: View {
         }
     }
 
-    private var header: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(NSLocalizedString("my_notes_title", comment: ""))
-                .font(.system(size: 28, weight: .bold))
-                .foregroundStyle(AppColors.primaryText)
-            Text(NSLocalizedString("my_notes_subtitle", comment: ""))
-                .font(.system(size: 14))
-                .foregroundStyle(AppColors.secondaryText)
-        }
-        .padding(.bottom, 18)
-    }
+    private var notesHeaderSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(NSLocalizedString("my_notes_title", comment: ""))
+                    .font(.system(size: 28, weight: .bold))
+                    .foregroundStyle(AppColors.primaryText)
+                Text(NSLocalizedString("my_notes_subtitle", comment: ""))
+                    .font(.system(size: 14))
+                    .foregroundStyle(AppColors.secondaryText)
+            }
 
-    private var filterBar: some View {
-        HStack(spacing: 8) {
-            ForEach(TimelineFilter.allCases) { f in
-                Button {
-                    withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                        filter = f
-                    }
-                } label: {
-                    Text(f.label)
-                        .font(.system(size: 13, weight: filter == f ? .semibold : .medium))
-                        .foregroundStyle(filter == f ? Color.white : AppColors.secondaryText)
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 6)
-                        .background {
-                            if filter == f {
-                                AppColors.horizontalGradient
-                            } else {
-                                AppColors.cardBackground
-                            }
+            HStack(spacing: 8) {
+                ForEach(TimelineFilter.allCases) { f in
+                    Button {
+                        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                            filter = f
                         }
-                        .cornerRadius(999)
+                    } label: {
+                        Text(f.label)
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundStyle(filter == f ? Color.white : AppColors.primaryText)
+                            .padding(.horizontal, 14)
+                            .frame(height: 36)
+                            .background {
+                                if filter == f {
+                                    AppColors.horizontalGradient
+                                } else {
+                                    AppColors.cardBackground
+                                }
+                            }
+                            .clipShape(Capsule())
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
             }
         }
-        .padding(.bottom, 24)
     }
 
     private var notesList: some View {
-        LazyVStack(spacing: 16) {
-            ForEach(filteredNotes) { note in
-                TimelineRow(note: note)
-                    .contentShape(Rectangle())
-                    .onTapGesture { openReader(for: note) }
+        List {
+            Section {
+                notesHeaderSection
+                    .listRowInsets(notesHeaderRowInsets)
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
             }
+
+            Section {
+                ForEach(filteredNotes) { note in
+                    TimelineRow(note: note)
+                        .contentShape(Rectangle())
+                        .onTapGesture { openReader(for: note) }
+                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                            Button {
+                                notePendingDeletion = note
+                                showDeleteConfirmation = true
+                            } label: {
+                                Text(NSLocalizedString("delete_button", comment: ""))
+                            }
+                            .tint(.red)
+                        }
+                        .listRowInsets(noteListRowInsets)
+                        .listRowSeparator(.hidden)
+                        .listRowBackground(Color.clear)
+                }
+            }
+        }
+        .listStyle(.plain)
+        .scrollContentBackground(.hidden)
+        .contentMargins(.bottom, notesBottomClearance, for: .scrollContent)
+        .padding(.top, 8)
+        .alert(
+            NSLocalizedString("my_notes_delete_confirm_title", comment: ""),
+            isPresented: $showDeleteConfirmation
+        ) {
+            Button(NSLocalizedString("delete_button", comment: ""), role: .destructive) {
+                guard let note = notePendingDeletion else { return }
+                notePendingDeletion = nil
+                Task { await deleteNote(note) }
+            }
+            Button(NSLocalizedString("cancel_button", comment: ""), role: .cancel) {
+                notePendingDeletion = nil
+            }
+        }
+    }
+
+    private var notesHeaderRowInsets: EdgeInsets {
+        EdgeInsets(top: 4, leading: 20, bottom: 12, trailing: 20)
+    }
+
+    private var noteListRowInsets: EdgeInsets {
+        EdgeInsets(top: 8, leading: 20, bottom: 8, trailing: 20)
+    }
+
+    private var notesBottomClearance: CGFloat {
+        UIDevice.current.userInterfaceIdiom == .pad ? 24 : 96
+    }
+
+    private func deleteNote(_ note: TimelineNote) async {
+        do {
+            switch note.item {
+            case .bookmark(let bookmark):
+                guard let id = bookmark.id else { return }
+                try await bookmarkRepo.remove(id)
+            case .highlight(let highlight):
+                guard let id = highlight.id else { return }
+                try await highlightRepo.remove(id)
+            }
+
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                notes.removeAll { $0.id == note.id }
+            }
+        } catch {
+            deleteErrorMessage = NSLocalizedString("my_notes_delete_error_message", comment: "")
         }
     }
 

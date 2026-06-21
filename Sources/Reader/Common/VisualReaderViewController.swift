@@ -182,15 +182,25 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
             WatchPageTurnService.shared.registerNavigator(visualNavigator, publication: publication)
         }
 
-        // Navigate to locator from external trigger (e.g. MyNotes)
+        // Refine position from external trigger (e.g. MyNotes) once the navigator is ready.
         if let visualNavigator = navigator as? VisualNavigator,
            let target = AppModule.shared?.pendingNavigationTarget,
            target.bookId == bookId {
+            let locator = target.locator
             AppModule.shared?.pendingNavigationTarget = nil
             Task {
-                try? await Task.sleep(nanoseconds: 300_000_000)
-                await visualNavigator.go(to: target.locator, options: NavigatorGoOptions(animated: false))
+                await navigateToLocator(locator, on: visualNavigator)
             }
+        }
+    }
+
+    /// Retries navigation until the navigator accepts the locator or times out.
+    private func navigateToLocator(_ locator: Locator, on navigator: VisualNavigator) async {
+        for _ in 0 ..< 30 {
+            if await navigator.go(to: locator, options: NavigatorGoOptions(animated: false)) {
+                return
+            }
+            try? await Task.sleep(nanoseconds: 100_000_000)
         }
     }
 
