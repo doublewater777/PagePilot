@@ -37,11 +37,10 @@ class EPUBViewController: VisualReaderViewController<EPUBNavigatorViewController
             initialLocation: locator,
             config: EPUBNavigatorViewController.Configuration(
                 preferences: initialPreferences,
-                editingActions: EditingAction.defaultActions
-                    .appending(EditingAction(
-                        title: NSLocalizedString("reader_highlight", comment: ""),
-                        action: #selector(highlightSelection)
-                    )),
+                editingActions: [EditingAction(
+                    title: NSLocalizedString("reader_highlight", comment: ""),
+                    action: #selector(highlightSelection)
+                )] + EditingAction.defaultActions,
                 decorationTemplates: templates,
                 fontFamilyDeclarations: [
                     CSSFontFamilyDeclaration(
