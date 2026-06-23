@@ -154,6 +154,10 @@ final class TTSViewModel: ObservableObject, Loggable {
     }
 
     @objc func start() {
+        let session = AVAudioSession.sharedInstance()
+        try? session.setCategory(.playback, mode: .spokenAudio)
+        try? session.setActive(true)
+
         if let navigator = navigator as? VisualNavigator {
             Task {
                 // Gets the locator of the element at the top of the page.

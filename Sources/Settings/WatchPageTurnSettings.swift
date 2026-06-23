@@ -12,9 +12,9 @@ import WatchConnectivity
 struct WatchPageTurnSettings {
     // MARK: Keys
     private enum Keys {
-        static let hapticFeedback = "watch_haptic_feedback"
         static let controlTarget = "watch_control_target"
         static let defaultTargetMigration = "watch_default_target_iphone_migrated"
+        static let doubleTapPageTurn = "watch_double_tap_page_turn"
     }
 
     // MARK: Enums
@@ -40,11 +40,6 @@ struct WatchPageTurnSettings {
 
     // MARK: Storage
 
-    var hapticFeedback: Bool {
-        get { UserDefaults.standard.object(forKey: Keys.hapticFeedback) as? Bool ?? true }
-        set { UserDefaults.standard.set(newValue, forKey: Keys.hapticFeedback) }
-    }
-
     var controlTarget: ControlTarget {
         get {
             if let rawVal = UserDefaults.standard.string(forKey: Keys.controlTarget),
@@ -56,14 +51,20 @@ struct WatchPageTurnSettings {
         set { UserDefaults.standard.set(newValue.rawValue, forKey: Keys.controlTarget) }
     }
 
+    // ponytail: global setting, per-device if needed
+    var doubleTapPageTurn: Bool {
+        get { UserDefaults.standard.object(forKey: Keys.doubleTapPageTurn) as? Bool ?? true }
+        set { UserDefaults.standard.set(newValue, forKey: Keys.doubleTapPageTurn) }
+    }
+
     /// Fixed crown sensitivity threshold (no longer configurable).
     var crownSensitivity: Double { 2.0 }
 
     /// Returns a dictionary suitable for WCSession.updateApplicationContext
     var watchContext: [String: Any] {
         [
-            Keys.hapticFeedback: hapticFeedback,
-            Keys.controlTarget: controlTarget.rawValue
+            Keys.controlTarget: controlTarget.rawValue,
+            Keys.doubleTapPageTurn: doubleTapPageTurn,
         ]
     }
 

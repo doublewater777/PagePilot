@@ -9,15 +9,15 @@ import SwiftUI
 // MARK: - Watch Settings View
 
 struct WatchSettingsView: View {
-    @State private var hapticFeedback: Bool
     @State private var controlTarget: WatchPageTurnSettings.ControlTarget
+    @State private var doubleTapPageTurn: Bool
     @State private var hasProAccess = ProPurchaseManager.shared.hasProAccess
     @State private var showsPaywall = false
 
     init() {
         let settings = WatchPageTurnSettings()
-        _hapticFeedback = State(initialValue: settings.hapticFeedback)
         _controlTarget = State(initialValue: settings.controlTarget)
+        _doubleTapPageTurn = State(initialValue: settings.doubleTapPageTurn)
     }
 
     var body: some View {
@@ -29,7 +29,7 @@ struct WatchSettingsView: View {
             List {
                 targetSection
                 guidanceSection
-                hapticSection
+                doubleTapSection
             }
             .listStyle(.insetGrouped)
             .frame(maxWidth: UIDevice.current.userInterfaceIdiom == .pad ? 600 : .infinity)
@@ -128,25 +128,25 @@ struct WatchSettingsView: View {
         }
     }
 
-    // MARK: - Haptic Feedback
+    // MARK: - Double Tap
 
-    private var hapticSection: some View {
+    private var doubleTapSection: some View {
         Section(
-            header: Text(NSLocalizedString("watch_haptic_section", comment: "")),
-            footer: Text(NSLocalizedString("watch_haptic_footer", comment: ""))
+            header: Text(NSLocalizedString("watch_double_tap_section", comment: "")),
+            footer: Text(NSLocalizedString("watch_double_tap_footer", comment: ""))
         ) {
             Toggle(isOn: Binding(
-                get: { hapticFeedback },
+                get: { doubleTapPageTurn },
                 set: { newValue in
-                    hapticFeedback = newValue
+                    doubleTapPageTurn = newValue
                     var settings = WatchPageTurnSettings()
-                    settings.hapticFeedback = newValue
+                    settings.doubleTapPageTurn = newValue
                     settings.syncToWatch()
                 }
             )) {
                 Label(
-                    NSLocalizedString("watch_haptic_toggle", comment: ""),
-                    systemImage: "hand.tap"
+                    NSLocalizedString("watch_double_tap_toggle", comment: ""),
+                    systemImage: "hand.point.up.braille"
                 )
             }
         }

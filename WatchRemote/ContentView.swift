@@ -99,6 +99,7 @@ struct ContentView: View {
                         .frame(width: 45, height: 35)
                 }
                 .buttonStyle(.bordered)
+                .handGestureShortcutIfEnabled(connectivityManager.doubleTapPageTurn)
             }
 
             Spacer()
@@ -136,6 +137,17 @@ struct ContentView: View {
             connectivityManager.sendCommand(direction)
             lastSentValue = value
             lastPageTurnTime = now
+        }
+    }
+}
+
+extension View {
+    @ViewBuilder
+    func handGestureShortcutIfEnabled(_ enabled: Bool) -> some View {
+        if #available(watchOS 11, *) {
+            self.handGestureShortcut(.primaryAction, isEnabled: enabled)
+        } else {
+            self
         }
     }
 }

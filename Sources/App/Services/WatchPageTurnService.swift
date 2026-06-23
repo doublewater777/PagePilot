@@ -220,14 +220,12 @@ final class WatchPageTurnService: NSObject, ObservableObject {
     @Published var currentBookProgress: Double = 0.0
 
     private var session: WCSession?
-    private let hapticGenerator = UIImpactFeedbackGenerator(style: .light)
     private var lanServer: ReadiumGCDWebServer?
     private var lanResetTimer: Timer?
     private let preferredLANPort: UInt = 61482
 
     private override init() {
         super.init()
-        hapticGenerator.prepare()
     }
 
     func activate() {
@@ -310,8 +308,6 @@ final class WatchPageTurnService: NSObject, ObservableObject {
             return
         }
 
-        let settings = WatchPageTurnSettings()
-
         Task { @MainActor in
             let succeeded: Bool
             switch command {
@@ -319,10 +315,6 @@ final class WatchPageTurnService: NSObject, ObservableObject {
                 succeeded = await navigator.goForward(options: NavigatorGoOptions(animated: false))
             case .prev:
                 succeeded = await navigator.goBackward(options: NavigatorGoOptions(animated: false))
-            }
-
-            if succeeded, settings.hapticFeedback {
-                hapticGenerator.impactOccurred()
             }
 
             if succeeded {

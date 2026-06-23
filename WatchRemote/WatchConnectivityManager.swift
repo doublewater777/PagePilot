@@ -17,6 +17,7 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
     @Published var bookProgress: Double = 0.0
     @Published var readerReady = false
     @Published var hasReceivedStatus = false
+    @Published var doubleTapPageTurn = true
 
     /// Last error message (visible on the watch UI for in-the-field debugging).
     @Published var lastError: String = ""
@@ -27,7 +28,7 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
     private let defaultTargetMigrationKey = "watch_default_target_iphone_migrated"
     private let relayGraceInterval: TimeInterval = 8.0
     private var statusPollTimer: Timer?
-    private lazy var commandQueue = ThrottledCommandQueue(interval: 0.2, queue: .main) { [weak self] command, completion in
+    private lazy var commandQueue = ThrottledCommandQueue(interval: 0.1, queue: .main) { [weak self] command, completion in
         self?.performSend(command, completion: completion)
     }
 
@@ -45,6 +46,9 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
         if let rawTarget = UserDefaults.standard.string(forKey: "watch_control_target"),
            let target = ControlTarget(rawValue: rawTarget) {
             self.controlTarget = target
+        }
+        if let dt = UserDefaults.standard.object(forKey: "watch_double_tap_page_turn") as? Bool {
+            self.doubleTapPageTurn = dt
         }
         super.init()
         activateSession()
@@ -81,6 +85,10 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
         if let sensitivity = context["watch_crown_sensitivity"] as? Double {
             self.crownSensitivity = sensitivity
             UserDefaults.standard.set(sensitivity, forKey: "watch_crown_sensitivity")
+        }
+        if let doubleTap = context["watch_double_tap_page_turn"] as? Bool {
+            self.doubleTapPageTurn = doubleTap
+            UserDefaults.standard.set(doubleTap, forKey: "watch_double_tap_page_turn")
         }
         if controlTarget == .iPhone {
             if let title = context["currentBookTitle"] as? String {
@@ -122,15 +130,20 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
             message,
             replyHandler: { [weak self] reply in
                 self?.handleWatchConnectivityReply(reply)
-                completion()
+                // Reply is processed for status/UI updates, but we do not gate
+                // the local command queue on the remote roundtrip.
             },
             errorHandler: { [weak self] _ in
                 DispatchQueue.main.async {
                     self?.lastError = self?.localized("watch.error.sendFailed") ?? ""
                 }
-                completion()
             }
         )
+
+        // Immediately unblock the queue. This makes successive triggers
+        // (double tap, buttons, crown) feel much snappier — the throttle
+        // interval now gates from dispatch time, not full reader RTT + processing.
+        completion()
     }
 
     private func startPolling() {

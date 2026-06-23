@@ -52,6 +52,10 @@ _Avoid_: Watch remote, remote control
 An optional mode that maps iPhone hardware volume buttons to page-forward and page-backward actions during reading. Implemented via a hidden `MPVolumeView` + KVO on `outputVolume` with immediate reset. Runtime interception is gated by a decision chain: CarPlay → external audio playing → reader declares intent via `VolumeKeyBehaviorProvider` protocol → user preference for TTS mode. The active provider is registered in `viewWillAppear` and unregistered in `viewDidDisappear` of `VisualReaderViewController`; a `isKeyWindow` guard prevents interception when the reader is not the frontmost window.
 _Avoid_: Volume button page turn, hardware key turn, remote volume page control
 
+**Double Tap Page Turn**:
+An optional mode that uses the Apple Watch system Double Tap gesture (index finger and thumb tap twice) on watchOS 11+ (Apple Watch Series 9 / Ultra 2 or later) to trigger a next-page command, equivalent to pressing the → button on the Watch remote screen. Implemented via `handGestureShortcut(.primaryAction, isEnabled: ...)` on the next-page button in `ContentView`. The modifier is always attached on watchOS 11+; the `isEnabled` flag (bound to the synced `doubleTapPageTurn` setting) controls whether Double Tap maps to the next-page action. This ensures stable registration across UI updates (e.g. progress refreshes from the reader). The Double Tap setting lives on the iPhone side in `WatchPageTurnSettings`, defaulting to on, and is synced to the Watch via `WCSession.updateApplicationContext`. Disabling it restores the system default Double Tap behavior (triggers the app's primary button, if any).
+_Avoid_: Double tap, two-finger tap, double-click, DoubleTap
+
 **Pro Access**:
 The paid entitlement that unlocks limits such as the free bookshelf book count and deeper historical reading review.
 _Avoid_: Subscription, premium mode, purchase state

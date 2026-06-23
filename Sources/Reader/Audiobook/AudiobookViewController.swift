@@ -64,6 +64,9 @@ class AudiobookViewController: ReaderViewController<AudioNavigator>, AudioNaviga
         readerController.view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         readerController.didMove(toParent: self)
 
+        let session = AVAudioSession.sharedInstance()
+        try? session.setCategory(.playback, mode: .spokenAudio)
+        try? session.setActive(true)
         navigator.play()
         setupNowPlaying()
         setupCommandCenterControls()

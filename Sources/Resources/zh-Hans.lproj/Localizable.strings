@@ -663,6 +663,9 @@
 "watch_haptic_section" = "触觉反馈";
 "watch_haptic_footer" = "通过手表翻页时振动提示。";
 "watch_haptic_toggle" = "翻页时振动";
+"watch_double_tap_section" = "双指互点";
+"watch_double_tap_footer" = "拇指和食指互点两下，触发翻到下一页。适用于 Apple Watch Series 9 及更新机型。";
+"watch_double_tap_toggle" = "双指互点翻页";
 
 "watch_guidance_header" = "使用步骤";
 "watch_guidance_ipad_step1" = "iPhone 与 iPad 连接同一 Wi-Fi";

@@ -663,6 +663,9 @@
 "watch_haptic_section" = "Haptic Feedback";
 "watch_haptic_footer" = "Vibrate when a page is turned from the Watch.";
 "watch_haptic_toggle" = "Haptic on Page Turn";
+"watch_double_tap_section" = "Double Tap";
+"watch_double_tap_footer" = "Double Tap your index finger and thumb together to turn the next page. Available on Apple Watch Series 9 and later.";
+"watch_double_tap_toggle" = "Double Tap Page Turn";
 
 "watch_guidance_header" = "Steps";
 "watch_guidance_ipad_step1" = "Connect iPhone and iPad to the same Wi-Fi";

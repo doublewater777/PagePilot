@@ -76,6 +76,7 @@ final class VolumeKeyService: NSObject {
         }
 
         let session = AVAudioSession.sharedInstance()
+        try? session.setCategory(.playback, mode: .spokenAudio, options: .mixWithOthers)
         try? session.setActive(true)
         session.addObserver(self, forKeyPath: #keyPath(AVAudioSession.outputVolume), options: .new, context: nil)
         isObserving = true
@@ -84,7 +85,9 @@ final class VolumeKeyService: NSObject {
 
     private func teardown() {
         guard isObserving else { return }
-        AVAudioSession.sharedInstance().removeObserver(self, forKeyPath: #keyPath(AVAudioSession.outputVolume))
+        let session = AVAudioSession.sharedInstance()
+        session.removeObserver(self, forKeyPath: #keyPath(AVAudioSession.outputVolume))
+        try? session.setActive(false)
         volumeView?.removeFromSuperview()
         volumeView = nil
         volumeSlider = nil
