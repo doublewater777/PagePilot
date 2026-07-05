@@ -2,6 +2,18 @@
 
 Use this file as the minimum PagePilot convention for when to apply the installed engineering skills.
 
+## Commits
+
+Use `docs/agents/commit-convention.md` for commit message format and version rules.
+
+Every commit subject must start with `<version>:` where the version matches `VERSION` at the repo root. Install enforcement with `./scripts/setup-hooks.sh`.
+
+## App Store submission
+
+When the user says **提审**, **submit for review**, **发版**, or **准备上架**, follow `docs/agents/submission-flow.md`.
+
+Default steps: read `SHIPPED_VERSION`, run `./scripts/prepare-submission.sh` (target = shipped + 1 patch; resubmit if same version already prepared), update What's New, run `./scripts/commit-release.sh` (add `--resubmit` when re-submitting), then build/upload/stage/submit with `asc`. After going live, run `./scripts/mark-shipped.sh`.
+
 ## TDD
 
 Use `tdd` for behavior that can be verified through a public interface, especially Library import/removal behavior, Reader state behavior, Reading Progress persistence, Watch Page Turn handling, and Pro Access limits.
