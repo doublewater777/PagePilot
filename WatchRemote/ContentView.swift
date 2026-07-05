@@ -46,6 +46,24 @@ struct ContentView: View {
     }
 
     var body: some View {
+        ZStack {
+            content
+
+            doubleTapShortcutButton
+        }
+        .focusable()
+        #if os(watchOS)
+        .digitalCrownRotation($crownValue)
+        #endif
+        .onAppear {
+            connectivityManager.refreshConnectionStatus()
+        }
+        .onChange(of: crownValue) { newValue in
+            handleCrownRotation(newValue)
+        }
+    }
+
+    private var content: some View {
         VStack(spacing: 8) {
             if !connectivityManager.lastError.isEmpty {
                 Text(connectivityManager.lastError)
@@ -99,7 +117,6 @@ struct ContentView: View {
                         .frame(width: 45, height: 35)
                 }
                 .buttonStyle(.bordered)
-                .handGestureShortcutIfEnabled(connectivityManager.doubleTapPageTurn)
             }
 
             Spacer()
@@ -110,16 +127,19 @@ struct ContentView: View {
                 .foregroundColor(.secondary)
         }
         .padding(.horizontal, 5)
-        .focusable()
-        #if os(watchOS)
-        .digitalCrownRotation($crownValue)
-        #endif
-        .onAppear {
-            connectivityManager.refreshConnectionStatus()
+    }
+
+    private var doubleTapShortcutButton: some View {
+        Button {
+            connectivityManager.sendCommand(.next)
+        } label: {
+            Color.clear
+                .frame(width: 1, height: 1)
         }
-        .onChange(of: crownValue) { newValue in
-            handleCrownRotation(newValue)
-        }
+        .buttonStyle(.plain)
+        .opacity(0.01)
+        .accessibilityHidden(true)
+        .handGestureShortcutIfEnabled(connectivityManager.doubleTapPageTurn)
     }
 
     private func handleCrownRotation(_ value: Double) {
