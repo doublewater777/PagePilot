@@ -1,0 +1,8 @@
+{
+  "description": "PagePilot 是一款专为 iPhone 打造的书籍阅读器，让你用 Apple Watch 轻松翻页，彻底解放双手。\n\n【核心功能】\n\n▸ Apple Watch 翻页控制\n在 iPhone 或 iPad 上阅读，用手腕轻轻一转或按下表冠，即可翻到下一页。无需触碰屏幕，躺着看书、吃饭读书、运动休息间隙翻页，都能一手搞定。\n\n▸ 多格式支持\n支持 EPUB、PDF、有声书（Audiobook）、CBZ 漫画等主流格式，一个 App 搞定你的全部书库。\n\n▸ WiFi 传书\n在电脑浏览器中打开一个地址，直接把文件拖进去，书就出现在手机书架上。不需要数据线，不需要 iCloud。\n\n▸ 设备间传书\niPhone 和 iPad 在同一 Wi-Fi 下，可以直接把书籍发送到另一台设备，无需电脑中转。\n\n▸ 阅读统计\n记录每天、每周的阅读时长，追踪阅读进度，查看连续阅读天数。让坚持阅读有了可见的成就感。\n\n▸ 书架管理\n支持网格/列表两种视图，按最近导入、最近阅读、书名、作者排序，多选批量删除。\n\n▸ 文字转语音 (TTS)\n支持系统全语言朗读，可调节语速和音调，边做家务边听书。\n\n▸ 阅读目标\n设定每日阅读目标分钟数，首页实时显示今日进度。\n\n【为什么选 PagePilot？】\n\nPagePilot 的诞生只有一个原因：用手指戳屏幕翻页，这件事不应该成为阅读的负担。无论是单手拿着手机站在地铁上、躺在床上懒得动手、还是在跑步机上跑步，Watch 翻页让阅读更自然。\n\nPagePilot Pro 解锁无限书架（免费版最多 10 本）、周/月/年阅读统计、连续阅读天数追踪，以及在 iPad 上用 Apple Watch 翻页的能力。\n\nPagePilot 永远免费提供：Watch 基础翻页、WiFi 传书、设备间传书，因为这些是获得 PagePilot 价值的前提，不应该有门槛。\n\n使用条款：https://pagepilot.doublewaterapps.com/terms.html",
+  "keywords": "电子书,epub阅读器,apple watch,翻页,pdf阅读,有声书,书架,阅读统计,wifi传书,手表翻页",
+  "marketingUrl": "https://pagepilot.doublewaterapps.com/",
+  "promotionalText": "用 Apple Watch 表冠翻页，躺着看书再也不用伸手戳屏幕",
+  "supportUrl": "https://pagepilot.doublewaterapps.com/",
+  "whatsNew": "现在可以给高亮添加笔记了——轻点任意高亮段落即可写下批注。文本选区菜单重新设计：高亮移至首位，移除查找按钮让界面更干净，选中文字后高亮不再消失。\n\n音量键翻页设置移至专属页面，且默认为关闭，避免误触。"
+}
