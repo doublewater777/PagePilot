@@ -43,6 +43,12 @@ struct WatchSettingsView: View {
                 UIImpactFeedbackGenerator(style: .medium).impactOccurred()
             }
         }
+        .onAppear {
+            if controlTarget == .iPad {
+                WatchPageTurnService.shared.prepareIPadRelay()
+                WatchPageTurnService.shared.probeIPadRelayNow()
+            }
+        }
         .onReceive(NotificationCenter.default.publisher(for: ProPurchaseManager.proAccessDidChange)) { _ in
             hasProAccess = ProPurchaseManager.shared.hasProAccess
         }
@@ -86,6 +92,8 @@ struct WatchSettingsView: View {
                         settings.syncToWatch()
                         if newValue == .iPad {
                             WatchPageTurnService.shared.prepareIPadRelay()
+                            // Kick an immediate status probe so an open iPad diagnostics page can pass “iPhone test”.
+                            WatchPageTurnService.shared.probeIPadRelayNow()
                         }
                     }
                 )

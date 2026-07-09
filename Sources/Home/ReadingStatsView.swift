@@ -18,7 +18,6 @@ struct ReadingStatsView: View {
     @State private var statsRefreshID = UUID()
     @State private var streakScale: CGFloat = 1.0
     @State private var booksMap: [String: Book] = [:]
-    @State private var isLoadingBooks = true
     @State private var selectedChartDate: Date? = nil
     @State private var expandedWeeks: Set<Int> = [4]
 
@@ -37,20 +36,9 @@ struct ReadingStatsView: View {
                 periodNavigator
 
                 if canAccessSelectedScope {
-                    if isLoadingBooks {
-                        VStack {
-                            Spacer()
-                            ProgressView()
-                                .tint(AppColors.accentBlue)
-                                .scaleEffect(1.2)
-                            Spacer()
-                        }
-                        .frame(height: 320)
-                        .frame(maxWidth: .infinity)
-                    } else {
-                        statsDashboard(statsStore.snapshot(for: selectedStatsScope, referenceDate: currentReferenceDate))
-                            .id(statsRefreshID)
-                    }
+                    // Show dashboard immediately — avoid loading spinner swap that feels like a flashy enter animation.
+                    statsDashboard(statsStore.snapshot(for: selectedStatsScope, referenceDate: currentReferenceDate))
+                        .id(statsRefreshID)
                 } else {
                     lockedStatsView
                 }
@@ -87,16 +75,15 @@ struct ReadingStatsView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: .readingStatsDidChange)) { _ in
             statsRefreshID = UUID()
-            updateStreakAnimation()
         }
         .onReceive(NotificationCenter.default.publisher(for: ProPurchaseManager.proAccessDidChange)) { _ in
             statsRefreshID = UUID()
         }
         .onAppear {
             loadBooksData()
-            updateStreakAnimation()
         }
         .onChange(of: selectedStatsScope) { _, _ in
+            // Scope changes can show a subtle streak pulse; skip on first appear.
             updateStreakAnimation()
         }
         .onChange(of: currentReferenceDate) { _, _ in
@@ -1723,7 +1710,6 @@ struct ReadingStatsView: View {
 
     private func loadBooksData() {
         guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else {
-            isLoadingBooks = false
             return
         }
         Task {
@@ -1738,14 +1724,14 @@ struct ReadingStatsView: View {
                             map[id.string] = book
                         }
                     }
-                    self.booksMap = map
-                    self.isLoadingBooks = false
+                    var transaction = Transaction()
+                    transaction.disablesAnimations = true
+                    withTransaction(transaction) {
+                        self.booksMap = map
+                    }
                 }
             } catch {
                 print("Failed to load books for stats: \(error)")
-                await MainActor.run {
-                    self.isLoadingBooks = false
-                }
             }
         }
     }

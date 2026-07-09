@@ -239,6 +239,8 @@ final class WatchPageTurnService: NSObject, ObservableObject {
     @Published private(set) var lanBonjourName: String = ""
     @Published private(set) var lastLANClientAddress: String = ""
     @Published private(set) var lastLANHitAt: Date?
+    /// Last non-loopback client hit (real iPhone / LAN peer, not self-test).
+    @Published private(set) var lastRemoteLANHitAt: Date?
 
     /// Weak reference to the currently active VisualNavigator
     weak var activeNavigator: VisualNavigator?
@@ -278,6 +280,44 @@ final class WatchPageTurnService: NSObject, ObservableObject {
     func prepareIPadRelay() {
         guard UIDevice.current.userInterfaceIdiom == .phone else { return }
         PagePilotLANBrowser.shared.warmUp()
+    }
+
+    /// Actively hit the local LAN status endpoint (self-test). Returns whether the server answered.
+    @MainActor
+    func runLocalStatusProbe() async -> Bool {
+        if UIDevice.current.userInterfaceIdiom == .pad {
+            startLANServer()
+        }
+        guard lanServerRunning, lanServerPort > 0 else { return false }
+
+        guard let url = URL(string: "http://127.0.0.1:\(lanServerPort)/status") else {
+            return false
+        }
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.timeoutInterval = 2.0
+
+        do {
+            let (_, response) = try await URLSession.shared.data(for: request)
+            guard let http = response as? HTTPURLResponse else { return false }
+            return (200..<300).contains(http.statusCode)
+        } catch {
+            print("WatchPageTurnService: local status probe failed: \(error)")
+            return false
+        }
+    }
+
+    /// iPhone: actively try to reach an iPad page-turn server once (for diagnostics).
+    func probeIPadRelayNow(completion: ((Bool) -> Void)? = nil) {
+        guard UIDevice.current.userInterfaceIdiom == .phone else {
+            completion?(false)
+            return
+        }
+        PagePilotLANBrowser.shared.warmUp()
+        relayRequestToLAN(path: "status", method: "GET", body: nil) { payload in
+            let ok = (payload["ok"] as? Bool) == true
+            completion?(ok)
+        }
     }
 
     /// Call this from VisualReaderViewController when it appears/loads.
@@ -490,11 +530,23 @@ final class WatchPageTurnService: NSObject, ObservableObject {
     // MARK: - LAN Server
 
     func markLANWatchConnected(remoteAddress: String? = nil) {
-        isLANWatchConnected = true
         lastLANHitAt = Date()
+        let host = LocalNetworkInfo.hostOnly(remoteAddress ?? "")
+        let isLoopback = host.isEmpty
+            || host == "127.0.0.1"
+            || host == "::1"
+            || host.hasPrefix("127.")
+            || host == "localhost"
+
         if let remoteAddress, !remoteAddress.isEmpty {
             lastLANClientAddress = remoteAddress
         }
+
+        // Self-test (localhost) must not count as "iPhone connected".
+        guard !isLoopback else { return }
+
+        lastRemoteLANHitAt = Date()
+        isLANWatchConnected = true
         lanResetTimer?.invalidate()
         lanResetTimer = Timer.scheduledTimer(withTimeInterval: 8.0, repeats: false) { [weak self] _ in
             DispatchQueue.main.async {

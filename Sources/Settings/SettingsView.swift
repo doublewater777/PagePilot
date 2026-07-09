@@ -36,6 +36,7 @@ struct SettingsView: View {
         }
         .listStyle(.insetGrouped)
         .scrollContentBackground(.hidden)
+        .contentMargins(.top, 8, for: .scrollContent)
         .background(Color(uiColor: .systemGroupedBackground))
         .navigationTitle(NSLocalizedString("settings_title", comment: ""))
         .navigationBarTitleDisplayMode(.inline)
@@ -172,11 +173,12 @@ struct SettingsView: View {
     @ViewBuilder
     private var proSection: some View {
         if hasProAccess {
+            // Use default section insets so width matches other Settings rows.
             Section {
                 ProEntitlementCard()
                     .listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16))
-                    .listRowBackground(Color.clear)
             }
+            .listSectionSpacing(.compact)
         } else {
             Section {
                 Button(action: {
@@ -429,7 +431,8 @@ private extension Bundle {
 
 // MARK: - Pro Entitlement Card
 
-/// Presents owned Pro benefits as a reading perk card (not a tiny status badge).
+/// Presents owned Pro benefits as a reading perk block inside a normal Settings section
+/// (same width as other list rows — no nested card inset).
 private struct ProEntitlementCard: View {
     @Environment(\.colorScheme) private var colorScheme
 
@@ -440,22 +443,22 @@ private struct ProEntitlementCard: View {
     ]
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 12) {
                 Image(systemName: "crown.fill")
-                    .font(.system(size: 16, weight: .bold))
+                    .font(.system(size: 15, weight: .bold))
                     .foregroundColor(.white)
-                    .frame(width: 36, height: 36)
+                    .frame(width: 32, height: 32)
                     .background(AppColors.horizontalGradient)
-                    .clipShape(Circle())
+                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
 
-                VStack(alignment: .leading, spacing: 3) {
+                VStack(alignment: .leading, spacing: 2) {
                     Text(NSLocalizedString("settings_pro_unlocked", comment: ""))
-                        .font(.system(size: 17, weight: .bold))
-                        .foregroundStyle(AppColors.primaryText)
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(.primary)
                     Text(NSLocalizedString("settings_pro_active_body", comment: ""))
-                        .font(.system(size: 13))
-                        .foregroundStyle(AppColors.secondaryText)
+                        .font(.system(size: 12))
+                        .foregroundStyle(.secondary)
                 }
 
                 Spacer(minLength: 0)
@@ -469,7 +472,7 @@ private struct ProEntitlementCard: View {
                     .clipShape(Capsule())
             }
 
-            Divider().opacity(0.5)
+            Divider()
 
             HStack(spacing: 0) {
                 ForEach(Array(benefits.enumerated()), id: \.offset) { _, benefit in
@@ -483,7 +486,7 @@ private struct ProEntitlementCard: View {
 
                         Text(NSLocalizedString(benefit.key, comment: ""))
                             .font(.system(size: 11, weight: .medium))
-                            .foregroundStyle(AppColors.secondaryText)
+                            .foregroundStyle(.secondary)
                             .multilineTextAlignment(.center)
                             .lineLimit(2)
                             .minimumScaleFactor(0.85)
@@ -492,22 +495,7 @@ private struct ProEntitlementCard: View {
                 }
             }
         }
-        .padding(16)
-        .background(
-            AppColors.cardBackground,
-            in: RoundedRectangle(cornerRadius: AppColors.cardCornerRadius, style: .continuous)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: AppColors.cardCornerRadius, style: .continuous)
-                .stroke(
-                    LinearGradient(
-                        colors: [AppColors.accentBlue.opacity(0.35), AppColors.accentTeal.opacity(0.35)],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    ),
-                    lineWidth: 1
-                )
-        )
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
