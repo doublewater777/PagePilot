@@ -145,7 +145,7 @@ Suggested ASC staging after build upload:
     --app "6760964443" \\
     --version "${TARGET_VERSION}" \\
     --build "BUILD_ID" \\
-    --metadata-dir "./metadata/version/${TARGET_VERSION}" \\
+    --metadata-dir "./metadata" \\
     --dry-run
 
 See docs/agents/submission-flow.md

@@ -61,14 +61,7 @@ class ReaderViewController<N: Navigator>: UIViewController,
         NotificationCenter.default.addObserver(self, selector: #selector(appDidEnterBackground), name: UIApplication.didEnterBackgroundNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(appWillEnterForeground), name: UIApplication.willEnterForegroundNotification, object: nil)
 
-        // 记录最近阅读的图书ID
-        let idValue = bookId.rawValue
-        var list = UserDefaults.standard.array(forKey: "lastReadBookIds") as? [Int64] ?? []
-        if let idx = list.firstIndex(of: idValue) {
-            list.remove(at: idx)
-        }
-        list.insert(idValue, at: 0)
-        UserDefaults.standard.set(list, forKey: "lastReadBookIds")
+        LastReadBooks.record(id: bookId.rawValue)
     }
 
     override func viewWillAppear(_ animated: Bool) {
@@ -153,15 +146,9 @@ class ReaderViewController<N: Navigator>: UIViewController,
         Task {
             do {
                 try await books.saveProgress(for: bookId, locator: locator)
-                
-                // 进度变化时也提热最近阅读顺序
-                let idValue = bookId.rawValue
-                var list = UserDefaults.standard.array(forKey: "lastReadBookIds") as? [Int64] ?? []
-                if let idx = list.firstIndex(of: idValue) {
-                    list.remove(at: idx)
-                }
-                list.insert(idValue, at: 0)
-                UserDefaults.standard.set(list, forKey: "lastReadBookIds")
+
+                // Keep MRU order warm while the user reads.
+                LastReadBooks.record(id: bookId.rawValue)
             } catch {
                 moduleDelegate?.presentError(UserError(error), from: self)
             }

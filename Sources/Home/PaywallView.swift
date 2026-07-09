@@ -32,25 +32,43 @@ struct PaywallView: View {
         return freeTrialOffer(for: selectedProduct) != nil && isEligibleForTrial
     }
 
+    private var isPad: Bool {
+        UIDevice.current.userInterfaceIdiom == .pad
+    }
+
     var body: some View {
-        ScrollView(.vertical, showsIndicators: false) {
-            VStack(spacing: 12) {
-                closeRow
-                hero
-                featureList
-                optionList
-                purchasePanel
-                linksView
+        ZStack(alignment: .topTrailing) {
+            ScrollView(.vertical, showsIndicators: false) {
+                VStack(spacing: 12) {
+                    // Reserve space so close control doesn't cover the crown/title.
+                    Color.clear.frame(height: 30)
+
+                    hero
+                    featureList
+                    optionList
+                    purchasePanel
+                    linksView
+                }
+                .frame(maxWidth: isPad ? 520 : 440)
+                .frame(maxWidth: .infinity)
+                .padding(.horizontal, isPad ? 28 : 16)
+                .padding(.top, 12)
+                .padding(.bottom, 16)
             }
-            .frame(maxWidth: 440)
-            .frame(maxWidth: .infinity)
-            .padding(.horizontal, 16)
-            .padding(.top, 12)
-            .padding(.bottom, 16)
+            .scrollContentBackground(.hidden)
+
+            SheetCloseButton(
+                accessibilityLabel: NSLocalizedString("paywall_close", comment: "")
+            ) {
+                dismiss()
+            }
+            .disabled(isPurchasing)
+            .padding(.top, 14)
+            .padding(.trailing, isPad ? 20 : 16)
         }
-        .scrollContentBackground(.hidden)
         .background(AppColors.background.ignoresSafeArea())
-        .presentationDetents([.height(640)])
+        // iPhone: compact sheet; iPad: large form so layout / close aren't cramped.
+        .presentationDetents(isPad ? [.large] : [.height(640)])
         .presentationDragIndicator(.hidden)
         .onAppear {
             Analytics.shared.log(.paywallViewed(source: "paywall_sheet"))
@@ -82,26 +100,6 @@ struct PaywallView: View {
 
     // MARK: - Hero
 
-    private var closeRow: some View {
-        HStack {
-            Spacer()
-
-            Button {
-                dismiss()
-            } label: {
-                Image(systemName: "xmark")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(AppColors.secondaryText)
-                    .frame(width: 30, height: 30)
-                    .background(Color(.secondarySystemGroupedBackground))
-                    .clipShape(Circle())
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel(NSLocalizedString("paywall_close", comment: ""))
-            .disabled(isPurchasing)
-        }
-        .frame(height: 30)
-    }
 
     private var hero: some View {
         VStack(spacing: 7) {
@@ -148,10 +146,10 @@ struct PaywallView: View {
                     subtitle: NSLocalizedString("paywall_feature_stats_subtitle", comment: "")
                 )
                 miniFeature(
-                    icon: "sparkles",
-                    iconColor: .green,
-                    title: NSLocalizedString("paywall_feature_clean_title", comment: ""),
-                    subtitle: NSLocalizedString("paywall_feature_clean_subtitle", comment: "")
+                    icon: "flame.fill",
+                    iconColor: .orange,
+                    title: NSLocalizedString("paywall_feature_streak_title", comment: ""),
+                    subtitle: NSLocalizedString("paywall_feature_streak_subtitle", comment: "")
                 )
             }
 

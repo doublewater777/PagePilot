@@ -25,6 +25,7 @@
 "onboarding_later_button" = "稍后";
 "onboarding_continue_button" = "继续";
 "onboarding_start_button" = "开始阅读";
+"onboarding_open_sample_button" = "打开演示书";
 "onboarding_welcome_title" = "欢迎使用 PagePilot";
 "onboarding_welcome_message" = "一个安静的书架，用来在 iPhone 上继续读下去。";
 "onboarding_import_title" = "带上你的书";
@@ -314,22 +315,20 @@
 
 /* Paywall */
 "paywall_title" = "专注阅读，收获更多";
-"paywall_subtitle" = "无限书架、手表翻页和深度统计，让阅读更自由。";
+"paywall_subtitle" = "无限书架、Watch 控 iPad 与深度统计，让阅读更自由。";
 "paywall_pro_badge" = "年会员主推";
 "paywall_feature_unlimited_books" = "无限添加书籍（普通版最多 10 本）";
 "paywall_feature_ipad_page_turn" = "Apple Watch 可控制 iPad 翻页";
 "paywall_feature_stats" = "周、月、年阅读统计";
 "paywall_feature_streak" = "连续阅读天数追踪";
-"paywall_feature_premium_tts" = "高级 TTS 语言（即将到来）";
-"paywall_feature_ad_free" = "无广告阅读体验";
 "paywall_feature_unlimited_title" = "无限书架";
 "paywall_feature_unlimited_subtitle" = "不再限制 10 本";
-"paywall_feature_watch_title" = "手表翻页";
-"paywall_feature_watch_subtitle" = "控制 iPad 阅读";
-"paywall_feature_stats_title" = "Pro 统计";
-"paywall_feature_stats_subtitle" = "看见阅读趋势";
-"paywall_feature_clean_title" = "纯净阅读";
-"paywall_feature_clean_subtitle" = "少打扰、更沉浸";
+"paywall_feature_watch_title" = "Watch 控 iPad";
+"paywall_feature_watch_subtitle" = "iPhone 翻页免费";
+"paywall_feature_stats_title" = "深度统计";
+"paywall_feature_stats_subtitle" = "周月年趋势";
+"paywall_feature_streak_title" = "连续天数";
+"paywall_feature_streak_subtitle" = "看见坚持节奏";
 "paywall_assurance_trial" = "1 个月免费试用";
 "paywall_assurance_cancel" = "随时取消";
 "paywall_trial_note" = "试用结束后自动续费，可随时在设置中取消。";
@@ -353,7 +352,7 @@
 "settings_pro_upgrade_body" = "解锁无限书架、深度统计和更多阅读能力";
 "settings_pro_benefit_library" = "无限书架";
 "settings_pro_benefit_stats" = "深度统计";
-"settings_pro_benefit_watch" = "Watch 翻页增强";
+"settings_pro_benefit_watch" = "Watch 控 iPad";
 
 /* Purchase Errors */
 "purchase_error_product_not_found" = "找不到产品信息";
@@ -595,6 +594,13 @@
 "home_empty_message" = "去书架选择或导入 EPUB / PDF，之后就可以用 Apple Watch 翻页阅读。";
 "home_import_button" = "去书架";
 "home_continue_reading_button" = "继续阅读";
+"home_reread_button" = "重新阅读";
+"home_finished_label" = "已读完";
+"home_streak_a11y_hint" = "查看阅读统计";
+"home_shortcut_stats" = "阅读统计";
+"home_shortcut_stats_subtitle" = "节奏与连续天数";
+"home_shortcut_notes" = "我的笔记";
+"home_shortcut_notes_subtitle" = "高亮与书签";
 
 /* MARK: Settings */
 "settings_tab" = "设置";
@@ -675,6 +681,54 @@
 "watch_guidance_iphone_step2" = "在 Apple Watch 上打开 PagePilot 翻页";
 "watch_guidance_ipad_footer" = "iPhone 与 iPad 需在同一 Wi-Fi 下";
 "watch_guidance_iphone_footer" = "直接控制本机阅读器";
+"watch_status_header" = "连接状态";
+"watch_status_supported" = "此设备支持 Apple Watch";
+"watch_status_unsupported" = "此设备不支持 Apple Watch";
+"watch_status_paired" = "已与 Apple Watch 配对";
+"watch_status_not_paired" = "尚未配对 Apple Watch";
+"watch_status_app_installed" = "手表上已安装 PagePilot";
+"watch_status_app_missing" = "请在手表上安装 PagePilot";
+"watch_status_reachable" = "手表当前可达";
+"watch_status_not_reachable" = "手表暂不可达，请抬腕打开 App";
+"watch_setup_guide_button" = "查看设置引导";
+"watch_setup_title" = "用手表翻页";
+"watch_setup_subtitle" = "三步完成：装手表端、选翻页设备、打开书开始用。";
+"watch_setup_step1_title" = "安装手表端";
+"watch_setup_step1_body" = "在 iPhone 的「手表」App 中安装 PagePilot 手表端。";
+"watch_setup_step2_title" = "设置翻页设备";
+"watch_setup_step2_body" = "在本页上方选择用 iPhone 还是 iPad 阅读，手表将控制该设备翻页。";
+"watch_setup_step3_title" = "打开书开始翻页";
+"watch_setup_step3_body" = "在所选设备上打开一本书，再在手表上打开 PagePilot，点按或转动数码表冠即可翻页。";
+"watch_setup_done_button" = "开始使用";
+"settings_ipad_watch_status" = "手表翻页连接";
+"ipad_watch_status_title" = "手表翻页连接";
+"ipad_watch_status_refresh" = "刷新";
+"ipad_watch_summary_ready" = "连接正常";
+"ipad_watch_summary_ready_sub" = "iPhone 已连上本机。去书架打开一本书后，即可用手表翻页。";
+"ipad_watch_summary_no_wifi" = "还没连上 Wi‑Fi";
+"ipad_watch_summary_no_wifi_sub" = "请先让 iPad 连上和 iPhone 相同的无线网络。";
+"ipad_watch_summary_waiting_phone" = "在等 iPhone 连过来";
+"ipad_watch_summary_waiting_phone_sub" = "在 iPhone 上手表翻页目标选「iPad」，然后用手表试一下。";
+"ipad_watch_summary_almost" = "还差一点点";
+"ipad_watch_summary_almost_sub" = "按下面清单检查一下即可。";
+"ipad_watch_checklist_header" = "连接清单";
+"ipad_watch_check_wifi" = "连上 Wi‑Fi";
+"ipad_watch_check_wifi_ok" = "已连接无线网络";
+"ipad_watch_check_wifi_bad" = "未检测到网络，请打开 Wi‑Fi";
+"ipad_watch_check_ready" = "本机可以接收翻页";
+"ipad_watch_check_ready_ok" = "准备就绪";
+"ipad_watch_check_ready_bad" = "暂时不可用，点右上角刷新试试";
+"ipad_watch_check_phone" = "iPhone 已连上";
+"ipad_watch_check_phone_ok" = "刚才收到了来自 iPhone 的连接";
+"ipad_watch_check_phone_recent" = "曾连上过，可再试一次翻页";
+"ipad_watch_check_phone_bad" = "还没收到 iPhone 的连接";
+"ipad_watch_check_phone_diff_wifi" = "连上了，但可能不在同一 Wi‑Fi，请确认两台设备网络一致";
+"ipad_watch_next_header" = "下一步";
+"ipad_watch_next_wifi" = "到控制中心连上与 iPhone 相同的 Wi‑Fi。";
+"ipad_watch_next_restart" = "点右上角刷新；若仍不行，退出 App 再打开一次。";
+"ipad_watch_next_phone" = "在 iPhone：设置 → 手表翻页 → 目标选「iPad」，再用手表点翻页。两台保持同一 Wi‑Fi 即可，不需要同一 Apple ID。";
+"ipad_watch_how_header" = "这是怎么工作的";
+"ipad_watch_how_body" = "手表连着 iPhone；iPhone 再通过同一 Wi‑Fi 通知这台 iPad 翻页。实际翻页时，在书架打开一本书即可。";
 
 /* MARK: TXT Import */
 "txt_error_cannot_read" = "无法读取文本文件。";
@@ -730,7 +784,7 @@
 /* My Notes */
 "settings_my_notes" = "我的笔记";
 "my_notes_title" = "我的笔记";
-"my_notes_subtitle" = "沉淀下来的阅读痕迹";
+"my_notes_subtitle" = "按书查看你的高亮与书签";
 "my_notes_books_label" = "本书";
 "my_notes_highlights_label" = "高亮";
 "my_notes_bookmark_label" = "书签";
@@ -740,6 +794,8 @@
 "my_notes_filter_month" = "本月";
 "my_notes_filtered_empty" = "该时间段内没有笔记。";
 "my_notes_empty" = "还没有笔记。在阅读中添加书签和高亮吧。";
+"my_notes_progress_format" = "已读 %d%%";
+"my_notes_count_format" = "%d 条笔记";
 "my_notes_delete_confirm_title" = "删除这条笔记？";
 "my_notes_delete_error_title" = "删除失败";
 "my_notes_delete_error_message" = "删除失败，请重试。";
@@ -755,3 +811,10 @@
 "settings_volume_key_down_forward" = "下键下一页，上键上一页";
 "settings_volume_key_up_forward" = "上键下一页，下键下一页";
 "settings_volume_key_explanation" = "普通阅读时使用音量键翻页。朗读、有声书、耳机或车载播放时，音量键仍控制音量。";
+"settings_volume_key_enabled_footer" = "阅读中音量键将用于翻页；可随时在此关闭。";
+"volume_key_edu_title" = "开启音量键翻页";
+"volume_key_edu_subtitle" = "请先了解几条规则，避免误以为系统音量失灵。";
+"volume_key_edu_point_reading" = "普通阅读时，音量上下键对应翻页，不会改变系统音量。";
+"volume_key_edu_point_tts" = "朗读、有声书、外放/车载播放时，音量键仍控制音量。";
+"volume_key_edu_point_hud" = "偶尔仍可能闪现系统音量条，属正常现象，可忽略。";
+"volume_key_edu_confirm" = "知道了，开启";

@@ -128,6 +128,12 @@ final class BookRepository {
         }
     }
 
+    func allOnce() async throws -> [Book] {
+        try await db.read { db in
+            try Book.order(Book.Columns.created).fetchAll(db)
+        }
+    }
+
     func count() async throws -> Int {
         try await db.read { db in
             try Book.fetchCount(db)

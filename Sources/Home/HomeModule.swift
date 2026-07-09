@@ -39,8 +39,15 @@ final class HomeModule: HomeModuleAPI {
             delegate: delegate
         )
         let hostingController = UIHostingController(rootView: homeView)
+        hostingController.view.backgroundColor = UIColor { traits in
+            if traits.userInterfaceStyle == .dark {
+                return UIColor(red: 15 / 255, green: 16 / 255, blue: 19 / 255, alpha: 1)
+            }
+            return UIColor(red: 246 / 255, green: 248 / 255, blue: 252 / 255, alpha: 1)
+        }
         let navigationController = UINavigationController(rootViewController: hostingController)
-        navigationController.isNavigationBarHidden = true
+        navigationController.setNavigationBarHidden(true, animated: false)
+        navigationController.view.backgroundColor = hostingController.view.backgroundColor
         return navigationController
     }()
 }

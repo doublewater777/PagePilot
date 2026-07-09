@@ -109,13 +109,8 @@ class LibraryViewController: UIViewController, Loggable {
     }
     
     private func markBookAsRead(id: Int64) {
-        var list = UserDefaults.standard.array(forKey: "lastReadBookIds") as? [Int64] ?? []
-        if let idx = list.firstIndex(of: id) {
-            list.remove(at: idx)
-        }
-        list.insert(id, at: 0)
-        UserDefaults.standard.set(list, forKey: "lastReadBookIds")
-        
+        LastReadBooks.record(id: id)
+
         if currentSortMode == .recentRead {
             applyFilteringAndReload()
         }
@@ -393,7 +388,7 @@ class LibraryViewController: UIViewController, Loggable {
         case .recentAdded:
             filteredBooks.sort { $0.created > $1.created }
         case .recentRead:
-            let lastReadIds = UserDefaults.standard.array(forKey: "lastReadBookIds") as? [Int64] ?? []
+            let lastReadIds = LastReadBooks.orderedIds
             filteredBooks.sort { (b1, b2) -> Bool in
                 let id1 = b1.id?.rawValue ?? 0
                 let id2 = b2.id?.rawValue ?? 0

@@ -59,9 +59,11 @@ struct ReadingStatsView: View {
             .padding(.top, 18)
             .padding(.bottom, UIDevice.current.userInterfaceIdiom == .pad ? 24 : 96)
         }
-        .background(AppColors.background)
+        .background(Color(.systemGroupedBackground))
         .navigationTitle(NSLocalizedString("stats_title", comment: ""))
         .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(Color(.systemGroupedBackground), for: .navigationBar)
+        .toolbarBackground(.visible, for: .navigationBar)
         .sheet(isPresented: $showPaywall) {
             PaywallView()
         }

@@ -31,8 +31,10 @@ struct WiFiTransferView: View {
             .navigationTitle(NSLocalizedString("wifi_transfer_title", comment: ""))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(NSLocalizedString("wifi_transfer_done", comment: "")) {
+                ToolbarItem(placement: .topBarTrailing) {
+                    SheetCloseButton(
+                        accessibilityLabel: NSLocalizedString("wifi_transfer_done", comment: "")
+                    ) {
                         viewModel.stop()
                         dismiss()
                     }

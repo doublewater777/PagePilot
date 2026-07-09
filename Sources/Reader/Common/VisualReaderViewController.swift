@@ -111,8 +111,6 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        view.backgroundColor = .white
-
         #if DEBUG
         if ProcessInfo.processInfo.arguments.contains("-ShowNavigationBar") {
             navigationBarHidden = false
@@ -129,7 +127,6 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
 
         positionLabel.translatesAutoresizingMaskIntoConstraints = false
         positionLabel.font = .systemFont(ofSize: 12)
-        positionLabel.textColor = .darkGray
         // Prevents VoiceOver from selecting the position label while reading
         // the page.
         positionLabel.isAccessibilityElement = false
@@ -139,6 +136,8 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
             positionLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             positionLabel.bottomAnchor.constraint(equalTo: navigator.view.bottomAnchor, constant: -20),
         ])
+
+        applyChromeAppearance()
 
         Task { [weak self] in
             guard let self = self else { return }
@@ -264,6 +263,20 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
 
     override var prefersStatusBarHidden: Bool {
         navigationBarHidden
+    }
+
+    /// Reader chrome follows system appearance (light/dark) instead of hard-coded white/gray.
+    private func applyChromeAppearance() {
+        view.backgroundColor = .systemBackground
+        positionLabel.textColor = .secondaryLabel
+    }
+
+    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+        super.traitCollectionDidChange(previousTraitCollection)
+        guard traitCollection.hasDifferentColorAppearance(comparedTo: previousTraitCollection) else {
+            return
+        }
+        applyChromeAppearance()
     }
 
     // MARK: - VisualNavigatorDelegate

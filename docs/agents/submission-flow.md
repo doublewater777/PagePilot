@@ -98,7 +98,7 @@ asc release stage \
   --app "6760964443" \
   --version "<version>" \
   --build "BUILD_ID" \
-  --metadata-dir "./metadata/version/<version>" \
+  --metadata-dir "./metadata" \
   --confirm
 ```
 

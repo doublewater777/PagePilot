@@ -265,6 +265,8 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
             return controlTarget == .iPad
                 ? localized("watch.hint.openBookIPad")
                 : localized("watch.hint.openBookIPhone")
+        case "PRO_REQUIRED":
+            return localized("watch.error.proRequired")
         case "INVALID_COMMAND":
             return localized("watch.error.generic")
         default:

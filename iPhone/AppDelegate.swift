@@ -253,25 +253,35 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             .forEach { $0.updateLocalizedContent() }
     }
 
-    /// Imports preloaded sample books from the app bundle on first launch.
+    private let preloadedBooksKey = "preloadedBooksImported"
+
+    /// Imports preloaded sample books from the app bundle on first launch (fire-and-forget).
     func importPreloadedBooks(sender rootVC: UIViewController) {
-        guard app != nil else { return }
+        Task {
+            _ = await importPreloadedBooksIfNeeded(delayNanoseconds: 400_000_000)
+        }
+    }
+
+    /// Imports preloaded books if needed and returns bookshelf books (for opening a sample).
+    @discardableResult
+    func importPreloadedBooksIfNeeded(delayNanoseconds: UInt64 = 0) async -> [Book] {
+        guard let app else { return [] }
 
         let log = Logger(subsystem: "com.panyang.PagePilot", category: "PreloadedBooks")
-        let preloadedBooksKey = "preloadedBooksImported"
-        guard !UserDefaults.standard.bool(forKey: preloadedBooksKey) else {
-            log.info("Already imported, skipping")
-            return
+
+        if UserDefaults.standard.bool(forKey: preloadedBooksKey) {
+            log.info("Already imported, loading existing books")
+            return (try? await app.books.allOnce()) ?? []
         }
 
         guard let resourceURL = Bundle.main.resourceURL else {
             log.error("No resource URL")
-            return
+            return []
         }
 
         let fileManager = FileManager.default
         var files: [URL] = []
-        
+
         let preloadedDir = resourceURL.appendingPathComponent("PreloadedBooks")
         var isDir: ObjCBool = false
         if fileManager.fileExists(atPath: preloadedDir.path, isDirectory: &isDir), isDir.boolValue {
@@ -279,54 +289,86 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
                 files = contents.filter { $0.pathExtension == "epub" }
             }
         }
-        
+
         if files.isEmpty {
             log.info("PreloadedBooks directory not found or empty. Searching bundle root...")
             if let contents = try? fileManager.contentsOfDirectory(at: resourceURL, includingPropertiesForKeys: nil) {
                 files = contents.filter { $0.pathExtension == "epub" && $0.lastPathComponent == "pride_prejudice.epub" }
             }
         }
-        
+
         if files.isEmpty, let fallbackURL = Bundle.main.url(forResource: "pride_prejudice", withExtension: "epub") {
             log.info("Using Bundle.main.url fallback for pride_prejudice.epub")
             files = [fallbackURL]
         }
-        
+
         guard !files.isEmpty else {
             log.error("No preloaded epub files found")
-            return
+            return []
         }
 
         log.info("Found \(files.count) file(s) to import: \(files.map(\.lastPathComponent).joined(separator: ", "))")
 
         let libraryService = app.library!
         StartupProfiler.shared.record("importPreloadedBooks Triggered")
-        Task.detached(priority: .background) {
-            StartupProfiler.shared.record("importPreloadedBooks detached background Task Start")
-            // Delay for 0.4 seconds to allow the onboarding view dismissal animation to complete.
-            try? await Task.sleep(nanoseconds: 400_000_000)
-            
-            for fileURL in files {
-                guard let absoluteURL = fileURL.anyURL.absoluteURL else {
-                    log.error("Failed to create AbsoluteURL for \(fileURL.lastPathComponent)")
-                    continue
-                }
- 
-                log.info("Importing: \(absoluteURL.string)")
-                do {
-                    StartupProfiler.shared.record("Start importing: \(fileURL.lastPathComponent)")
-                    let book = try await libraryService.importPublication(from: absoluteURL, sender: nil)
-                    log.info("Imported book: \(book.title)")
-                    StartupProfiler.shared.record("Finish importing: \(book.title)")
-                } catch {
-                    log.error("Import failed for \(fileURL.lastPathComponent): \(String(describing: error))")
-                    StartupProfiler.shared.record("Import failed for: \(fileURL.lastPathComponent)")
-                }
+        StartupProfiler.shared.record("importPreloadedBooks detached background Task Start")
+
+        if delayNanoseconds > 0 {
+            try? await Task.sleep(nanoseconds: delayNanoseconds)
+        }
+
+        var imported: [Book] = []
+        for fileURL in files {
+            guard let absoluteURL = fileURL.anyURL.absoluteURL else {
+                log.error("Failed to create AbsoluteURL for \(fileURL.lastPathComponent)")
+                continue
             }
-            UserDefaults.standard.set(true, forKey: preloadedBooksKey)
-            log.info("All preloaded books import finished")
-            StartupProfiler.shared.record("All preloaded books import finished")
-            StartupProfiler.shared.printSummary()
+
+            log.info("Importing: \(absoluteURL.string)")
+            do {
+                StartupProfiler.shared.record("Start importing: \(fileURL.lastPathComponent)")
+                let book = try await libraryService.importPublication(from: absoluteURL, sender: nil)
+                imported.append(book)
+                log.info("Imported book: \(book.title)")
+                StartupProfiler.shared.record("Finish importing: \(book.title)")
+            } catch {
+                log.error("Import failed for \(fileURL.lastPathComponent): \(String(describing: error))")
+                StartupProfiler.shared.record("Import failed for: \(fileURL.lastPathComponent)")
+            }
+        }
+
+        UserDefaults.standard.set(true, forKey: preloadedBooksKey)
+        log.info("All preloaded books import finished")
+        StartupProfiler.shared.record("All preloaded books import finished")
+        StartupProfiler.shared.printSummary()
+
+        if imported.isEmpty {
+            return (try? await app.books.allOnce()) ?? []
+        }
+        return imported
+    }
+
+    @MainActor
+    func openBookAfterOnboarding(_ book: Book, from rootViewController: UIViewController) async {
+        guard let app else { return }
+
+        app.tabBarController?.selectedIndex = 1
+        let nav = app.library.rootViewController
+        nav.popToRootViewController(animated: false)
+
+        do {
+            guard let publication = try await app.library.openBook(book, sender: nav) else { return }
+            app.reader.presentPublication(publication: publication, book: book, in: nav)
+        } catch {
+            presentErrorIfPossible(error, from: nav)
+        }
+    }
+
+    private func presentErrorIfPossible(_ error: Error, from viewController: UIViewController) {
+        if let convertible = error as? UserErrorConvertible {
+            viewController.alert(convertible)
+        } else {
+            print(error)
         }
     }
 
@@ -379,11 +421,21 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
                 return
             }
 
-            let onboardingView = OnboardingView {
+            let onboardingView = OnboardingView { action in
                 UserDefaults.standard.set(true, forKey: self.hasSeenOnboardingKey)
-                presentingViewController.dismiss(animated: true)
-                // 首次安装，在引导页完全结束后，在后台触发预载图书导入
-                self.importPreloadedBooks(sender: presentingViewController)
+                presentingViewController.dismiss(animated: true) {
+                    Task {
+                        let books = await self.importPreloadedBooksIfNeeded(delayNanoseconds: 350_000_000)
+                        guard action == .openSampleBook else { return }
+                        if let book = books.first {
+                            await self.openBookAfterOnboarding(book, from: presentingViewController)
+                        } else {
+                            await MainActor.run {
+                                self.app?.tabBarController?.selectedIndex = 1
+                            }
+                        }
+                    }
+                }
             }
 
             let hostingController = UIHostingController(rootView: onboardingView)
@@ -392,6 +444,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             presentingViewController.present(hostingController, animated: false)
         }
     }
+}
+
+private enum OnboardingFinishAction {
+    case dismissOnly
+    case openSampleBook
 }
 
 final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
@@ -458,7 +515,7 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 }
 
 private struct OnboardingView: View {
-    private let onFinish: () -> Void
+    private let onFinish: (OnboardingFinishAction) -> Void
 
     @State private var selectedPage = 0
 
@@ -485,7 +542,7 @@ private struct OnboardingView: View {
         ),
     ]
 
-    init(onFinish: @escaping () -> Void) {
+    init(onFinish: @escaping (OnboardingFinishAction) -> Void) {
         self.onFinish = onFinish
     }
 
@@ -493,7 +550,9 @@ private struct OnboardingView: View {
         VStack(spacing: 0) {
             HStack {
                 Spacer()
-                Button(NSLocalizedString("onboarding_later_button", comment: "Dismiss onboarding button"), action: onFinish)
+                Button(NSLocalizedString("onboarding_later_button", comment: "Dismiss onboarding button")) {
+                    onFinish(.dismissOnly)
+                }
                     .font(.subheadline.weight(.semibold))
                     .buttonStyle(.borderless)
                     .foregroundStyle(.secondary)
@@ -514,11 +573,11 @@ private struct OnboardingView: View {
                 .padding(.horizontal, 24)
                 .padding(.bottom, 30)
         }
-        .background(Color(.systemGroupedBackground))
+        .background(AppColors.background)
         .onAppear {
             if ProcessInfo.processInfo.arguments.contains("-AutoDismissOnboarding") {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-                    onFinish()
+                    onFinish(.dismissOnly)
                 }
             }
         }
@@ -533,23 +592,24 @@ private struct OnboardingView: View {
                 .frame(minHeight: 52)
         }
         .buttonStyle(.borderedProminent)
+        .tint(AppColors.accentBlue)
         .accessibilityIdentifier("onboarding_primary_button")
     }
 
     private var advanceTitle: String {
         if selectedPage == pages.count - 1 {
-            return NSLocalizedString("onboarding_start_button", comment: "")
+            return NSLocalizedString("onboarding_open_sample_button", comment: "")
         }
         return NSLocalizedString("onboarding_continue_button", comment: "")
     }
 
     private func advance() {
         guard selectedPage < pages.count - 1 else {
-            onFinish()
+            onFinish(.openSampleBook)
             return
         }
 
-        withAnimation(.easeInOut) {
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
             selectedPage += 1
         }
     }

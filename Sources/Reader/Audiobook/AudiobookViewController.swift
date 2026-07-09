@@ -56,7 +56,7 @@ class AudiobookViewController: ReaderViewController<AudioNavigator>, AudioNaviga
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        view.backgroundColor = .white
+        view.backgroundColor = .systemBackground
 
         addChild(readerController)
         view.addSubview(readerController.view)

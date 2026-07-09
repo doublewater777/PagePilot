@@ -218,11 +218,15 @@ final class ProPurchaseManager {
                 break
             }
         } catch {
-            print("Entitlement sync failed: \(error)")
+            // Do not wipe a previously granted Pro flag on StoreKit failures —
+            // that would silently disable iPad Watch page turn and other Pro gates.
+            print("Entitlement sync failed (keeping current Pro state \(hasProAccess)): \(error)")
+            return hasProAccess
         }
 
+        let previous = hasProAccess
         await updateProAccess(hasPro)
-        if hasPro {
+        if hasPro, !previous {
             Analytics.shared.log(.proAccessGranted)
         }
         return hasPro

@@ -3,12 +3,13 @@ import ReadiumShared
 import SwiftUI
 import UIKit
 
-// MARK: - My Notes (timeline)
+// MARK: - My Notes (grouped by book)
 
 struct MyNotesView: View {
+    @Environment(\.dismiss) private var dismiss
+
     @State private var notes: [TimelineNote] = []
     @State private var isLoading = true
-    @State private var filter: TimelineFilter = .all
     @State private var notePendingDeletion: TimelineNote?
     @State private var showDeleteConfirmation = false
     @State private var deleteErrorMessage: String?
@@ -24,6 +25,15 @@ struct MyNotesView: View {
         bookRepo = app!.books
     }
 
+    private var bookGroups: [BookNotesGroup] {
+        let grouped = Dictionary(grouping: notes) { note -> Int64 in
+            note.book.id?.rawValue ?? -1
+        }
+        return grouped.values
+            .compactMap { BookNotesGroup(notes: $0) }
+            .sorted { $0.latestDate > $1.latestDate }
+    }
+
     var body: some View {
         Group {
             if isLoading {
@@ -31,16 +41,18 @@ struct MyNotesView: View {
                     .tint(AppColors.accentBlue)
                     .scaleEffect(1.2)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if filteredNotes.isEmpty {
+            } else if notes.isEmpty {
                 emptyState
                     .padding(.bottom, notesBottomClearance)
             } else {
-                notesList
+                bookList
             }
         }
-        .background(AppColors.background)
+        .background(Color(.systemGroupedBackground))
         .navigationTitle(NSLocalizedString("my_notes_title", comment: ""))
         .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(Color(.systemGroupedBackground), for: .navigationBar)
+        .toolbarBackground(.visible, for: .navigationBar)
         .task { await loadNotes() }
         .alert(
             NSLocalizedString("my_notes_delete_error_title", comment: ""),
@@ -57,88 +69,42 @@ struct MyNotesView: View {
         }
     }
 
-    private var filteredNotes: [TimelineNote] {
-        switch filter {
-        case .all:
-            return notes
-        case .week:
-            return notes.filter { $0.date > Calendar.current.date(byAdding: .day, value: -7, to: Date()) ?? Date() }
-        case .month:
-            return notes.filter { $0.date > Calendar.current.date(byAdding: .day, value: -30, to: Date()) ?? Date() }
-        }
-    }
-
-    private var notesHeaderSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(NSLocalizedString("my_notes_title", comment: ""))
-                    .font(.system(size: 28, weight: .bold))
-                    .foregroundStyle(AppColors.primaryText)
+    private var bookList: some View {
+        List {
+            Section {
                 Text(NSLocalizedString("my_notes_subtitle", comment: ""))
                     .font(.system(size: 14))
                     .foregroundStyle(AppColors.secondaryText)
-            }
-
-            HStack(spacing: 8) {
-                ForEach(TimelineFilter.allCases) { f in
-                    Button {
-                        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                            filter = f
-                        }
-                    } label: {
-                        Text(f.label)
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundStyle(filter == f ? Color.white : AppColors.primaryText)
-                            .padding(.horizontal, 14)
-                            .frame(height: 36)
-                            .background {
-                                if filter == f {
-                                    AppColors.horizontalGradient
-                                } else {
-                                    AppColors.cardBackground
-                                }
-                            }
-                            .clipShape(Capsule())
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-        }
-    }
-
-    private var notesList: some View {
-        List {
-            Section {
-                notesHeaderSection
-                    .listRowInsets(notesHeaderRowInsets)
+                    .listRowInsets(EdgeInsets(top: 4, leading: 20, bottom: 8, trailing: 20))
                     .listRowSeparator(.hidden)
                     .listRowBackground(Color.clear)
             }
 
             Section {
-                ForEach(filteredNotes) { note in
-                    TimelineRow(note: note)
-                        .contentShape(Rectangle())
-                        .onTapGesture { openReader(for: note) }
-                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                            Button {
+                ForEach(bookGroups) { group in
+                    NavigationLink {
+                        BookNotesDetailView(
+                            book: group.book,
+                            allNotes: $notes,
+                            onOpen: openReader,
+                            onDelete: { note in
                                 notePendingDeletion = note
                                 showDeleteConfirmation = true
-                            } label: {
-                                Text(NSLocalizedString("delete_button", comment: ""))
                             }
-                            .tint(.red)
-                        }
-                        .listRowInsets(noteListRowInsets)
-                        .listRowSeparator(.hidden)
-                        .listRowBackground(Color.clear)
+                        )
+                    } label: {
+                        BookNotesGroupRow(group: group)
+                    }
+                    .listRowInsets(EdgeInsets(top: 8, leading: 20, bottom: 8, trailing: 20))
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
                 }
             }
         }
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
         .contentMargins(.bottom, notesBottomClearance, for: .scrollContent)
-        .padding(.top, 8)
+        .padding(.top, 4)
         .alert(
             NSLocalizedString("my_notes_delete_confirm_title", comment: ""),
             isPresented: $showDeleteConfirmation
@@ -152,14 +118,6 @@ struct MyNotesView: View {
                 notePendingDeletion = nil
             }
         }
-    }
-
-    private var notesHeaderRowInsets: EdgeInsets {
-        EdgeInsets(top: 4, leading: 20, bottom: 12, trailing: 20)
-    }
-
-    private var noteListRowInsets: EdgeInsets {
-        EdgeInsets(top: 8, leading: 20, bottom: 8, trailing: 20)
     }
 
     private var notesBottomClearance: CGFloat {
@@ -188,6 +146,9 @@ struct MyNotesView: View {
     private func openReader(for note: TimelineNote) {
         guard let app = AppModule.shared, let bookId = note.book.id else { return }
 
+        // Close sheet when presented from Home; no-op if already in a nav stack.
+        dismiss()
+
         app.pendingNavigationTarget = (bookId, note.item.locator)
 
         let tabBar = app.tabBarController
@@ -207,9 +168,11 @@ struct MyNotesView: View {
                 .font(.system(size: 40, weight: .light))
                 .foregroundStyle(.tertiary)
 
-            Text(NSLocalizedString(filter == .all ? "my_notes_empty" : "my_notes_filtered_empty", comment: ""))
+            Text(NSLocalizedString("my_notes_empty", comment: ""))
                 .font(.system(size: 16, weight: .medium))
                 .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 32)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
@@ -268,75 +231,199 @@ struct MyNotesView: View {
     }
 }
 
-// MARK: - Timeline Filter
+// MARK: - Book group
 
-private enum TimelineFilter: String, CaseIterable, Identifiable {
-    case all
-    case week
-    case month
-
-    var id: String { rawValue }
-
-    var label: String {
-        switch self {
-        case .all:
-            return NSLocalizedString("my_notes_filter_all", comment: "")
-        case .week:
-            return NSLocalizedString("my_notes_filter_week", comment: "")
-        case .month:
-            return NSLocalizedString("my_notes_filter_month", comment: "")
-        }
-    }
-}
-
-// MARK: - Timeline Note
-
-private struct TimelineNote: Identifiable {
-    let id: String
+private struct BookNotesGroup: Identifiable {
     let book: Book
-    let item: NoteItem
-    let date: Date
+    let notes: [TimelineNote]
+    let latestDate: Date
+    let highlightCount: Int
+    let bookmarkCount: Int
 
-    init(book: Book, item: NoteItem) {
-        self.book = book
-        self.item = item
-        self.id = item.id
-        self.date = item.created
+    var id: Int64 { book.id?.rawValue ?? 0 }
+
+    init?(notes: [TimelineNote]) {
+        guard let first = notes.first else { return nil }
+        book = first.book
+        self.notes = notes.sorted { $0.date > $1.date }
+        latestDate = self.notes.map(\.date).max() ?? first.date
+        highlightCount = notes.filter {
+            if case .highlight = $0.item { return true }
+            return false
+        }.count
+        bookmarkCount = notes.filter {
+            if case .bookmark = $0.item { return true }
+            return false
+        }.count
     }
 }
 
-// MARK: - Timeline Row
+private struct BookNotesGroupRow: View {
+    let group: BookNotesGroup
+    @Environment(\.colorScheme) private var colorScheme
 
-private struct TimelineRow: View {
+    var body: some View {
+        HStack(spacing: 14) {
+            BookCoverThumbnail(book: group.book)
+                .frame(width: 52, height: 72)
+                .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                .shadow(color: .black.opacity(colorScheme == .dark ? 0.35 : 0.12), radius: 6, x: 0, y: 3)
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text(group.book.title)
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundStyle(AppColors.primaryText)
+                    .lineLimit(2)
+
+                if let authors = group.book.authors, !authors.isEmpty {
+                    Text(authors)
+                        .font(.system(size: 13))
+                        .foregroundStyle(AppColors.secondaryText)
+                        .lineLimit(1)
+                }
+
+                HStack(spacing: 10) {
+                    Text(String(format: NSLocalizedString("my_notes_progress_format", comment: ""), Int(min(max(group.book.progression, 0), 1) * 100)))
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(AppColors.accentTeal)
+
+                    Text("·")
+                        .foregroundStyle(AppColors.tertiaryText)
+
+                    Text(String(format: NSLocalizedString("my_notes_count_format", comment: ""), group.notes.count))
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(AppColors.secondaryText)
+                }
+            }
+
+            Spacer(minLength: 0)
+        }
+        .padding(14)
+        .background(AppColors.cardBackground, in: RoundedRectangle(cornerRadius: AppColors.cardCornerRadius, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: AppColors.cardCornerRadius, style: .continuous)
+                .stroke(colorScheme == .dark ? Color.white.opacity(0.06) : Color.black.opacity(0.04), lineWidth: 1)
+        )
+    }
+}
+
+// MARK: - Book detail
+
+private struct BookNotesDetailView: View {
+    let book: Book
+    @Binding var allNotes: [TimelineNote]
+    let onOpen: (TimelineNote) -> Void
+    let onDelete: (TimelineNote) -> Void
+
+    private var notes: [TimelineNote] {
+        allNotes
+            .filter { $0.book.id == book.id }
+            .sorted { $0.date > $1.date }
+    }
+
+    private var highlightCount: Int {
+        notes.filter { if case .highlight = $0.item { return true }; return false }.count
+    }
+
+    private var bookmarkCount: Int {
+        notes.filter { if case .bookmark = $0.item { return true }; return false }.count
+    }
+
+    var body: some View {
+        List {
+            Section {
+                bookHeader
+                    .listRowInsets(EdgeInsets(top: 8, leading: 20, bottom: 12, trailing: 20))
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
+            }
+
+            Section {
+                if notes.isEmpty {
+                    Text(NSLocalizedString("my_notes_empty", comment: ""))
+                        .font(.system(size: 15))
+                        .foregroundStyle(AppColors.secondaryText)
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
+                } else {
+                    ForEach(notes) { note in
+                        NoteContentRow(note: note)
+                            .contentShape(Rectangle())
+                            .onTapGesture { onOpen(note) }
+                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                Button {
+                                    onDelete(note)
+                                } label: {
+                                    Text(NSLocalizedString("delete_button", comment: ""))
+                                }
+                                .tint(.red)
+                            }
+                            .listRowInsets(EdgeInsets(top: 8, leading: 20, bottom: 8, trailing: 20))
+                            .listRowSeparator(.hidden)
+                            .listRowBackground(Color.clear)
+                    }
+                }
+            }
+        }
+        .listStyle(.plain)
+        .scrollContentBackground(.hidden)
+        .background(Color(.systemGroupedBackground))
+        .navigationTitle(book.title)
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(Color(.systemGroupedBackground), for: .navigationBar)
+        .toolbarBackground(.visible, for: .navigationBar)
+    }
+
+    private var bookHeader: some View {
+        HStack(spacing: 14) {
+            BookCoverThumbnail(book: book)
+                .frame(width: 56, height: 78)
+                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+
+            VStack(alignment: .leading, spacing: 6) {
+                if let authors = book.authors, !authors.isEmpty {
+                    Text(authors)
+                        .font(.system(size: 14))
+                        .foregroundStyle(AppColors.secondaryText)
+                }
+
+                Text(String(format: NSLocalizedString("my_notes_progress_format", comment: ""), Int(min(max(book.progression, 0), 1) * 100)))
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(AppColors.accentTeal)
+
+                HStack(spacing: 12) {
+                    labelCount(highlightCount, key: "my_notes_highlights_label")
+                    labelCount(bookmarkCount, key: "my_notes_bookmarks_label")
+                }
+            }
+
+            Spacer(minLength: 0)
+        }
+        .padding(14)
+        .background(AppColors.cardBackground, in: RoundedRectangle(cornerRadius: AppColors.cardCornerRadius, style: .continuous))
+    }
+
+    private func labelCount(_ count: Int, key: String) -> some View {
+        VStack(spacing: 2) {
+            Text("\(count)")
+                .font(.system(size: 18, weight: .bold))
+                .foregroundStyle(AppColors.primaryText)
+            Text(NSLocalizedString(key, comment: ""))
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(AppColors.tertiaryText)
+        }
+        .frame(minWidth: 48)
+    }
+}
+
+// MARK: - Note content row (no book cover — already in book context)
+
+private struct NoteContentRow: View {
     let note: TimelineNote
 
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            bookCover
-            content
-        }
-    }
-
-    private var bookCover: some View {
-        VStack(spacing: 0) {
-            BookCoverThumbnail(book: note.book)
-                .frame(width: 32, height: 43)
-                .cornerRadius(4)
-            Rectangle()
-                .fill(AppColors.primaryText.opacity(0.06))
-                .frame(width: 1.5)
-                .padding(.top, 8)
-        }
-        .frame(width: 32)
-    }
-
-    private var content: some View {
         VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 8) {
-                Text(note.book.title)
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
+            HStack {
                 Spacer()
                 Text(formattedDate(note.date))
                     .font(.system(size: 11))
@@ -387,7 +474,7 @@ private struct TimelineRow: View {
         .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(AppColors.accentBlue.opacity(0.06))
-        .cornerRadius(12)
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
     private func bookmarkContext(_ bm: Bookmark) -> String? {
@@ -418,7 +505,7 @@ private struct TimelineRow: View {
                 .padding(12)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(highlightColor.opacity(0.08))
-                .cornerRadius(12)
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
 
             if let note = hl.note, !note.isEmpty {
                 HStack(spacing: 6) {
@@ -445,7 +532,7 @@ private struct TimelineRow: View {
     }
 
     private func formattedDate(_ date: Date) -> String {
-        TimelineRow.dateFormatter.string(from: date)
+        NoteContentRow.dateFormatter.string(from: date)
     }
 
     private static let dateFormatter: DateFormatter = {
@@ -457,6 +544,20 @@ private struct TimelineRow: View {
 }
 
 // MARK: - Models
+
+private struct TimelineNote: Identifiable {
+    let id: String
+    let book: Book
+    let item: NoteItem
+    let date: Date
+
+    init(book: Book, item: NoteItem) {
+        self.book = book
+        self.item = item
+        self.id = item.id
+        self.date = item.created
+    }
+}
 
 private enum NoteItem {
     case bookmark(Bookmark)
@@ -506,6 +607,6 @@ private struct BookCoverThumbnail: View {
                     }
             }
         }
-        .cornerRadius(6)
+        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
     }
 }

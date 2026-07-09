@@ -11,24 +11,14 @@ struct TTSSettingsView: View {
     @StateObject private var model = TTSSettingsModel()
 
     var body: some View {
-        HStack {
-            if UIDevice.current.userInterfaceIdiom == .pad {
-                Spacer()
-            }
-            
-            List {
-                premiumPromptSection
-                voiceSection
-                speedPitchSection
-                previewSection
-            }
-            .listStyle(.insetGrouped)
-            .frame(maxWidth: UIDevice.current.userInterfaceIdiom == .pad ? 600 : .infinity)
-            
-            if UIDevice.current.userInterfaceIdiom == .pad {
-                Spacer()
-            }
+        List {
+            premiumPromptSection
+            voiceSection
+            speedPitchSection
+            previewSection
         }
+        .listStyle(.insetGrouped)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(uiColor: .systemGroupedBackground))
         .navigationTitle(NSLocalizedString("tts_settings_title", comment: ""))
         .navigationBarTitleDisplayMode(.inline)
@@ -199,76 +189,66 @@ private struct VoicePickerView: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        HStack {
-            if UIDevice.current.userInterfaceIdiom == .pad {
-                Spacer()
-            }
-            
-            List {
-                // System Default
-                Section {
-                    Button {
-                        model.selectVoice(nil)
-                    } label: {
-                        HStack {
-                            Text(NSLocalizedString("tts_default", comment: ""))
-                                .foregroundStyle(.primary)
-                            Spacer()
-                            if model.selectedVoiceId == nil {
-                                Image(systemName: "checkmark")
-                                    .foregroundStyle(.tint)
-                                    .font(.system(size: 16, weight: .semibold))
-                            }
+        List {
+            // System Default
+            Section {
+                Button {
+                    model.selectVoice(nil)
+                } label: {
+                    HStack {
+                        Text(NSLocalizedString("tts_default", comment: ""))
+                            .foregroundStyle(.primary)
+                        Spacer()
+                        if model.selectedVoiceId == nil {
+                            Image(systemName: "checkmark")
+                                .foregroundStyle(.tint)
+                                .font(.system(size: 16, weight: .semibold))
                         }
-                        .contentShape(Rectangle())
                     }
-                    .buttonStyle(.plain)
-                } footer: {
-                    Text(NSLocalizedString("tts_settings_default_voice_footer", comment: ""))
+                    .contentShape(Rectangle())
                 }
+                .buttonStyle(.plain)
+            } footer: {
+                Text(NSLocalizedString("tts_settings_default_voice_footer", comment: ""))
+            }
 
-                // Voices grouped by language
-                ForEach(model.voiceLanguages, id: \.self) { language in
-                    Section(language) {
-                        ForEach(model.voices(for: language), id: \.identifier) { voice in
-                            Button {
-                                model.selectVoice(voice.identifier)
-                            } label: {
-                                HStack(spacing: 12) {
-                                    VStack(alignment: .leading, spacing: 2) {
-                                        Text(voice.name)
-                                            .foregroundStyle(.primary)
-                                        if let badge = qualityBadge(voice.quality) {
-                                            Text(badge)
-                                                .font(.caption2.weight(.medium))
-                                                .padding(.horizontal, 6)
-                                                .padding(.vertical, 2)
-                                                .background(Color.accentColor.opacity(0.15))
-                                                .foregroundStyle(Color.accentColor)
-                                                .clipShape(Capsule())
-                                        }
-                                    }
-                                    Spacer()
-                                    if model.selectedVoiceId == voice.identifier {
-                                        Image(systemName: "checkmark")
-                                            .foregroundStyle(.tint)
-                                            .font(.system(size: 16, weight: .semibold))
+            // Voices grouped by language
+            ForEach(model.voiceLanguages, id: \.self) { language in
+                Section(language) {
+                    ForEach(model.voices(for: language), id: \.identifier) { voice in
+                        Button {
+                            model.selectVoice(voice.identifier)
+                        } label: {
+                            HStack(spacing: 12) {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(voice.name)
+                                        .foregroundStyle(.primary)
+                                    if let badge = qualityBadge(voice.quality) {
+                                        Text(badge)
+                                            .font(.caption2.weight(.medium))
+                                            .padding(.horizontal, 6)
+                                            .padding(.vertical, 2)
+                                            .background(Color.accentColor.opacity(0.15))
+                                            .foregroundStyle(Color.accentColor)
+                                            .clipShape(Capsule())
                                     }
                                 }
-                                .contentShape(Rectangle())
+                                Spacer()
+                                if model.selectedVoiceId == voice.identifier {
+                                    Image(systemName: "checkmark")
+                                        .foregroundStyle(.tint)
+                                        .font(.system(size: 16, weight: .semibold))
+                                }
                             }
-                            .buttonStyle(.plain)
+                            .contentShape(Rectangle())
                         }
+                        .buttonStyle(.plain)
                     }
                 }
             }
-            .listStyle(.insetGrouped)
-            .frame(maxWidth: UIDevice.current.userInterfaceIdiom == .pad ? 600 : .infinity)
-            
-            if UIDevice.current.userInterfaceIdiom == .pad {
-                Spacer()
-            }
         }
+        .listStyle(.insetGrouped)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(uiColor: .systemGroupedBackground))
         .navigationTitle(NSLocalizedString("tts_settings_voice_section", comment: ""))
         .navigationBarTitleDisplayMode(.inline)

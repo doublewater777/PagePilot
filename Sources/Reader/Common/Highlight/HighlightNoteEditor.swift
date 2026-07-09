@@ -36,10 +36,11 @@ struct HighlightNoteEditor: View {
             .navigationTitle(NSLocalizedString("highlight_note_title", comment: ""))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button(NSLocalizedString("cancel_button", comment: "")) {
-                        onCancel()
-                    }
+                ToolbarItem(placement: .topBarLeading) {
+                    SheetCloseButton(
+                        accessibilityLabel: NSLocalizedString("cancel_button", comment: ""),
+                        action: onCancel
+                    )
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button(NSLocalizedString("save_button", comment: "")) {

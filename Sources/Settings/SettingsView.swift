@@ -26,9 +26,7 @@ struct SettingsView: View {
             readingSection
             statsSection
             
-            if UIDevice.current.userInterfaceIdiom == .phone {
-                pageTurnSection
-            }
+            pageTurnSection
             ttsSection
             
             appearanceSection
@@ -118,26 +116,40 @@ struct SettingsView: View {
 
     private var pageTurnSection: some View {
         Section(NSLocalizedString("settings_page_turn_section", comment: "")) {
-            NavigationLink {
-                LazyView(WatchSettingsView())
-                    .navigationBarTitleDisplayMode(.inline)
-            } label: {
-                SettingsRow(
-                    icon: "applewatch",
-                    iconColor: Color(uiColor: .label),
-                    title: NSLocalizedString("settings_watch_section", comment: "")
-                )
-            }
+            if UIDevice.current.userInterfaceIdiom == .phone {
+                NavigationLink {
+                    LazyView(WatchSettingsView())
+                        .navigationBarTitleDisplayMode(.inline)
+                } label: {
+                    SettingsRow(
+                        icon: "applewatch",
+                        iconColor: Color(uiColor: .label),
+                        title: NSLocalizedString("settings_watch_section", comment: "")
+                    )
+                }
 
-            NavigationLink {
-                LazyView(VolumeKeySettingsView())
-                    .navigationBarTitleDisplayMode(.inline)
-            } label: {
-                SettingsRow(
-                    icon: "speaker.wave.2",
-                    iconColor: .orange,
-                    title: NSLocalizedString("settings_volume_key_turn_page", comment: "")
-                )
+                NavigationLink {
+                    LazyView(VolumeKeySettingsView())
+                        .navigationBarTitleDisplayMode(.inline)
+                } label: {
+                    SettingsRow(
+                        icon: "speaker.wave.2",
+                        iconColor: .orange,
+                        title: NSLocalizedString("settings_volume_key_turn_page", comment: "")
+                    )
+                }
+            } else {
+                // iPad is the LAN receiver for Watch page turn — surface diagnostics here.
+                NavigationLink {
+                    LazyView(IPadWatchConnectionView())
+                        .navigationBarTitleDisplayMode(.inline)
+                } label: {
+                    SettingsRow(
+                        icon: "applewatch.radiowaves.left.and.right",
+                        iconColor: .blue,
+                        title: NSLocalizedString("settings_ipad_watch_status", comment: "")
+                    )
+                }
             }
         }
     }
@@ -157,49 +169,40 @@ struct SettingsView: View {
         }
     }
 
+    @ViewBuilder
     private var proSection: some View {
         if hasProAccess {
-            // State 1: Pro access active (either active subscription or legacy buyer)
-            return AnyView(Section {
-                HStack {
-                    SettingsRow(
-                        icon: "crown.fill",
-                        iconColor: .yellow,
-                        title: NSLocalizedString("settings_pro_unlocked", comment: "")
-                    )
-                    Spacer()
-                    Text(NSLocalizedString("settings_pro_badge", comment: ""))
-                        .font(.system(size: 12, weight: .bold))
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(
-                            LinearGradient(
-                                colors: [
-                                    Color(red: 0.38, green: 0.56, blue: 1.0),
-                                    Color(red: 0.56, green: 0.44, blue: 0.96)
-                                ],
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            )
-                        )
-                        .cornerRadius(6)
-                }
-            })
+            Section {
+                ProEntitlementCard()
+                    .listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16))
+                    .listRowBackground(Color.clear)
+            }
         } else {
-            // State 2: Pro access inactive
-            return AnyView(Section {
+            Section {
                 Button(action: {
                     Analytics.shared.log(.paywallViewed(source: "settings_upgrade_row"))
                     showPaywall = true
                 }) {
-                    HStack {
-                        SettingsRow(
-                            icon: "crown.fill",
-                            iconColor: .yellow,
-                            title: NSLocalizedString("settings_upgrade_pro", comment: "")
-                        )
-                        Spacer()
+                    HStack(spacing: 12) {
+                        Image(systemName: "crown.fill")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.yellow)
+                            .frame(width: 28, height: 28)
+                            .background(Color.yellow.opacity(0.15))
+                            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(NSLocalizedString("settings_upgrade_pro", comment: ""))
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundStyle(.primary)
+                            Text(NSLocalizedString("settings_pro_upgrade_body", comment: ""))
+                                .font(.system(size: 12))
+                                .foregroundStyle(.secondary)
+                                .lineLimit(2)
+                        }
+
+                        Spacer(minLength: 0)
+
                         Image(systemName: "chevron.right")
                             .font(.system(size: 13, weight: .semibold))
                             .foregroundStyle(.tertiary)
@@ -207,7 +210,7 @@ struct SettingsView: View {
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-            })
+            }
         }
     }
 
@@ -421,6 +424,90 @@ private extension Bundle {
         }
 
         return bundle.appLocalizedString(forKey: key, value: value, table: tableName)
+    }
+}
+
+// MARK: - Pro Entitlement Card
+
+/// Presents owned Pro benefits as a reading perk card (not a tiny status badge).
+private struct ProEntitlementCard: View {
+    @Environment(\.colorScheme) private var colorScheme
+
+    private let benefits: [(icon: String, key: String)] = [
+        ("books.vertical.fill", "settings_pro_benefit_library"),
+        ("chart.bar.xaxis", "settings_pro_benefit_stats"),
+        ("applewatch", "settings_pro_benefit_watch"),
+    ]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 12) {
+                Image(systemName: "crown.fill")
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundColor(.white)
+                    .frame(width: 36, height: 36)
+                    .background(AppColors.horizontalGradient)
+                    .clipShape(Circle())
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(NSLocalizedString("settings_pro_unlocked", comment: ""))
+                        .font(.system(size: 17, weight: .bold))
+                        .foregroundStyle(AppColors.primaryText)
+                    Text(NSLocalizedString("settings_pro_active_body", comment: ""))
+                        .font(.system(size: 13))
+                        .foregroundStyle(AppColors.secondaryText)
+                }
+
+                Spacer(minLength: 0)
+
+                Text(NSLocalizedString("settings_pro_badge", comment: ""))
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(AppColors.horizontalGradient)
+                    .clipShape(Capsule())
+            }
+
+            Divider().opacity(0.5)
+
+            HStack(spacing: 0) {
+                ForEach(Array(benefits.enumerated()), id: \.offset) { _, benefit in
+                    VStack(spacing: 6) {
+                        Image(systemName: benefit.icon)
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(AppColors.accentTeal)
+                            .frame(width: 28, height: 28)
+                            .background(AppColors.accentTeal.opacity(colorScheme == .dark ? 0.2 : 0.12))
+                            .clipShape(Circle())
+
+                        Text(NSLocalizedString(benefit.key, comment: ""))
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundStyle(AppColors.secondaryText)
+                            .multilineTextAlignment(.center)
+                            .lineLimit(2)
+                            .minimumScaleFactor(0.85)
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+            }
+        }
+        .padding(16)
+        .background(
+            AppColors.cardBackground,
+            in: RoundedRectangle(cornerRadius: AppColors.cardCornerRadius, style: .continuous)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: AppColors.cardCornerRadius, style: .continuous)
+                .stroke(
+                    LinearGradient(
+                        colors: [AppColors.accentBlue.opacity(0.35), AppColors.accentTeal.opacity(0.35)],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    ),
+                    lineWidth: 1
+                )
+        )
     }
 }
 

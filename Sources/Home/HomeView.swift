@@ -16,6 +16,15 @@ struct LastReadBook: Identifiable {
     let coverPath: String?
     let progression: Double
 
+    /// Clamped 0...1 for progress UI.
+    var displayProgression: Double {
+        min(max(progression, 0), 1)
+    }
+
+    var isFinished: Bool {
+        progression >= ContinueReadingSelector.finishedProgressThreshold
+    }
+
     init(book: Book) {
         self.id = book.id!
         self.title = book.title
@@ -77,6 +86,7 @@ final class HomeViewModel: ObservableObject {
     }
 
     private let books: BookRepository
+    private var latestBooks: [Book] = []
     private var cancellables = Set<AnyCancellable>()
 
     init(
@@ -93,14 +103,17 @@ final class HomeViewModel: ObservableObject {
 
     private func loadLastReadBook() {
         books.all()
-            .map { books -> LastReadBook? in
-                books.last { $0.progression > 0 && $0.progression < 1 }
-                    .map { LastReadBook(book: $0) }
-            }
             .receive(on: DispatchQueue.main)
-            .sink { _ in } receiveValue: { [weak self] book in
-                self?.lastReadBook = book
-                self?.isEmpty = book == nil
+            .sink { _ in } receiveValue: { [weak self] books in
+                self?.latestBooks = books
+                self?.applyContinueReadingSelection()
+            }
+            .store(in: &cancellables)
+
+        NotificationCenter.default.publisher(for: LastReadBooks.didChange)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.applyContinueReadingSelection()
             }
             .store(in: &cancellables)
 
@@ -119,6 +132,20 @@ final class HomeViewModel: ObservableObject {
             .store(in: &cancellables)
     }
 
+    /// Re-evaluate continue-reading using current books + MRU list.
+    func refreshContinueReading() {
+        applyContinueReadingSelection()
+    }
+
+    private func applyContinueReadingSelection() {
+        let selected = ContinueReadingSelector.select(
+            from: latestBooks,
+            lastReadIds: LastReadBooks.orderedIds
+        )
+        lastReadBook = selected.map { LastReadBook(book: $0) }
+        isEmpty = selected == nil
+    }
+
     /// Today's reading time in minutes
     var todayReadingMinutes: Int {
         statsStore.todayReadingSeconds() / 60
@@ -127,6 +154,11 @@ final class HomeViewModel: ObservableObject {
     /// Progress towards daily goal (0.0 to 1.0+)
     var dailyProgress: Double {
         min(Double(todayReadingMinutes) / Double(dailyReadingGoalMinutes), 1.0)
+    }
+
+    /// Current reading streak in days (summary scope).
+    var currentStreakDays: Int {
+        statsStore.snapshot(for: .summary).currentStreakDays
     }
 
     /// Formatted reading time string
@@ -180,18 +212,24 @@ struct CardStyleModifier: ViewModifier {
     @Environment(\.colorScheme) var colorScheme
 
     func body(content: Self.Content) -> some View {
+        let radius = AppColors.cardCornerRadius
         content
-            .background(AppColors.cardBackground)
-            .cornerRadius(20)
+            .background(
+                AppColors.cardBackground,
+                in: RoundedRectangle(cornerRadius: radius, style: .continuous)
+            )
             .overlay(
-                RoundedRectangle(cornerRadius: 20)
-                    .stroke(colorScheme == .dark ? Color.white.opacity(0.08) : Color.white.opacity(0.7), lineWidth: 1)
+                RoundedRectangle(cornerRadius: radius, style: .continuous)
+                    .stroke(
+                        colorScheme == .dark ? Color.white.opacity(0.06) : Color.black.opacity(0.04),
+                        lineWidth: 1
+                    )
             )
             .shadow(
-                color: Color.black.opacity(colorScheme == .dark ? 0.25 : 0.04),
-                radius: 16,
+                color: Color.black.opacity(colorScheme == .dark ? 0 : 0.04),
+                radius: colorScheme == .dark ? 0 : 12,
                 x: 0,
-                y: 6
+                y: colorScheme == .dark ? 0 : 6
             )
     }
 }
@@ -212,6 +250,9 @@ struct HomeView: View {
     @State private var appeared = false
     @State private var progressAnimated = false
     @State private var localizationRefreshID = AppAppearancePreferences.language.rawValue
+    @State private var showStats = false
+    @State private var showNotes = false
+
     var body: some View {
         VStack(spacing: 0) {
             ScrollView(.vertical, showsIndicators: false) {
@@ -239,16 +280,22 @@ struct HomeView: View {
                             .animation(.easeOut(duration: 0.5).delay(0.2), value: appeared)
                     }
 
+                    homeShortcuts
+                        .opacity(appeared ? 1 : 0)
+                        .offset(y: appeared ? 0 : 15)
+                        .animation(.easeOut(duration: 0.5).delay(0.28), value: appeared)
+
                     Spacer(minLength: UIDevice.current.userInterfaceIdiom == .pad ? 24 : 100)
                 }
                 .padding(.horizontal, 24)
                 .padding(.top, 18)
             }
         }
-        .background(AppColors.background)
+        .background(AppColors.background.ignoresSafeArea())
         .id(localizationRefreshID)
         .onAppear {
             appeared = true
+            viewModel.refreshContinueReading()
             withAnimation(.easeOut(duration: 0.8).delay(0.3)) {
                 progressAnimated = true
             }
@@ -259,34 +306,104 @@ struct HomeView: View {
         .onReceive(NotificationCenter.default.publisher(for: .readingStatsDidChange)) { _ in
             viewModel.statsRefreshID = UUID()
         }
+        .sheet(isPresented: $showStats) {
+            NavigationStack {
+                ReadingStatsView()
+                    .toolbar {
+                        ToolbarItem(placement: .topBarTrailing) {
+                            SheetCloseButton { showStats = false }
+                        }
+                    }
+            }
+            .presentationDragIndicator(.visible)
+            .presentationBackground(Color(.systemGroupedBackground))
+        }
+        .sheet(isPresented: $showNotes) {
+            NavigationStack {
+                MyNotesView()
+                    .toolbar {
+                        ToolbarItem(placement: .topBarTrailing) {
+                            SheetCloseButton { showNotes = false }
+                        }
+                    }
+            }
+            .presentationDragIndicator(.visible)
+            .presentationBackground(Color(.systemGroupedBackground))
+        }
+    }
+
+    // MARK: - Shortcuts (stats / notes)
+
+    private var homeShortcuts: some View {
+        HStack(spacing: 12) {
+            Button {
+                showStats = true
+            } label: {
+                homeShortcutLabel(
+                    icon: "chart.bar.xaxis",
+                    title: NSLocalizedString("home_shortcut_stats", comment: ""),
+                    subtitle: NSLocalizedString("home_shortcut_stats_subtitle", comment: "")
+                )
+            }
+            .buttonStyle(PremiumButtonStyle())
+
+            Button {
+                showNotes = true
+            } label: {
+                homeShortcutLabel(
+                    icon: "bookmark.fill",
+                    title: NSLocalizedString("home_shortcut_notes", comment: ""),
+                    subtitle: NSLocalizedString("home_shortcut_notes_subtitle", comment: "")
+                )
+            }
+            .buttonStyle(PremiumButtonStyle())
+        }
+    }
+
+    private func homeShortcutLabel(icon: String, title: String, subtitle: String) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(AppColors.accentBlue)
+                .frame(width: 36, height: 36)
+                .background(AppColors.accentBlue.opacity(colorScheme == .dark ? 0.2 : 0.1))
+                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(AppColors.primaryText)
+                    .lineLimit(1)
+                Text(subtitle)
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(AppColors.tertiaryText)
+                    .lineLimit(1)
+            }
+
+            Spacer(minLength: 0)
+
+            Image(systemName: "chevron.right")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundColor(AppColors.tertiaryText)
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .cardStyle()
     }
 
     // MARK: - Greeting Header
 
     private var greetingHeader: some View {
-        HStack(alignment: .center, spacing: 14) {
-            ZStack {
-                Circle()
-                    .fill(AppColors.accentGradientStart.opacity(colorScheme == .dark ? 0.22 : 0.12))
-                    .frame(width: 44, height: 44)
+        VStack(alignment: .leading, spacing: 4) {
+            Text(viewModel.greetingText)
+                .font(.system(size: 30, weight: .bold))
+                .foregroundColor(AppColors.primaryText)
 
-                Image(systemName: "book.closed")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(AppColors.accentGradientStart)
-            }
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text(viewModel.greetingText)
-                    .font(.system(size: 30, weight: .bold))
-                    .foregroundColor(AppColors.primaryText)
-
-                Text(viewModel.dateText)
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(AppColors.secondaryText)
-            }
+            Text(viewModel.dateText)
+                .font(.system(size: 14, weight: .medium))
+                .foregroundColor(AppColors.secondaryText)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.top, 8)
     }
 
     // MARK: - Daily Reading Goal Card
@@ -341,11 +458,17 @@ struct HomeView: View {
                     icon: "timer"
                 )
 
-                compactMetric(
-                    title: NSLocalizedString("home_daily_goal", comment: ""),
-                    value: "\(viewModel.dailyReadingGoalMinutes)",
-                    icon: "target"
-                )
+                Button {
+                    showStats = true
+                } label: {
+                    compactMetric(
+                        title: NSLocalizedString("stats_metric_streak", comment: ""),
+                        value: "\(viewModel.currentStreakDays)",
+                        icon: viewModel.currentStreakDays > 0 ? "flame.fill" : "flame"
+                    )
+                }
+                .buttonStyle(.plain)
+                .accessibilityHint(NSLocalizedString("home_streak_a11y_hint", comment: ""))
             }
         }
         .padding(22)
@@ -404,6 +527,12 @@ struct HomeView: View {
 
                             Spacer()
 
+                            if book.isFinished {
+                                Text(NSLocalizedString("home_finished_label", comment: ""))
+                                    .font(.system(size: 12, weight: .semibold))
+                                    .foregroundColor(AppColors.accentTeal)
+                            }
+
                             HStack(spacing: 12) {
                                 GeometryReader { geometry in
                                     ZStack(alignment: .leading) {
@@ -411,7 +540,7 @@ struct HomeView: View {
                                             .fill(AppColors.progressTrack)
                                             .frame(height: 6)
 
-                                        let progressWidth = geometry.size.width * book.progression
+                                        let progressWidth = geometry.size.width * book.displayProgression
 
                                         Capsule()
                                             .fill(AppColors.horizontalGradient)
@@ -426,7 +555,7 @@ struct HomeView: View {
                                 }
                                 .frame(height: 6)
 
-                                Text("\(Int(book.progression * 100))%")
+                                Text("\(Int(book.displayProgression * 100))%")
                                     .font(.system(size: 13, weight: .bold))
                                     .foregroundColor(AppColors.accentGradientStart)
                             }
@@ -444,7 +573,10 @@ struct HomeView: View {
                         delegate?.homeDidSelectContinueReading(bookId: book.id)
                     }) {
                         HStack(spacing: 6) {
-                            Text(NSLocalizedString("home_continue_reading_button", comment: ""))
+                            Text(NSLocalizedString(
+                                book.isFinished ? "home_reread_button" : "home_continue_reading_button",
+                                comment: ""
+                            ))
                             Image(systemName: "arrow.right")
                                 .font(.system(size: 13, weight: .bold))
                         }

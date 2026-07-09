@@ -98,10 +98,8 @@ struct ReadingShareCardView: View {
             .navigationTitle(NSLocalizedString("share_card_title", comment: ""))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(NSLocalizedString("close_button", comment: "")) {
-                        dismiss()
-                    }
+                ToolbarItem(placement: .topBarTrailing) {
+                    SheetCloseButton { dismiss() }
                 }
             }
             .overlay(toastOverlay)

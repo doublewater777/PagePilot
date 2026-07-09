@@ -146,8 +146,11 @@ struct UserPreferences<
             .navigationTitle(NSLocalizedString("prefs_user_preferences", comment: ""))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItemGroup(placement: .cancellationAction) {
-                    Button(NSLocalizedString("prefs_close", comment: ""), action: onClose)
+                ToolbarItem(placement: .topBarLeading) {
+                    SheetCloseButton(
+                        accessibilityLabel: NSLocalizedString("prefs_close", comment: ""),
+                        action: onClose
+                    )
                 }
 
                 ToolbarItemGroup(placement: .destructiveAction) {

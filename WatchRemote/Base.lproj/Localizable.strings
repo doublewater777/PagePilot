@@ -14,3 +14,4 @@
 "watch.error.ipadTimeout" = "Can't reach iPad. Check Wi-Fi and keep PagePilot open.";
 "watch.error.openIPhone" = "Open PagePilot on iPhone";
 "watch.error.generic" = "Couldn't turn the page. Try again.";
+"watch.error.proRequired" = "iPad page turn needs PagePilot Pro on iPhone.";

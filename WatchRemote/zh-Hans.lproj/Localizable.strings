@@ -14,3 +14,4 @@
 "watch.error.ipadTimeout" = "暂时连不上 iPad，请检查 Wi-Fi";
 "watch.error.openIPhone" = "请在 iPhone 上打开 PagePilot";
 "watch.error.generic" = "翻页失败，请重试";
+"watch.error.proRequired" = "控制 iPad 翻页需要 iPhone 上的 PagePilot Pro";
