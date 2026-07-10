@@ -506,7 +506,7 @@ private struct ProEntitlementCard: View {
     ]
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 12) {
                 Image(systemName: "crown.fill")
                     .font(.system(size: 15, weight: .bold))
@@ -539,7 +539,7 @@ private struct ProEntitlementCard: View {
 
             HStack(spacing: 0) {
                 ForEach(Array(benefits.enumerated()), id: \.offset) { _, benefit in
-                    VStack(spacing: 6) {
+                    VStack(spacing: 4) {
                         Image(systemName: benefit.icon)
                             .font(.system(size: 14, weight: .semibold))
                             .foregroundColor(AppColors.accentTeal)
@@ -551,7 +551,7 @@ private struct ProEntitlementCard: View {
                             .font(.system(size: 11, weight: .medium))
                             .foregroundStyle(.secondary)
                             .multilineTextAlignment(.center)
-                            .lineLimit(2)
+                            .lineLimit(1)
                             .minimumScaleFactor(0.85)
                     }
                     .frame(maxWidth: .infinity)
