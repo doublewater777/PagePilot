@@ -96,29 +96,36 @@ final class VolumeKeyService: NSObject {
 
     override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey: Any]?, context: UnsafeMutableRawPointer?) {
         guard keyPath == #keyPath(AVAudioSession.outputVolume),
-              let newVolume = change?[.newKey] as? Float,
-              shouldIntercept() else { return }
+              let newVolume = change?[.newKey] as? Float else { return }
+
+        guard VolumeKeyDecisionPolicy.shouldIntercept(currentState()) else { return }
 
         let delta = newVolume - anchorVolume
         guard abs(delta) > 0.05 else { anchorVolume = newVolume; return }
 
+        let action = VolumeKeyDecisionPolicy.direction(for: delta, mapping: Self.currentVolumeKeyMapping)
         let currentAnchor = anchorVolume
-        let mapping = VolumeKeyService.currentVolumeKeyMapping
         DispatchQueue.main.async { [weak self] in
-            let isForward: Bool
-            switch mapping {
-            case .downForwardUpBackward:
-                isForward = delta < 0
-            case .upForwardDownBackward:
-                isForward = delta > 0
-            }
-            if isForward {
+            switch action {
+            case .forward:
                 self?.onPageForward?()
-            } else {
+            case .backward:
                 self?.onPageBackward?()
             }
             self?.volumeSlider?.setValue(currentAnchor, animated: false)
         }
+    }
+
+    /// Captures the live gate inputs for `VolumeKeyDecisionPolicy` from
+    /// UserDefaults, the audio session, and the registered provider's window.
+    private func currentState() -> VolumeKeyState {
+        let provider = behaviorProvider
+        return VolumeKeyState(
+            isEnabled: UserDefaults.standard.bool(forKey: Self.volumeKeyEnabledKey),
+            isKeyWindow: (provider as? UIViewController)?.view.window?.isKeyWindow == true,
+            isOtherAudioPlaying: AVAudioSession.sharedInstance().isOtherAudioPlaying,
+            providerBehavior: provider?.volumeKeyBehavior ?? .controlVolume
+        )
     }
 
     static var currentVolumeKeyMapping: VolumeKeyMapping {
@@ -127,12 +134,4 @@ final class VolumeKeyService: NSObject {
             ?? Self.defaultVolumeKeyMapping
     }
 
-    private func shouldIntercept() -> Bool {
-        guard UserDefaults.standard.bool(forKey: Self.volumeKeyEnabledKey) else { return false }
-        guard let provider = behaviorProvider,
-              (provider as? UIViewController)?.view.window?.isKeyWindow == true else { return false }
-        guard !AVAudioSession.sharedInstance().isOtherAudioPlaying else { return false }
-
-        return provider.volumeKeyBehavior == .turnPage
-    }
 }

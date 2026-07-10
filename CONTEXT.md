@@ -49,7 +49,7 @@ The Apple Watch remote-control capability that sends next-page or previous-page 
 _Avoid_: Watch remote, remote control
 
 **Volume Key Page Turn**:
-An optional mode that maps iPhone hardware volume buttons to page-forward and page-backward actions during reading. Implemented via a hidden `MPVolumeView` + KVO on `outputVolume` with immediate reset. Runtime interception is gated by a decision chain: CarPlay → external audio playing → reader declares intent via `VolumeKeyBehaviorProvider` protocol → user preference for TTS mode. The active provider is registered in `viewWillAppear` and unregistered in `viewDidDisappear` of `VisualReaderViewController`; a `isKeyWindow` guard prevents interception when the reader is not the frontmost window.
+An optional mode that maps iPhone hardware volume buttons to page-forward and page-backward actions during reading. Implemented via a hidden `MPVolumeView` + KVO on `outputVolume` with immediate reset. Runtime interception is gated by a decision chain: external audio playing → reader declares intent via `VolumeKeyBehaviorProvider` protocol → user preference for TTS mode. The active provider is registered in `viewWillAppear` and unregistered in `viewDidDisappear` of `VisualReaderViewController`; a `isKeyWindow` guard prevents interception when the reader is not the frontmost window.
 _Avoid_: Volume button page turn, hardware key turn, remote volume page control
 
 **Double Tap Page Turn**:
