@@ -40,7 +40,6 @@ final class HomeViewModel: ObservableObject {
     @Published var statsRefreshID = UUID()
 
     private let statsStore: ReadingStatsStore
-    private let statsAccess: ReadingStatsAccess
 
     /// Daily reading goal in minutes.
     var dailyReadingGoalMinutes: Int {
@@ -91,12 +90,10 @@ final class HomeViewModel: ObservableObject {
 
     init(
         books: BookRepository,
-        statsStore: ReadingStatsStore = .shared,
-        statsAccess: ReadingStatsAccess = .shared
+        statsStore: ReadingStatsStore = .shared
     ) {
         self.books = books
         self.statsStore = statsStore
-        self.statsAccess = statsAccess
 
         loadLastReadBook()
     }
@@ -171,7 +168,7 @@ final class HomeViewModel: ObservableObject {
     }
 
     func canAccessStats(_ scope: ReadingStatsScope) -> Bool {
-        !scope.requiresPro || statsAccess.hasProAccess
+        !scope.requiresPro || ProPurchaseManager.shared.hasProAccess
     }
 }
 

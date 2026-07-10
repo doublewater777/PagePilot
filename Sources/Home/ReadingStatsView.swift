@@ -22,10 +22,10 @@ struct ReadingStatsView: View {
     @State private var expandedWeeks: Set<Int> = [4]
 
     private let statsStore = ReadingStatsStore.shared
-    private let statsAccess = ReadingStatsAccess.shared
+    @ObservedObject private var proPurchase = ProPurchaseManager.shared
 
     private var canAccessSelectedScope: Bool {
-        !selectedStatsScope.requiresPro || statsAccess.hasProAccess
+        !selectedStatsScope.requiresPro || proPurchase.hasProAccess
     }
 
     var body: some View {
@@ -76,9 +76,6 @@ struct ReadingStatsView: View {
         .onReceive(NotificationCenter.default.publisher(for: .readingStatsDidChange)) { _ in
             statsRefreshID = UUID()
         }
-        .onReceive(NotificationCenter.default.publisher(for: ProPurchaseManager.proAccessDidChange)) { _ in
-            statsRefreshID = UUID()
-        }
         .onAppear {
             loadBooksData()
         }
@@ -127,7 +124,7 @@ struct ReadingStatsView: View {
                     } label: {
                         HStack(spacing: 6) {
                             Text(scope.title)
-                            if scope.requiresPro && !statsAccess.hasProAccess {
+                            if scope.requiresPro && !proPurchase.hasProAccess {
                                 Image(systemName: "lock.fill")
                                     .font(.system(size: 10, weight: .bold))
                             }

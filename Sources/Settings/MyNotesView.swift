@@ -14,7 +14,7 @@ struct MyNotesView: View {
     @State private var showDeleteConfirmation = false
     @State private var deleteErrorMessage: String?
     @State private var highlightCount = 0
-    @State private var hasProAccess = ProPurchaseManager.shared.hasProAccess
+    @ObservedObject private var proPurchase = ProPurchaseManager.shared
     @State private var showPaywall = false
 
     private let bookmarkRepo: BookmarkRepository
@@ -30,7 +30,7 @@ struct MyNotesView: View {
 
     /// Only surface free-quota pressure near the limit — not on first few highlights.
     private var showQuotaBanner: Bool {
-        !hasProAccess && highlightCount >= NotesQuota.warningThreshold
+        !proPurchase.hasProAccess && highlightCount >= NotesQuota.warningThreshold
     }
 
     private var bookGroups: [BookNotesGroup] {
@@ -154,9 +154,6 @@ struct MyNotesView: View {
         .padding(.top, 4)
         .sheet(isPresented: $showPaywall) {
             PaywallView()
-        }
-        .onReceive(NotificationCenter.default.publisher(for: ProPurchaseManager.proAccessDidChange)) { _ in
-            hasProAccess = ProPurchaseManager.shared.hasProAccess
         }
         .alert(
             NSLocalizedString("my_notes_delete_confirm_title", comment: ""),
@@ -289,7 +286,6 @@ struct MyNotesView: View {
                 if case .highlight = note.item { return partial + 1 }
                 return partial
             }
-            hasProAccess = ProPurchaseManager.shared.hasProAccess
         } catch {
             print("MyNotesView: failed to load notes: \(error)")
             notes = []

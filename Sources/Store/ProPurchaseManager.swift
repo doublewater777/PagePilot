@@ -36,10 +36,9 @@ enum ProPurchaseError: Error, LocalizedError {
     }
 }
 
-final class ProPurchaseManager {
+final class ProPurchaseManager: ObservableObject {
     static let shared = ProPurchaseManager()
 
-    static let proAccessDidChange = Notification.Name("proAccessDidChange")
     static let monthlyProductID = "com.panyang.PagePilot.pro.monthly"
     static let yearlyProductID = "com.panyang.PagePilot.pro.yearly"
     static let lifetimeProductID = "com.panyang.PagePilot.pro.lifetime"
@@ -235,7 +234,7 @@ final class ProPurchaseManager {
     @MainActor
     private func updateProAccess(_ hasAccess: Bool) async {
         defaults.set(hasAccess, forKey: proKey)
-        NotificationCenter.default.post(name: Self.proAccessDidChange, object: nil)
+        objectWillChange.send()
     }
 }
 

@@ -12,7 +12,7 @@ import UIKit
 struct WatchSettingsView: View {
     @State private var controlTarget: WatchPageTurnSettings.ControlTarget
     @State private var doubleTapPageTurn: Bool
-    @State private var hasProAccess = ProPurchaseManager.shared.hasProAccess
+    @ObservedObject private var proPurchase = ProPurchaseManager.shared
     @State private var showsPaywall = false
     @State private var showSetupGuide = false
 
@@ -49,9 +49,6 @@ struct WatchSettingsView: View {
                 WatchPageTurnService.shared.probeIPadRelayNow()
             }
         }
-        .onReceive(NotificationCenter.default.publisher(for: ProPurchaseManager.proAccessDidChange)) { _ in
-            hasProAccess = ProPurchaseManager.shared.hasProAccess
-        }
     }
 
     // MARK: - Setup guide entry
@@ -81,7 +78,7 @@ struct WatchSettingsView: View {
                 selection: Binding(
                     get: { controlTarget },
                     set: { newValue in
-                        guard newValue != .iPad || hasProAccess else {
+                        guard newValue != .iPad || proPurchase.hasProAccess else {
                             showsPaywall = true
                             return
                         }
@@ -108,7 +105,7 @@ struct WatchSettingsView: View {
     }
 
     private func targetName(for target: WatchPageTurnSettings.ControlTarget) -> String {
-        guard target == .iPad, !hasProAccess else {
+        guard target == .iPad, !proPurchase.hasProAccess else {
             return target.localizedName
         }
         return String(format: NSLocalizedString("watch_target_ipad_pro", comment: ""), target.localizedName)

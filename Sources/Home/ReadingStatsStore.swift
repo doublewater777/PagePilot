@@ -75,24 +75,6 @@ struct ReadingStatsSnapshot {
     static let empty = ReadingStatsSnapshot()
 }
 
-final class ReadingStatsAccess {
-    static let shared = ReadingStatsAccess()
-
-    private let defaults: UserDefaults
-
-    private enum Keys {
-        static let isPro = "entitlements_isPro"
-    }
-
-    init(defaults: UserDefaults = .standard) {
-        self.defaults = defaults
-    }
-
-    var hasProAccess: Bool {
-        defaults.bool(forKey: Keys.isPro)
-    }
-}
-
 final class ReadingStatsStore {
     static let shared = ReadingStatsStore()
 

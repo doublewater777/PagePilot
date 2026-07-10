@@ -16,7 +16,7 @@ struct SettingsView: View {
     @AppStorage(ReadingPreferences.Keys.dailyGoalMinutes) private var dailyGoalMinutes = ReadingPreferences.defaultDailyGoalMinutes
     @State private var localizationRefreshID = AppAppearancePreferences.language.rawValue
     @State private var showPaywall = false
-    @State private var hasProAccess = ProPurchaseManager.shared.hasProAccess
+    @ObservedObject private var proPurchase = ProPurchaseManager.shared
     private static var hasAutoShownPaywall = false
 
     var body: some View {
@@ -49,11 +49,7 @@ struct SettingsView: View {
         .sheet(isPresented: $showPaywall) {
             PaywallView()
         }
-        .onReceive(NotificationCenter.default.publisher(for: ProPurchaseManager.proAccessDidChange)) { _ in
-            hasProAccess = ProPurchaseManager.shared.hasProAccess
-        }
         .onAppear {
-            hasProAccess = ProPurchaseManager.shared.hasProAccess
             if ProcessInfo.processInfo.arguments.contains("-ShowPaywall") && !Self.hasAutoShownPaywall {
                 Self.hasAutoShownPaywall = true
                 showPaywall = true
@@ -172,7 +168,7 @@ struct SettingsView: View {
 
     @ViewBuilder
     private var proSection: some View {
-        if hasProAccess {
+        if proPurchase.hasProAccess {
             // Use default section insets so width matches other Settings rows.
             Section {
                 ProEntitlementCard()
