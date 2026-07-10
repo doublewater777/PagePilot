@@ -615,14 +615,14 @@
 "settings_appearance_section" = "Appearance";
 "settings_reading_section" = "Reading";
 "settings_daily_goal" = "Daily Goal";
-"settings_reminder_section" = "Reminders";
 "settings_reminder" = "Reading Reminder";
-"settings_reminder_time" = "Time";
+"settings_reminder_time" = "Reminder Time";
+"settings_reminder_footer" = "Get a daily notification at this time to nudge you toward your reading goal.";
 "settings_reminder_denied_title" = "Notifications Off";
 "settings_reminder_denied_body" = "Enable notifications in Settings to get reading reminders.";
 "settings_reminder_open_settings" = "Open Settings";
 "reminder_title" = "Time to read";
-"reminder_body" = "Keep your reading streak going.";
+"reminder_body" = "A little time for your daily reading goal.";
 "reader_goal_reached" = "Daily goal reached! 🎉";
 "settings_language" = "Language";
 "settings_language_english" = "English";

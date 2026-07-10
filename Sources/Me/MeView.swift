@@ -26,7 +26,6 @@ struct MeView: View {
             proSection
             
             readingSection
-            reminderSection
             statsSection
             
             pageTurnSection
@@ -104,7 +103,7 @@ struct MeView: View {
     }
 
     private var readingSection: some View {
-        Section(NSLocalizedString("settings_reading_section", comment: "")) {
+        Section {
             Picker(selection: $dailyGoalMinutes) {
                 ForEach(Array(stride(
                     from: ReadingPreferences.dailyGoalRange.lowerBound,
@@ -121,21 +120,14 @@ struct MeView: View {
                 )
             }
             .pickerStyle(.menu)
-        }
-    }
 
-    private var reminderSection: some View {
-        Section(NSLocalizedString("settings_reminder_section", comment: "")) {
             Toggle(isOn: $reminderEnabled) {
-                MeRow(
-                    icon: "bell",
-                    iconColor: .pink,
-                    title: NSLocalizedString("settings_reminder", comment: "")
-                )
+                Text(NSLocalizedString("settings_reminder", comment: ""))
             }
             .onChange(of: reminderEnabled) { _, newValue in
                 Task {
                     if newValue {
+                        ensureReminderTimeDefaults()
                         let granted = await ReadingReminderScheduler.shared.requestAuthorization()
                         if granted {
                             await ReadingReminderScheduler.shared.reschedule()
@@ -150,6 +142,7 @@ struct MeView: View {
                     }
                 }
             }
+
             if reminderEnabled {
                 DatePicker(
                     NSLocalizedString("settings_reminder_time", comment: ""),
@@ -157,6 +150,21 @@ struct MeView: View {
                     displayedComponents: .hourAndMinute
                 )
             }
+        } header: {
+            Text(NSLocalizedString("settings_reading_section", comment: ""))
+        } footer: {
+            if reminderEnabled {
+                Text(NSLocalizedString("settings_reminder_footer", comment: ""))
+            }
+        }
+    }
+
+    private func ensureReminderTimeDefaults() {
+        if UserDefaults.standard.object(forKey: ReadingPreferences.Keys.reminderHour) == nil {
+            ReadingPreferences.reminderHour = ReadingPreferences.defaultReminderHour
+        }
+        if UserDefaults.standard.object(forKey: ReadingPreferences.Keys.reminderMinute) == nil {
+            ReadingPreferences.reminderMinute = ReadingPreferences.defaultReminderMinute
         }
     }
 

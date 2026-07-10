@@ -206,6 +206,9 @@ enum ReadingPreferences {
 
     static var reminderHour: Int {
         get {
+            guard UserDefaults.standard.object(forKey: Keys.reminderHour) != nil else {
+                return defaultReminderHour
+            }
             let stored = UserDefaults.standard.integer(forKey: Keys.reminderHour)
             return (0...23).contains(stored) ? stored : defaultReminderHour
         }
@@ -214,6 +217,9 @@ enum ReadingPreferences {
 
     static var reminderMinute: Int {
         get {
+            guard UserDefaults.standard.object(forKey: Keys.reminderMinute) != nil else {
+                return defaultReminderMinute
+            }
             let stored = UserDefaults.standard.integer(forKey: Keys.reminderMinute)
             return (0...59).contains(stored) ? stored : defaultReminderMinute
         }

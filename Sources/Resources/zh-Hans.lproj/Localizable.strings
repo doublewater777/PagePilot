@@ -615,14 +615,14 @@
 "settings_appearance_section" = "外观";
 "settings_reading_section" = "阅读";
 "settings_daily_goal" = "每日目标";
-"settings_reminder_section" = "提醒";
 "settings_reminder" = "阅读提醒";
-"settings_reminder_time" = "时间";
+"settings_reminder_time" = "提醒时间";
+"settings_reminder_footer" = "每天到这个时间会提醒你，朝今日阅读目标再读一会儿。";
 "settings_reminder_denied_title" = "通知未开启";
 "settings_reminder_denied_body" = "请在系统设置中开启通知以接收阅读提醒。";
 "settings_reminder_open_settings" = "去设置";
 "reminder_title" = "该读书啦";
-"reminder_body" = "保持你的阅读连续天数。";
+"reminder_body" = "今天还可以朝阅读目标再读一会儿。";
 "reader_goal_reached" = "今日目标已达成!🎉";
 "settings_language" = "语言";
 "settings_language_english" = "英文";
