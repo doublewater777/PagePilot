@@ -8,9 +8,9 @@ import ObjectiveC
 import SafariServices
 import SwiftUI
 
-// MARK: - Root Settings View
+// MARK: - Root Me View
 
-struct SettingsView: View {
+struct MeView: View {
     @AppStorage(AppAppearancePreferences.Keys.language) private var selectedLanguage = AppAppearancePreferences.language.rawValue
     @AppStorage(AppAppearancePreferences.Keys.theme) private var selectedTheme = AppTheme.system.rawValue
     @AppStorage(ReadingPreferences.Keys.dailyGoalMinutes) private var dailyGoalMinutes = ReadingPreferences.defaultDailyGoalMinutes
@@ -41,7 +41,7 @@ struct SettingsView: View {
         .scrollContentBackground(.hidden)
         .contentMargins(.top, 8, for: .scrollContent)
         .background(Color(uiColor: .systemGroupedBackground))
-        .navigationTitle(NSLocalizedString("settings_title", comment: ""))
+        .navigationTitle(NSLocalizedString("me_title", comment: ""))
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(Color(uiColor: .systemGroupedBackground), for: .navigationBar)
         .toolbarBackground(.visible, for: .navigationBar)
@@ -82,7 +82,7 @@ struct SettingsView: View {
                     Text(language.localizedName).tag(language.rawValue)
                 }
             } label: {
-                SettingsRow(
+                MeRow(
                     icon: "globe",
                     iconColor: .blue,
                     title: NSLocalizedString("settings_language", comment: "")
@@ -94,7 +94,7 @@ struct SettingsView: View {
                     Text(theme.localizedName).tag(theme.rawValue)
                 }
             } label: {
-                SettingsRow(
+                MeRow(
                     icon: "circle.lefthalf.filled",
                     iconColor: .purple,
                     title: NSLocalizedString("settings_theme", comment: "")
@@ -114,7 +114,7 @@ struct SettingsView: View {
                     Text(String(format: NSLocalizedString("home_minutes", comment: ""), minute)).tag(minute)
                 }
             } label: {
-                SettingsRow(
+                MeRow(
                     icon: "target",
                     iconColor: .blue,
                     title: NSLocalizedString("settings_daily_goal", comment: "")
@@ -127,7 +127,7 @@ struct SettingsView: View {
     private var reminderSection: some View {
         Section(NSLocalizedString("settings_reminder_section", comment: "")) {
             Toggle(isOn: $reminderEnabled) {
-                SettingsRow(
+                MeRow(
                     icon: "bell",
                     iconColor: .pink,
                     title: NSLocalizedString("settings_reminder", comment: "")
@@ -184,7 +184,7 @@ struct SettingsView: View {
                     LazyView(WatchSettingsView())
                         .navigationBarTitleDisplayMode(.inline)
                 } label: {
-                    SettingsRow(
+                    MeRow(
                         icon: "applewatch",
                         iconColor: Color(uiColor: .label),
                         title: NSLocalizedString("settings_watch_section", comment: "")
@@ -195,7 +195,7 @@ struct SettingsView: View {
                     LazyView(VolumeKeySettingsView())
                         .navigationBarTitleDisplayMode(.inline)
                 } label: {
-                    SettingsRow(
+                    MeRow(
                         icon: "speaker.wave.2",
                         iconColor: .orange,
                         title: NSLocalizedString("settings_volume_key_turn_page", comment: "")
@@ -207,7 +207,7 @@ struct SettingsView: View {
                     LazyView(IPadWatchConnectionView())
                         .navigationBarTitleDisplayMode(.inline)
                 } label: {
-                    SettingsRow(
+                    MeRow(
                         icon: "applewatch.radiowaves.left.and.right",
                         iconColor: .blue,
                         title: NSLocalizedString("settings_ipad_watch_status", comment: "")
@@ -223,7 +223,7 @@ struct SettingsView: View {
                 LazyView(TTSSettingsView())
                     .navigationBarTitleDisplayMode(.inline)
             } label: {
-                SettingsRow(
+                MeRow(
                     icon: "speaker.wave.2.fill",
                     iconColor: .blue,
                     title: NSLocalizedString("settings_tts_voice", comment: "")
@@ -235,7 +235,7 @@ struct SettingsView: View {
     @ViewBuilder
     private var proSection: some View {
         if proPurchase.hasProAccess {
-            // Use default section insets so width matches other Settings rows.
+            // Use default section insets so width matches other Me rows.
             Section {
                 ProEntitlementCard()
                     .listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16))
@@ -284,7 +284,7 @@ struct SettingsView: View {
                 LazyView(ReadingStatsView())
                     .navigationBarTitleDisplayMode(.inline)
             } label: {
-                SettingsRow(
+                MeRow(
                     icon: "chart.bar.xaxis",
                     iconColor: .blue,
                     title: NSLocalizedString("settings_stats", comment: "")
@@ -295,7 +295,7 @@ struct SettingsView: View {
                 LazyView(MyNotesView())
                     .navigationBarTitleDisplayMode(.inline)
             } label: {
-                SettingsRow(
+                MeRow(
                     icon: "bookmark.fill",
                     iconColor: .blue,
                     title: NSLocalizedString("settings_my_notes", comment: "")
@@ -336,7 +336,7 @@ struct SettingsView: View {
                     .navigationTitle(NSLocalizedString("settings_about", comment: ""))
                     .navigationBarTitleDisplayMode(.inline)
             } label: {
-                SettingsRow(
+                MeRow(
                     icon: "info.circle.fill",
                     iconColor: .gray,
                     title: NSLocalizedString("settings_about", comment: "")
@@ -493,7 +493,7 @@ private extension Bundle {
 
 // MARK: - Pro Entitlement Card
 
-/// Presents owned Pro benefits as a reading perk block inside a normal Settings section
+/// Presents owned Pro benefits as a reading perk block inside a normal Me-tab section
 /// (same width as other list rows — no nested card inset).
 private struct ProEntitlementCard: View {
     @Environment(\.colorScheme) private var colorScheme
@@ -564,7 +564,7 @@ private struct ProEntitlementCard: View {
 
 // MARK: - Reusable Row
 
-private struct SettingsRow: View {
+private struct MeRow: View {
     let icon: String
     let iconColor: Color
     let title: String
@@ -636,7 +636,7 @@ private struct FeedbackRow: View {
     var body: some View {
         Button(action: sendFeedback) {
             HStack {
-                SettingsRow(icon: icon, iconColor: iconColor, title: title)
+                MeRow(icon: icon, iconColor: iconColor, title: title)
                 Spacer()
                 Image(systemName: "chevron.right")
                     .font(.system(size: 13, weight: .semibold))
@@ -682,7 +682,7 @@ private struct RateAppRow: View {
     var body: some View {
         Button(action: AppStoreReviewLink.open) {
             HStack {
-                SettingsRow(
+                MeRow(
                     icon: "star.bubble.fill",
                     iconColor: .orange,
                     title: NSLocalizedString("settings_rate_app", comment: "")
@@ -720,7 +720,7 @@ private struct ShareAppRow: View {
     var body: some View {
         Button(action: { showShareSheet = true }) {
             HStack {
-                SettingsRow(
+                MeRow(
                     icon: "square.and.arrow.up",
                     iconColor: .blue,
                     title: NSLocalizedString("settings_share_app", comment: "")
@@ -767,7 +767,7 @@ private extension Bundle {
 
 #Preview {
     NavigationView {
-        SettingsView()
+        MeView()
     }
     .navigationViewStyle(.stack)
 }
@@ -793,7 +793,7 @@ private struct AboutDetailView: View {
         List {
             Section {
                 HStack {
-                    SettingsRow(
+                    MeRow(
                         icon: "number",
                         iconColor: .secondary,
                         title: NSLocalizedString("settings_version", comment: "")
@@ -805,7 +805,7 @@ private struct AboutDetailView: View {
                 }
 
                 HStack {
-                    SettingsRow(
+                    MeRow(
                         icon: "doc.text",
                         iconColor: .secondary,
                         title: NSLocalizedString("settings_icp_filing", comment: "")
@@ -823,7 +823,7 @@ private struct AboutDetailView: View {
                     safariURL = IdentifiableURL(url: URL(string: "https://pagepilot.doublewaterapps.com/privacy.html")!)
                 }) {
                     HStack {
-                        SettingsRow(
+                        MeRow(
                             icon: "lock.shield",
                             iconColor: .blue,
                             title: NSLocalizedString("paywall_privacy_policy", comment: "")
@@ -842,7 +842,7 @@ private struct AboutDetailView: View {
                     safariURL = IdentifiableURL(url: URL(string: "https://pagepilot.doublewaterapps.com/terms.html")!)
                 }) {
                     HStack {
-                        SettingsRow(
+                        MeRow(
                             icon: "doc.text",
                             iconColor: .blue,
                             title: NSLocalizedString("paywall_terms_of_use", comment: "")

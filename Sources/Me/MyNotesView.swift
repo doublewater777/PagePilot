@@ -201,7 +201,7 @@ struct MyNotesView: View {
 
         app.pendingNavigationTarget = (bookId, note.item.locator)
 
-        // Close Home sheet first; from Settings NavigationLink this pops notes.
+        // Close Home sheet first; from Me-tab NavigationLink this pops notes.
         // Defer open so the sheet/nav transition finishes (especially on iPad).
         dismiss()
 

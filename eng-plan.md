@@ -537,7 +537,6 @@ func application(_ application: UIApplication, didFinishLaunchingWithOptions lau
 
 1. **Server-side receipt validation** — StoreKit 2 的本地验证足够，不需要自建服务器
 2. **iPad 支持锁定** — 第一版不做，等统计即 Pro 跑通后再加
-3. **数据导出（CSV/JSON）** — 设计文档里有，但实现可以放在 v1.2
 4. **Family Sharing 测试** — 代码支持，但手动测试放在上线后
 5. **A/B 测试不同 Paywall 文案** — 上线后根据数据优化
 

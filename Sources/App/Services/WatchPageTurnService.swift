@@ -233,7 +233,7 @@ final class WatchPageTurnService: NSObject, ObservableObject {
     @Published var isWatchConnected: Bool = false
     @Published var isLANWatchConnected: Bool = false
 
-    /// iPad LAN diagnostics (surfaced in Settings on iPad).
+    /// iPad LAN diagnostics (surfaced in the Me tab on iPad).
     @Published private(set) var lanServerRunning = false
     @Published private(set) var lanServerPort: UInt = 0
     @Published private(set) var lanBonjourName: String = ""

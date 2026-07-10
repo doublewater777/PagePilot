@@ -60,8 +60,12 @@ _Avoid_: Double tap, two-finger tap, double-click, DoubleTap
 The paid entitlement that unlocks limits such as the free bookshelf book count and deeper historical reading review.
 _Avoid_: Subscription, premium mode, purchase state
 
+**Me Tab**:
+The third main-tab destination for personal reading controls, Pro status, stats entry, notes, and app preferences. The tab bar label is "我" / "Me" with a person icon; it replaces the former Settings tab label while keeping the same screen content.
+_Avoid_: Settings tab, profile tab, account tab
+
 **Pro Entitlement Card**:
-The settings experience that presents active Pro Access as owned reading benefits rather than as a small status badge.
+The Me-tab experience that presents active Pro Access as owned reading benefits rather than as a small status badge.
 _Avoid_: Pro badge, membership label, upgrade banner
 
 **ICP Filing**:

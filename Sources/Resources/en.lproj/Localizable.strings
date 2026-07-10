@@ -610,8 +610,8 @@
 "home_shortcut_notes_subtitle" = "Highlights & bookmarks";
 
 /* MARK: Settings */
-"settings_tab" = "Me";
-"settings_title" = "Settings";
+"me_tab" = "Me";
+"me_title" = "Me";
 "settings_appearance_section" = "Appearance";
 "settings_reading_section" = "Reading";
 "settings_daily_goal" = "Daily Goal";
@@ -750,7 +750,7 @@
 "ipad_watch_next_header" = "What to do next";
 "ipad_watch_next_wifi" = "Join the same Wi‑Fi as your iPhone.";
 "ipad_watch_next_restart" = "Tap Retest. If it still fails, quit PagePilot and open it again.";
-"ipad_watch_next_phone" = "On iPhone: Settings → Watch page turn → choose iPad, keep PagePilot open, then return here and tap Retest. Same Wi‑Fi is enough — same Apple ID is not required.";
+"ipad_watch_next_phone" = "On iPhone: Me → Watch page turn → choose iPad, keep PagePilot open, then return here and tap Retest. Same Wi‑Fi is enough — same Apple ID is not required.";
 "ipad_watch_how_header" = "How it works";
 "ipad_watch_how_body" = "Your Watch talks to iPhone; iPhone reaches this iPad over Wi‑Fi. This screen actively self-tests the local service and waits for a test visit from iPhone.";
 

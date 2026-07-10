@@ -610,8 +610,8 @@
 "home_shortcut_notes_subtitle" = "高亮与书签";
 
 /* MARK: Settings */
-"settings_tab" = "我";
-"settings_title" = "设置";
+"me_tab" = "我";
+"me_title" = "我";
 "settings_appearance_section" = "外观";
 "settings_reading_section" = "阅读";
 "settings_daily_goal" = "每日目标";
@@ -750,7 +750,7 @@
 "ipad_watch_next_header" = "下一步";
 "ipad_watch_next_wifi" = "到控制中心连上与 iPhone 相同的 Wi‑Fi。";
 "ipad_watch_next_restart" = "点「重新测试」；若仍失败，退出 App 再打开一次。";
-"ipad_watch_next_phone" = "在 iPhone：设置 → 手表翻页 → 目标选「iPad」，并保持 PagePilot 打开，然后回到本页点「重新测试」。两台同一 Wi‑Fi 即可，不需要同一 Apple ID。";
+"ipad_watch_next_phone" = "在 iPhone：我 → 手表翻页 → 目标选「iPad」，并保持 PagePilot 打开，然后回到本页点「重新测试」。两台同一 Wi‑Fi 即可，不需要同一 Apple ID。";
 "ipad_watch_how_header" = "这是怎么工作的";
 "ipad_watch_how_body" = "手表连着 iPhone；iPhone 经 Wi‑Fi 访问这台 iPad。本页会主动自检本机服务，并等待 iPhone 发来的测试访问。";
 

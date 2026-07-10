@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(asc pricing summary *)",
+      "Bash(asc submit status *)",
+      "Bash(xcrun simctl list *)",
+      "Bash(dig *)",
+      "Bash(asc analytics *)",
+      "Bash(xcrun swiftc -parse *)"
+    ]
+  }
+}

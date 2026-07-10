@@ -14,7 +14,7 @@ import UIKit
 private enum MainTabIdentifier {
     static let home = "home"
     static let library = "library"
-    static let settings = "settings"
+    static let me = "me"
 }
 
 @main
@@ -91,22 +91,22 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         let homeViewController = app.home.rootViewController
         let libraryViewController = app.library.rootViewController
 
-        let settingsView = NavigationView { SettingsView() }
+        let meView = NavigationView { MeView() }
             .navigationViewStyle(.stack)
-        let settingsViewController = UIHostingController(rootView: settingsView)
+        let meViewController = UIHostingController(rootView: meView)
 
         let tabBarController: UITabBarController
         if #available(iOS 18.0, *) {
             tabBarController = makeModernTabBarController(
                 homeViewController: homeViewController,
                 libraryViewController: libraryViewController,
-                settingsViewController: settingsViewController
+                meViewController: meViewController
             )
         } else {
             tabBarController = makeLegacyTabBarController(
                 homeViewController: homeViewController,
                 libraryViewController: libraryViewController,
-                settingsViewController: settingsViewController
+                meViewController: meViewController
             )
         }
 
@@ -119,7 +119,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     private func makeModernTabBarController(
         homeViewController: UIViewController,
         libraryViewController: UIViewController,
-        settingsViewController: UIViewController
+        meViewController: UIViewController
     ) -> UITabBarController {
         func makeTab(
             titleKey: String,
@@ -138,7 +138,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         let tabBarController = UITabBarController(tabs: [
             makeTab(titleKey: "home_tab", systemImage: "house", identifier: MainTabIdentifier.home, viewController: homeViewController),
             makeTab(titleKey: "bookshelf_tab", systemImage: "books.vertical", identifier: MainTabIdentifier.library, viewController: libraryViewController),
-            makeTab(titleKey: "settings_tab", systemImage: "person.crop.circle", identifier: MainTabIdentifier.settings, viewController: settingsViewController),
+            makeTab(titleKey: "me_tab", systemImage: "person.crop.circle", identifier: MainTabIdentifier.me, viewController: meViewController),
         ])
         tabBarController.customizationIdentifier = "com.panyang.PagePilot.main"
 
@@ -153,7 +153,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     private func makeLegacyTabBarController(
         homeViewController: UIViewController,
         libraryViewController: UIViewController,
-        settingsViewController: UIViewController
+        meViewController: UIViewController
     ) -> UITabBarController {
         func makeItem(title: String, systemImage: String) -> UITabBarItem {
             UITabBarItem(
@@ -165,13 +165,13 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
         homeViewController.tabBarItem = makeItem(title: "home_tab", systemImage: "house")
         libraryViewController.tabBarItem = makeItem(title: "bookshelf_tab", systemImage: "books.vertical")
-        settingsViewController.tabBarItem = makeItem(title: "settings_tab", systemImage: "person.crop.circle")
+        meViewController.tabBarItem = makeItem(title: "me_tab", systemImage: "person.crop.circle")
 
         let tabBarController = UITabBarController()
         tabBarController.viewControllers = [
             homeViewController,
             libraryViewController,
-            settingsViewController,
+            meViewController,
         ]
         return tabBarController
     }
@@ -219,8 +219,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
                 NSLocalizedString("home_tab", comment: "Tab bar item")
             tabBarController.tab(forIdentifier: MainTabIdentifier.library)?.title =
                 NSLocalizedString("bookshelf_tab", comment: "Tab bar item")
-            tabBarController.tab(forIdentifier: MainTabIdentifier.settings)?.title =
-                NSLocalizedString("settings_tab", comment: "Tab bar item")
+            tabBarController.tab(forIdentifier: MainTabIdentifier.me)?.title =
+                NSLocalizedString("me_tab", comment: "Tab bar item")
             return
         }
 
@@ -228,7 +228,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
         tabBarItems[0].title = NSLocalizedString("home_tab", comment: "Tab bar item")
         tabBarItems[1].title = NSLocalizedString("bookshelf_tab", comment: "Tab bar item")
-        tabBarItems[2].title = NSLocalizedString("settings_tab", comment: "Tab bar item")
+        tabBarItems[2].title = NSLocalizedString("me_tab", comment: "Tab bar item")
     }
 
     private func observeAppearancePreferences() {
@@ -478,7 +478,8 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         AppAppearancePreferences.applyTheme(to: window)
         self.window = window
 
-        if ProcessInfo.processInfo.arguments.contains("-SelectSettingsTab") {
+        if ProcessInfo.processInfo.arguments.contains("-SelectMeTab")
+            || ProcessInfo.processInfo.arguments.contains("-SelectSettingsTab") {
             if let tabBar = rootViewController as? UITabBarController {
                 tabBar.selectedIndex = 2
             }

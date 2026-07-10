@@ -12,7 +12,7 @@ import ReadiumShared
 /// Single source of truth for user-selected TTS preferences.
 ///
 /// Stored in `UserDefaults` so they persist across launches and are shared
-/// between the global Settings tab and every reader that uses TTS.
+/// between the global Me tab and every reader that uses TTS.
 struct TTSPreferences {
     private enum Keys {
         static let voiceId = "tts_preferred_voice"
