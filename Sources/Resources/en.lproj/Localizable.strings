@@ -610,7 +610,7 @@
 "home_shortcut_notes_subtitle" = "Highlights & bookmarks";
 
 /* MARK: Settings */
-"settings_tab" = "Settings";
+"settings_tab" = "Me";
 "settings_title" = "Settings";
 "settings_appearance_section" = "Appearance";
 "settings_reading_section" = "Reading";

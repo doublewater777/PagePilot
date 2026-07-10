@@ -610,7 +610,7 @@
 "home_shortcut_notes_subtitle" = "高亮与书签";
 
 /* MARK: Settings */
-"settings_tab" = "设置";
+"settings_tab" = "我";
 "settings_title" = "设置";
 "settings_appearance_section" = "外观";
 "settings_reading_section" = "阅读";

@@ -138,7 +138,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         let tabBarController = UITabBarController(tabs: [
             makeTab(titleKey: "home_tab", systemImage: "house", identifier: MainTabIdentifier.home, viewController: homeViewController),
             makeTab(titleKey: "bookshelf_tab", systemImage: "books.vertical", identifier: MainTabIdentifier.library, viewController: libraryViewController),
-            makeTab(titleKey: "settings_tab", systemImage: "gearshape", identifier: MainTabIdentifier.settings, viewController: settingsViewController),
+            makeTab(titleKey: "settings_tab", systemImage: "person.crop.circle", identifier: MainTabIdentifier.settings, viewController: settingsViewController),
         ])
         tabBarController.customizationIdentifier = "com.panyang.PagePilot.main"
 
@@ -165,7 +165,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
         homeViewController.tabBarItem = makeItem(title: "home_tab", systemImage: "house")
         libraryViewController.tabBarItem = makeItem(title: "bookshelf_tab", systemImage: "books.vertical")
-        settingsViewController.tabBarItem = makeItem(title: "settings_tab", systemImage: "gearshape")
+        settingsViewController.tabBarItem = makeItem(title: "settings_tab", systemImage: "person.crop.circle")
 
         let tabBarController = UITabBarController()
         tabBarController.viewControllers = [
