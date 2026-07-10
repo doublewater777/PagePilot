@@ -46,7 +46,12 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         Task {
             await ProPurchaseManager.shared.verifyCurrentEntitlements()
         }
- 
+
+        // Re-assert the reading-reminder schedule (cleared by reinstall / OS).
+        Task {
+            await ReadingReminderScheduler.shared.reschedule()
+        }
+
         StartupProfiler.shared.record("AppDelegate didFinishLaunching End")
         return true
     }

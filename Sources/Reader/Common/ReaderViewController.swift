@@ -97,17 +97,30 @@ class ReaderViewController<N: Navigator>: UIViewController,
         readingSessionStartDate = Date()
     }
 
-    private func finishReadingSessionIfNeeded() {
+    private func finishReadingSessionIfNeeded(celebrateGoal: Bool = true) {
         guard let startDate = readingSessionStartDate else { return }
 
         let endDate = Date()
         readingSessionStartDate = nil
 
         ReadingStatsStore.shared.recordReadingSession(startDate: startDate, endDate: endDate, bookId: bookId)
+
+        // Celebrate the daily goal once per day, only on a visible exit (not
+        // backgrounding) so the toast is actually seen.
+        guard celebrateGoal,
+              ReadingGoalPolicy.goalReached(
+                  todaySeconds: ReadingStatsStore.shared.todayReadingSeconds(),
+                  goalMinutes: ReadingPreferences.dailyGoalMinutes
+              ),
+              !ReadingGoalCelebration.alreadyCelebratedToday() else {
+            return
+        }
+        ReadingGoalCelebration.markCelebratedToday()
+        toast(NSLocalizedString("reader_goal_reached", comment: ""), on: view, duration: 2)
     }
 
     @objc private func appDidEnterBackground() {
-        finishReadingSessionIfNeeded()
+        finishReadingSessionIfNeeded(celebrateGoal: false)
     }
 
     @objc private func appWillEnterForeground() {

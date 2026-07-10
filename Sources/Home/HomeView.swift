@@ -175,10 +175,15 @@ final class HomeViewModel: ObservableObject {
 enum ReadingPreferences {
     enum Keys {
         static let dailyGoalMinutes = "reading_daily_goal_minutes"
+        static let reminderEnabled = "reading_reminder_enabled"
+        static let reminderHour = "reading_reminder_hour"
+        static let reminderMinute = "reading_reminder_minute"
     }
 
     static let defaultDailyGoalMinutes = 30
     static let dailyGoalRange = 5...180
+    static let defaultReminderHour = 20
+    static let defaultReminderMinute = 0
     static let dailyGoalDidChange = Notification.Name("ReadingPreferencesDailyGoalDidChange")
 
     static var dailyGoalMinutes: Int {
@@ -192,6 +197,27 @@ enum ReadingPreferences {
             UserDefaults.standard.set(clamped, forKey: Keys.dailyGoalMinutes)
             NotificationCenter.default.post(name: dailyGoalDidChange, object: clamped)
         }
+    }
+
+    static var reminderEnabled: Bool {
+        get { UserDefaults.standard.bool(forKey: Keys.reminderEnabled) }
+        set { UserDefaults.standard.set(newValue, forKey: Keys.reminderEnabled) }
+    }
+
+    static var reminderHour: Int {
+        get {
+            let stored = UserDefaults.standard.integer(forKey: Keys.reminderHour)
+            return (0...23).contains(stored) ? stored : defaultReminderHour
+        }
+        set { UserDefaults.standard.set(min(max(newValue, 0), 23), forKey: Keys.reminderHour) }
+    }
+
+    static var reminderMinute: Int {
+        get {
+            let stored = UserDefaults.standard.integer(forKey: Keys.reminderMinute)
+            return (0...59).contains(stored) ? stored : defaultReminderMinute
+        }
+        set { UserDefaults.standard.set(min(max(newValue, 0), 59), forKey: Keys.reminderMinute) }
     }
 }
 

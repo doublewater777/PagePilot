@@ -17,6 +17,8 @@ struct SettingsView: View {
     @State private var localizationRefreshID = AppAppearancePreferences.language.rawValue
     @State private var showPaywall = false
     @ObservedObject private var proPurchase = ProPurchaseManager.shared
+    @AppStorage(ReadingPreferences.Keys.reminderEnabled) private var reminderEnabled = false
+    @State private var showNotificationDeniedAlert = false
     private static var hasAutoShownPaywall = false
 
     var body: some View {
@@ -24,6 +26,7 @@ struct SettingsView: View {
             proSection
             
             readingSection
+            reminderSection
             statsSection
             
             pageTurnSection
@@ -48,6 +51,16 @@ struct SettingsView: View {
         }
         .sheet(isPresented: $showPaywall) {
             PaywallView()
+        }
+        .alert(NSLocalizedString("settings_reminder_denied_title", comment: ""), isPresented: $showNotificationDeniedAlert) {
+            Button(NSLocalizedString("cancel_button", comment: ""), role: .cancel) {}
+            Button(NSLocalizedString("settings_reminder_open_settings", comment: "")) {
+                if let url = URL(string: UIApplication.openSettingsURLString) {
+                    UIApplication.shared.open(url)
+                }
+            }
+        } message: {
+            Text(NSLocalizedString("settings_reminder_denied_body", comment: ""))
         }
         .onAppear {
             if ProcessInfo.processInfo.arguments.contains("-ShowPaywall") && !Self.hasAutoShownPaywall {
@@ -109,6 +122,59 @@ struct SettingsView: View {
             }
             .pickerStyle(.menu)
         }
+    }
+
+    private var reminderSection: some View {
+        Section(NSLocalizedString("settings_reminder_section", comment: "")) {
+            Toggle(isOn: $reminderEnabled) {
+                SettingsRow(
+                    icon: "bell",
+                    iconColor: .pink,
+                    title: NSLocalizedString("settings_reminder", comment: "")
+                )
+            }
+            .onChange(of: reminderEnabled) { _, newValue in
+                Task {
+                    if newValue {
+                        let granted = await ReadingReminderScheduler.shared.requestAuthorization()
+                        if granted {
+                            await ReadingReminderScheduler.shared.reschedule()
+                        } else {
+                            await MainActor.run {
+                                reminderEnabled = false
+                                showNotificationDeniedAlert = true
+                            }
+                        }
+                    } else {
+                        await ReadingReminderScheduler.shared.reschedule()
+                    }
+                }
+            }
+            if reminderEnabled {
+                DatePicker(
+                    NSLocalizedString("settings_reminder_time", comment: ""),
+                    selection: reminderTimeBinding,
+                    displayedComponents: .hourAndMinute
+                )
+            }
+        }
+    }
+
+    private var reminderTimeBinding: Binding<Date> {
+        Binding(
+            get: {
+                var components = DateComponents()
+                components.hour = ReadingPreferences.reminderHour
+                components.minute = ReadingPreferences.reminderMinute
+                return Calendar.current.date(from: components) ?? Date()
+            },
+            set: { newValue in
+                let components = Calendar.current.dateComponents([.hour, .minute], from: newValue)
+                ReadingPreferences.reminderHour = components.hour ?? ReadingPreferences.defaultReminderHour
+                ReadingPreferences.reminderMinute = components.minute ?? ReadingPreferences.defaultReminderMinute
+                Task { await ReadingReminderScheduler.shared.reschedule() }
+            }
+        )
     }
 
     private var pageTurnSection: some View {
