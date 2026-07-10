@@ -13,6 +13,9 @@ struct MyNotesView: View {
     @State private var notePendingDeletion: TimelineNote?
     @State private var showDeleteConfirmation = false
     @State private var deleteErrorMessage: String?
+    @State private var highlightCount = 0
+    @State private var hasProAccess = ProPurchaseManager.shared.hasProAccess
+    @State private var showPaywall = false
 
     private let bookmarkRepo: BookmarkRepository
     private let highlightRepo: HighlightRepository
@@ -23,6 +26,11 @@ struct MyNotesView: View {
         bookmarkRepo = app!.bookmarkRepository
         highlightRepo = app!.highlightRepository
         bookRepo = app!.books
+    }
+
+    /// Only surface free-quota pressure near the limit — not on first few highlights.
+    private var showQuotaBanner: Bool {
+        !hasProAccess && highlightCount >= NotesQuota.warningThreshold
     }
 
     private var bookGroups: [BookNotesGroup] {
@@ -80,6 +88,45 @@ struct MyNotesView: View {
                     .listRowBackground(Color.clear)
             }
 
+            if showQuotaBanner {
+                Section {
+                    Button {
+                        Analytics.shared.log(.paywallViewed(source: "notes_quota_banner"))
+                        showPaywall = true
+                    } label: {
+                        HStack(spacing: 10) {
+                            Image(systemName: "highlighter")
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundColor(.orange)
+                            Text(
+                                String(
+                                    format: NSLocalizedString("my_notes_quota_banner", comment: ""),
+                                    highlightCount,
+                                    ProPurchaseManager.freeHighlightLimit
+                                )
+                            )
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(AppColors.primaryText)
+                            .multilineTextAlignment(.leading)
+                            Spacer(minLength: 0)
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundStyle(.tertiary)
+                        }
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 12)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                .fill(Color.orange.opacity(0.12))
+                        )
+                    }
+                    .buttonStyle(.plain)
+                    .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 8, trailing: 20))
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
+                }
+            }
+
             Section {
                 ForEach(bookGroups) { group in
                     NavigationLink {
@@ -105,6 +152,12 @@ struct MyNotesView: View {
         .scrollContentBackground(.hidden)
         .contentMargins(.bottom, notesBottomClearance, for: .scrollContent)
         .padding(.top, 4)
+        .sheet(isPresented: $showPaywall) {
+            PaywallView()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: ProPurchaseManager.proAccessDidChange)) { _ in
+            hasProAccess = ProPurchaseManager.shared.hasProAccess
+        }
         .alert(
             NSLocalizedString("my_notes_delete_confirm_title", comment: ""),
             isPresented: $showDeleteConfirmation
@@ -138,6 +191,9 @@ struct MyNotesView: View {
             withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
                 notes.removeAll { $0.id == note.id }
             }
+            if case .highlight = note.item {
+                highlightCount = max(0, highlightCount - 1)
+            }
         } catch {
             deleteErrorMessage = NSLocalizedString("my_notes_delete_error_message", comment: "")
         }
@@ -146,17 +202,21 @@ struct MyNotesView: View {
     private func openReader(for note: TimelineNote) {
         guard let app = AppModule.shared, let bookId = note.book.id else { return }
 
-        // Close sheet when presented from Home; no-op if already in a nav stack.
-        dismiss()
-
         app.pendingNavigationTarget = (bookId, note.item.locator)
 
-        let tabBar = app.tabBarController
-        let nav = app.library.rootViewController
-        tabBar?.selectedIndex = 1
-        nav.popToRootViewController(animated: false)
+        // Close Home sheet first; from Settings NavigationLink this pops notes.
+        // Defer open so the sheet/nav transition finishes (especially on iPad).
+        dismiss()
 
-        Task {
+        Task { @MainActor in
+            // Allow sheet dismissal / pop animation to complete before presenting reader.
+            try? await Task.sleep(nanoseconds: 350_000_000)
+
+            let tabBar = app.tabBarController
+            let nav = app.library.rootViewController
+            tabBar?.selectedIndex = 1
+            nav.popToRootViewController(animated: false)
+
             guard let pub = try? await app.library.openBook(note.book, sender: nav) else { return }
             app.reader.presentPublication(publication: pub, book: note.book, in: nav)
         }
@@ -225,8 +285,15 @@ struct MyNotesView: View {
 
             timelineNotes.sort { $0.date > $1.date }
             notes = timelineNotes
+            highlightCount = timelineNotes.reduce(0) { partial, note in
+                if case .highlight = note.item { return partial + 1 }
+                return partial
+            }
+            hasProAccess = ProPurchaseManager.shared.hasProAccess
         } catch {
             print("MyNotesView: failed to load notes: \(error)")
+            notes = []
+            highlightCount = 0
         }
     }
 }
@@ -347,20 +414,24 @@ private struct BookNotesDetailView: View {
                         .listRowSeparator(.hidden)
                 } else {
                     ForEach(notes) { note in
-                        NoteContentRow(note: note)
-                            .contentShape(Rectangle())
-                            .onTapGesture { onOpen(note) }
-                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                                Button {
-                                    onDelete(note)
-                                } label: {
-                                    Text(NSLocalizedString("delete_button", comment: ""))
-                                }
-                                .tint(.red)
+                        // Use Button (not onTapGesture): List + swipeActions swallows taps on iPad.
+                        Button {
+                            onOpen(note)
+                        } label: {
+                            NoteContentRow(note: note)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                            Button(role: .destructive) {
+                                onDelete(note)
+                            } label: {
+                                Text(NSLocalizedString("delete_button", comment: ""))
                             }
-                            .listRowInsets(EdgeInsets(top: 8, leading: 20, bottom: 8, trailing: 20))
-                            .listRowSeparator(.hidden)
-                            .listRowBackground(Color.clear)
+                        }
+                        .listRowInsets(EdgeInsets(top: 8, leading: 20, bottom: 8, trailing: 20))
+                        .listRowSeparator(.hidden)
+                        .listRowBackground(Color.clear)
                     }
                 }
             }

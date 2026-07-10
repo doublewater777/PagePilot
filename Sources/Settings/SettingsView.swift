@@ -440,6 +440,7 @@ private struct ProEntitlementCard: View {
         ("books.vertical.fill", "settings_pro_benefit_library"),
         ("chart.bar.xaxis", "settings_pro_benefit_stats"),
         ("applewatch", "settings_pro_benefit_watch"),
+        ("highlighter", "settings_pro_benefit_notes"),
     ]
 
     var body: some View {

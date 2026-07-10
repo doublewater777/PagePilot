@@ -313,13 +313,64 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
 
         Task {
             do {
+                let currentCount = try await highlights.totalCount()
+                let decision = NotesQuota.evaluateAdd(
+                    currentCount: currentCount,
+                    hasProAccess: ProPurchaseManager.shared.hasProAccess
+                )
+
+                if case .blocked = decision {
+                    await MainActor.run {
+                        presentHighlightLimitPaywall()
+                    }
+                    return
+                }
+
                 try await highlights.add(highlight)
-                toast(NSLocalizedString("reader_highlight_success_message", comment: "Success message when adding a bookmark"), on: view, duration: 1)
+
+                await MainActor.run {
+                    switch decision {
+                    case .allowWithWarning(let remaining):
+                        let message = String(
+                            format: NSLocalizedString("reader_highlight_quota_warning", comment: ""),
+                            remaining
+                        )
+                        toast(message, on: view, duration: 2)
+                    case .allow, .blocked:
+                        toast(NSLocalizedString("reader_highlight_success_message", comment: "Success message when adding a highlight"), on: view, duration: 1)
+                    }
+                }
             } catch {
                 print(error)
-                toast(NSLocalizedString("reader_highlight_failure_message", comment: "Error message when adding a new bookmark failed"), on: view, duration: 2)
+                await MainActor.run {
+                    toast(NSLocalizedString("reader_highlight_failure_message", comment: "Error message when adding a new highlight failed"), on: view, duration: 2)
+                }
             }
         }
+    }
+
+    private func presentHighlightLimitPaywall() {
+        let limit = ProPurchaseManager.freeHighlightLimit
+        let alert = UIAlertController(
+            title: NSLocalizedString("reader_highlight_limit_title", comment: ""),
+            message: String(
+                format: NSLocalizedString("reader_highlight_limit_message", comment: ""),
+                limit
+            ),
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: NSLocalizedString("cancel_button", comment: ""), style: .cancel))
+        alert.addAction(UIAlertAction(
+            title: NSLocalizedString("reader_highlight_limit_upgrade", comment: ""),
+            style: .default
+        ) { [weak self] _ in
+            guard let self else { return }
+            Analytics.shared.log(.paywallViewed(source: "notes_limit"))
+            let paywall = UIHostingController(rootView: PaywallView())
+            paywall.modalPresentationStyle = .formSheet
+            self.present(paywall, animated: true)
+        })
+        present(alert, animated: true)
     }
 
     func updateHighlight(_ highlightID: Highlight.Id, withColor color: HighlightColor) {

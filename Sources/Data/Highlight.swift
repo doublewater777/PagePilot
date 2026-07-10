@@ -145,6 +145,12 @@ final class HighlightRepository {
                 .fetchCount(db)
         }
     }
+
+    func totalCount() async throws -> Int {
+        try await db.read { db in
+            try Highlight.fetchCount(db)
+        }
+    }
 }
 
 /// for the default SwiftUI support

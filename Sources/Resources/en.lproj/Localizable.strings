@@ -126,6 +126,10 @@
 "reader_highlight_failure_message" = "Could not add highlight";
 /* Success message when adding a highlight */
 "reader_highlight_success_message" = "Highlight added";
+"reader_highlight_limit_title" = "Free highlight limit reached";
+"reader_highlight_limit_message" = "You've saved %d highlights. Upgrade to Pro for unlimited highlights and notes.";
+"reader_highlight_limit_upgrade" = "Upgrade to Pro";
+"reader_highlight_quota_warning" = "%d free highlights remaining";
 
 /* Error message when trying to read a publication with a unsupported format */
 "reader_error_formatNotSupported" = "Unsupported format";
@@ -329,6 +333,8 @@
 "paywall_feature_stats_subtitle" = "Week, month, year";
 "paywall_feature_streak_title" = "Streaks";
 "paywall_feature_streak_subtitle" = "Track your rhythm";
+"paywall_feature_notes_title" = "Unlimited notes";
+"paywall_feature_notes_subtitle" = "No highlight cap";
 "paywall_assurance_trial" = "1-month free trial";
 "paywall_assurance_cancel" = "Cancel anytime";
 "paywall_trial_note" = "Trial renews automatically after it ends. You can cancel anytime in Settings.";
@@ -349,10 +355,11 @@
 "settings_pro_badge" = "Unlocked";
 "settings_upgrade_pro" = "Upgrade to PagePilot Pro";
 "settings_pro_active_body" = "Your complete reading experience is unlocked.";
-"settings_pro_upgrade_body" = "Unlock unlimited library, deeper stats, and more reading power";
+"settings_pro_upgrade_body" = "Unlock unlimited library, deeper stats, unlimited notes, and more";
 "settings_pro_benefit_library" = "Unlimited Library";
 "settings_pro_benefit_stats" = "Deep Stats";
 "settings_pro_benefit_watch" = "Watch on iPad";
+"settings_pro_benefit_notes" = "Unlimited Notes";
 
 /* Purchase Errors */
 "purchase_error_product_not_found" = "Product information not found";
@@ -793,6 +800,7 @@
 "settings_my_notes" = "My Notes";
 "my_notes_title" = "My Notes";
 "my_notes_subtitle" = "Highlights and bookmarks by book";
+"my_notes_quota_banner" = "%d/%d free highlights used · Upgrade for unlimited";
 "my_notes_books_label" = "Books";
 "my_notes_highlights_label" = "Highlights";
 "my_notes_bookmark_label" = "Bookmark";

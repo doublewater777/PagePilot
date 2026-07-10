@@ -47,7 +47,39 @@ final class HighlightRepositoryTests: XCTestCase {
         XCTAssertEqual(saved.note, "Updated note")
     }
 
+    func testTotalCountIsZeroWhenEmpty() async throws {
+        let db = try createDatabase()
+        let repo = HighlightRepository(db: db)
+
+        let count = try await repo.totalCount()
+        XCTAssertEqual(count, 0)
+    }
+
+    func testTotalCountCountsHighlightsAcrossBooks() async throws {
+        let db = try createDatabase()
+        let repo = HighlightRepository(db: db)
+        let bookA = try await createBook(in: db)
+        let bookB = try await createBook(in: db)
+
+        try await repo.add(makeHighlight(bookId: bookA, progression: 0.1))
+        try await repo.add(makeHighlight(bookId: bookA, progression: 0.2))
+        try await repo.add(makeHighlight(bookId: bookB, progression: 0.3))
+
+        let count = try await repo.totalCount()
+        XCTAssertEqual(count, 3)
+    }
+
     // MARK: - Helpers
+
+    private func makeHighlight(bookId: Book.Id, progression: Double, note: String? = nil) -> Highlight {
+        let locator = Locator(
+            href: AnyURL(string: "/test.xhtml")!,
+            mediaType: .xhtml,
+            locations: Locator.Locations(progression: progression, totalProgression: progression),
+            text: Locator.Text(highlight: "text-\(progression)")
+        )
+        return Highlight(bookId: bookId, locator: locator, color: .yellow, note: note)
+    }
 
     private func createDatabase() throws -> Database {
         let tmp = FileManager.default.temporaryDirectory

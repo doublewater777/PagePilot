@@ -146,10 +146,10 @@ struct PaywallView: View {
                     subtitle: NSLocalizedString("paywall_feature_stats_subtitle", comment: "")
                 )
                 miniFeature(
-                    icon: "flame.fill",
+                    icon: "highlighter",
                     iconColor: .orange,
-                    title: NSLocalizedString("paywall_feature_streak_title", comment: ""),
-                    subtitle: NSLocalizedString("paywall_feature_streak_subtitle", comment: "")
+                    title: NSLocalizedString("paywall_feature_notes_title", comment: ""),
+                    subtitle: NSLocalizedString("paywall_feature_notes_subtitle", comment: "")
                 )
             }
 

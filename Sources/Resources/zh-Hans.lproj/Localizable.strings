@@ -126,6 +126,10 @@
 "reader_highlight_failure_message" = "无法添加高亮";
 /* Success message when adding a highlight */
 "reader_highlight_success_message" = "高亮已添加";
+"reader_highlight_limit_title" = "免费高亮已用完";
+"reader_highlight_limit_message" = "你已保存 %d 处阅读重点。升级 Pro 可无限保存高亮与笔记，你的摘录库会一直在。";
+"reader_highlight_limit_upgrade" = "升级 Pro";
+"reader_highlight_quota_warning" = "还可免费添加 %d 处高亮";
 
 /* Error message when trying to read a publication with a unsupported format */
 "reader_error_formatNotSupported" = "不支持的格式";
@@ -329,6 +333,8 @@
 "paywall_feature_stats_subtitle" = "周月年趋势";
 "paywall_feature_streak_title" = "连续天数";
 "paywall_feature_streak_subtitle" = "看见坚持节奏";
+"paywall_feature_notes_title" = "无限笔记";
+"paywall_feature_notes_subtitle" = "高亮摘录不设限";
 "paywall_assurance_trial" = "1 个月免费试用";
 "paywall_assurance_cancel" = "随时取消";
 "paywall_trial_note" = "试用结束后自动续费，可随时在设置中取消。";
@@ -349,10 +355,11 @@
 "settings_pro_badge" = "已解锁";
 "settings_upgrade_pro" = "升级 PagePilot Pro";
 "settings_pro_active_body" = "完整阅读体验已解锁。";
-"settings_pro_upgrade_body" = "解锁无限书架、深度统计和更多阅读能力";
+"settings_pro_upgrade_body" = "解锁无限书架、深度统计、无限笔记和更多阅读能力";
 "settings_pro_benefit_library" = "无限书架";
 "settings_pro_benefit_stats" = "深度统计";
 "settings_pro_benefit_watch" = "Watch 控 iPad";
+"settings_pro_benefit_notes" = "无限笔记";
 
 /* Purchase Errors */
 "purchase_error_product_not_found" = "找不到产品信息";
@@ -371,7 +378,7 @@
 "paywall_price_yearly" = "¥19.9";
 "paywall_price_yearly_monthly" = "¥1.66";
 "paywall_price_lifetime" = "¥30";
-"paywall_price_monthly_sub" = "按月续订，适合先试用";
+"paywall_price_monthly_sub" = "按月续订，随时可取消";
 "paywall_price_yearly_sub" = "仅 %@/月，省 %@";
 "paywall_price_yearly_sub_no_savings" = "仅 %@/月";
 "paywall_price_lifetime_sub" = "一次购买，限时优惠";
@@ -793,6 +800,7 @@
 "settings_my_notes" = "我的笔记";
 "my_notes_title" = "我的笔记";
 "my_notes_subtitle" = "按书查看你的高亮与书签";
+"my_notes_quota_banner" = "已使用 %d/%d 免费高亮 · 升级无限保存";
 "my_notes_books_label" = "本书";
 "my_notes_highlights_label" = "高亮";
 "my_notes_bookmark_label" = "书签";

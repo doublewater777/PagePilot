@@ -241,6 +241,8 @@ final class ProPurchaseManager {
 
 extension ProPurchaseManager {
     static let freeBookLimit = 10
+    /// Free tier may keep this many highlights globally; Pro is unlimited.
+    static let freeHighlightLimit = 20
 
     static var proProductIDs: Set<String> {
         [monthlyProductID, yearlyProductID, lifetimeProductID]
