@@ -348,7 +348,12 @@ struct HomeView: View {
             .presentationBackground(Color(.systemGroupedBackground))
         }
         .sheet(isPresented: $showNotes) {
-            NavigationStack {
+            // NavigationView (.stack) instead of NavigationStack: NavigationStack
+            // deadlocks in SwiftUI layout (_MovableLockLock) when pushing a
+            // List-based destination from inside a sheet on iPad (iOS 17) - the
+            // Home > My Notes > tap book flow hangs. NavigationView mirrors the
+            // Me tab's working notes entry. See git history for the LLDB trace.
+            NavigationView {
                 MyNotesView()
                     .toolbar {
                         ToolbarItem(placement: .topBarTrailing) {
@@ -356,6 +361,7 @@ struct HomeView: View {
                         }
                     }
             }
+            .navigationViewStyle(.stack)
             .presentationDragIndicator(.visible)
             .presentationBackground(Color(.systemGroupedBackground))
         }
