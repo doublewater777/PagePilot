@@ -4,6 +4,7 @@
 //  available in the top-level LICENSE file of the project.
 //
 
+import ImageIO
 import UIKit
 
 /// Loads local cover images asynchronously and caches them in memory.
@@ -15,30 +16,40 @@ actor CoverImageLoader {
 
     // MARK: - Cache
 
-    private let cache = NSCache<NSNumber, UIImage>()
+    private let cache = NSCache<NSString, UIImage>()
+
+    init() {
+        cache.totalCostLimit = 32 * 1024 * 1024
+    }
 
     // MARK: - Public interface
 
-    /// Returns the cached image for `bookId` if one exists, otherwise loads
-    /// the file at `url` from disk asynchronously, caches it, and returns it.
+    /// Returns the cached thumbnail for `bookId` if one exists, otherwise
+    /// downsamples the file at `url` asynchronously, caches it, and returns it.
     /// Returns `nil` when the file is missing or its data cannot be decoded.
-    func load(url: URL, bookId: Int64) async -> UIImage? {
-        let key = NSNumber(value: bookId)
+    func load(url: URL, bookId: Int64, maxPixelSize: Int = 512) async -> UIImage? {
+        let key = "\(bookId)-\(maxPixelSize)-\(url.path)" as NSString
 
         // Cache hit — no I/O needed.
         if let cached = cache.object(forKey: key) {
             return cached
         }
+        guard !Task.isCancelled else { return nil }
 
-        // Off-task disk read so we never block the caller's actor.
-        let image = await Task.detached(priority: .userInitiated) {
-            guard let data = try? Data(contentsOf: url) else { return UIImage?.none }
-            return UIImage(data: data)
-        }.value
-
-        if let image {
-            cache.setObject(image, forKey: key)
+        guard let source = CGImageSourceCreateWithURL(url as CFURL, nil) else { return nil }
+        let options: [CFString: Any] = [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            kCGImageSourceThumbnailMaxPixelSize: maxPixelSize,
+            kCGImageSourceShouldCacheImmediately: true,
+        ]
+        guard let thumbnail = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary) else {
+            return nil
         }
+        let image = UIImage(cgImage: thumbnail)
+
+        let cost = thumbnail.bytesPerRow * thumbnail.height
+        cache.setObject(image, forKey: key, cost: cost)
 
         return image
     }

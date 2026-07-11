@@ -72,4 +72,51 @@ final class CoverImageLoaderTests: XCTestCase {
 
         XCTAssertNil(image, "Expected nil for a file that does not exist")
     }
+
+    func testLargeCoverIsDownsampledBeforeReturningThumbnail() async throws {
+        let url = tmpDir.appendingPathComponent("large-cover.png")
+        let renderer = UIGraphicsImageRenderer(size: CGSize(width: 1500, height: 2100))
+        let data = renderer.pngData { context in
+            UIColor.red.setFill()
+            context.fill(CGRect(x: 0, y: 0, width: 1500, height: 2100))
+        }
+        try data.write(to: url)
+
+        let loader = CoverImageLoader()
+        let image = await loader.load(url: url, bookId: 100, maxPixelSize: 160)
+
+        XCTAssertNotNil(image, "Expected the large cover to decode as a thumbnail")
+        let pixelWidth = image.map { $0.size.width * $0.scale } ?? 0
+        let pixelHeight = image.map { $0.size.height * $0.scale } ?? 0
+        XCTAssertLessThanOrEqual(
+            max(pixelWidth, pixelHeight),
+            160,
+            "Notes thumbnails must not retain a full-resolution cover in memory"
+        )
+    }
+
+    func testChangedCoverURLDoesNotReuseCachedImageForSameBook() async throws {
+        let firstURL = try makeImageFile(named: "first.png")
+        let secondURL = tmpDir.appendingPathComponent("second.png")
+        let secondImage = UIGraphicsImageRenderer(size: CGSize(width: 2, height: 2)).image { context in
+            UIColor.red.setFill()
+            context.fill(CGRect(x: 0, y: 0, width: 2, height: 2))
+        }
+        try secondImage.pngData()!.write(to: secondURL)
+
+        let loader = CoverImageLoader()
+        let first = await loader.load(url: firstURL, bookId: 101)
+        let second = await loader.load(url: secondURL, bookId: 101)
+
+        XCTAssertFalse(first === second, "A changed cover URL must not return the stale cached thumbnail")
+    }
+
+    func testTruncatedCoverReturnsNil() async throws {
+        let url = tmpDir.appendingPathComponent("truncated.png")
+        try Data([0x89, 0x50, 0x4E, 0x47]).write(to: url)
+
+        let image = await CoverImageLoader().load(url: url, bookId: 102)
+
+        XCTAssertNil(image, "A malformed cover must fail without retaining a partial image")
+    }
 }

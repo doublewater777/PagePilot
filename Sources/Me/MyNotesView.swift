@@ -656,10 +656,12 @@ private enum NoteItem {
 
 private struct BookCoverThumbnail: View {
     let book: Book
+    @State private var image: UIImage?
+    private static let loader = CoverImageLoader()
 
     var body: some View {
         Group {
-            if let cover = book.cover, let image = UIImage(contentsOfFile: cover.path) {
+            if let image {
                 Image(uiImage: image)
                     .resizable()
                     .aspectRatio(contentMode: .fill)
@@ -675,5 +677,16 @@ private struct BookCoverThumbnail: View {
             }
         }
         .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+        .task(id: book.cover?.url) {
+            image = nil
+            guard let bookId = book.id, let coverURL = book.cover?.url else { return }
+            let loadedImage = await Self.loader.load(
+                url: coverURL,
+                bookId: bookId.rawValue,
+                maxPixelSize: 160
+            )
+            guard !Task.isCancelled else { return }
+            image = loadedImage
+        }
     }
 }
