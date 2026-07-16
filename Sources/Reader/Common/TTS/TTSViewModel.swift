@@ -135,7 +135,7 @@ final class TTSViewModel: ObservableObject, Loggable {
             }
             //  Improve performances by throttling the moves to maximum one per second.
             .throttle(for: 1, scheduler: RunLoop.main, latest: true)
-            .drop(while: { [weak self] _ in self?.isMoving ?? true })
+            .filter { [weak self] _ in self?.isMoving == false }
             .sink { [weak self] generation, locator in
                 guard let self = self else {
                     return
