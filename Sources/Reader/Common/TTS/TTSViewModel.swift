@@ -59,6 +59,7 @@ final class TTSViewModel: ObservableObject, Loggable {
     private var isMoving = false
     private var navigationGeneration = 0
     private var isNavigationSuspended = false
+    private var navigationTask: Task<Void, Never>?
 
     private var subscriptions: Set<AnyCancellable> = []
 
@@ -142,9 +143,10 @@ final class TTSViewModel: ObservableObject, Loggable {
                 guard !isNavigationSuspended, generation == navigationGeneration else { return }
 
                 isMoving = true
-                Task {
+                navigationTask = Task { [weak self] in
                     await navigator.go(to: locator)
-                    self.isMoving = false
+                    self?.isMoving = false
+                    self?.navigationTask = nil
                 }
             }
             .store(in: &subscriptions)
@@ -181,9 +183,14 @@ final class TTSViewModel: ObservableObject, Loggable {
         synthesizer.start(from: locator)
     }
 
-    func suspendNavigation() {
+    func suspendNavigation() async {
         navigationGeneration &+= 1
         isNavigationSuspended = true
+        let task = navigationTask
+        task?.cancel()
+        await task?.value
+        navigationTask = nil
+        isMoving = false
     }
 
     func resumeNavigation() {

@@ -11,13 +11,13 @@ final class QuickPositionJumpInteractionController: NSObject {
     }
 
     var positions: [Locator] = []
-    var isActive: Bool { session.state != .idle }
+    var isActive: Bool { session.state != .idle || recoveryTask != nil }
 
     private weak var hostView: UIView?
     private let overlay: QuickPositionJumpOverlay
     private let currentLocator: () -> Locator?
     private let onTap: () -> Void
-    private let onBegin: () -> Void
+    private let onBegin: () async -> Void
     private let onCommit: (Locator) async -> Bool
     private let onRestore: (Locator) async -> Bool
     private let onFinish: (Outcome) -> Void
@@ -31,14 +31,17 @@ final class QuickPositionJumpInteractionController: NSObject {
     private var activationY = 0.0
     private var horizontalRange = 0.0 ... 0.0
     private var commitTask: Task<Void, Never>?
+    private var preparationTask: Task<Void, Never>?
     private var recoveryTask: Task<Void, Never>?
+    private var latestTouchPoint = CGPoint.zero
+    private var preparationWasCancelled = false
 
     init(
         hostView: UIView,
         positionLabel: UILabel,
         currentLocator: @escaping () -> Locator?,
         onTap: @escaping () -> Void,
-        onBegin: @escaping () -> Void,
+        onBegin: @escaping () async -> Void,
         onCommit: @escaping (Locator) async -> Bool,
         onRestore: @escaping (Locator) async -> Bool,
         onFinish: @escaping (Outcome) -> Void,
@@ -74,7 +77,12 @@ final class QuickPositionJumpInteractionController: NSObject {
         NotificationCenter.default.removeObserver(self)
     }
     func cancel() {
-        guard session.state != .idle, originalLocator != nil else { return }
+        guard session.state != .idle else { return }
+        if session.state == .preparing {
+            preparationWasCancelled = true
+            return
+        }
+        guard originalLocator != nil else { return }
         if session.state == .committing {
             interruptCommit()
             return
@@ -112,13 +120,38 @@ final class QuickPositionJumpInteractionController: NSObject {
         guard session.state == .idle,
               recoveryTask == nil,
               !positions.isEmpty,
+              session.beginPreparing()
+        else { return }
+
+        latestTouchPoint = point
+        preparationWasCancelled = false
+        preparationTask = Task { @MainActor [weak self] in
+            guard let self else { return }
+            await onBegin()
+            preparationTask = nil
+            guard !preparationWasCancelled else {
+                finish(.cancelled)
+                return
+            }
+            activatePreview(at: latestTouchPoint)
+        }
+    }
+
+    private func activatePreview(at point: CGPoint) {
+        guard session.state == .preparing,
               let hostView,
               let locator = currentLocator()
-        else { return }
+        else {
+            finish(.cancelled)
+            return
+        }
 
         let lowerBound = Double(hostView.safeAreaInsets.left + 20)
         let upperBound = Double(hostView.bounds.width - hostView.safeAreaInsets.right - 20)
-        guard lowerBound < upperBound else { return }
+        guard lowerBound < upperBound else {
+            finish(.cancelled)
+            return
+        }
 
         originalLocator = locator
         currentPosition = resolvedPosition(for: locator)
@@ -130,12 +163,18 @@ final class QuickPositionJumpInteractionController: NSObject {
             position: currentPosition,
             positionCount: positions.count
         )
-        _ = session.beginPreview()
-        onBegin()
+        guard session.beginPreview() else {
+            finish(.cancelled)
+            return
+        }
         overlay.show(text: bubbleText())
     }
 
     private func update(with gesture: UILongPressGestureRecognizer) {
+        if session.state == .preparing {
+            latestTouchPoint = gesture.location(in: hostView)
+            return
+        }
         guard session.state == .previewing || session.state == .cancellationArmed,
               let hostView
         else { return }
@@ -169,6 +208,10 @@ final class QuickPositionJumpInteractionController: NSObject {
     }
 
     private func end() {
+        if session.state == .preparing {
+            preparationWasCancelled = true
+            return
+        }
         guard let originalLocator else { return }
         if session.state == .cancellationArmed {
             finish(.cancelled)
@@ -240,6 +283,7 @@ final class QuickPositionJumpInteractionController: NSObject {
 
     private func finish(_ outcome: Outcome) {
         session.reset()
+        preparationTask = nil
         commitTask = nil
         originalLocator = nil
         haptics.reset()

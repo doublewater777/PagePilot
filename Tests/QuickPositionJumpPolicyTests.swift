@@ -190,4 +190,15 @@ final class QuickPositionJumpPolicyTests: XCTestCase {
             100
         )
     }
+
+    func testPercentageFallsBackWhenProgressionIsNotFinite() {
+        XCTAssertEqual(
+            QuickPositionJumpPolicy.percentage(
+                totalProgression: .nan,
+                targetPosition: 210,
+                positionCount: 420
+            ),
+            50
+        )
+    }
 }

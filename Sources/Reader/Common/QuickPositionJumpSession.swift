@@ -1,6 +1,7 @@
 struct QuickPositionJumpSession {
     enum State: Equatable {
         case idle
+        case preparing
         case previewing
         case cancellationArmed
         case committing
@@ -9,8 +10,14 @@ struct QuickPositionJumpSession {
     private(set) var state: State = .idle
     private(set) var generation = 0
 
-    mutating func beginPreview() -> Bool {
+    mutating func beginPreparing() -> Bool {
         guard state == .idle else { return false }
+        state = .preparing
+        return true
+    }
+
+    mutating func beginPreview() -> Bool {
+        guard state == .preparing else { return false }
         state = .previewing
         return true
     }

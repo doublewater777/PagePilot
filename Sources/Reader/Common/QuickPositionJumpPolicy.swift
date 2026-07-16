@@ -7,7 +7,7 @@ enum QuickPositionJumpPolicy {
         positionCount: Int
     ) -> Int {
         let progression: Double
-        if let totalProgression {
+        if let totalProgression, totalProgression.isFinite {
             progression = totalProgression
         } else if positionCount > 1 {
             progression = Double(targetPosition - 1) / Double(positionCount - 1)
