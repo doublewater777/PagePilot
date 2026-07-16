@@ -25,6 +25,10 @@ final class QuickPositionJumpHaptics {
         if position == 1 || position == positionCount {
             guard lastBoundaryPosition != position else { return }
             lastBoundaryPosition = position
+            lastDetent = QuickPositionJumpPolicy.hapticDetent(
+                position: position,
+                positionCount: positionCount
+            )
             boundary.impactOccurred()
             boundary.prepare()
             return

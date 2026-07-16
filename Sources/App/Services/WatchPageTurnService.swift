@@ -244,7 +244,8 @@ final class WatchPageTurnService: NSObject, ObservableObject {
 
     /// Weak reference to the currently active VisualNavigator
     weak var activeNavigator: VisualNavigator?
-    private var isPageTurnSuppressed = false
+    private var pageTurnSuppressionToken: UUID?
+    private var isPageTurnSuppressed: Bool { pageTurnSuppressionToken != nil }
 
     @Published var currentBookTitle: String = ""
     @Published var currentBookProgress: Double = 0.0
@@ -339,6 +340,7 @@ final class WatchPageTurnService: NSObject, ObservableObject {
     /// Call this from VisualReaderViewController when it disappears.
     func unregisterNavigator() {
         self.activeNavigator = nil
+        pageTurnSuppressionToken = nil
         var context = WatchPageTurnSettings().watchContext
         context["currentBookTitle"] = ""
         context["currentBookProgress"] = 0.0
@@ -347,8 +349,15 @@ final class WatchPageTurnService: NSObject, ObservableObject {
         // The /command handler will simply early-return when no navigator is active.
     }
 
-    func setPageTurnSuppressed(_ suppressed: Bool) {
-        isPageTurnSuppressed = suppressed
+    func beginPageTurnSuppression() -> UUID {
+        let token = UUID()
+        pageTurnSuppressionToken = token
+        return token
+    }
+
+    func endPageTurnSuppression(_ token: UUID) {
+        guard pageTurnSuppressionToken == token else { return }
+        pageTurnSuppressionToken = nil
     }
 
     /// Update reading progress on the watch
@@ -381,23 +390,22 @@ final class WatchPageTurnService: NSObject, ObservableObject {
     }
 
     private func handleCommand(_ command: PageCommand, completion: (([String: Any]) -> Void)? = nil) {
-        guard !isPageTurnSuppressed else {
-            var payload = localStatusPayload(route: WatchPageTurnRoute.direct)
-            payload["pageDirection"] = command.rawValue
-            payload["didTurnPage"] = false
-            completion?(payload)
-            return
-        }
-        guard let navigator = activeNavigator else {
-            completion?(errorPayload(
-                route: WatchPageTurnRoute.direct,
-                code: WatchPageTurnErrorCode.navigatorNotReady,
-                message: "reader is not ready"
-            ))
-            return
-        }
-
         Task { @MainActor in
+            guard !self.isPageTurnSuppressed else {
+                var payload = self.localStatusPayload(route: WatchPageTurnRoute.direct)
+                payload["pageDirection"] = command.rawValue
+                payload["didTurnPage"] = false
+                completion?(payload)
+                return
+            }
+            guard let navigator = self.activeNavigator else {
+                completion?(self.errorPayload(
+                    route: WatchPageTurnRoute.direct,
+                    code: WatchPageTurnErrorCode.navigatorNotReady,
+                    message: "reader is not ready"
+                ))
+                return
+            }
             let succeeded: Bool
             switch command {
             case .next:

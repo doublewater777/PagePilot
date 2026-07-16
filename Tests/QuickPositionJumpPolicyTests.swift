@@ -70,6 +70,42 @@ final class QuickPositionJumpPolicyTests: XCTestCase {
         XCTAssertEqual(target, 1)
     }
 
+    func testTargetPositionClampsBeyondRightBoundary() {
+        let target = QuickPositionJumpPolicy.targetPosition(
+            currentPosition: 286,
+            positionCount: 420,
+            activationX: 200,
+            currentX: 500,
+            horizontalRange: 20 ... 380
+        )
+
+        XCTAssertEqual(target, 420)
+    }
+
+    func testSinglePositionPublicationAlwaysTargetsOne() {
+        let target = QuickPositionJumpPolicy.targetPosition(
+            currentPosition: 1,
+            positionCount: 1,
+            activationX: 20,
+            currentX: 380,
+            horizontalRange: 20 ... 380
+        )
+
+        XCTAssertEqual(target, 1)
+    }
+
+    func testActivationAtRightBoundaryStillReachesFirstPosition() {
+        let target = QuickPositionJumpPolicy.targetPosition(
+            currentPosition: 420,
+            positionCount: 420,
+            activationX: 380,
+            currentX: 20,
+            horizontalRange: 20 ... 380
+        )
+
+        XCTAssertEqual(target, 1)
+    }
+
     func testHapticDetentsAreLimitedToFiftyForLongPublications() {
         // Given
         let positions = 1 ... 1_000
@@ -142,5 +178,16 @@ final class QuickPositionJumpPolicyTests: XCTestCase {
 
         // Then
         XCTAssertEqual(percentage, 50)
+    }
+
+    func testPercentageClampsOutOfRangeProgression() {
+        XCTAssertEqual(
+            QuickPositionJumpPolicy.percentage(
+                totalProgression: 1.5,
+                targetPosition: 1,
+                positionCount: 420
+            ),
+            100
+        )
     }
 }

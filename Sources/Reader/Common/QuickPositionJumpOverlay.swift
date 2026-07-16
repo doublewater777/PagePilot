@@ -37,12 +37,15 @@ final class QuickPositionJumpOverlay {
             bubbleLabel.bottomAnchor.constraint(equalTo: bubbleView.contentView.bottomAnchor, constant: -9),
             touchTarget.centerXAnchor.constraint(equalTo: positionLabel.centerXAnchor),
             touchTarget.centerYAnchor.constraint(equalTo: positionLabel.centerYAnchor),
-            touchTarget.widthAnchor.constraint(equalToConstant: 44),
+            touchTarget.widthAnchor.constraint(equalTo: positionLabel.widthAnchor, constant: 24),
+            touchTarget.widthAnchor.constraint(greaterThanOrEqualToConstant: 44),
             touchTarget.heightAnchor.constraint(equalToConstant: 44),
         ])
     }
 
     func show(text: String) {
+        bubbleView.layer.removeAllAnimations()
+        positionLabel?.layer.removeAllAnimations()
         bubbleLabel.text = text
         positionLabel?.alpha = 0
         bubbleView.isHidden = false
@@ -67,7 +70,8 @@ final class QuickPositionJumpOverlay {
         UIView.animate(withDuration: 0.2, delay: 0, options: [.curveEaseOut]) {
             self.bubbleView.alpha = 0
             self.positionLabel?.alpha = 1
-        } completion: { _ in
+        } completion: { finished in
+            guard finished, self.bubbleView.alpha == 0 else { return }
             self.bubbleView.isHidden = true
         }
     }

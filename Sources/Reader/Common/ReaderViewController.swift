@@ -23,6 +23,8 @@ class ReaderViewController<N: Navigator>: UIViewController,
     private let books: BookRepository
     private let bookmarks: BookmarkRepository
     private var readingSessionStartDate: Date?
+    private var suppressedReadingProgress: Locator?
+    private(set) var isReadingProgressPersistenceSuppressed = false
 
     var subscriptions = Set<AnyCancellable>()
 
@@ -156,6 +158,28 @@ class ReaderViewController<N: Navigator>: UIViewController,
     // MARK: - NavigatorDelegate
 
     func navigator(_ navigator: Navigator, locationDidChange locator: Locator) {
+        guard !isReadingProgressPersistenceSuppressed else {
+            suppressedReadingProgress = locator
+            return
+        }
+        persistReadingProgress(locator)
+    }
+
+    func beginSuppressingReadingProgressPersistence() {
+        isReadingProgressPersistenceSuppressed = true
+        suppressedReadingProgress = nil
+    }
+
+    func endSuppressingReadingProgressPersistence(commit: Bool) {
+        let locator = suppressedReadingProgress
+        suppressedReadingProgress = nil
+        isReadingProgressPersistenceSuppressed = false
+        if commit, let locator {
+            persistReadingProgress(locator)
+        }
+    }
+
+    private func persistReadingProgress(_ locator: Locator) {
         Task {
             do {
                 try await books.saveProgress(for: bookId, locator: locator)

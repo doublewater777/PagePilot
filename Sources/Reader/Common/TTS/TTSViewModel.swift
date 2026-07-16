@@ -57,6 +57,8 @@ final class TTSViewModel: ObservableObject, Loggable {
     private let playingWordRangeSubject = PassthroughSubject<Locator, Never>()
 
     private var isMoving = false
+    private var navigationGeneration = 0
+    private var isNavigationSuspended = false
 
     private var subscriptions: Set<AnyCancellable> = []
 
@@ -127,13 +129,17 @@ final class TTSViewModel: ObservableObject, Loggable {
         // This will automatically turn pages when needed.
         playingWordRangeSubject
             .removeDuplicates()
+            .map { [weak self] locator in
+                (self?.navigationGeneration ?? 0, locator)
+            }
             //  Improve performances by throttling the moves to maximum one per second.
             .throttle(for: 1, scheduler: RunLoop.main, latest: true)
             .drop(while: { [weak self] _ in self?.isMoving ?? true })
-            .sink { [weak self] locator in
+            .sink { [weak self] generation, locator in
                 guard let self = self else {
                     return
                 }
+                guard !isNavigationSuspended, generation == navigationGeneration else { return }
 
                 isMoving = true
                 Task {
@@ -172,9 +178,17 @@ final class TTSViewModel: ObservableObject, Loggable {
 
     func restart(from locator: Locator) {
         activateAudioSession()
-        synthesizer.stop()
         synthesizer.start(from: locator)
-        setupNowPlaying()
+    }
+
+    func suspendNavigation() {
+        navigationGeneration &+= 1
+        isNavigationSuspended = true
+    }
+
+    func resumeNavigation() {
+        navigationGeneration &+= 1
+        isNavigationSuspended = false
     }
 
     @objc func stop() {

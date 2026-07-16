@@ -23,6 +23,7 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
     private var directionalNavigationAdapter: DirectionalNavigationAdapter?
     private var quickPositionJumpController: QuickPositionJumpInteractionController?
     private var wasTTSPlayingBeforeQuickPositionJump = false
+    private var quickPositionJumpSuppressionToken: UUID?
 
     init(
         navigator: N,
@@ -159,10 +160,13 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
                 return await navigator.go(to: locator, options: NavigatorGoOptions(animated: false))
             },
             onRestore: { [weak self] locator in
-                guard let navigator = self?.navigator as? VisualNavigator else { return }
-                _ = await navigator.go(to: locator, options: NavigatorGoOptions(animated: false))
+                guard let navigator = self?.navigator as? VisualNavigator else { return false }
+                return await navigator.go(to: locator, options: NavigatorGoOptions(animated: false))
             },
-            onFinish: { [weak self] outcome in self?.finishQuickPositionJump(outcome) }
+            onFinish: { [weak self] outcome in self?.finishQuickPositionJump(outcome) },
+            onDeferredCleanup: { [weak self] restored in
+                self?.finishInterruptedQuickPositionJump(restored: restored)
+            }
         )
         quickPositionJumpController.positions = positions
         self.quickPositionJumpController = quickPositionJumpController
@@ -234,8 +238,14 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
     }
 
     private func beginQuickPositionJump() {
-        directionalNavigationAdapter?.unbind()
-        WatchPageTurnService.shared.setPageTurnSuppressed(true)
+        directionalNavigationAdapter?.pointerPolicy.types = []
+        directionalNavigationAdapter?.keyboardPolicy = .init(
+            handleArrowKeys: false,
+            handleSpaceKey: false
+        )
+        quickPositionJumpSuppressionToken = WatchPageTurnService.shared.beginPageTurnSuppression()
+        beginSuppressingReadingProgressPersistence()
+        ttsViewModel?.suspendNavigation()
         wasTTSPlayingBeforeQuickPositionJump = ttsViewModel?.state.isPlaying == true
         if wasTTSPlayingBeforeQuickPositionJump {
             ttsViewModel?.pause()
@@ -243,26 +253,58 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
     }
 
     private func finishQuickPositionJump(_ outcome: QuickPositionJumpInteractionController.Outcome) {
-        if let visualNavigator = navigator as? VisualNavigator {
-            directionalNavigationAdapter?.bind(to: visualNavigator)
+        directionalNavigationAdapter?.pointerPolicy.types = [.mouse, .touch]
+        directionalNavigationAdapter?.keyboardPolicy = .init()
+        if let token = quickPositionJumpSuppressionToken {
+            WatchPageTurnService.shared.endPageTurnSuppression(token)
+            quickPositionJumpSuppressionToken = nil
         }
-        WatchPageTurnService.shared.setPageTurnSuppressed(false)
+
+        if case .interrupted = outcome {
+            return
+        }
 
         let shouldResumeTTS = wasTTSPlayingBeforeQuickPositionJump
         wasTTSPlayingBeforeQuickPositionJump = false
         switch outcome {
         case let .committed(target):
+            endSuppressingReadingProgressPersistence(commit: true)
+            publishWatchProgress(navigator.currentLocation ?? target)
+            ttsViewModel?.resumeNavigation()
             if shouldResumeTTS {
                 ttsViewModel?.restart(from: target)
             }
         case .cancelled:
+            endSuppressingReadingProgressPersistence(commit: false)
+            ttsViewModel?.resumeNavigation()
             if shouldResumeTTS {
                 ttsViewModel?.pauseOrResume()
             }
         case .failed:
+            endSuppressingReadingProgressPersistence(commit: false)
+            ttsViewModel?.resumeNavigation()
             if shouldResumeTTS {
                 ttsViewModel?.pauseOrResume()
             }
+            toast(
+                NSLocalizedString("reader_quick_position_failure", comment: ""),
+                on: view,
+                duration: 2
+            )
+        case .interrupted:
+            break
+        }
+    }
+
+    private func finishInterruptedQuickPositionJump(restored: Bool) {
+        endSuppressingReadingProgressPersistence(commit: false)
+        ttsViewModel?.resumeNavigation()
+        let shouldResumeTTS = wasTTSPlayingBeforeQuickPositionJump
+        wasTTSPlayingBeforeQuickPositionJump = false
+        if shouldResumeTTS {
+            ttsViewModel?.pauseOrResume()
+        }
+        if !restored, viewIfLoaded?.window != nil {
             toast(
                 NSLocalizedString("reader_quick_position_failure", comment: ""),
                 on: view,
@@ -377,6 +419,12 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
         }()
 
         // Update Watch progress
+        if !isReadingProgressPersistenceSuppressed {
+            publishWatchProgress(locator)
+        }
+    }
+
+    private func publishWatchProgress(_ locator: Locator) {
         WatchPageTurnService.shared.updateProgress(
             title: publication.metadata.title ?? "",
             progression: locator.locations.totalProgression
