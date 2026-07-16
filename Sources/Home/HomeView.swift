@@ -183,8 +183,8 @@ enum ReadingPreferences {
     static let defaultDailyGoalMinutes = 30
     static let dailyGoalRange = 5...180
     static let defaultReminderEnabled = true
-    static let defaultReminderHour = 19
-    static let defaultReminderMinute = 50
+    static let defaultReminderHour = 21
+    static let defaultReminderMinute = 0
     static let dailyGoalDidChange = Notification.Name("ReadingPreferencesDailyGoalDidChange")
 
     static var dailyGoalMinutes: Int {
