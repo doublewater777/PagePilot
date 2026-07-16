@@ -19,6 +19,10 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
     private var ttsViewModel: TTSViewModel?
     private var ttsControlsViewController: UIHostingController<TTSControls>?
     private var positionCount: Int?
+    private var positions: [Locator] = []
+    private var directionalNavigationAdapter: DirectionalNavigationAdapter?
+    private var quickPositionJumpController: QuickPositionJumpInteractionController?
+    private var wasTTSPlayingBeforeQuickPositionJump = false
 
     init(
         navigator: N,
@@ -44,8 +48,13 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
         addHighlightDecorationsObserverOnce()
         updateHighlightDecorations()
 
-        Task {
-            self.positionCount = try? await publication.positions().get().count
+        Task { [weak self] in
+            let positions = (try? await publication.positions().get()) ?? []
+            await MainActor.run {
+                self?.positions = positions
+                self?.positionCount = positions.count
+                self?.quickPositionJumpController?.positions = positions
+            }
         }
     }
 
@@ -79,9 +88,11 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
         //
         // Bind it to the navigator before adding your own observers to prevent
         // triggering your actions when turning pages.
-        DirectionalNavigationAdapter(
+        let adapter = DirectionalNavigationAdapter(
             pointerPolicy: .init(types: [.mouse, .touch])
-        ).bind(to: navigator)
+        )
+        adapter.bind(to: navigator)
+        directionalNavigationAdapter = adapter
 
         // Clear the current search highlight on tap.
         navigator.addObserver(.activate { [weak self] _ in
@@ -136,6 +147,25 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
             positionLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             positionLabel.bottomAnchor.constraint(equalTo: navigator.view.bottomAnchor, constant: -20),
         ])
+
+        let quickPositionJumpController = QuickPositionJumpInteractionController(
+            hostView: view,
+            positionLabel: positionLabel,
+            currentLocator: { [weak self] in self?.navigator.currentLocation },
+            onTap: { [weak self] in self?.toggleNavigationBar() },
+            onBegin: { [weak self] in self?.beginQuickPositionJump() },
+            onCommit: { [weak self] locator in
+                guard let navigator = self?.navigator as? VisualNavigator else { return false }
+                return await navigator.go(to: locator, options: NavigatorGoOptions(animated: false))
+            },
+            onRestore: { [weak self] locator in
+                guard let navigator = self?.navigator as? VisualNavigator else { return }
+                _ = await navigator.go(to: locator, options: NavigatorGoOptions(animated: false))
+            },
+            onFinish: { [weak self] outcome in self?.finishQuickPositionJump(outcome) }
+        )
+        quickPositionJumpController.positions = positions
+        self.quickPositionJumpController = quickPositionJumpController
 
         applyChromeAppearance()
 
@@ -203,16 +233,56 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
         }
     }
 
+    private func beginQuickPositionJump() {
+        directionalNavigationAdapter?.unbind()
+        WatchPageTurnService.shared.setPageTurnSuppressed(true)
+        wasTTSPlayingBeforeQuickPositionJump = ttsViewModel?.state.isPlaying == true
+        if wasTTSPlayingBeforeQuickPositionJump {
+            ttsViewModel?.pause()
+        }
+    }
+
+    private func finishQuickPositionJump(_ outcome: QuickPositionJumpInteractionController.Outcome) {
+        if let visualNavigator = navigator as? VisualNavigator {
+            directionalNavigationAdapter?.bind(to: visualNavigator)
+        }
+        WatchPageTurnService.shared.setPageTurnSuppressed(false)
+
+        let shouldResumeTTS = wasTTSPlayingBeforeQuickPositionJump
+        wasTTSPlayingBeforeQuickPositionJump = false
+        switch outcome {
+        case let .committed(target):
+            if shouldResumeTTS {
+                ttsViewModel?.restart(from: target)
+            }
+        case .cancelled:
+            if shouldResumeTTS {
+                ttsViewModel?.pauseOrResume()
+            }
+        case .failed:
+            if shouldResumeTTS {
+                ttsViewModel?.pauseOrResume()
+            }
+            toast(
+                NSLocalizedString("reader_quick_position_failure", comment: ""),
+                on: view,
+                duration: 2
+            )
+        }
+    }
+
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
 
         VolumeKeyService.shared.register(self)
         VolumeKeyService.shared.onPageForward = { [weak self] in
-            guard let navigator = self?.navigator as? VisualNavigator else { return }
+            guard self?.quickPositionJumpController?.isActive != true,
+                  let navigator = self?.navigator as? VisualNavigator else { return }
             Task { await navigator.goForward(options: NavigatorGoOptions(animated: false)) }
         }
         VolumeKeyService.shared.onPageBackward = { [weak self] in
-            guard let navigator = self?.navigator as? VisualNavigator else { return }
+            guard self?.quickPositionJumpController?.isActive != true,
+                  let navigator = self?.navigator as? VisualNavigator else { return }
             Task { await navigator.goBackward(options: NavigatorGoOptions(animated: false)) }
         }
     }
@@ -225,8 +295,15 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
 
+        wasTTSPlayingBeforeQuickPositionJump = false
+        quickPositionJumpController?.cancel()
         ttsViewModel?.stop()
         WatchPageTurnService.shared.unregisterNavigator()
+    }
+
+    override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
+        quickPositionJumpController?.cancel()
+        super.viewWillTransition(to: size, with: coordinator)
     }
 
     // MARK: - Navigation bar
@@ -288,7 +365,12 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
             if let positionCount = positionCount, let position = locator.locations.position {
                 return "\(position) / \(positionCount)"
             } else if let progression = locator.locations.totalProgression {
-                return "\(progression)%"
+                let percentage = QuickPositionJumpPolicy.percentage(
+                    totalProgression: progression,
+                    targetPosition: locator.locations.position ?? 1,
+                    positionCount: positionCount ?? 1
+                )
+                return "\(percentage)%"
             } else {
                 return nil
             }
@@ -481,6 +563,9 @@ extension Decoration {
 
 extension VisualReaderViewController: VolumeKeyBehaviorProvider {
     var volumeKeyBehavior: VolumeKeyBehavior {
+        if quickPositionJumpController?.isActive == true {
+            return .controlVolume
+        }
         // Keep the hardware buttons as volume control while TTS is speaking.
         if let tts = ttsViewModel, tts.state.isPlaying {
             return .controlVolume
@@ -488,5 +573,3 @@ extension VisualReaderViewController: VolumeKeyBehaviorProvider {
         return .turnPage
     }
 }
-
-

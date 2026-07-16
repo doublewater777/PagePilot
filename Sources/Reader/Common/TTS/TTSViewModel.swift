@@ -154,9 +154,7 @@ final class TTSViewModel: ObservableObject, Loggable {
     }
 
     @objc func start() {
-        let session = AVAudioSession.sharedInstance()
-        try? session.setCategory(.playback, mode: .spokenAudio)
-        try? session.setActive(true)
+        activateAudioSession()
 
         if let navigator = navigator as? VisualNavigator {
             Task {
@@ -169,6 +167,13 @@ final class TTSViewModel: ObservableObject, Loggable {
             synthesizer.start(from: navigator.currentLocation)
         }
 
+        setupNowPlaying()
+    }
+
+    func restart(from locator: Locator) {
+        activateAudioSession()
+        synthesizer.stop()
+        synthesizer.start(from: locator)
         setupNowPlaying()
     }
 
@@ -190,6 +195,12 @@ final class TTSViewModel: ObservableObject, Loggable {
 
     @objc func next() {
         synthesizer.next()
+    }
+
+    private func activateAudioSession() {
+        let session = AVAudioSession.sharedInstance()
+        try? session.setCategory(.playback, mode: .spokenAudio)
+        try? session.setActive(true)
     }
 
     // MARK: - Now Playing

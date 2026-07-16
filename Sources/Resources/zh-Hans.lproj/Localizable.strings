@@ -843,3 +843,8 @@
 "volume_key_edu_point_tts" = "朗读、有声书、外放/车载播放时，音量键仍控制音量。";
 "volume_key_edu_point_hud" = "偶尔仍可能闪现系统音量条，属正常现象，可忽略。";
 "volume_key_edu_confirm" = "知道了，开启";
+
+/* Quick Position Jump */
+"reader_quick_position_format" = "‹  %1$d / %2$d  ·  %3$d%%  ›";
+"reader_quick_position_cancel" = "松开取消";
+"reader_quick_position_failure" = "无法跳转到该位置";

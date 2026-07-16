@@ -244,6 +244,7 @@ final class WatchPageTurnService: NSObject, ObservableObject {
 
     /// Weak reference to the currently active VisualNavigator
     weak var activeNavigator: VisualNavigator?
+    private var isPageTurnSuppressed = false
 
     @Published var currentBookTitle: String = ""
     @Published var currentBookProgress: Double = 0.0
@@ -346,6 +347,10 @@ final class WatchPageTurnService: NSObject, ObservableObject {
         // The /command handler will simply early-return when no navigator is active.
     }
 
+    func setPageTurnSuppressed(_ suppressed: Bool) {
+        isPageTurnSuppressed = suppressed
+    }
+
     /// Update reading progress on the watch
     func updateProgress(title: String, progression: Double?) {
         self.currentBookTitle = title
@@ -376,6 +381,13 @@ final class WatchPageTurnService: NSObject, ObservableObject {
     }
 
     private func handleCommand(_ command: PageCommand, completion: (([String: Any]) -> Void)? = nil) {
+        guard !isPageTurnSuppressed else {
+            var payload = localStatusPayload(route: WatchPageTurnRoute.direct)
+            payload["pageDirection"] = command.rawValue
+            payload["didTurnPage"] = false
+            completion?(payload)
+            return
+        }
         guard let navigator = activeNavigator else {
             completion?(errorPayload(
                 route: WatchPageTurnRoute.direct,
@@ -624,6 +636,19 @@ final class WatchPageTurnService: NSObject, ObservableObject {
                             ),
                             statusCode: 409
                         ))
+                        return
+                    }
+
+                    guard !WatchPageTurnService.shared.isPageTurnSuppressed else {
+                        completionBlock(WatchPageTurnService.shared.jsonResponse([
+                            "status": "ok",
+                            "ok": true,
+                            "target": "ipad",
+                            "route": WatchPageTurnRoute.direct,
+                            "readerReady": true,
+                            "pageDirection": command.rawValue,
+                            "didTurnPage": false
+                        ]))
                         return
                     }
                     
