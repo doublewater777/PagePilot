@@ -2,6 +2,15 @@ import XCTest
 @testable import PagePilot
 
 final class QuickPositionJumpPolicyTests: XCTestCase {
+    func testPositionIndicatorMarginIncludesSafeArea() {
+        XCTAssertEqual(
+            QuickPositionJumpPolicy.positionIndicatorBottomMargin(
+                safeAreaBottomInset: 34
+            ),
+            46
+        )
+    }
+
     func testTargetPositionRemainsCurrentWhenFingerDoesNotMove() {
         // Given
         let currentPosition = 286

@@ -146,7 +146,10 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
         view.addSubview(positionLabel)
         NSLayoutConstraint.activate([
             positionLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            positionLabel.bottomAnchor.constraint(equalTo: navigator.view.bottomAnchor, constant: -20),
+            positionLabel.bottomAnchor.constraint(
+                equalTo: view.safeAreaLayoutGuide.bottomAnchor,
+                constant: -QuickPositionJumpPolicy.positionIndicatorBottomSpacing
+            ),
         ])
 
         let quickPositionJumpController = QuickPositionJumpInteractionController(

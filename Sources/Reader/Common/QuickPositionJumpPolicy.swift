@@ -1,6 +1,14 @@
 import Foundation
 
 enum QuickPositionJumpPolicy {
+    static let positionIndicatorBottomSpacing = 12.0
+
+    static func positionIndicatorBottomMargin(
+        safeAreaBottomInset: Double
+    ) -> Double {
+        safeAreaBottomInset + positionIndicatorBottomSpacing
+    }
+
     static func percentage(
         totalProgression: Double?,
         targetPosition: Int,
