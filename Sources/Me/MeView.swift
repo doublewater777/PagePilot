@@ -17,7 +17,7 @@ struct MeView: View {
     @State private var localizationRefreshID = AppAppearancePreferences.language.rawValue
     @State private var showPaywall = false
     @ObservedObject private var proPurchase = ProPurchaseManager.shared
-    @AppStorage(ReadingPreferences.Keys.reminderEnabled) private var reminderEnabled = false
+    @AppStorage(ReadingPreferences.Keys.reminderEnabled) private var reminderEnabled = ReadingPreferences.defaultReminderEnabled
     @State private var showNotificationDeniedAlert = false
     private static var hasAutoShownPaywall = false
 

@@ -182,8 +182,9 @@ enum ReadingPreferences {
 
     static let defaultDailyGoalMinutes = 30
     static let dailyGoalRange = 5...180
-    static let defaultReminderHour = 20
-    static let defaultReminderMinute = 0
+    static let defaultReminderEnabled = true
+    static let defaultReminderHour = 19
+    static let defaultReminderMinute = 50
     static let dailyGoalDidChange = Notification.Name("ReadingPreferencesDailyGoalDidChange")
 
     static var dailyGoalMinutes: Int {
@@ -200,7 +201,12 @@ enum ReadingPreferences {
     }
 
     static var reminderEnabled: Bool {
-        get { UserDefaults.standard.bool(forKey: Keys.reminderEnabled) }
+        get {
+            guard UserDefaults.standard.object(forKey: Keys.reminderEnabled) != nil else {
+                return defaultReminderEnabled
+            }
+            return UserDefaults.standard.bool(forKey: Keys.reminderEnabled)
+        }
         set { UserDefaults.standard.set(newValue, forKey: Keys.reminderEnabled) }
     }
 
@@ -317,7 +323,7 @@ struct HomeView: View {
                     Spacer(minLength: UIDevice.current.userInterfaceIdiom == .pad ? 24 : 100)
                 }
                 .padding(.horizontal, 24)
-                .padding(.top, 18)
+                .padding(.top, 4)
             }
         }
         .background(AppColors.background.ignoresSafeArea())
