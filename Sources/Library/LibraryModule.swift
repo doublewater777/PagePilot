@@ -48,11 +48,12 @@ final class LibraryModule: LibraryModuleAPI {
     init(
         delegate: LibraryModuleDelegate?,
         books: BookRepository,
+        opdsFeeds: OPDSFeedRepository,
         readium: Readium
     ) {
         lcp = LCPModule(readium: readium)
         library = LibraryService(books: books, readium: readium, lcp: lcp)
-        factory = LibraryFactory(libraryService: library)
+        factory = LibraryFactory(libraryService: library, opdsFeeds: opdsFeeds)
         self.delegate = delegate
     }
 

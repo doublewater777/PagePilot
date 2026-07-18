@@ -212,7 +212,9 @@
 "opds_more_button" = "more >";
 "opds_more_button_a11y_label" = "expand feed";
 /* Title of the section displaying the feeds */
-"opds_browse_title" = "Browse";
+"opds_add_feed" = "Add Feed";
+/* Title of the OPDS feeds list page */
+"opds_my_feeds" = "My Feeds";
 /* Title of the add feed alert */
 "opds_add_title" = "Enter feed title and URL";
 /* Message when adding an invalid OPDS feed */
@@ -245,6 +247,10 @@
 "opds_error_enter_title" = "Please enter a title.";
 "opds_error_invalid_url" = "Invalid URL";
 "opds_error_enter_valid_url" = "Please enter a valid URL.";
+"opds_no_acquisition_link" = "No downloadable link found for this publication.";
+"opds_download_done" = "Added to bookshelf.";
+"opds_section_navigation" = "Catalogs";
+"opds_section_books" = "Books";
 
 /* Reading stats */
 "stats_title" = "Reading Stats";

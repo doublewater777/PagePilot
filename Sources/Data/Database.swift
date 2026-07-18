@@ -63,6 +63,15 @@ final class Database {
             }
         }
 
+        migrator.registerMigration("addOPDSFeed") { db in
+            try db.create(table: "opdsFeed") { t in
+                t.autoIncrementedPrimaryKey("id")
+                t.column("title", .text).notNull()
+                t.column("url", .text).notNull()
+                t.column("created", .datetime).notNull()
+            }
+        }
+
         try migrator.migrate(writer)
     }
 

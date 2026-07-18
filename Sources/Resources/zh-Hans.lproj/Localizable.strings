@@ -212,7 +212,9 @@
 "opds_more_button" = "更多 >";
 "opds_more_button_a11y_label" = "展开目录";
 /* Title of the section displaying the feeds */
-"opds_browse_title" = "浏览";
+"opds_add_feed" = "OPDS 书源";
+/* Title of the OPDS feeds list page */
+"opds_my_feeds" = "我的书源";
 /* Title of the add feed alert */
 "opds_add_title" = "输入目录标题和 URL";
 /* Message when adding an invalid OPDS feed */
@@ -245,6 +247,10 @@
 "opds_error_enter_title" = "请输入标题。";
 "opds_error_invalid_url" = "无效的 URL";
 "opds_error_enter_valid_url" = "请输入有效的 URL。";
+"opds_no_acquisition_link" = "未找到该出版物的下载链接。";
+"opds_download_done" = "已加入书架。";
+"opds_section_navigation" = "子目录";
+"opds_section_books" = "书籍";
 
 /* Reading stats */
 "stats_title" = "阅读统计";

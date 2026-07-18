@@ -26,6 +26,8 @@ class LibraryViewController: UIViewController, Loggable {
 
     var library: LibraryService!
 
+    var opdsFeeds: OPDSFeedRepository!
+
     weak var libraryDelegate: LibraryModuleDelegate?
 
     private var subscriptions = Set<AnyCancellable>()
@@ -264,6 +266,9 @@ class LibraryViewController: UIViewController, Loggable {
                     },
                     UIAction(title: NSLocalizedString("library_stream_http", comment: ""), image: UIImage(systemName: "link")) { [weak self] _ in
                         self?.addBookForStreaming()
+                    },
+                    UIAction(title: NSLocalizedString("opds_add_feed", comment: ""), image: UIImage(systemName: "books.vertical")) { [weak self] _ in
+                        self?.presentOPDSFeeds()
                     },
                 ]
             )
@@ -630,6 +635,13 @@ class LibraryViewController: UIViewController, Loggable {
         let hostingController = UIHostingController(rootView: transferView)
         hostingController.modalPresentationStyle = .formSheet
         present(hostingController, animated: true)
+    }
+
+    private func presentOPDSFeeds() {
+        let vc = OPDSFeedListViewController(feeds: opdsFeeds, library: library)
+        let nav = UINavigationController(rootViewController: vc)
+        nav.modalPresentationStyle = .formSheet
+        present(nav, animated: true)
     }
 
     @objc func addBookForStreaming() {

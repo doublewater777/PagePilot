@@ -40,6 +40,7 @@ final class AppModule {
     let books: BookRepository
     let bookmarkRepository: BookmarkRepository
     let highlightRepository: HighlightRepository
+    let opdsFeeds: OPDSFeedRepository
 
     fileprivate lazy var documentPickerDelegate = DocumentPickerDelegate(module: self)
 
@@ -59,11 +60,13 @@ final class AppModule {
         StartupProfiler.shared.record("AppModule: Initializing Readium Opener & Server")
         readium = Readium()
         books = BookRepository(db: db)
+        opdsFeeds = OPDSFeedRepository(db: db)
 
         StartupProfiler.shared.record("AppModule: Initializing Submodules (Library, Reader, Home)")
         library = LibraryModule(
             delegate: self,
             books: books,
+            opdsFeeds: opdsFeeds,
             readium: readium
         )
 
