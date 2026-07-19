@@ -12,6 +12,10 @@ _Avoid_: Item, asset, record
 A readable digital work opened through Readium, such as an EPUB, CBZ, PDF, or OPDS-discovered resource.
 _Avoid_: File, document, ebook
 
+**Sample Publication**:
+The bundled Publication imported into the Bookshelf only when a new user does not successfully import their own Publication during onboarding.
+_Avoid_: Default book, preloaded book, demo file
+
 **Bookshelf**:
 The user's local collection of imported books.
 _Avoid_: Library grid, collection view, catalog
@@ -53,8 +57,24 @@ A remote catalog feed used to browse and download publications from external sou
 _Avoid_: Online library, feed URL
 
 **Watch Page Turn**:
-The Apple Watch remote-control capability that sends next-page or previous-page commands to the iPhone reader.
+The Apple Watch capability that sends next-page or previous-page commands to the Reader on the selected Watch Control Target.
 _Avoid_: Watch remote, remote control
+
+**Watch Control Target**:
+The Apple device whose active Reader receives Watch Page Turn commands. The available targets are the paired iPhone and, with Pro Access, an iPad reached through the iPhone relay.
+_Avoid_: Control device, reading device, target device
+
+**Watch Setup Completion**:
+The first confirmed Watch Page Turn in which a command sent from Apple Watch visibly changes the open Publication on the selected Watch Control Target. Pairing or Watch app installation alone does not count as completion.
+_Avoid_: Watch connected, Watch detected, pairing complete
+
+**Onboarding Activation**:
+A new user's first Watch Setup Completion. It is the primary onboarding conversion outcome; purchasing Pro Access from the iPad control-target branch is a secondary outcome.
+_Avoid_: Onboarding completion, onboarding dismissal, first open
+
+**iPad Watch Relay Setup**:
+The guided Pro setup that prepares an iPhone to relay Watch Page Turn commands to an active Reader on a nearby iPad. Onboarding may lead into this setup, but completing it is not required to begin reading.
+_Avoid_: iPad pairing, iPad Watch connection, cross-device onboarding
 
 **Volume Key Page Turn**:
 An optional mode that maps iPhone hardware volume buttons to page-forward and page-backward actions during reading. Implemented via a hidden `MPVolumeView` + KVO on `outputVolume` with immediate reset. Runtime interception is gated by a decision chain: external audio playing → reader declares intent via `VolumeKeyBehaviorProvider` protocol → user preference for TTS mode. The active provider is registered in `viewWillAppear` and unregistered in `viewDidDisappear` of `VisualReaderViewController`; a `isKeyWindow` guard prevents interception when the reader is not the frontmost window.

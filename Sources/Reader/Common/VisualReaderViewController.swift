@@ -24,6 +24,8 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
     private var quickPositionJumpController: QuickPositionJumpInteractionController?
     private var wasTTSPlayingBeforeQuickPositionJump = false
     private var quickPositionJumpSuppressionToken: UUID?
+    private var onboardingWatchGuideViewController: UIHostingController<OnboardingWatchGuideView>?
+    private var onboardingIPadHintViewController: UIHostingController<OnboardingIPadReaderHintView>?
 
     init(
         navigator: N,
@@ -217,6 +219,8 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
         if let visualNavigator = navigator as? VisualNavigator {
             WatchPageTurnService.shared.registerNavigator(visualNavigator, publication: publication)
         }
+        showOnboardingWatchGuideIfNeeded()
+        showOnboardingIPadHintIfNeeded()
 
         // Refine position from external trigger (e.g. MyNotes) once the navigator is ready.
         if let visualNavigator = navigator as? VisualNavigator,
@@ -228,6 +232,138 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
                 await navigateToLocator(locator, on: visualNavigator)
             }
         }
+    }
+
+    private func showOnboardingWatchGuideIfNeeded() {
+        guard UIDevice.current.userInterfaceIdiom == .phone else { return }
+        let store = OnboardingProgressStore()
+        let flow = store.load(platform: .iPhone)
+        guard flow.shouldShowWatchGuide else { return }
+
+        let guide = OnboardingWatchGuideView(
+            service: WatchPageTurnService.shared,
+            initiallyCollapsed: flow.isWatchGuideCollapsed,
+            onCollapse: {
+                let store = OnboardingProgressStore()
+                var flow = store.load(platform: .iPhone)
+                flow.collapseWatchGuide()
+                store.save(flow)
+            },
+            onDismiss: { [weak self] in
+                self?.dismissOnboardingWatchGuide(permanently: true)
+            }
+        )
+        let hostingController = UIHostingController(rootView: guide)
+        hostingController.view.backgroundColor = .clear
+        addChild(hostingController)
+        hostingController.view.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(hostingController.view)
+        NSLayoutConstraint.activate([
+            hostingController.view.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            hostingController.view.leadingAnchor.constraint(greaterThanOrEqualTo: view.leadingAnchor, constant: 20),
+            hostingController.view.trailingAnchor.constraint(lessThanOrEqualTo: view.trailingAnchor, constant: -20),
+            hostingController.view.topAnchor.constraint(greaterThanOrEqualTo: view.safeAreaLayoutGuide.topAnchor, constant: 20),
+            hostingController.view.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -68),
+        ])
+        hostingController.didMove(toParent: self)
+        onboardingWatchGuideViewController = hostingController
+
+        NotificationCenter.default.publisher(for: .watchPageTurnDidSucceed)
+            .prefix(1)
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                self?.completeOnboardingWatchGuide()
+            }
+            .store(in: &subscriptions)
+    }
+
+    private func showOnboardingIPadHintIfNeeded() {
+        guard UIDevice.current.userInterfaceIdiom == .pad else { return }
+        let store = OnboardingProgressStore()
+        let flow = store.load(platform: .iPad)
+        guard flow.platform == .iPad, flow.step == .reader else { return }
+
+        let hint = OnboardingIPadReaderHintView(onDismiss: { [weak self] in
+            let store = OnboardingProgressStore()
+            var flow = store.load(platform: .iPad)
+            flow.finish()
+            store.save(flow)
+            self?.removeOnboardingIPadHint()
+        })
+        let hostingController = UIHostingController(rootView: hint)
+        hostingController.view.backgroundColor = .clear
+        addChild(hostingController)
+        hostingController.view.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(hostingController.view)
+        NSLayoutConstraint.activate([
+            hostingController.view.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            hostingController.view.widthAnchor.constraint(lessThanOrEqualToConstant: 480),
+            hostingController.view.leadingAnchor.constraint(greaterThanOrEqualTo: view.leadingAnchor, constant: 24),
+            hostingController.view.trailingAnchor.constraint(lessThanOrEqualTo: view.trailingAnchor, constant: -24),
+            hostingController.view.topAnchor.constraint(greaterThanOrEqualTo: view.safeAreaLayoutGuide.topAnchor, constant: 24),
+            hostingController.view.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -28),
+        ])
+        hostingController.didMove(toParent: self)
+        onboardingIPadHintViewController = hostingController
+    }
+
+    private func completeOnboardingWatchGuide() {
+        let store = OnboardingProgressStore()
+        var flow = store.load(platform: .iPhone)
+        guard flow.shouldShowWatchGuide else { return }
+        flow.didCompleteWatchPageTurn()
+        store.save(flow)
+
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        toast(
+            NSLocalizedString("onboarding_watch_success", comment: ""),
+            on: view,
+            duration: 1.2
+        )
+
+        guard let guideView = onboardingWatchGuideViewController?.view else { return }
+        if UIAccessibility.isReduceMotionEnabled {
+            removeOnboardingWatchGuide()
+            return
+        }
+        guideView.layer.shadowColor = UIColor(red: 41 / 255, green: 158 / 255, blue: 148 / 255, alpha: 1).cgColor
+        guideView.layer.shadowOpacity = 0.55
+        guideView.layer.shadowRadius = 22
+        UIView.animate(withDuration: 0.25, animations: {
+            guideView.transform = CGAffineTransform(scaleX: 1.03, y: 1.03)
+        }) { [weak self] _ in
+            UIView.animate(withDuration: 0.3, animations: {
+                guideView.alpha = 0
+            }) { _ in
+                self?.removeOnboardingWatchGuide()
+            }
+        }
+    }
+
+    private func dismissOnboardingWatchGuide(permanently: Bool) {
+        if permanently {
+            let store = OnboardingProgressStore()
+            var flow = store.load(platform: .iPhone)
+            flow.finish()
+            store.save(flow)
+        }
+        removeOnboardingWatchGuide()
+    }
+
+    private func removeOnboardingWatchGuide() {
+        guard let hostingController = onboardingWatchGuideViewController else { return }
+        hostingController.willMove(toParent: nil)
+        hostingController.view.removeFromSuperview()
+        hostingController.removeFromParent()
+        onboardingWatchGuideViewController = nil
+    }
+
+    private func removeOnboardingIPadHint() {
+        guard let hostingController = onboardingIPadHintViewController else { return }
+        hostingController.willMove(toParent: nil)
+        hostingController.view.removeFromSuperview()
+        hostingController.removeFromParent()
+        onboardingIPadHintViewController = nil
     }
 
     /// Retries navigation until the navigator accepts the locator or times out.

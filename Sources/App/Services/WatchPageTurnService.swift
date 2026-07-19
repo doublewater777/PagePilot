@@ -19,6 +19,14 @@ private enum WatchPageTurnErrorCode {
     static let proRequired = "PRO_REQUIRED"
 }
 
+enum WatchAvailability {
+    case unsupported
+    case unpaired
+    case appNotInstalled
+    case unreachable
+    case ready
+}
+
 private final class PagePilotLANBrowser: NSObject, NetServiceBrowserDelegate, NetServiceDelegate {
     static let shared = PagePilotLANBrowser()
 
@@ -256,6 +264,16 @@ final class WatchPageTurnService: NSObject, ObservableObject {
     private var lanServer: ReadiumGCDWebServer?
     private var lanResetTimer: Timer?
     private let preferredLANPort: UInt = 61482
+    private let ipadRelayEnabledKey = "ipad_watch_relay_enabled"
+
+    var watchAvailability: WatchAvailability {
+        guard WCSession.isSupported() else { return .unsupported }
+        let session = WCSession.default
+        guard session.isPaired else { return .unpaired }
+        guard session.isWatchAppInstalled else { return .appNotInstalled }
+        guard session.isReachable else { return .unreachable }
+        return .ready
+    }
 
     private override init() {
         super.init()
@@ -271,23 +289,43 @@ final class WatchPageTurnService: NSObject, ObservableObject {
         // reader even before a book is opened. The paired iPhone deliberately
         // does not advertise this service; it can act as a relay when the
         // Watch cannot reach the iPad LAN directly.
-        if UIDevice.current.userInterfaceIdiom == .pad {
+        if UIDevice.current.userInterfaceIdiom == .pad,
+           UserDefaults.standard.bool(forKey: ipadRelayEnabledKey),
+           ProPurchaseManager.shared.hasProAccess {
             startLANServer()
-        } else if UIDevice.current.userInterfaceIdiom == .phone {
+        } else if UIDevice.current.userInterfaceIdiom == .phone,
+                  WatchPageTurnSettings().controlTarget == .iPad,
+                  ProPurchaseManager.shared.hasProAccess {
             PagePilotLANBrowser.shared.warmUp()
         }
     }
 
+    func enableIPadRelay() {
+        guard UIDevice.current.userInterfaceIdiom == .pad,
+              ProPurchaseManager.shared.hasProAccess
+        else {
+            return
+        }
+        UserDefaults.standard.set(true, forKey: ipadRelayEnabledKey)
+        startLANServer()
+    }
+
     /// Call when the user selects iPad as the Watch control target.
     func prepareIPadRelay() {
-        guard UIDevice.current.userInterfaceIdiom == .phone else { return }
+        guard UIDevice.current.userInterfaceIdiom == .phone,
+              ProPurchaseManager.shared.hasProAccess
+        else {
+            return
+        }
         PagePilotLANBrowser.shared.warmUp()
     }
 
     /// Actively hit the local LAN status endpoint (self-test). Returns whether the server answered.
     @MainActor
     func runLocalStatusProbe() async -> Bool {
-        if UIDevice.current.userInterfaceIdiom == .pad {
+        if UIDevice.current.userInterfaceIdiom == .pad,
+           UserDefaults.standard.bool(forKey: ipadRelayEnabledKey),
+           ProPurchaseManager.shared.hasProAccess {
             startLANServer()
         }
         guard lanServerRunning, lanServerPort > 0 else { return false }
@@ -332,7 +370,9 @@ final class WatchPageTurnService: NSObject, ObservableObject {
         updateProgress(title: title, progression: progress)
 
         // Defensive: in case activate() wasn't called for some reason.
-        if UIDevice.current.userInterfaceIdiom == .pad {
+        if UIDevice.current.userInterfaceIdiom == .pad,
+           UserDefaults.standard.bool(forKey: ipadRelayEnabledKey),
+           ProPurchaseManager.shared.hasProAccess {
             startLANServer()
         }
     }
@@ -416,6 +456,7 @@ final class WatchPageTurnService: NSObject, ObservableObject {
 
             if succeeded {
                 ReviewPromptManager.shared.recordWatchPageTurn()
+                NotificationCenter.default.post(name: .watchPageTurnDidSucceed, object: nil)
             }
 
             var payload = self.localStatusPayload(route: WatchPageTurnRoute.direct)
@@ -736,13 +777,22 @@ final class WatchPageTurnService: NSObject, ObservableObject {
 }
 
 extension WatchPageTurnService: WCSessionDelegate {
+    func sessionWatchStateDidChange(_ session: WCSession) {
+        DispatchQueue.main.async {
+            self.objectWillChange.send()
+        }
+    }
+
     func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: Error?) {
         DispatchQueue.main.async {
             self.isWatchConnected = activationState == .activated
         }
         if activationState == .activated, UIDevice.current.userInterfaceIdiom == .phone {
             WatchPageTurnSettings().syncToWatch()
-            PagePilotLANBrowser.shared.warmUp()
+            if WatchPageTurnSettings().controlTarget == .iPad,
+               ProPurchaseManager.shared.hasProAccess {
+                PagePilotLANBrowser.shared.warmUp()
+            }
         }
     }
 
@@ -863,4 +913,8 @@ extension WatchPageTurnService: WCSessionDelegate {
             replyHandler?(["status": "ignored", "reason": "unknown action"])
         }
     }
+}
+
+extension Notification.Name {
+    static let watchPageTurnDidSucceed = Notification.Name("watchPageTurnDidSucceed")
 }

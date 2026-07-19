@@ -8,6 +8,11 @@ import SafariServices
 import StoreKit
 import SwiftUI
 
+enum PaywallContext {
+    case general
+    case iPadWatchRelay
+}
+
 struct PaywallView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var colorScheme
@@ -22,6 +27,12 @@ struct PaywallView: View {
     @State private var productsLoadFailed = false
     @State private var isEligibleForTrial = false
     @State private var safariURL: IdentifiableURL?
+
+    let context: PaywallContext
+
+    init(context: PaywallContext = .general) {
+        self.context = context
+    }
 
     private var selectedProduct: Product? {
         products.first(where: { $0.id == selectedProductID })
@@ -103,19 +114,25 @@ struct PaywallView: View {
 
     private var hero: some View {
         VStack(spacing: 7) {
-            Image(systemName: "crown.fill")
+            Image(systemName: context == .iPadWatchRelay ? "ipad.and.iphone" : "crown.fill")
                 .font(.system(size: 18, weight: .bold))
                 .foregroundColor(.orange)
                 .frame(width: 36, height: 36)
                 .background(Color.orange.opacity(colorScheme == .dark ? 0.18 : 0.12))
                 .clipShape(Circle())
 
-            Text(NSLocalizedString("paywall_title", comment: ""))
+            Text(NSLocalizedString(
+                context == .iPadWatchRelay ? "paywall_ipad_watch_title" : "paywall_title",
+                comment: ""
+            ))
                 .font(.system(size: 23, weight: .bold))
                 .foregroundColor(AppColors.primaryText)
                 .multilineTextAlignment(.center)
 
-            Text(NSLocalizedString("paywall_subtitle", comment: ""))
+            Text(NSLocalizedString(
+                context == .iPadWatchRelay ? "paywall_ipad_watch_subtitle" : "paywall_subtitle",
+                comment: ""
+            ))
                 .font(.system(size: 13, weight: .medium))
                 .foregroundColor(AppColors.secondaryText)
                 .multilineTextAlignment(.center)

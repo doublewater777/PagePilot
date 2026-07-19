@@ -53,6 +53,7 @@ struct IPadWatchConnectionView: View {
         .navigationTitle(NSLocalizedString("ipad_watch_status_title", comment: ""))
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
+            service.enableIPadRelay()
             localIPs = LocalNetworkInfo.ipv4Addresses()
             startProbe()
         }

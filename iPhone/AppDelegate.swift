@@ -26,6 +26,12 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         StartupProfiler.shared.record("AppDelegate didFinishLaunching Start")
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("-ResetOnboarding") {
+            UserDefaults.standard.removeObject(forKey: hasSeenOnboardingKey)
+            OnboardingProgressStore().reset()
+        }
+        #endif
         AppAppearancePreferences.configureLocalization()
         configureAudioSession()
         WatchPageTurnSettings.migrateDefaultTargetIfNeeded()
@@ -363,6 +369,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
         do {
             guard let publication = try await app.library.openBook(book, sender: nav) else { return }
+            UserDefaults.standard.set(true, forKey: hasSeenOnboardingKey)
             app.reader.presentPublication(publication: publication, book: book, in: nav)
         } catch {
             presentErrorIfPossible(error, from: nav)
@@ -380,6 +387,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     func application(_ application: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {
         guard let url = url.anyURL.absoluteURL, let vc = activeRootViewController else {
             return false
+        }
+
+        if !UserDefaults.standard.bool(forKey: hasSeenOnboardingKey) {
+            NotificationCenter.default.post(name: .onboardingImportURLRequested, object: url.url)
+            return true
         }
 
         importPublication(from: url, sender: vc)
@@ -410,7 +422,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             .rootViewController
     }
 
-    func presentOnboardingIfNeeded(from presentingViewController: UIViewController) {
+    func presentOnboardingIfNeeded(
+        from presentingViewController: UIViewController,
+        initialURL: AbsoluteURL? = nil
+    ) {
         guard app != nil else { return }
 
         guard !UserDefaults.standard.bool(forKey: hasSeenOnboardingKey) else {
@@ -426,22 +441,79 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
                 return
             }
 
-            let onboardingView = OnboardingView { action in
-                UserDefaults.standard.set(true, forKey: self.hasSeenOnboardingKey)
-                presentingViewController.dismiss(animated: true) {
-                    Task {
-                        let books = await self.importPreloadedBooksIfNeeded(delayNanoseconds: 350_000_000)
-                        guard action == .openSampleBook else { return }
-                        if let book = books.first {
-                            await self.openBookAfterOnboarding(book, from: presentingViewController)
-                        } else {
-                            await MainActor.run {
-                                self.app?.tabBarController?.selectedIndex = 1
+            let platform: OnboardingFlow.Platform = UIDevice.current.userInterfaceIdiom == .pad
+                ? .iPad
+                : .iPhone
+            let progressStore = OnboardingProgressStore()
+            let flow = progressStore.load(platform: platform)
+
+            let onboardingView = OnboardingView(
+                flow: flow,
+                importPublication: { [weak self, weak presentingViewController] url in
+                    guard let self,
+                          let presentingViewController,
+                          let absoluteURL = url.anyURL.absoluteURL
+                    else {
+                        throw LibraryError.importFailed(URLError(.badURL))
+                    }
+                    let book = try await self.app.library.importPublication(
+                        from: absoluteURL,
+                        sender: presentingViewController
+                    )
+                    guard let bookID = book.id?.rawValue else {
+                        throw LibraryError.importFailed(URLError(.cannotCreateFile))
+                    }
+                    // A successfully imported user publication replaces the bundled sample.
+                    UserDefaults.standard.set(true, forKey: self.preloadedBooksKey)
+                    return OnboardingPublicationPresentation(
+                        bookID: bookID,
+                        title: book.title,
+                        coverURL: book.cover?.url
+                    )
+                },
+                loadSamplePublication: { [weak self] in
+                    guard let self else { return nil }
+                    let books = await self.importPreloadedBooksIfNeeded()
+                    guard let book = books.first, let bookID = book.id?.rawValue else { return nil }
+                    return OnboardingPublicationPresentation(
+                        bookID: bookID,
+                        title: book.title,
+                        coverURL: book.cover?.url
+                    )
+                },
+                loadPublication: { [weak self] rawBookID in
+                    guard let self,
+                          let book = try? await self.app.books.get(Book.Id(rawValue: rawBookID))
+                    else {
+                        return nil
+                    }
+                    return OnboardingPublicationPresentation(
+                        bookID: rawBookID,
+                        title: book.title,
+                        coverURL: book.cover?.url
+                    )
+                },
+                onFlowChange: { flow in
+                    progressStore.save(flow)
+                },
+                onOpenPublication: { [weak self, weak presentingViewController] rawBookID, _ in
+                    guard let self, let presentingViewController else { return }
+                    presentingViewController.dismiss(animated: true) {
+                        Task {
+                            guard let book = try? await self.app.books.get(Book.Id(rawValue: rawBookID)) else {
+                                return
                             }
+                            await self.openBookAfterOnboarding(book, from: presentingViewController)
                         }
                     }
-                }
-            }
+                },
+                onFinish: { [weak self, weak presentingViewController] in
+                    guard let self, let presentingViewController else { return }
+                    UserDefaults.standard.set(true, forKey: self.hasSeenOnboardingKey)
+                    presentingViewController.dismiss(animated: true)
+                },
+                initialURL: initialURL?.url
+            )
 
             let hostingController = UIHostingController(rootView: onboardingView)
             hostingController.modalPresentationStyle = .fullScreen
@@ -449,11 +521,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             presentingViewController.present(hostingController, animated: false)
         }
     }
-}
-
-private enum OnboardingFinishAction {
-    case dismissOnly
-    case openSampleBook
 }
 
 final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
@@ -491,7 +558,12 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             }
         }
 
-        appDelegate.presentOnboardingIfNeeded(from: rootViewController)
+        let initialURL = connectionOptions.urlContexts.first?.url.anyURL.absoluteURL
+        let hasSeenOnboarding = UserDefaults.standard.bool(forKey: appDelegate.hasSeenOnboardingKey)
+        appDelegate.presentOnboardingIfNeeded(
+            from: rootViewController,
+            initialURL: hasSeenOnboarding ? nil : initialURL
+        )
         
         // Performance Optimization: Only import preloaded books if the user has already seen onboarding.
         // For fresh installs, it will be triggered when onboarding gets dismissed to prevent stuttering.
@@ -501,8 +573,7 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             StartupProfiler.shared.record("First launch: Skipping preloaded books import during onboarding")
         }
 
-        if let urlContext = connectionOptions.urlContexts.first,
-           let url = urlContext.url.anyURL.absoluteURL {
+        if hasSeenOnboarding, let url = initialURL {
             appDelegate.importPublication(from: url, sender: rootViewController)
         }
         StartupProfiler.shared.record("SceneDelegate willConnectTo End")
@@ -516,156 +587,14 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             return
         }
 
-        appDelegate.importPublication(from: url, sender: rootViewController)
-    }
-}
-
-private struct OnboardingView: View {
-    private let onFinish: (OnboardingFinishAction) -> Void
-
-    @State private var selectedPage = 0
-
-    private let pages: [OnboardingPage] = [
-        OnboardingPage(
-            symbolName: "book.closed",
-            titleKey: "onboarding_welcome_title",
-            messageKey: "onboarding_welcome_message"
-        ),
-        OnboardingPage(
-            symbolName: "square.and.arrow.down",
-            titleKey: "onboarding_import_title",
-            messageKey: "onboarding_import_message"
-        ),
-        OnboardingPage(
-            symbolName: "applewatch",
-            titleKey: "onboarding_watch_title",
-            messageKey: "onboarding_watch_message"
-        ),
-        OnboardingPage(
-            symbolName: "ipad.and.iphone",
-            titleKey: "onboarding_transfer_title",
-            messageKey: "onboarding_transfer_message"
-        ),
-    ]
-
-    init(onFinish: @escaping (OnboardingFinishAction) -> Void) {
-        self.onFinish = onFinish
-    }
-
-    var body: some View {
-        VStack(spacing: 0) {
-            HStack {
-                Spacer()
-                Button(NSLocalizedString("onboarding_later_button", comment: "Dismiss onboarding button")) {
-                    onFinish(.dismissOnly)
-                }
-                    .font(.subheadline.weight(.semibold))
-                    .buttonStyle(.borderless)
-                    .foregroundStyle(.secondary)
-                    .padding(.horizontal, 24)
-                    .padding(.top, 20)
-                    .accessibilityIdentifier("onboarding_later_button")
-            }
-
-            TabView(selection: $selectedPage) {
-                ForEach(pages.indices, id: \.self) { index in
-                    OnboardingPageView(page: pages[index])
-                        .tag(index)
-                }
-            }
-            .tabViewStyle(.page(indexDisplayMode: .always))
-
-            primaryButton
-                .padding(.horizontal, 24)
-                .padding(.bottom, 30)
-        }
-        .background(AppColors.background)
-        .onAppear {
-            if ProcessInfo.processInfo.arguments.contains("-AutoDismissOnboarding") {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-                    onFinish(.dismissOnly)
-                }
-            }
-        }
-    }
-
-    @ViewBuilder
-    private var primaryButton: some View {
-        Button(action: advance) {
-            Text(advanceTitle)
-                .font(.headline)
-                .frame(maxWidth: .infinity)
-                .frame(minHeight: 52)
-        }
-        .buttonStyle(.borderedProminent)
-        .tint(AppColors.accentBlue)
-        .accessibilityIdentifier("onboarding_primary_button")
-    }
-
-    private var advanceTitle: String {
-        if selectedPage == pages.count - 1 {
-            return NSLocalizedString("onboarding_open_sample_button", comment: "")
-        }
-        return NSLocalizedString("onboarding_continue_button", comment: "")
-    }
-
-    private func advance() {
-        guard selectedPage < pages.count - 1 else {
-            onFinish(.openSampleBook)
-            return
-        }
-
-        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-            selectedPage += 1
+        if UserDefaults.standard.bool(forKey: appDelegate.hasSeenOnboardingKey) {
+            appDelegate.importPublication(from: url, sender: rootViewController)
+        } else {
+            NotificationCenter.default.post(name: .onboardingImportURLRequested, object: url.url)
         }
     }
 }
 
-private struct OnboardingPage {
-    let symbolName: String
-    let titleKey: LocalizedStringKey
-    let messageKey: LocalizedStringKey
-}
-
-private struct OnboardingPageView: View {
-    let page: OnboardingPage
-
-    var body: some View {
-        VStack(spacing: 28) {
-            Spacer(minLength: 44)
-
-            Image(systemName: page.symbolName)
-                .font(.system(size: 44, weight: .semibold))
-                .symbolRenderingMode(.hierarchical)
-                .foregroundStyle(.tint)
-                .frame(width: 112, height: 112)
-                .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 28, style: .continuous))
-                .overlay {
-                    RoundedRectangle(cornerRadius: 28, style: .continuous)
-                        .stroke(Color(.separator).opacity(0.18), lineWidth: 1)
-                }
-                .accessibilityHidden(true)
-
-            VStack(spacing: 14) {
-                Text(page.titleKey)
-                    .font(.title.weight(.bold))
-                    .multilineTextAlignment(.center)
-                    .foregroundStyle(.primary)
-                    .minimumScaleFactor(0.8)
-
-                Text(page.messageKey)
-                    .font(.body.weight(.regular))
-                    .multilineTextAlignment(.center)
-                    .foregroundStyle(.secondary)
-                    .lineSpacing(3)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .padding(.horizontal, 34)
-
-            Spacer(minLength: 92)
-        }
-    }
-}
 
 import QuartzCore
 
