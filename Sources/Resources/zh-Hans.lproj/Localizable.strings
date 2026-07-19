@@ -36,6 +36,10 @@
 "onboarding_activation_title" = "戴着手表，也能轻松翻页";
 "onboarding_activation_subtitle" = "先带来一本想读的书，再用 Apple Watch 完成第一次翻页。";
 "onboarding_import_one_book" = "导入一本书";
+"onboarding_import_source_title" = "选择导入来源";
+"onboarding_import_source_files" = "从“文件”导入";
+"onboarding_import_source_wifi" = "Wi-Fi 传书";
+"onboarding_import_source_opds" = "浏览 OPDS 书源";
 "onboarding_use_sample" = "使用样书";
 "onboarding_supported_formats" = "支持 EPUB、PDF、CBZ、TXT 和有声书";
 "onboarding_sample_error" = "暂时无法打开样书，请重试。";

@@ -12,8 +12,11 @@ struct WiFiTransferView: View {
     @StateObject private var viewModel: WiFiTransferViewModel
     @Environment(\.dismiss) private var dismiss
 
-    init(library: LibraryService) {
-        _viewModel = StateObject(wrappedValue: WiFiTransferViewModel(library: library))
+    init(library: LibraryService, onPublicationImported: ((Book) -> Void)? = nil) {
+        _viewModel = StateObject(wrappedValue: WiFiTransferViewModel(
+            library: library,
+            onPublicationImported: onPublicationImported
+        ))
     }
 
     var body: some View {
@@ -176,9 +179,12 @@ final class WiFiTransferViewModel: ObservableObject {
 
     private let server = WiFiTransferServer()
     private let library: LibraryService
+    private let onPublicationImported: ((Book) -> Void)?
+    private var didNotifyFirstImport = false
 
-    init(library: LibraryService) {
+    init(library: LibraryService, onPublicationImported: ((Book) -> Void)? = nil) {
         self.library = library
+        self.onPublicationImported = onPublicationImported
     }
 
     func start() {
@@ -216,11 +222,15 @@ final class WiFiTransferViewModel: ObservableObject {
 
         Task { @MainActor in
             do {
-                try await library.importPublication(
+                let book = try await library.importPublication(
                     from: absoluteURL,
                     sender: UIApplication.shared.firstKeyWindow?.rootViewController ?? UIViewController(),
                     progress: { _ in }
                 )
+                if !didNotifyFirstImport {
+                    didNotifyFirstImport = true
+                    onPublicationImported?(book)
+                }
             } catch {
                 print("WiFiTransfer: failed to import \(fileURL.lastPathComponent) to library: \(error)")
             }

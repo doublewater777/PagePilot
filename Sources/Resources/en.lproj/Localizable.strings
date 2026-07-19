@@ -36,6 +36,10 @@
 "onboarding_activation_title" = "Turn pages from your wrist";
 "onboarding_activation_subtitle" = "Bring a book you want to read, then turn your first page with Apple Watch.";
 "onboarding_import_one_book" = "Import One Book";
+"onboarding_import_source_title" = "Choose an Import Source";
+"onboarding_import_source_files" = "Files";
+"onboarding_import_source_wifi" = "Wi-Fi Transfer";
+"onboarding_import_source_opds" = "Browse OPDS Feeds";
 "onboarding_use_sample" = "Use Sample Book";
 "onboarding_supported_formats" = "Supports EPUB, PDF, CBZ, TXT, and audiobooks";
 "onboarding_sample_error" = "The sample book could not be opened. Please try again.";

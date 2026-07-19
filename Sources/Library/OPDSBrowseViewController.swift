@@ -15,6 +15,7 @@ import UIKit
 final class OPDSBrowseViewController: UIViewController {
     private let feed: OPDSFeed
     private let library: LibraryService
+    private let onPublicationImported: ((Book) -> Void)?
     private let tableView = UITableView(frame: .zero, style: .insetGrouped)
 
     private var navigationLinks: [Link] = []
@@ -22,9 +23,14 @@ final class OPDSBrowseViewController: UIViewController {
     private var nextURL: URL?
     private var loading = false
 
-    init(feed: OPDSFeed, library: LibraryService) {
+    init(
+        feed: OPDSFeed,
+        library: LibraryService,
+        onPublicationImported: ((Book) -> Void)? = nil
+    ) {
         self.feed = feed
         self.library = library
+        self.onPublicationImported = onPublicationImported
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -216,7 +222,11 @@ extension OPDSBrowseViewController: UITableViewDataSource, UITableViewDelegate {
                 return
             }
             let subFeed = OPDSFeed(title: link.title ?? NSLocalizedString("opds_untitled", comment: ""), url: url.absoluteString)
-            let vc = OPDSBrowseViewController(feed: subFeed, library: library)
+            let vc = OPDSBrowseViewController(
+                feed: subFeed,
+                library: library,
+                onPublicationImported: onPublicationImported
+            )
             navigationController?.pushViewController(vc, animated: true)
 
         case .publications:
@@ -243,9 +253,19 @@ extension OPDSBrowseViewController: UITableViewDataSource, UITableViewDelegate {
             Task { [weak self] in
                 defer { DispatchQueue.main.async { self?.navigationItem.titleView = nil } }
                 do {
-                    _ = try await self?.library.importPublication(from: absolute, sender: self, progress: { _ in })
+                    guard let book = try await self?.library.importPublication(
+                        from: absolute,
+                        sender: self,
+                        progress: { _ in }
+                    ) else {
+                        return
+                    }
                     await MainActor.run {
-                        self?.presentErrorAlert(message: NSLocalizedString("opds_download_done", comment: ""))
+                        if let onPublicationImported = self?.onPublicationImported {
+                            onPublicationImported(book)
+                        } else {
+                            self?.presentErrorAlert(message: NSLocalizedString("opds_download_done", comment: ""))
+                        }
                     }
                 } catch LibraryError.bookLimitReached {
                     await MainActor.run {

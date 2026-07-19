@@ -493,6 +493,55 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
                         coverURL: book.cover?.url
                     )
                 },
+                presentWiFiTransfer: { [weak self, weak presentingViewController] onImported in
+                    guard let self, let presentingViewController else { return }
+                    let presenter = presentingViewController.presentedViewController ?? presentingViewController
+                    weak var sheetController: UIViewController?
+                    let wifiView = WiFiTransferView(
+                        library: self.app.library.service,
+                        onPublicationImported: { [weak self] book in
+                            guard let self, let bookID = book.id?.rawValue else { return }
+                            UserDefaults.standard.set(true, forKey: self.preloadedBooksKey)
+                            let publication = OnboardingPublicationPresentation(
+                                bookID: bookID,
+                                title: book.title,
+                                coverURL: book.cover?.url
+                            )
+                            sheetController?.dismiss(animated: true) {
+                                onImported(publication)
+                            }
+                        }
+                    )
+                    let controller = UIHostingController(rootView: wifiView)
+                    controller.modalPresentationStyle = .formSheet
+                    sheetController = controller
+                    presenter.present(controller, animated: true)
+                },
+                presentOPDS: { [weak self, weak presentingViewController] onImported in
+                    guard let self, let presentingViewController else { return }
+                    let presenter = presentingViewController.presentedViewController ?? presentingViewController
+                    weak var sheetController: UIViewController?
+                    let feedList = OPDSFeedListViewController(
+                        feeds: self.app.opdsFeeds,
+                        library: self.app.library.service,
+                        onPublicationImported: { [weak self] book in
+                            guard let self, let bookID = book.id?.rawValue else { return }
+                            UserDefaults.standard.set(true, forKey: self.preloadedBooksKey)
+                            let publication = OnboardingPublicationPresentation(
+                                bookID: bookID,
+                                title: book.title,
+                                coverURL: book.cover?.url
+                            )
+                            sheetController?.dismiss(animated: true) {
+                                onImported(publication)
+                            }
+                        }
+                    )
+                    let controller = UINavigationController(rootViewController: feedList)
+                    controller.modalPresentationStyle = .formSheet
+                    sheetController = controller
+                    presenter.present(controller, animated: true)
+                },
                 onFlowChange: { flow in
                     progressStore.save(flow)
                 },

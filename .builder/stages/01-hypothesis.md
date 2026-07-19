@@ -18,6 +18,10 @@ PagePilot targets Apple ecosystem readers who lose reading flow when they must t
 - Website and launch copy name four scenarios: bed, gym, commute/train, device on a stand.
 - See `project.yaml` for wedge definition.
 
+## Related Cycles
+
+- `2026-07-19-onboarding-import-sources` — tests whether supporting Files, Wi-Fi transfer, and OPDS reduces the first-book import barrier.
+
 ## Decisions
 
 - Hypothesis backfilled retroactively before stage 02 user interviews.

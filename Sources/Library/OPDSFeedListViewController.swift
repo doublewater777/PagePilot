@@ -11,13 +11,19 @@ import UIKit
 final class OPDSFeedListViewController: UIViewController {
     private let feedsRepo: OPDSFeedRepository
     private let library: LibraryService
+    private let onPublicationImported: ((Book) -> Void)?
     private var feeds: [OPDSFeed] = []
     private var subscriptions = Set<AnyCancellable>()
     private let tableView = UITableView(frame: .zero, style: .insetGrouped)
 
-    init(feeds: OPDSFeedRepository, library: LibraryService) {
+    init(
+        feeds: OPDSFeedRepository,
+        library: LibraryService,
+        onPublicationImported: ((Book) -> Void)? = nil
+    ) {
         self.feedsRepo = feeds
         self.library = library
+        self.onPublicationImported = onPublicationImported
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -169,7 +175,11 @@ extension OPDSFeedListViewController: UITableViewDataSource, UITableViewDelegate
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
         let feed = feeds[indexPath.row]
-        let browse = OPDSBrowseViewController(feed: feed, library: library)
+        let browse = OPDSBrowseViewController(
+            feed: feed,
+            library: library,
+            onPublicationImported: onPublicationImported
+        )
         navigationController?.pushViewController(browse, animated: true)
     }
 

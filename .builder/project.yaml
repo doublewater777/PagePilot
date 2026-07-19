@@ -19,4 +19,10 @@ cycles:
     started_at: 2026-06-06
     completed_at:
     linked_stage: 10-growth-channel
-updated_at: 2026-06-06
+  - id: 2026-07-19-onboarding-import-sources
+    feature: Onboarding import sources
+    status: completed
+    started_at: 2026-07-19
+    completed_at: 2026-07-19
+    linked_stage: 01-hypothesis
+updated_at: 2026-07-19

@@ -13,6 +13,7 @@ import UIKit
 /// The Library module handles the presentation of the bookshelf, and the publications' management.
 protocol LibraryModuleAPI {
     var delegate: LibraryModuleDelegate? { get }
+    var service: LibraryService { get }
 
     /// Root navigation controller containing the Library.
     /// Can be used to present the library to the user.
@@ -44,6 +45,8 @@ final class LibraryModule: LibraryModuleAPI {
     private let library: LibraryService
     private let factory: LibraryFactory
     private var subscriptions = Set<AnyCancellable>()
+
+    var service: LibraryService { library }
 
     init(
         delegate: LibraryModuleDelegate?,

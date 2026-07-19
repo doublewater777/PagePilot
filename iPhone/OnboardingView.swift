@@ -18,6 +18,7 @@ struct OnboardingView: View {
 
     @State private var flow: OnboardingFlow
     @State private var isImporterPresented = false
+    @State private var showsImportSources = false
     @State private var isWorking = false
     @State private var errorMessage: String?
     @State private var showsIPadPaywall = false
@@ -32,6 +33,8 @@ struct OnboardingView: View {
     let importPublication: (URL) async throws -> OnboardingPublicationPresentation
     let loadSamplePublication: () async -> OnboardingPublicationPresentation?
     let loadPublication: (Int64) async -> OnboardingPublicationPresentation?
+    let presentWiFiTransfer: (@escaping (OnboardingPublicationPresentation) -> Void) -> Void
+    let presentOPDS: (@escaping (OnboardingPublicationPresentation) -> Void) -> Void
     let onFlowChange: (OnboardingFlow) -> Void
     let onOpenPublication: (Int64, Bool) -> Void
     let onFinish: () -> Void
@@ -42,6 +45,8 @@ struct OnboardingView: View {
         importPublication: @escaping (URL) async throws -> OnboardingPublicationPresentation,
         loadSamplePublication: @escaping () async -> OnboardingPublicationPresentation?,
         loadPublication: @escaping (Int64) async -> OnboardingPublicationPresentation?,
+        presentWiFiTransfer: @escaping (@escaping (OnboardingPublicationPresentation) -> Void) -> Void,
+        presentOPDS: @escaping (@escaping (OnboardingPublicationPresentation) -> Void) -> Void,
         onFlowChange: @escaping (OnboardingFlow) -> Void,
         onOpenPublication: @escaping (Int64, Bool) -> Void,
         onFinish: @escaping () -> Void,
@@ -51,6 +56,8 @@ struct OnboardingView: View {
         self.importPublication = importPublication
         self.loadSamplePublication = loadSamplePublication
         self.loadPublication = loadPublication
+        self.presentWiFiTransfer = presentWiFiTransfer
+        self.presentOPDS = presentOPDS
         self.onFlowChange = onFlowChange
         self.onOpenPublication = onOpenPublication
         self.onFinish = onFinish
@@ -95,6 +102,22 @@ struct OnboardingView: View {
         ) { result in
             guard case let .success(urls) = result, let url = urls.first else { return }
             importURL(url)
+        }
+        .confirmationDialog(
+            "onboarding_import_source_title",
+            isPresented: $showsImportSources,
+            titleVisibility: .visible
+        ) {
+            Button("onboarding_import_source_files") {
+                isImporterPresented = true
+            }
+            Button("onboarding_import_source_wifi") {
+                presentWiFiTransfer(didImportFromAlternativeSource)
+            }
+            Button("onboarding_import_source_opds") {
+                presentOPDS(didImportFromAlternativeSource)
+            }
+            Button("cancel_button", role: .cancel) {}
         }
         .sheet(isPresented: $showsIPadPaywall, onDismiss: finishIPadPurchaseIfNeeded) {
             PaywallView(context: .iPadWatchRelay)
@@ -158,7 +181,7 @@ struct OnboardingView: View {
 
             VStack(spacing: 12) {
                 primaryButton("onboarding_import_one_book", systemImage: "square.and.arrow.down") {
-                    isImporterPresented = true
+                    showsImportSources = true
                 }
 
                 Button("onboarding_use_sample") {
@@ -444,6 +467,12 @@ struct OnboardingView: View {
         if flow.step == .reader {
             persistAndOpenReader()
         }
+    }
+
+    private func didImportFromAlternativeSource(_ publication: OnboardingPublicationPresentation) {
+        guard !hasFinished else { return }
+        selectedPublication = publication
+        didChoosePublication(bookID: publication.bookID, source: .user)
     }
 
     private func chooseTarget(_ target: OnboardingFlow.ControlTarget) {
