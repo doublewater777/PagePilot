@@ -269,10 +269,6 @@
 /* Library additional */
 "library_import_local" = "添加书籍";
 "library_wifi_transfer" = "WiFi 传书";
-"library_stream_http" = "通过 HTTP 流式传输出版物";
-"library_stream_title" = "流式传输出版物";
-"library_http_url_placeholder" = "HTTP URL";
-
 /* OPDS additional */
 "opds_loading" = "加载中...";
 "opds_load_error" = "加载目录失败，请重试。";

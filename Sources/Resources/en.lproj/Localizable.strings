@@ -269,10 +269,6 @@
 /* Library additional */
 "library_import_local" = "Add Books";
 "library_wifi_transfer" = "WiFi Transfer";
-"library_stream_http" = "Stream publication over HTTP";
-"library_stream_title" = "Stream publication";
-"library_http_url_placeholder" = "HTTP URL";
-
 /* OPDS additional */
 "opds_loading" = "Loading...";
 "opds_load_error" = "Failed to load feed. Please try again.";

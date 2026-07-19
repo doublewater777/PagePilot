@@ -231,8 +231,19 @@ final class LibraryService: Loggable {
         )
 
         do {
-            try await books.add(book)
-            return book
+            let id = try await books.add(book)
+            return Book(
+                id: id,
+                identifier: book.identifier,
+                title: book.title,
+                authors: book.authors,
+                type: book.type,
+                url: url,
+                coverPath: book.coverPath,
+                locator: book.locator,
+                created: book.created,
+                preferencesJSON: book.preferencesJSON
+            )
         } catch {
             throw LibraryError.importFailed(error)
         }

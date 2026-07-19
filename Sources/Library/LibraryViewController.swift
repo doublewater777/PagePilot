@@ -9,7 +9,6 @@ import Kingfisher
 import MobileCoreServices
 import ReadiumNavigator
 import ReadiumShared
-import ReadiumStreamer
 import SwiftUI
 import UIKit
 import UniformTypeIdentifiers
@@ -263,9 +262,6 @@ class LibraryViewController: UIViewController, Loggable {
                     },
                     UIAction(title: NSLocalizedString("library_device_transfer", comment: ""), image: UIImage(systemName: "ipad.and.iphone")) { [weak self] _ in
                         self?.presentDeviceTransfer()
-                    },
-                    UIAction(title: NSLocalizedString("library_stream_http", comment: ""), image: UIImage(systemName: "link")) { [weak self] _ in
-                        self?.addBookForStreaming()
                     },
                     UIAction(title: NSLocalizedString("opds_add_feed", comment: ""), image: UIImage(systemName: "books.vertical")) { [weak self] _ in
                         self?.presentOPDSFeeds()
@@ -642,52 +638,6 @@ class LibraryViewController: UIViewController, Loggable {
         let nav = UINavigationController(rootViewController: vc)
         nav.modalPresentationStyle = .formSheet
         present(nav, animated: true)
-    }
-
-    @objc func addBookForStreaming() {
-        guard canImportAdditionalBooks(1) else {
-            presentBookLimitPaywall()
-            return
-        }
-
-        let ac = UIAlertController(title: NSLocalizedString("library_stream_title", comment: ""), message: nil, preferredStyle: .alert)
-        ac.addTextField { tf in
-            tf.placeholder = NSLocalizedString("library_http_url_placeholder", comment: "")
-        }
-
-        let cancelAction = UIAlertAction(title: NSLocalizedString("cancel_button", comment: ""), style: .cancel)
-
-        let addAction = UIAlertAction(title: NSLocalizedString("add_button", comment: ""), style: .default) { [unowned ac, weak self] _ in
-            guard
-                let urlText = ac.textFields?.getOrNil(0)?.text,
-                let url = HTTPURL(string: urlText)
-            else {
-                self?.addBookForStreaming()
-                return
-            }
-
-            self?.importPublication(from: url)
-        }
-
-        ac.addAction(cancelAction)
-        ac.addAction(addAction)
-        ac.preferredAction = addAction
-
-        present(ac, animated: true)
-    }
-
-    private func importPublication(from url: HTTPURL) {
-        Task {
-            do {
-                try await library.importPublication(from: url, sender: self, progress: { _ in })
-            } catch LibraryError.bookLimitReached {
-                await MainActor.run {
-                    presentBookLimitPaywall()
-                }
-            } catch {
-                alert(UserError(error))
-            }
-        }
     }
 
     private func canImportAdditionalBooks(_ count: Int) -> Bool {
