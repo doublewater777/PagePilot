@@ -57,7 +57,7 @@ final class OnboardingFlowTests: XCTestCase {
         XCTAssertEqual(flow.controlTarget, .iPad)
     }
 
-    func testSkippingControlTargetContinuesToReaderWithoutWatchGuide() {
+    func testSkippingControlTargetKeepsCollapsedWatchGuideEntry() {
         var flow = OnboardingFlow(platform: .iPhone)
         flow.didChoosePublication(bookID: 42, source: .sample)
 
@@ -65,6 +65,15 @@ final class OnboardingFlowTests: XCTestCase {
 
         XCTAssertEqual(flow.step, .reader)
         XCTAssertNil(flow.controlTarget)
+        XCTAssertTrue(flow.shouldShowWatchGuide)
+        XCTAssertTrue(flow.isWatchGuideCollapsed)
+    }
+
+    func testIPadPlatformReaderDoesNotShowWatchGuide() {
+        var flow = OnboardingFlow(platform: .iPad)
+        flow.didChoosePublication(bookID: 42, source: .user)
+
+        XCTAssertEqual(flow.step, .reader)
         XCTAssertFalse(flow.shouldShowWatchGuide)
     }
 

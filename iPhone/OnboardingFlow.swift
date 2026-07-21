@@ -48,7 +48,9 @@ struct OnboardingFlow: Codable, Equatable {
     private(set) var isWatchGuideCollapsed = false
 
     var shouldShowWatchGuide: Bool {
-        step == .reader && controlTarget == .iPhone
+        // iPhone path only. iPad target goes to handoff (not reader). Skip still
+        // keeps a recoverable lightweight entry in the Reader.
+        platform == .iPhone && step == .reader
     }
 
     init(platform: Platform) {
@@ -72,6 +74,7 @@ struct OnboardingFlow: Codable, Equatable {
 
     mutating func skipControlTarget() {
         controlTarget = nil
+        isWatchGuideCollapsed = true
         step = .reader
     }
 

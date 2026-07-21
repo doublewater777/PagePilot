@@ -233,8 +233,14 @@ final class ProPurchaseManager: ObservableObject {
 
     @MainActor
     private func updateProAccess(_ hasAccess: Bool) async {
+        let previous = defaults.bool(forKey: proKey)
         defaults.set(hasAccess, forKey: proKey)
         objectWillChange.send()
+        // Pro may land on iPad after purchase on iPhone; start LAN as soon as
+        // entitlement is known so Watch relay works without a diagnostics visit.
+        if hasAccess, !previous {
+            WatchPageTurnService.shared.enableIPadRelay()
+        }
     }
 }
 

@@ -285,14 +285,11 @@ final class WatchPageTurnService: NSObject, ObservableObject {
             session?.delegate = self
             session?.activate()
         }
-        // Start the LAN server eagerly on iPad so the Watch can discover the
-        // reader even before a book is opened. The paired iPhone deliberately
-        // does not advertise this service; it can act as a relay when the
-        // Watch cannot reach the iPad LAN directly.
-        if UIDevice.current.userInterfaceIdiom == .pad,
-           UserDefaults.standard.bool(forKey: ipadRelayEnabledKey),
-           ProPurchaseManager.shared.hasProAccess {
-            startLANServer()
+        // Start the LAN server eagerly on Pro iPads so the Watch (via iPhone
+        // relay) can discover the reader without requiring a visit to Me →
+        // Watch connection diagnostics. Free iPads never advertise.
+        if UIDevice.current.userInterfaceIdiom == .pad {
+            enableIPadRelay()
         } else if UIDevice.current.userInterfaceIdiom == .phone,
                   WatchPageTurnSettings().controlTarget == .iPad,
                   ProPurchaseManager.shared.hasProAccess {
@@ -300,6 +297,8 @@ final class WatchPageTurnService: NSObject, ObservableObject {
         }
     }
 
+    /// Starts the iPad LAN page-turn server when this device is an iPad with Pro.
+    /// Safe to call repeatedly; no-ops on iPhone or without Pro Access.
     func enableIPadRelay() {
         guard UIDevice.current.userInterfaceIdiom == .pad,
               ProPurchaseManager.shared.hasProAccess
@@ -323,10 +322,8 @@ final class WatchPageTurnService: NSObject, ObservableObject {
     /// Actively hit the local LAN status endpoint (self-test). Returns whether the server answered.
     @MainActor
     func runLocalStatusProbe() async -> Bool {
-        if UIDevice.current.userInterfaceIdiom == .pad,
-           UserDefaults.standard.bool(forKey: ipadRelayEnabledKey),
-           ProPurchaseManager.shared.hasProAccess {
-            startLANServer()
+        if UIDevice.current.userInterfaceIdiom == .pad {
+            enableIPadRelay()
         }
         guard lanServerRunning, lanServerPort > 0 else { return false }
 
@@ -369,11 +366,10 @@ final class WatchPageTurnService: NSObject, ObservableObject {
         self.currentBookProgress = progress
         updateProgress(title: title, progression: progress)
 
-        // Defensive: in case activate() wasn't called for some reason.
-        if UIDevice.current.userInterfaceIdiom == .pad,
-           UserDefaults.standard.bool(forKey: ipadRelayEnabledKey),
-           ProPurchaseManager.shared.hasProAccess {
-            startLANServer()
+        // Defensive: start LAN when a Pro iPad opens a book, even if Pro was
+        // granted after the initial activate() call.
+        if UIDevice.current.userInterfaceIdiom == .pad {
+            enableIPadRelay()
         }
     }
 
@@ -713,6 +709,7 @@ final class WatchPageTurnService: NSObject, ObservableObject {
 
                     if succeeded {
                         ReviewPromptManager.shared.recordWatchPageTurn()
+                        NotificationCenter.default.post(name: .watchPageTurnDidSucceed, object: nil)
                     }
 
                     completionBlock(WatchPageTurnService.shared.jsonResponse([

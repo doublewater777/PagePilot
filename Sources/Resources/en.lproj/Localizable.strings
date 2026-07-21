@@ -52,9 +52,9 @@
 "onboarding_skip_watch" = "Not Now";
 "onboarding_ipad_handoff_title" = "Continue on Your iPad";
 "onboarding_ipad_handoff_subtitle" = "Your iPhone relays Apple Watch page turns to a nearby iPad.";
-"onboarding_ipad_handoff_step1" = "Open PagePilot on your iPad";
+"onboarding_ipad_handoff_step1" = "Open PagePilot on your iPad (same Wi-Fi as this iPhone)";
 "onboarding_ipad_handoff_step2" = "Import or receive the book you want to read";
-"onboarding_ipad_handoff_step3" = "Open the Reader and check the connection in Watch Settings";
+"onboarding_ipad_handoff_step3" = "Open the book on iPad — Pro starts Watch relay automatically";
 "onboarding_handoff_done" = "Done";
 "paywall_ipad_watch_title" = "Read on iPad. Turn Pages with Apple Watch.";
 "paywall_ipad_watch_subtitle" = "Unlock iPhone relay so Watch commands reach a nearby iPad Reader.";
@@ -71,7 +71,7 @@
 "onboarding_watch_ready_detail" = "Tap forward, back, or rotate the crown and watch this page change.";
 "onboarding_watch_success" = "Connected — ready to read";
 "onboarding_ipad_reader_hint_title" = "Want to Control This iPad with Apple Watch?";
-"onboarding_ipad_reader_hint_detail" = "On the iPhone paired with your Watch, choose iPad control and complete Pro relay setup.";
+"onboarding_ipad_reader_hint_detail" = "On the paired iPhone, set Page Turn Device to iPad (Pro). Keep both devices on the same Wi-Fi with a book open here.";
 
 /* Caption for the app version in About screen */
 "app_version_caption" = "App Version:";
@@ -733,7 +733,7 @@
 
 "watch_guidance_header" = "Steps";
 "watch_guidance_ipad_step1" = "Connect iPhone and iPad to the same Wi-Fi";
-"watch_guidance_ipad_step2" = "Open a book on iPad";
+"watch_guidance_ipad_step2" = "Open a book on iPad (Pro starts relay automatically)";
 "watch_guidance_ipad_step3" = "Switch Page Turn Device to iPad here";
 "watch_guidance_iphone_step1" = "Open a book on iPhone";
 "watch_guidance_iphone_step2" = "Open PagePilot on Apple Watch to turn pages";

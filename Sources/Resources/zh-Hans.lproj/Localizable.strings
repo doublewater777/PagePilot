@@ -52,9 +52,9 @@
 "onboarding_skip_watch" = "暂时不用 Watch";
 "onboarding_ipad_handoff_title" = "接下来，在 iPad 上继续";
 "onboarding_ipad_handoff_subtitle" = "iPhone 会把 Apple Watch 的翻页指令转发给附近的 iPad。";
-"onboarding_ipad_handoff_step1" = "在 iPad 上打开 PagePilot";
+"onboarding_ipad_handoff_step1" = "在 iPad 上打开 PagePilot（与这台 iPhone 同一 Wi-Fi）";
 "onboarding_ipad_handoff_step2" = "导入或接收你要阅读的书";
-"onboarding_ipad_handoff_step3" = "打开 Reader，并在 Watch 设置中检查连接";
+"onboarding_ipad_handoff_step3" = "在 iPad 打开这本书 — 有 Pro 会自动开启 Watch 中继";
 "onboarding_handoff_done" = "完成";
 "paywall_ipad_watch_title" = "在 iPad 上阅读，用 Apple Watch 翻页";
 "paywall_ipad_watch_subtitle" = "解锁 iPhone 中继，让 Watch 指令抵达附近的 iPad Reader。";
@@ -71,7 +71,7 @@
 "onboarding_watch_ready_detail" = "点击前进、后退或转动表冠，看看这一页发生变化。";
 "onboarding_watch_success" = "连接成功，可以开始阅读";
 "onboarding_ipad_reader_hint_title" = "想用 Watch 控制这台 iPad？";
-"onboarding_ipad_reader_hint_detail" = "请在已配对 Apple Watch 的 iPhone 上选择 iPad 控制并完成 Pro 中继设置。";
+"onboarding_ipad_reader_hint_detail" = "在已配对的 iPhone 上将翻页设备设为 iPad（Pro）。两台设备保持同一 Wi-Fi，并在此打开一本书。";
 
 /* Caption for the app version in About screen */
 "app_version_caption" = "应用版本：";
@@ -733,7 +733,7 @@
 
 "watch_guidance_header" = "使用步骤";
 "watch_guidance_ipad_step1" = "iPhone 与 iPad 连接同一 Wi-Fi";
-"watch_guidance_ipad_step2" = "在 iPad 上打开一本书";
+"watch_guidance_ipad_step2" = "在 iPad 上打开一本书（Pro 会自动开启中继）";
 "watch_guidance_ipad_step3" = "在这里将翻页设备切换为 iPad";
 "watch_guidance_iphone_step1" = "在 iPhone 上打开一本书";
 "watch_guidance_iphone_step2" = "在 Apple Watch 上打开 PagePilot 翻页";
