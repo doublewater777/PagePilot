@@ -71,7 +71,7 @@
 "onboarding_watch_ready_detail" = "Tap forward, back, or rotate the crown and watch this page change.";
 "onboarding_watch_success" = "Connected — ready to read";
 "onboarding_ipad_reader_hint_title" = "Want to Control This iPad with Apple Watch?";
-"onboarding_ipad_reader_hint_detail" = "On the paired iPhone, set Page Turn Device to iPad (Pro). Keep both devices on the same Wi-Fi with a book open here.";
+"onboarding_ipad_reader_hint_detail" = "On the paired iPhone, set Page Turn Device to iPad. Keep both devices on the same Wi-Fi with a book open here.";
 
 /* Caption for the app version in About screen */
 "app_version_caption" = "App Version:";

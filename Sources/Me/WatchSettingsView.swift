@@ -105,10 +105,7 @@ struct WatchSettingsView: View {
     }
 
     private func targetName(for target: WatchPageTurnSettings.ControlTarget) -> String {
-        guard target == .iPad, !proPurchase.hasProAccess else {
-            return target.localizedName
-        }
-        return String(format: NSLocalizedString("watch_target_ipad_pro", comment: ""), target.localizedName)
+        target.localizedName
     }
 
     // MARK: - Guidance

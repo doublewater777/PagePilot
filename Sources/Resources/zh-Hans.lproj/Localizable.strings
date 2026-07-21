@@ -71,7 +71,7 @@
 "onboarding_watch_ready_detail" = "点击前进、后退或转动表冠，看看这一页发生变化。";
 "onboarding_watch_success" = "连接成功，可以开始阅读";
 "onboarding_ipad_reader_hint_title" = "想用 Watch 控制这台 iPad？";
-"onboarding_ipad_reader_hint_detail" = "在已配对的 iPhone 上将翻页设备设为 iPad（Pro）。两台设备保持同一 Wi-Fi，并在此打开一本书。";
+"onboarding_ipad_reader_hint_detail" = "在已配对的 iPhone 上将翻页设备设为 iPad。两台设备保持同一 Wi-Fi，并在此打开一本书。";
 
 /* Caption for the app version in About screen */
 "app_version_caption" = "应用版本：";
