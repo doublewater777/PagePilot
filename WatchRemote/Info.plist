@@ -22,7 +22,7 @@
 	<key>CFBundlePackageType</key>
 	<string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
 	<key>CFBundleShortVersionString</key>
-	<string>1.0.14</string>
+	<string>1.0.15</string>
 	<key>CFBundleVersion</key>
 	<string>20</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
@@ -35,6 +35,7 @@
 	<key>NSBonjourServices</key>
 	<array>
 		<string>_http._tcp</string>
+		<string>_pagepilot._tcp</string>
 	</array>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>PagePilot uses the local network to find and connect to your iPad reader.</string>

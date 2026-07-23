@@ -91,6 +91,12 @@ final class AppModule {
         Self.shared = self
         
         StartupProfiler.shared.record("AppModule Init End")
+
+        // Best-effort cleanup of orphaned files from crashed imports or
+        // failed deletes. Runs off the main thread to avoid blocking launch.
+        Task.detached { [library] in
+            await library?.service.cleanOrphanedFiles()
+        }
     }
 
 }

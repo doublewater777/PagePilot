@@ -148,6 +148,23 @@ final class BookRepository {
         }
     }
 
+    /// Inserts `book` only when the free-tier book count stays within `limit`,
+    /// unless `hasProAccess` is true. The count check and insert run in the
+    /// same database transaction to eliminate TOCTOU races.
+    @discardableResult
+    func addIfWithinLimit(_ book: Book, limit: Int, hasProAccess: Bool) async throws -> Book.Id {
+        try await db.write { db in
+            if !hasProAccess {
+                let count = try Book.fetchCount(db)
+                guard count + 1 <= limit else {
+                    throw LibraryError.bookLimitReached
+                }
+            }
+            try book.insert(db)
+            return Book.Id(rawValue: db.lastInsertedRowID)
+        }
+    }
+
     func remove(_ id: Book.Id) async throws {
         try await db.write { db in try Book.deleteOne(db, key: id) }
     }

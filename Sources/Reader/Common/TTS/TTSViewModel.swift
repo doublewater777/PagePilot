@@ -60,6 +60,7 @@ final class TTSViewModel: ObservableObject, Loggable {
     private var navigationGeneration = 0
     private var isNavigationSuspended = false
     private var navigationTask: Task<Void, Never>?
+    private var remoteCommandTarget: Any?
 
     private var subscriptions: Set<AnyCancellable> = []
 
@@ -107,6 +108,9 @@ final class TTSViewModel: ObservableObject, Loggable {
                 self.settings = loadedSettings
             }
         }
+
+        // Register remote command target once at init time.
+        setupNowPlaying()
 
         // Highlight the currently spoken utterance.
         if let navigator = navigator as? DecorableNavigator {
@@ -175,7 +179,7 @@ final class TTSViewModel: ObservableObject, Loggable {
             synthesizer.start(from: navigator.currentLocation)
         }
 
-        setupNowPlaying()
+        updateNowPlayingInfo()
     }
 
     func restart(from locator: Locator) {
@@ -230,6 +234,14 @@ final class TTSViewModel: ObservableObject, Loggable {
     // external controls.
 
     private func setupNowPlaying() {
+        let commandCenter = MPRemoteCommandCenter.shared()
+        remoteCommandTarget = commandCenter.togglePlayPauseCommand.addTarget { [weak self] _ in
+            self?.pauseOrResume()
+            return .success
+        }
+    }
+
+    private func updateNowPlayingInfo() {
         Task {
             NowPlayingInfo.shared.media = await .init(
                 title: publication.metadata.title ?? "",
@@ -237,17 +249,16 @@ final class TTSViewModel: ObservableObject, Loggable {
                 artwork: try? publication.cover().get()
             )
         }
-
-        let commandCenter = MPRemoteCommandCenter.shared()
-
-        commandCenter.togglePlayPauseCommand.addTarget { [weak self] _ in
-            self?.pauseOrResume()
-            return .success
-        }
     }
 
     private func clearNowPlaying() {
         NowPlayingInfo.shared.clear()
+    }
+
+    deinit {
+        if let target = remoteCommandTarget {
+            MPRemoteCommandCenter.shared().togglePlayPauseCommand.removeTarget(target)
+        }
     }
 }
 

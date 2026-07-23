@@ -21,6 +21,7 @@ final class OPDSBrowseViewController: UIViewController {
     private var navigationLinks: [Link] = []
     private var publications: [Publication] = []
     private var nextURL: URL?
+    private var currentFeedURL: URL?
     private var loading = false
 
     init(
@@ -60,6 +61,7 @@ final class OPDSBrowseViewController: UIViewController {
     private func loadFeed(at url: URL?) {
         guard let url, !loading else { return }
         loading = true
+        currentFeedURL = url
         let spinner = UIActivityIndicatorView(style: .medium)
         spinner.startAnimating()
         spinner.frame = CGRect(x: 0, y: 0, width: view.bounds.width, height: 44)
@@ -92,7 +94,7 @@ final class OPDSBrowseViewController: UIViewController {
                         pub.links.first(where: { $0.rels.contains(.`self`) }).map { !existing.contains($0.href) } ?? true
                     })
                 }
-                self.nextURL = parsed.links.first(where: { $0.rels.contains(.next) }).flatMap { URL(string: $0.href) }
+                self.nextURL = parsed.links.first(where: { $0.rels.contains(.next) }).flatMap { URL(string: $0.href, relativeTo: url)?.absoluteURL }
 
                 if self.navigationLinks.isEmpty, self.publications.isEmpty {
                     self.tableView.backgroundView = self.makeEmptyView()
@@ -134,7 +136,7 @@ final class OPDSBrowseViewController: UIViewController {
         ]
         for rel in candidates {
             if let link = pub.links.first(where: { $0.rels.contains(rel) }),
-               let url = URL(string: link.href, relativeTo: URL(string: feed.url))
+               let url = URL(string: link.href, relativeTo: currentFeedURL ?? URL(string: feed.url))
             {
                 return url.absoluteURL
             }
@@ -200,7 +202,7 @@ extension OPDSBrowseViewController: UITableViewDataSource, UITableViewDelegate {
             cell.contentConfiguration = content
 
             if let thumbHref = pub.links.first(where: { $0.rels.contains(.opdsImageThumbnail) || $0.rels.contains(.opdsImage) })?.href,
-               let url = URL(string: thumbHref, relativeTo: URL(string: feed.url))?.absoluteURL
+               let url = URL(string: thumbHref, relativeTo: currentFeedURL ?? URL(string: feed.url))?.absoluteURL
             {
                 cell.imageView?.kf.setImage(with: url, placeholder: UIImage(systemName: "book"))
             } else {
@@ -217,7 +219,7 @@ extension OPDSBrowseViewController: UITableViewDataSource, UITableViewDelegate {
         switch Section(rawValue: indexPath.section)! {
         case .navigation:
             let link = navigationLinks[indexPath.row]
-            guard let url = URL(string: link.href, relativeTo: URL(string: feed.url))?.absoluteURL else {
+            guard let url = URL(string: link.href, relativeTo: currentFeedURL ?? URL(string: feed.url))?.absoluteURL else {
                 presentErrorAlert(message: NSLocalizedString("opds_error_enter_valid_url", comment: ""))
                 return
             }

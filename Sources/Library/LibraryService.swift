@@ -133,23 +133,42 @@ final class LibraryService: Loggable {
         let title = pub.metadata.title ?? url.url.deletingPathExtension().lastPathComponent
         let coverPath = try await importCover(of: pub)
 
+        var movedFileURL: FileURL?
         if let file = url.fileURL {
-            url = try moveToDocuments(
+            let moved = try moveToDocuments(
                 from: file,
                 title: title,
                 format: format
             )
+            movedFileURL = moved
+            url = moved
         }
 
-        return try await insertBook(
-            at: url,
-            publication: pub,
-            mediaType: format.mediaType,
-            title: title,
-            coverPath: coverPath
-        )
+        do {
+            return try await insertBook(
+                at: url,
+                publication: pub,
+                mediaType: format.mediaType,
+                title: title,
+                coverPath: coverPath
+            )
+        } catch {
+            // Compensating cleanup: DB insert failed, remove the files we
+            // just wrote so nothing orphaned remains.
+            if let movedFileURL {
+                try? FileManager.default.removeItem(at: movedFileURL.url)
+            }
+            if let coverPath,
+               let coverURL = Paths.covers.appendingPath(coverPath, isDirectory: false).url as URL?
+            {
+                try? FileManager.default.removeItem(at: coverURL)
+            }
+            throw error
+        }
     }
 
+    /// Fast-fail UX check: rejects obviously over-limit batches before any
+    /// work begins. The atomic guarantee is in `BookRepository.addIfWithinLimit`.
     private func ensureCanImport(additionalBookCount: Int) async throws {
         guard additionalBookCount > 0, !ProPurchaseManager.shared.hasProAccess else {
             return
@@ -231,7 +250,11 @@ final class LibraryService: Loggable {
         )
 
         do {
-            let id = try await books.add(book)
+            let id = try await books.addIfWithinLimit(
+                book,
+                limit: ProPurchaseManager.freeBookLimit,
+                hasProAccess: ProPurchaseManager.shared.hasProAccess
+            )
             return Book(
                 id: id,
                 identifier: book.identifier,
@@ -256,24 +279,71 @@ final class LibraryService: Loggable {
             throw LibraryError.bookDeletionFailed(nil)
         }
 
+        let bookFileURL = try? book.absoluteURL().fileURL
+        let coverURL = book.cover?.url
+
+        // Move book file and cover to a temporary Trash location before
+        // touching the database. If the DB delete fails we move them back.
+        var trashedBookURL: URL?
+        if let bookFileURL, Paths.documents.isParent(of: bookFileURL) {
+            let trash = Paths.temporary.appendingPath("Trash", isDirectory: true)
+            try? FileManager.default.createDirectory(at: trash.url, withIntermediateDirectories: true)
+            let dest = trash.appendingUniquePathComponent(bookFileURL.lastPathSegment)
+            try? FileManager.default.moveItem(at: bookFileURL.url, to: dest.url)
+            trashedBookURL = dest.url
+        }
+
+        var trashedCoverURL: URL?
+        if let coverURL, (try? coverURL.checkResourceIsReachable()) ?? false {
+            let trash = Paths.temporary.appendingPath("Trash", isDirectory: true)
+            try? FileManager.default.createDirectory(at: trash.url, withIntermediateDirectories: true)
+            let dest = trash.appendingUniquePathComponent()
+            try? FileManager.default.moveItem(at: coverURL, to: dest.url)
+            trashedCoverURL = dest.url
+        }
+
         do {
             try await books.remove(id)
-            if let file = try book.absoluteURL().fileURL {
-                try removeBookFile(at: file)
-            }
+            // DB delete succeeded; purge the trashed files.
+            if let trashedBookURL { try? FileManager.default.removeItem(at: trashedBookURL) }
+            if let trashedCoverURL { try? FileManager.default.removeItem(at: trashedCoverURL) }
         } catch {
+            // DB delete failed; restore files from trash.
+            if let trashedBookURL, let bookFileURL {
+                try? FileManager.default.moveItem(at: trashedBookURL, to: bookFileURL.url)
+            }
+            if let trashedCoverURL, let coverURL {
+                try? FileManager.default.moveItem(at: trashedCoverURL, to: coverURL)
+            }
             throw LibraryError.bookDeletionFailed(error)
         }
     }
 
-    private func removeBookFile(at url: FileURL) throws {
-        guard Paths.documents.isParent(of: url) else {
+    /// Scans Documents/ and Covers/ for files not referenced by any Book row
+    /// and removes them. Call at app launch to clean up historical orphans
+    /// left by crashed imports or failed deletes.
+    func cleanOrphanedFiles() async {
+        do {
+            let allBooks = try await books.allOnce()
+            let usedBookFiles = Set(allBooks.compactMap { $0.url })
+            let usedCovers = Set(allBooks.compactMap { $0.coverPath })
+
+            cleanOrphans(in: Paths.documents.url, usedRelativePaths: usedBookFiles)
+            cleanOrphans(in: Paths.covers.url, usedRelativePaths: usedCovers)
+        } catch {
+            // Best-effort cleanup; don't crash on failure.
+        }
+    }
+
+    private func cleanOrphans(in directory: URL, usedRelativePaths: Set<String>) {
+        guard let entries = try? FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil) else {
             return
         }
-        do {
-            try FileManager.default.removeItem(at: url.url)
-        } catch {
-            throw LibraryError.bookDeletionFailed(error)
+        for file in entries {
+            let name = file.lastPathComponent
+            if !usedRelativePaths.contains(name) {
+                try? FileManager.default.removeItem(at: file)
+            }
         }
     }
 }

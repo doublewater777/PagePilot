@@ -274,7 +274,7 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>1.0.14</string>
+	<string>1.0.15</string>
 	<key>CFBundleVersion</key>
 	<string>20</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
@@ -296,6 +296,7 @@
 	<array>
 		<string>_http._tcp</string>
 		<string>_pagepilot._tcp</string>
+		<string>_pagepilot-transfer._tcp</string>
 	</array>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>PagePilot uses the local network to transfer books and connect to your iPad reader for Apple Watch page controls.</string>
