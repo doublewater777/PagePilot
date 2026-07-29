@@ -21,6 +21,10 @@ final class LibraryService: Loggable {
     private let readium: Readium
     private let lcp: LCPModuleAPI
 
+    /// Tracks in-flight imports so orphaned-file cleanup never runs
+    /// concurrently with an import.
+    private let importActivity = ImportActivity()
+
     init(books: BookRepository, readium: Readium, lcp: LCPModuleAPI) {
         self.books = books
         self.readium = readium
@@ -109,6 +113,9 @@ final class LibraryService: Loggable {
         sender: UIViewController? = nil,
         progress: @escaping (Double) -> Void = { _ in }
     ) async throws -> Book {
+        importActivity.begin()
+        defer { importActivity.end() }
+
         // Necessary to read URL exported from the Files app, for example.
         let shouldRelinquishAccess = url.url.startAccessingSecurityScopedResource()
         defer {
@@ -391,30 +398,56 @@ final class LibraryService: Loggable {
     }
 
     /// Scans Documents/ and Covers/ for files not referenced by any Book row
-    /// and removes them. Call at app launch to clean up historical orphans
-    /// left by crashed imports or failed deletes.
+    /// and removes them. Called when the app enters the background — never at
+    /// launch, where it raced cold-start imports from Files/Share and deleted
+    /// freshly imported publications before their database row existed.
     func cleanOrphanedFiles() async {
+        // Never run while an import is in flight: a freshly imported file
+        // sits in Documents/ before its database row is committed.
+        guard importActivity.isIdle else { return }
+
         do {
             let allBooks = try await books.allOnce()
-            let usedBookFiles = Set(allBooks.compactMap { $0.url })
-            let usedCovers = Set(allBooks.compactMap { $0.coverPath })
-
-            cleanOrphans(in: Paths.documents.url, usedRelativePaths: usedBookFiles)
-            cleanOrphans(in: Paths.covers.url, usedRelativePaths: usedCovers)
+            cleanOrphans(
+                in: Paths.documents.url,
+                referenced: OrphanedFilePolicy.referencedBookFileURLs(for: allBooks)
+            )
+            cleanOrphans(
+                in: Paths.covers.url,
+                referenced: OrphanedFilePolicy.referencedCoverURLs(for: allBooks)
+            )
         } catch {
             // Best-effort cleanup; don't crash on failure.
         }
     }
 
-    private func cleanOrphans(in directory: URL, usedRelativePaths: Set<String>) {
-        guard let entries = try? FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil) else {
+    private func cleanOrphans(in directory: URL, referenced: Set<URL>) {
+        let keys: Set<URLResourceKey> = [.isDirectoryKey, .creationDateKey, .contentModificationDateKey]
+        guard let entries = try? FileManager.default.contentsOfDirectory(
+            at: directory,
+            includingPropertiesForKeys: Array(keys)
+        ) else {
             return
         }
+
+        let now = Date()
         for file in entries {
-            let name = file.lastPathComponent
-            if !usedRelativePaths.contains(name) {
-                try? FileManager.default.removeItem(at: file)
+            let values = try? file.resourceValues(forKeys: keys)
+            if values?.isDirectory == true {
+                continue
             }
+            let creationDate = values?.creationDate ?? values?.contentModificationDate
+            guard OrphanedFilePolicy.isOrphan(
+                fileURL: file,
+                referencedURLs: referenced,
+                creationDate: creationDate,
+                now: now
+            ) else {
+                continue
+            }
+            // Bail out if an import started between the snapshot and now.
+            guard importActivity.isIdle else { return }
+            try? FileManager.default.removeItem(at: file)
         }
     }
 }
@@ -436,5 +469,25 @@ private extension Book {
             }
             return url
         }
+    }
+}
+
+/// Thread-safe counter of in-flight imports. `cleanOrphanedFiles()` checks
+/// `isIdle` so it can never delete a file whose database row has not been
+/// committed yet.
+final class ImportActivity: @unchecked Sendable {
+    private var count = 0
+    private let lock = NSLock()
+
+    var isIdle: Bool {
+        lock.withLock { count == 0 }
+    }
+
+    func begin() {
+        lock.withLock { count += 1 }
+    }
+
+    func end() {
+        lock.withLock { count -= 1 }
     }
 }

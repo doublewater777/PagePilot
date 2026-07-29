@@ -13,6 +13,9 @@ import UIKit
 final class PDFViewController: VisualReaderViewController<PDFNavigatorViewController> {
     private let preferencesStore: AnyUserPreferencesStore<PDFPreferences>
 
+    /// PDF positions are real page numbers, so the footer shows "x / y".
+    override var positionsArePages: Bool { true }
+
     init(
         publication: Publication,
         locator: Locator?,
