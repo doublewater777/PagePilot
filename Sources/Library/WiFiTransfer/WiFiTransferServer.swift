@@ -17,6 +17,7 @@ final class WiFiTransferServer {
     private static let maxUploadBytes = 200 * 1024 * 1024
     private static let allowedFileExtensions: Set<String> = [
         "epub", "pdf", "cbz", "lcpdf", "webpub", "audiobook", "lcpa", "lcpl", "zip", "txt",
+        "md", "markdown",
     ]
 
     /// Called on the main thread when a file has been uploaded successfully.
@@ -117,9 +118,15 @@ final class WiFiTransferServer {
 
             let attributes = try? FileManager.default.attributesOfItem(atPath: tempPath)
             let fileSize = (attributes?[.size] as? NSNumber)?.intValue ?? 0
-            guard fileSize <= Self.maxUploadBytes else {
+            let isMarkdown = MarkdownToEPUBConverter.isMarkdownFileExtension(fileExtension)
+            let maxBytes = isMarkdown
+                ? Int(MarkdownToEPUBConverter.maxMarkdownBytes)
+                : Self.maxUploadBytes
+            guard fileSize <= maxBytes else {
                 failedFiles.append(originalName)
-                errors[originalName] = "File is larger than 200 MB"
+                errors[originalName] = isMarkdown
+                    ? NSLocalizedString("markdown_error_file_too_large", comment: "")
+                    : "File is larger than 200 MB"
                 continue
             }
 
@@ -245,7 +252,7 @@ final class WiFiTransferServer {
             title: "WiFi 传书",
             subtitle: "将文件从电脑传输到 PagePilot",
             dropText: "拖拽文件到这里，或点击选择文件",
-            formats: "支持 EPUB、PDF、CBZ、TXT 等格式",
+            formats: "支持 EPUB、PDF、CBZ、TXT、Markdown 等格式",
             uploading: "上传中...",
             done: "✓ 完成",
             failed: "✗ 失败",
@@ -257,7 +264,7 @@ final class WiFiTransferServer {
             title: "WiFi Transfer",
             subtitle: "Transfer files from your computer to PagePilot",
             dropText: "Drag files here, or click to select",
-            formats: "Supports EPUB, PDF, CBZ, TXT and more",
+            formats: "Supports EPUB, PDF, CBZ, TXT, Markdown and more",
             uploading: "Uploading...",
             done: "✓ Done",
             failed: "✗ Failed",
@@ -353,7 +360,7 @@ final class WiFiTransferServer {
                     <p class="formats">\(strings.formats)</p>
                 </div>
                 <input type="file" id="fileInput" multiple
-                       accept=".epub,.pdf,.cbz,.lcpdf,.webpub,.audiobook,.lcpa,.lcpl,.zip,.txt">
+                       accept=".epub,.pdf,.cbz,.lcpdf,.webpub,.audiobook,.lcpa,.lcpl,.zip,.txt,.md,.markdown">
                 <ul class="file-list" id="fileList"></ul>
                 <div class="tip">
                     \(strings.tip)

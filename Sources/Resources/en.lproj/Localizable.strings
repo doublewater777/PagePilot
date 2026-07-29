@@ -29,7 +29,7 @@
 "onboarding_welcome_title" = "Welcome to PagePilot";
 "onboarding_welcome_message" = "A quiet place for your books, built for reading on iPhone.";
 "onboarding_import_title" = "Bring your library";
-"onboarding_import_message" = "Add EPUB, PDF, CBZ, and audiobook files from Files, sharing, or a direct link.";
+"onboarding_import_message" = "Add EPUB, PDF, CBZ, TXT, Markdown, and audiobook files from Files, sharing, or a direct link.";
 "onboarding_watch_title" = "Turn pages from your wrist";
 "onboarding_watch_message" = "Read on iPhone and use Apple Watch as a simple page-turning remote.";
 "onboarding_close_accessibility" = "Close onboarding";
@@ -41,7 +41,7 @@
 "onboarding_import_source_wifi" = "Wi-Fi Transfer";
 "onboarding_import_source_opds" = "Browse OPDS Feeds";
 "onboarding_use_sample" = "Use Sample Book";
-"onboarding_supported_formats" = "Supports EPUB, PDF, CBZ, TXT, and audiobooks";
+"onboarding_supported_formats" = "Supports EPUB, PDF, CBZ, TXT, Markdown, and audiobooks";
 "onboarding_sample_error" = "The sample book could not be opened. Please try again.";
 "onboarding_target_title" = "Where do you want to read?";
 "onboarding_target_subtitle" = "Apple Watch sends page-turn commands to the Reader you choose.";
@@ -803,6 +803,15 @@
 "txt_error_invalid_output" = "Invalid output file path.";
 "txt_chapter_preface" = "Preface";
 "txt_chapter_number" = "Chapter %d";
+
+/* MARK: Markdown Import */
+"markdown_error_unsupported_extension" = "Unsupported Markdown file extension.";
+"markdown_error_cannot_read" = "Cannot read the Markdown file.";
+"markdown_error_encoding" = "Markdown files must be valid UTF-8.";
+"markdown_error_file_too_large" = "Markdown file is larger than 50 MB.";
+"markdown_error_sanitization" = "Failed to sanitize Markdown HTML.";
+"markdown_error_conversion" = "Failed to convert Markdown to EPUB: %@";
+"markdown_error_invalid_output" = "Invalid output file path.";
 
 /* TTS Settings (revamped) */
 "tts_settings_voice_label" = "Voice";

@@ -29,7 +29,7 @@
 "onboarding_welcome_title" = "欢迎使用 PagePilot";
 "onboarding_welcome_message" = "一个安静的书架，用来在 iPhone 上继续读下去。";
 "onboarding_import_title" = "带上你的书";
-"onboarding_import_message" = "从文件 App、分享菜单或链接添加 EPUB、PDF、CBZ 和有声书。";
+"onboarding_import_message" = "从文件 App、分享菜单或链接添加 EPUB、PDF、CBZ、TXT、Markdown 和有声书。";
 "onboarding_watch_title" = "用手表翻页";
 "onboarding_watch_message" = "在 iPhone 上阅读，用 Apple Watch 作为简单的翻页遥控器。";
 "onboarding_close_accessibility" = "关闭新手引导";
@@ -41,7 +41,7 @@
 "onboarding_import_source_wifi" = "Wi-Fi 传书";
 "onboarding_import_source_opds" = "浏览 OPDS 书源";
 "onboarding_use_sample" = "使用样书";
-"onboarding_supported_formats" = "支持 EPUB、PDF、CBZ、TXT 和有声书";
+"onboarding_supported_formats" = "支持 EPUB、PDF、CBZ、TXT、Markdown 和有声书";
 "onboarding_sample_error" = "暂时无法打开样书，请重试。";
 "onboarding_target_title" = "你想在哪台设备上阅读？";
 "onboarding_target_subtitle" = "Apple Watch 会把翻页指令发送到你选择的 Reader。";
@@ -803,6 +803,15 @@
 "txt_error_invalid_output" = "输出文件路径无效。";
 "txt_chapter_preface" = "前言";
 "txt_chapter_number" = "第 %d 章";
+
+/* MARK: Markdown Import */
+"markdown_error_unsupported_extension" = "不支持的 Markdown 文件扩展名。";
+"markdown_error_cannot_read" = "无法读取 Markdown 文件。";
+"markdown_error_encoding" = "Markdown 文件必须是有效的 UTF-8 编码。";
+"markdown_error_file_too_large" = "Markdown 文件超过 50 MB。";
+"markdown_error_sanitization" = "Markdown HTML 清理失败。";
+"markdown_error_conversion" = "Markdown 转换 EPUB 失败：%@";
+"markdown_error_invalid_output" = "输出文件路径无效。";
 
 /* TTS Settings (revamped) */
 "tts_settings_voice_label" = "音色";

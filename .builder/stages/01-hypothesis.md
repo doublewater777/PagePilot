@@ -21,6 +21,7 @@ PagePilot targets Apple ecosystem readers who lose reading flow when they must t
 ## Related Cycles
 
 - `2026-07-19-onboarding-import-sources` — tests whether supporting Files, Wi-Fi transfer, and OPDS reduces the first-book import barrier.
+- `2026-07-29-markdown-import` — tests whether Markdown can join the core import → open → read action through safe local conversion.
 
 ## Decisions
 
@@ -66,4 +67,6 @@ Assumptions to test:
 
 ## Change Log
 
+- 2026-07-29: Markdown import cycle passed again after PR review hardening; 40/40 targeted and 151/151 full simulator tests passed.
+- 2026-07-29: Linked the Markdown publication import cycle.
 - 2026-06-07: Backfilled from `project.yaml` and launch copy before stage 02 interviews.

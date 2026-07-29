@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: iOS tests
+    runs-on: macos-26
+    timeout-minutes: 60
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Generate Xcode project
+        run: |
+          brew install xcodegen
+          make spm
+
+      - name: Run test suite
+        run: |
+          xcodebuild test \
+            -project PagePilot.xcodeproj \
+            -scheme PagePilot \
+            -destination 'platform=iOS Simulator,name=iPhone 17,OS=latest'

@@ -40,11 +40,27 @@ final class TXTToEPUBConverter {
 
     /// Converts the TXT file at `sourceURL` into an EPUB file.
     /// Returns the URL of the generated `.epub` file in the temporary directory.
-    static func convert(from sourceURL: URL) throws -> URL {
+    static func convert(from sourceURL: URL) async throws -> URL {
         let text = try readTextFile(at: sourceURL)
         let title = sourceURL.deletingPathExtension().lastPathComponent
         let chapters = splitIntoChapters(text: text, fallbackTitle: title)
-        return try buildEPUB(title: title, chapters: chapters)
+        let packagerChapters = chapters.map { chapter in
+            MinimalEPUBPackager.Chapter(
+                title: chapter.title,
+                bodyHTML: plainTextBodyHTML(title: chapter.title, content: chapter.content)
+            )
+        }
+
+        do {
+            return try await MinimalEPUBPackager.package(title: title, language: "zh", chapters: packagerChapters)
+        } catch let error as MinimalEPUBPackager.PackagerError {
+            switch error {
+            case .epubCreationFailed(let underlying):
+                throw ConversionError.epubCreationFailed(underlying)
+            }
+        } catch {
+            throw ConversionError.epubCreationFailed(error)
+        }
     }
 
     // MARK: - Encoding Detection & Reading
@@ -197,128 +213,10 @@ final class TXTToEPUBConverter {
         return chapters
     }
 
-    // MARK: - EPUB Building
+    // MARK: - Body HTML
 
-    private static func buildEPUB(title: String, chapters: [Chapter]) throws -> URL {
-        let epubDir = Paths.makeTemporaryURL().url
-        let metaInf = epubDir.appendingPathComponent("META-INF")
-        let oebps = epubDir.appendingPathComponent("OEBPS")
-
-        let fm = FileManager.default
-        try fm.createDirectory(at: metaInf, withIntermediateDirectories: true)
-        try fm.createDirectory(at: oebps, withIntermediateDirectories: true)
-
-        // mimetype (must be first, uncompressed in a real EPUB zip, but Readium handles this)
-        try "application/epub+zip".write(to: epubDir.appendingPathComponent("mimetype"), atomically: true, encoding: .utf8)
-
-        // META-INF/container.xml
-        try containerXML.write(to: metaInf.appendingPathComponent("container.xml"), atomically: true, encoding: .utf8)
-
-        // OEBPS/content.opf
-        let opf = buildOPF(title: title, chapters: chapters)
-        try opf.write(to: oebps.appendingPathComponent("content.opf"), atomically: true, encoding: .utf8)
-
-        // OEBPS/toc.xhtml (navigation document)
-        let toc = buildTOC(title: title, chapters: chapters)
-        try toc.write(to: oebps.appendingPathComponent("toc.xhtml"), atomically: true, encoding: .utf8)
-
-        // OEBPS/style.css
-        try styleCSS.write(to: oebps.appendingPathComponent("style.css"), atomically: true, encoding: .utf8)
-
-        // OEBPS/chapterXXX.xhtml
-        for (index, chapter) in chapters.enumerated() {
-            let xhtml = buildChapterXHTML(chapter: chapter)
-            let filename = "chapter\(String(format: "%03d", index + 1)).xhtml"
-            try xhtml.write(to: oebps.appendingPathComponent(filename), atomically: true, encoding: .utf8)
-        }
-
-        // Zip into .epub
-        let epubURL = epubDir.appendingPathExtension("epub")
-        try zipDirectory(at: epubDir, to: epubURL)
-
-        // Clean up unzipped directory
-        try? fm.removeItem(at: epubDir)
-
-        return epubURL
-    }
-
-    // MARK: - EPUB Templates
-
-    private static let containerXML = """
-    <?xml version="1.0" encoding="UTF-8"?>
-    <container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
-      <rootfiles>
-        <rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/>
-      </rootfiles>
-    </container>
-    """
-
-    private static func buildOPF(title: String, chapters: [Chapter]) -> String {
-        let uuid = UUID().uuidString
-        let date = ISO8601DateFormatter().string(from: Date())
-
-        var manifestItems = """
-            <item id="toc" href="toc.xhtml" media-type="application/xhtml+xml" properties="nav"/>
-            <item id="style" href="style.css" media-type="text/css"/>
-        """
-
-        var spineItems = ""
-
-        for (index, _) in chapters.enumerated() {
-            let id = "chapter\(String(format: "%03d", index + 1))"
-            let href = "\(id).xhtml"
-            manifestItems += "\n        <item id=\"\(id)\" href=\"\(href)\" media-type=\"application/xhtml+xml\"/>"
-            spineItems += "\n        <itemref idref=\"\(id)\"/>"
-        }
-
-        return """
-        <?xml version="1.0" encoding="UTF-8"?>
-        <package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="uid">
-          <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
-            <dc:identifier id="uid">urn:uuid:\(uuid)</dc:identifier>
-            <dc:title>\(title.xmlEscaped)</dc:title>
-            <dc:language>zh</dc:language>
-            <dc:creator>Unknown</dc:creator>
-            <meta property="dcterms:modified">\(date)</meta>
-          </metadata>
-          <manifest>
-            \(manifestItems)
-          </manifest>
-          <spine>
-            \(spineItems)
-          </spine>
-        </package>
-        """
-    }
-
-    private static func buildTOC(title: String, chapters: [Chapter]) -> String {
-        var navItems = ""
-        for (index, chapter) in chapters.enumerated() {
-            let href = "chapter\(String(format: "%03d", index + 1)).xhtml"
-            navItems += "        <li><a href=\"\(href)\">\(chapter.title.xmlEscaped)</a></li>\n"
-        }
-
-        return """
-        <?xml version="1.0" encoding="UTF-8"?>
-        <!DOCTYPE html>
-        <html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
-        <head>
-          <title>\(title.xmlEscaped)</title>
-        </head>
-        <body>
-          <nav epub:type="toc">
-            <h1>\(title.xmlEscaped)</h1>
-            <ol>
-        \(navItems)    </ol>
-          </nav>
-        </body>
-        </html>
-        """
-    }
-
-    private static func buildChapterXHTML(chapter: Chapter) -> String {
-        // Convert plain text paragraphs to HTML paragraphs
-        let paragraphs = chapter.content
+    private static func plainTextBodyHTML(title: String, content: String) -> String {
+        let paragraphs = content
             .components(separatedBy: .newlines)
             .map { line -> String in
                 let trimmed = line.trimmingCharacters(in: .whitespaces)
@@ -331,75 +229,8 @@ final class TXTToEPUBConverter {
             .joined(separator: "\n    ")
 
         return """
-        <?xml version="1.0" encoding="UTF-8"?>
-        <!DOCTYPE html>
-        <html xmlns="http://www.w3.org/1999/xhtml">
-        <head>
-          <title>\(chapter.title.xmlEscaped)</title>
-          <link rel="stylesheet" type="text/css" href="style.css"/>
-        </head>
-        <body>
-          <h1>\(chapter.title.xmlEscaped)</h1>
-          <div class="chapter-content">
+        <h1>\(title.xmlEscaped)</h1>
             \(paragraphs)
-          </div>
-        </body>
-        </html>
         """
-    }
-
-    private static let styleCSS = """
-    body {
-        font-family: -apple-system, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
-        line-height: 1.8;
-        padding: 1em;
-    }
-    h1 {
-        font-size: 1.4em;
-        margin-bottom: 1em;
-        text-align: center;
-    }
-    p {
-        text-indent: 2em;
-        margin: 0.5em 0;
-    }
-    .chapter-content {
-        text-align: justify;
-    }
-    """
-
-    // MARK: - ZIP
-
-    private static func zipDirectory(at sourceURL: URL, to destinationURL: URL) throws {
-        let coordinator = NSFileCoordinator()
-        var error: NSError?
-        var zipError: Error?
-
-        coordinator.coordinate(readingItemAt: sourceURL, options: .forUploading, error: &error) { zipURL in
-            do {
-                try FileManager.default.moveItem(at: zipURL, to: destinationURL)
-            } catch {
-                zipError = error
-            }
-        }
-
-        if let error = error {
-            throw ConversionError.epubCreationFailed(error)
-        }
-        if let zipError = zipError {
-            throw ConversionError.epubCreationFailed(zipError)
-        }
-    }
-}
-
-// MARK: - String XML Escaping
-
-private extension String {
-    var xmlEscaped: String {
-        replacingOccurrences(of: "&", with: "&amp;")
-            .replacingOccurrences(of: "<", with: "&lt;")
-            .replacingOccurrences(of: ">", with: "&gt;")
-            .replacingOccurrences(of: "\"", with: "&quot;")
-            .replacingOccurrences(of: "'", with: "&#39;")
     }
 }
