@@ -808,6 +808,7 @@
 "markdown_error_unsupported_extension" = "不支持的 Markdown 文件扩展名。";
 "markdown_error_cannot_read" = "无法读取 Markdown 文件。";
 "markdown_error_encoding" = "Markdown 文件必须是有效的 UTF-8 编码。";
+"markdown_error_file_too_large" = "Markdown 文件超过 50 MB。";
 "markdown_error_sanitization" = "Markdown HTML 清理失败。";
 "markdown_error_conversion" = "Markdown 转换 EPUB 失败：%@";
 "markdown_error_invalid_output" = "输出文件路径无效。";

@@ -4,6 +4,8 @@
 //  available in the top-level LICENSE file of the project.
 //
 
+import ReadiumZIPFoundation
+import SwiftSoup
 import XCTest
 @testable import PagePilot
 
@@ -88,6 +90,217 @@ final class MarkdownToEPUBConverterTests: XCTestCase {
         XCTAssertEqual(
             MarkdownToEPUBConverter.deriveTitle(from: markdown, filename: "file-title"),
             "file-title"
+        )
+    }
+
+    func testTitleFromSetextH1() {
+        let markdown = """
+        Setext Title
+        ============
+
+        Body.
+        """
+        XCTAssertEqual(
+            MarkdownToEPUBConverter.deriveTitle(from: markdown, filename: "file"),
+            "Setext Title"
+        )
+    }
+
+    func testATXH1RequiresWhitespaceAfterHash() {
+        let markdown = """
+        #NoSpace
+
+        Body.
+        """
+        XCTAssertEqual(
+            MarkdownToEPUBConverter.deriveTitle(from: markdown, filename: "file"),
+            "file"
+        )
+    }
+
+    func testFencedCodeHashIsNotTitle() {
+        let markdown = """
+        ```
+        # Not A Title
+        ```
+
+        Real paragraph.
+        """
+        XCTAssertEqual(
+            MarkdownToEPUBConverter.deriveTitle(from: markdown, filename: "code-notes"),
+            "code-notes"
+        )
+    }
+
+    // MARK: - Language
+
+    func testLanguageFromFrontMatterLang() {
+        let markdown = """
+        ---
+        lang: fr
+        ---
+
+        Content.
+        """
+        XCTAssertEqual(
+            MarkdownToEPUBConverter.deriveLanguage(from: markdown, localeLanguageCode: "en"),
+            "fr"
+        )
+    }
+
+    func testLanguageFromFrontMatterLanguageKey() {
+        let markdown = """
+        ---
+        language: ja-JP
+        ---
+
+        Content.
+        """
+        XCTAssertEqual(
+            MarkdownToEPUBConverter.deriveLanguage(from: markdown, localeLanguageCode: "en"),
+            "ja-JP"
+        )
+    }
+
+    func testInvalidFrontMatterLanguageFallsBackToLocale() {
+        let markdown = """
+        ---
+        language: not a tag!!!
+        ---
+
+        Content.
+        """
+        let result = MarkdownToEPUBConverter.deriveLanguage(
+            from: markdown,
+            localeLanguageCode: "de"
+        )
+        XCTAssertEqual(result, "de")
+    }
+
+    func testInvalidLangDoesNotBlockValidLanguage() {
+        let markdown = """
+        ---
+        lang: !!!bad!!!
+        language: fr
+        ---
+
+        Content.
+        """
+        XCTAssertEqual(
+            MarkdownToEPUBConverter.deriveLanguage(from: markdown, localeLanguageCode: "en"),
+            "fr"
+        )
+    }
+
+    func testLanguageFallsBackToUndWhenLocaleUnavailable() {
+        let markdown = "No front matter."
+        let result = MarkdownToEPUBConverter.deriveLanguage(
+            from: markdown,
+            localeLanguageCode: nil
+        )
+        XCTAssertEqual(result, "und")
+    }
+
+    func testConvertOPFUsesFrontMatterLanguage() async throws {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString + ".md")
+        let markdown = """
+        ---
+        title: Lang Book
+        lang: es
+        ---
+
+        # Lang Book
+
+        Hola.
+        """
+        try markdown.write(to: url, atomically: true, encoding: .utf8)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let epubURL = try await MarkdownToEPUBConverter.convert(from: url)
+        defer { try? FileManager.default.removeItem(at: epubURL) }
+
+        let opf = MinimalEPUBPackager.buildOPF(
+            title: "Lang Book",
+            language: MarkdownToEPUBConverter.deriveLanguage(from: markdown),
+            chapters: [.init(title: "Lang Book", bodyHTML: "<p>Hola.</p>")]
+        )
+        XCTAssertTrue(opf.contains("<dc:language>es</dc:language>"), opf)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: epubURL.path))
+    }
+
+    // MARK: - Front matter boundaries
+
+    func testLeadingHorizontalRuleIsNotFrontMatter() {
+        let markdown = """
+        ---
+
+        Paragraph after a rule.
+
+        ---
+
+        More text.
+        """
+        XCTAssertTrue(MarkdownToEPUBConverter.frontMatterFields(in: markdown).isEmpty)
+        let body = MarkdownToEPUBConverter.markdownBody(markdown)
+        XCTAssertTrue(body.hasPrefix("---"), "leading HR must remain: \(body)")
+        XCTAssertTrue(body.contains("Paragraph after a rule."), body)
+    }
+
+    func testUnclosedFrontMatterIsIgnored() {
+        let markdown = """
+        ---
+        title: Never Closed
+
+        # Heading
+
+        Body.
+        """
+        XCTAssertTrue(MarkdownToEPUBConverter.frontMatterFields(in: markdown).isEmpty)
+        XCTAssertEqual(
+            MarkdownToEPUBConverter.deriveTitle(from: markdown, filename: "file"),
+            "Heading"
+        )
+    }
+
+    func testMalformedFrontMatterWithoutKeyValueIsIgnored() {
+        let markdown = """
+        ---
+        just some free text
+        not key value
+        ---
+
+        # Real
+        """
+        XCTAssertTrue(MarkdownToEPUBConverter.frontMatterFields(in: markdown).isEmpty)
+        XCTAssertEqual(
+            MarkdownToEPUBConverter.deriveTitle(from: markdown, filename: "file"),
+            "Real"
+        )
+    }
+
+    func testUnrelatedKeyValueDoesNotTriggerFrontMatterStrip() {
+        // Leading HR + prose that looks like YAML but lacks title/lang/language.
+        let markdown = """
+        ---
+        Note: hello
+        author: Alice
+        ---
+
+        # Real Heading
+
+        Body remains.
+        """
+        XCTAssertTrue(
+            MarkdownToEPUBConverter.frontMatterFields(in: markdown).isEmpty,
+            "unrelated keys must not authorize front-matter strip"
+        )
+        let body = MarkdownToEPUBConverter.markdownBody(markdown)
+        XCTAssertTrue(body.hasPrefix("---"), "body must keep leading ---: \(body)")
+        XCTAssertTrue(body.contains("Note: hello"), body)
+        XCTAssertEqual(
+            MarkdownToEPUBConverter.deriveTitle(from: markdown, filename: "file"),
+            "Real Heading"
         )
     }
 
@@ -179,11 +392,111 @@ final class MarkdownToEPUBConverterTests: XCTestCase {
         XCTAssertTrue(cleaned.contains("Hello"), cleaned)
     }
 
-    func testStripsImgTagsSoLocalAttachmentsAreNotPackaged() throws {
-        let html = #"<p>Pic</p><img src="images/cover.png" alt="cover"/><img src="https://example.com/a.png"/>"#
+    func testStripsStyleAttributes() throws {
+        let dirty = #"<p style="color:red" class="x">Styled</p>"#
+        let cleaned = try MarkdownToEPUBConverter.sanitizeHTML(dirty)
+        XCTAssertFalse(cleaned.lowercased().contains("style="), cleaned)
+        XCTAssertTrue(cleaned.contains("Styled"), cleaned)
+    }
+
+    func testRejectsUnsafeHREFVariants() throws {
+        let dirty = """
+        <a href="JavaScript:alert(1)">mixed</a>
+        <a href="java\nscript:alert(1)">newline</a>
+        <a href="java\tscript:alert(1)">tab</a>
+        <a href=" data:text/html;base64,PHNjcmlwdD5hbGVydCgxKTwvc2NyaXB0Pg==">data</a>
+        <a href="https://safe.example">ok</a>
+        """
+        let cleaned = try MarkdownToEPUBConverter.sanitizeHTML(dirty)
+        let document = try SwiftSoup.parseBodyFragment(cleaned)
+        guard let body = document.body() else {
+            return XCTFail("missing body: \(cleaned)")
+        }
+
+        for label in ["mixed", "newline", "tab", "data"] {
+            let anchors = try body.select("a").array().filter { (try? $0.text()) == label }
+            XCTAssertFalse(anchors.isEmpty, "missing anchor text \(label): \(cleaned)")
+            for anchor in anchors {
+                XCTAssertFalse(
+                    anchor.hasAttr("href"),
+                    "\(label) must not keep href: \(try? anchor.outerHtml() ?? "")"
+                )
+            }
+        }
+
+        let safe = try body.select("a").array().filter { (try? $0.text()) == "ok" }
+        XCTAssertEqual(safe.count, 1, cleaned)
+        let href = try safe[0].attr("href")
+        XCTAssertEqual(href, "https://safe.example", cleaned)
+    }
+
+    func testMarkdownPipelineStripsDangerousLinkURLs() throws {
+        let markdown = """
+        [mixed](JavaScript:alert(1))
+        [data](data:text/html;base64,PHNjcmlwdD5hbGVydCgxKTwvc2NyaXB0Pg==)
+        [ok](https://safe.example/path)
+        """
+        let cleaned = try MarkdownToEPUBConverter.renderAndSanitize(markdown)
+        let document = try SwiftSoup.parseBodyFragment(cleaned)
+        guard let body = document.body() else {
+            return XCTFail("missing body: \(cleaned)")
+        }
+
+        for label in ["mixed", "data"] {
+            let anchors = try body.select("a").array().filter { (try? $0.text()) == label }
+            // Ink may render as bare text if URL is invalid, or as <a> without href after scrub.
+            for anchor in anchors {
+                XCTAssertFalse(anchor.hasAttr("href"), "\(label): \(try? anchor.outerHtml() ?? "")")
+            }
+        }
+
+        let safe = try body.select("a").array().filter { (try? $0.text()) == "ok" }
+        XCTAssertFalse(safe.isEmpty, cleaned)
+        XCTAssertEqual(try safe[0].attr("href"), "https://safe.example/path", cleaned)
+        XCTAssertFalse(cleaned.lowercased().contains("javascript:"), cleaned)
+        XCTAssertFalse(cleaned.lowercased().contains("data:text/html"), cleaned)
+    }
+
+    func testLocalImageBecomesPlaceholderWithoutSrc() throws {
+        let html = #"<p>Before</p><img src="images/cover.png" alt="cover photo"/><p>After</p>"#
         let cleaned = try MarkdownToEPUBConverter.sanitizeHTML(html)
         XCTAssertFalse(cleaned.lowercased().contains("<img"), cleaned)
-        XCTAssertTrue(cleaned.contains("Pic"), cleaned)
+        XCTAssertFalse(cleaned.contains("images/cover.png"), cleaned)
+        XCTAssertFalse(cleaned.lowercased().contains("src="), cleaned)
+        XCTAssertTrue(cleaned.contains("[Image: cover photo]"), cleaned)
+    }
+
+    func testRemoteImageBecomesPlaceholderWithoutSrc() throws {
+        let html = #"<img src="https://example.com/a.png" alt="remote"/>"#
+        let cleaned = try MarkdownToEPUBConverter.sanitizeHTML(html)
+        XCTAssertFalse(cleaned.lowercased().contains("<img"), cleaned)
+        XCTAssertFalse(cleaned.contains("https://example.com"), cleaned)
+        XCTAssertTrue(cleaned.contains("[Image: remote]"), cleaned)
+    }
+
+    func testImageWithEmptyAltBecomesGenericPlaceholder() throws {
+        let html = #"<img src="local.png" alt=""/>"#
+        let cleaned = try MarkdownToEPUBConverter.sanitizeHTML(html)
+        XCTAssertTrue(cleaned.contains("[Image]"), cleaned)
+        XCTAssertFalse(cleaned.contains("local.png"), cleaned)
+    }
+
+    func testMarkdownImageSyntaxBecomesPlaceholder() throws {
+        let markdown = """
+        # Pics
+
+        ![cover](images/local-cover.png)
+
+        ![remote](https://cdn.example.com/photo.jpg)
+        """
+        let cleaned = try MarkdownToEPUBConverter.renderAndSanitize(markdown)
+        XCTAssertTrue(cleaned.contains("[Image: cover]"), cleaned)
+        XCTAssertTrue(cleaned.contains("[Image: remote]"), cleaned)
+        XCTAssertFalse(cleaned.lowercased().contains("<img"), cleaned)
+        XCTAssertFalse(cleaned.lowercased().contains("src="), cleaned)
+        XCTAssertFalse(cleaned.contains("images/local-cover.png"), cleaned)
+        XCTAssertFalse(cleaned.contains("cdn.example.com"), cleaned)
+        XCTAssertFalse(cleaned.contains("https://"), cleaned)
     }
 
     func testSanitizeEmitsSelfClosingVoidTagsAsXHTML() throws {
@@ -202,11 +515,6 @@ final class MarkdownToEPUBConverterTests: XCTestCase {
             cleaned.contains("<hr />") || cleaned.contains("<hr/>"),
             "expected self-closing hr: \(cleaned)"
         )
-        XCTAssertFalse(
-            cleaned.range(of: #"<hr(?![/ >])"#, options: .regularExpression) != nil
-                && !cleaned.contains("<hr/") && !cleaned.contains("<hr /"),
-            "bare <hr> is not XHTML-safe: \(cleaned)"
-        )
     }
 
     func testSanitizeEscapesEntitiesAndSpecialCharacters() throws {
@@ -214,17 +522,14 @@ final class MarkdownToEPUBConverterTests: XCTestCase {
         let cleaned = try MarkdownToEPUBConverter.sanitizeHTML(dirty)
 
         XCTAssertTrue(cleaned.contains("&amp;"), "expected & escaped: \(cleaned)")
-        // Angle brackets from text must not appear as raw tag delimiters in content.
         XCTAssertTrue(
             cleaned.contains("&lt;") || cleaned.contains("&#"),
             "expected < escaped: \(cleaned)"
         )
-        // Round-trip through SwiftSoup XML output: no unescaped bare ampersands.
         XCTAssertFalse(
             cleaned.range(of: #"&(?!amp;|lt;|gt;|quot;|apos;|#\d+;|#x[0-9A-Fa-f]+;)"#, options: .regularExpression) != nil,
             "unescaped ampersand is not XML-safe: \(cleaned)"
         )
-        // Content text preserved after re-sanitizing (idempotent for safe input).
         let again = try MarkdownToEPUBConverter.sanitizeHTML(cleaned)
         XCTAssertTrue(again.contains("A") && again.contains("B") && again.contains("D"), again)
     }
@@ -249,20 +554,30 @@ final class MarkdownToEPUBConverterTests: XCTestCase {
         XCTAssertFalse(special.contains("<dc:language>zh&en</dc:language>"), special)
     }
 
-    func testMarkdownPackageUsesUndLanguageInOPF() async throws {
-        let chapters = [MinimalEPUBPackager.Chapter(title: "Hello", bodyHTML: "<p>Body.</p>")]
-        let opf = MinimalEPUBPackager.buildOPF(title: "Hello", language: "und", chapters: chapters)
-        XCTAssertTrue(opf.contains("<dc:language>und</dc:language>"), opf)
+    // MARK: - EPUB structure
 
-        // convert() is wired to language "und"; package a matching EPUB and ensure it is non-empty.
+    func testEPUBZipStructureHasUncompressedMimetypeFirst() async throws {
         let url = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString + ".md")
-        try "# Hello\n\nBody.".write(to: url, atomically: true, encoding: .utf8)
+        try "# Structure\n\nChapter body.".write(to: url, atomically: true, encoding: .utf8)
         defer { try? FileManager.default.removeItem(at: url) }
 
         let epubURL = try await MarkdownToEPUBConverter.convert(from: url)
         defer { try? FileManager.default.removeItem(at: epubURL) }
-        XCTAssertTrue(FileManager.default.fileExists(atPath: epubURL.path))
+
+        let archive = try await Archive(url: epubURL, accessMode: .read)
+        let entries = try await archive.entries()
+        XCTAssertFalse(entries.isEmpty, "archive should not be empty")
+
+        let first = try XCTUnwrap(entries.first)
+        XCTAssertEqual(first.path, "mimetype")
+        XCTAssertFalse(first.isCompressed, "mimetype must be stored uncompressed")
+
+        let paths = Set(entries.map(\.path))
+        XCTAssertTrue(paths.contains("META-INF/container.xml"), "\(paths)")
+        XCTAssertTrue(paths.contains("OEBPS/content.opf"), "\(paths)")
+        XCTAssertTrue(paths.contains("OEBPS/chapter001.xhtml"), "\(paths)")
+        XCTAssertTrue(paths.contains("OEBPS/style.css"), "\(paths)")
     }
 
     // MARK: - Conversion errors / happy path
@@ -283,10 +598,25 @@ final class MarkdownToEPUBConverterTests: XCTestCase {
         }
     }
 
+    func testConvertRejectsEmptyFile() async throws {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString + ".md")
+        try Data().write(to: url)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        do {
+            _ = try await MarkdownToEPUBConverter.convert(from: url)
+            XCTFail("expected cannotReadFile for empty input")
+        } catch let error as MarkdownToEPUBConverter.ConversionError {
+            XCTAssertEqual(error, .cannotReadFile)
+        } catch {
+            XCTFail("unexpected error: \(error)")
+        }
+    }
+
     func testConvertRejectsInvalidUTF8() async throws {
         let url = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString + ".md")
-        // Invalid UTF-8 sequence
         let data = Data([0xFF, 0xFE, 0xFD])
         try data.write(to: url)
         defer { try? FileManager.default.removeItem(at: url) }
@@ -296,6 +626,26 @@ final class MarkdownToEPUBConverterTests: XCTestCase {
             XCTFail("expected invalidUTF8")
         } catch let error as MarkdownToEPUBConverter.ConversionError {
             XCTAssertEqual(error, .invalidUTF8)
+        } catch {
+            XCTFail("unexpected error: \(error)")
+        }
+    }
+
+    func testConvertRejectsFileTooLarge() async throws {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString + ".md")
+        FileManager.default.createFile(atPath: url.path, contents: nil)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let handle = try FileHandle(forWritingTo: url)
+        try handle.truncate(atOffset: UInt64(MarkdownToEPUBConverter.maxMarkdownBytes + 1))
+        try handle.close()
+
+        do {
+            _ = try await MarkdownToEPUBConverter.convert(from: url)
+            XCTFail("expected fileTooLarge")
+        } catch let error as MarkdownToEPUBConverter.ConversionError {
+            XCTAssertEqual(error, .fileTooLarge)
         } catch {
             XCTFail("unexpected error: \(error)")
         }

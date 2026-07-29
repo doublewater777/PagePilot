@@ -808,6 +808,7 @@
 "markdown_error_unsupported_extension" = "Unsupported Markdown file extension.";
 "markdown_error_cannot_read" = "Cannot read the Markdown file.";
 "markdown_error_encoding" = "Markdown files must be valid UTF-8.";
+"markdown_error_file_too_large" = "Markdown file is larger than 50 MB.";
 "markdown_error_sanitization" = "Failed to sanitize Markdown HTML.";
 "markdown_error_conversion" = "Failed to convert Markdown to EPUB: %@";
 "markdown_error_invalid_output" = "Invalid output file path.";

@@ -27,3 +27,13 @@ Weakest assumption: Safe Markdown-to-EPUB conversion preserves enough formatting
 Decision: Ship conversion at the Library import boundary and reuse the existing EPUB Reader.
 Next stage: 10-growth-channel
 Loop-back: Add narrowly scoped Markdown features only when real imported files demonstrate missing structure or media needs.
+
+## 2026-07-29 - 01-hypothesis (reopened)
+
+Cycle: 2026-07-29-markdown-import
+Verdict: pass
+Evidence: Review fixes independently verified: 40/40 targeted Markdown tests and 151/151 full iPhone 17 simulator tests passed; href removal, EPUB root structure, uncompressed mimetype, Readium opening, image fallback, size limits, language metadata, and staging cleanup were reviewed; plist and diff checks passed.
+Weakest assumption: Safe Markdown-to-EPUB conversion preserves enough formatting to feel like native format support.
+Decision: Ship the review-hardened converter and close the reopened cycle.
+Next stage: 10-growth-channel
+Loop-back: Add narrowly scoped format support only when real imported files demonstrate a need.

@@ -1,27 +1,44 @@
 # Results
 
+## Status
+
+**completed / pass** — PR review fixes independently verified.
+
 ## Observed Behavior
 
-PagePilot now accepts `.md` and `.markdown` files from Files/system share and Wi-Fi transfer. Imports are case-insensitive and continue through the existing Library and Reader flow after local conversion to EPUB.
+PagePilot accepts `.md` and `.markdown` from Files/system share and Wi-Fi transfer. Imports are case-insensitive and continue through the existing Library and Reader flow after local conversion to EPUB.
 
-The conversion preserves ordinary Markdown structure, including headings, paragraphs, emphasis, lists, links, block quotes, fenced code, horizontal rules, and tables. It derives the publication title from front matter, then the first H1, then the filename. Unsafe raw HTML, unsafe URL schemes, images, and local attachments are removed.
+Conversion preserves ordinary Markdown structure (headings including Setext H1, paragraphs, emphasis, lists, links, block quotes, fenced code, horizontal rules, tables). Title: front matter → H1 → filename. Language: front matter `lang`/`language` → device language → `und`. Images become text placeholders; unsafe HTML/URL schemes are stripped. Sources over 50 MiB are rejected. Leading `---` is only treated as front matter when it is a closed block with simple key-value metadata.
 
-## Acceptance Evidence
+## Acceptance Evidence (latest review-fix iteration)
 
-- Regenerated the SPM project with `xcodegen --spec project.yml --project . --project-root .`.
-- Ran `xcodebuild test -project PagePilot.xcodeproj -scheme PagePilot -destination 'platform=iOS Simulator,name=iPhone 17'`.
-- Result: 130 tests executed, 0 failures.
-- A permanent integration test opens the generated EPUB with Readium's real asset retriever and publication opener.
-- `plutil -lint` passed for the iPhone Info.plist and both edited localization files.
+Targeted:
+
+```text
+xcodebuild test -project PagePilot.xcodeproj -scheme PagePilot \
+  -destination 'platform=iOS Simulator,name=iPhone 17' \
+  -only-testing:PagePilotTests/MarkdownToEPUBConverterTests
+```
+
+Full suite (required):
+
+```text
+xcodegen --spec project.yml --project . --project-root .
+xcodebuild test -project PagePilot.xcodeproj -scheme PagePilot \
+  -destination 'platform=iOS Simulator,name=iPhone 17'
+```
+
+- Targeted `MarkdownToEPUBConverterTests`: **Executed 40 tests, with 0 failures** → `TEST SUCCEEDED` (includes href removal, ZIP structure, image fallback, and Readium open).
+- Full suite: **Executed 151 tests, with 0 failures (0 unexpected)** → `TEST SUCCEEDED`.
+- `plutil -lint` passed for the edited Info.plist and both localization files.
 - `git diff --check` passed.
-- All six XcodeGen configurations declare Ink 0.6.0 and ReadiumZIPFoundation 3.0.1 consistently.
+- Dependency licenses were verified from resolved packages: Ink and ReadiumZIPFoundation are MIT; both are offline at runtime. Readium already uses the same ZIPFoundation product, so the direct dependency exposes packaging APIs without adding a second SPM product.
 
-## Defect Found During Acceptance
+## Defects Found During Acceptance
 
-The first implementation produced a non-empty archive but nested the EPUB payload under an extra directory. The initial unit assertion did not detect this. Independent Readium opening failed with `missingFile(path: "META-INF/container.xml")`.
-
-The packager was replaced with direct ZIP entry creation at the archive root, with uncompressed `mimetype` first. The real Readium opening test now guards this contract and passes.
+1. **ZIP nesting (prior):** `NSFileCoordinator.forUploading` nested payload; Readium failed with `missingFile(META-INF/container.xml)`. Fixed with ReadiumZIPFoundation root packaging + structure test + real Readium open test.
+2. **PR review reopening:** packager cleanup on failure, sanitizer contracts, language/H1/front-matter/image/size edge cases — addressed in this iteration.
 
 ## User Feedback
 
-Pending direct user feedback. This cycle establishes functional format support and compatibility with the existing Reader; it does not measure Markdown import demand.
+Pending direct user feedback. This cycle establishes functional format support; it does not measure Markdown import demand.

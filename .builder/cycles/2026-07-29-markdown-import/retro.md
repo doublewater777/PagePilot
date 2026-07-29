@@ -1,19 +1,31 @@
 # Retro
 
+## Status
+
+**completed / pass** — review fixes accepted after independent targeted and full-suite verification.
+
 ## What We Believed
 
 Converting Markdown at the Library boundary would let PagePilot reuse its proven EPUB reader while keeping Markdown-specific parsing and sanitization isolated.
 
 ## What We Learned
 
-That boundary worked: all import surfaces only need to recognize the extensions, while one converter owns title extraction, safe XHTML generation, and minimal EPUB packaging.
+That boundary worked: import surfaces only need extension recognition; one converter owns title/language, safe XHTML, and minimal EPUB packaging.
 
-A non-empty archive is not evidence of a valid EPUB. The original packager's extra ZIP directory passed shallow tests but failed Readium. Opening the generated artifact through Readium is the meaningful compatibility check, so that scenario is now permanent.
+A non-empty archive is not a valid EPUB. Extra ZIP directory nesting passed shallow tests and failed Readium. Opening the artifact through Readium is the compatibility check and is permanent.
+
+PR review also showed: front-matter fences must require key-value metadata so leading horizontal rules are not swallowed; ATX H1 needs a space after `#` and must ignore fenced code; images should degrade to text rather than vanish silently; size limits and staging cleanup matter for robustness.
+
+## Dependencies
+
+- **Ink**: offline parse only; no network runtime.
+- **ReadiumZIPFoundation**: packaging only; explicit direct dependency across all XcodeGen configs.
+- Disclose pinned versions and MIT licenses in the PR description.
 
 ## Decision
 
-Ship the converter-backed implementation with Ink for Markdown rendering, SwiftSoup for sanitization, and ReadiumZIPFoundation for deterministic root-level EPUB packaging. Reuse the same minimal packager for TXT imports.
+Keep the converter-backed design and ship the review fixes.
 
 ## Archive / Continue / Loop Back
 
-Completed with a passing gate. Loop back if real-world Markdown relies heavily on unsupported embedded media or raw HTML, rather than broadening the initial security surface preemptively.
+Completed. Loop back only if real-world Markdown needs scoped embedded media or raw HTML beyond the current security surface.

@@ -26,10 +26,13 @@ enum MinimalEPUBPackager {
     /// - Parameter language: BCP 47 language tag written to `dc:language` (XML-escaped).
     static func package(title: String, language: String, chapters: [Chapter]) async throws -> URL {
         let epubDir = Paths.makeTemporaryURL().url
+        // Always remove the staging directory on success or failure.
+        defer { try? FileManager.default.removeItem(at: epubDir) }
+
         let metaInf = epubDir.appendingPathComponent("META-INF")
         let oebps = epubDir.appendingPathComponent("OEBPS")
-
         let fm = FileManager.default
+
         try fm.createDirectory(at: metaInf, withIntermediateDirectories: true)
         try fm.createDirectory(at: oebps, withIntermediateDirectories: true)
 
@@ -59,8 +62,13 @@ enum MinimalEPUBPackager {
         }
 
         let epubURL = epubDir.appendingPathExtension("epub")
-        try await zipDirectory(at: epubDir, to: epubURL)
-        try? fm.removeItem(at: epubDir)
+        do {
+            try await zipDirectory(at: epubDir, to: epubURL)
+        } catch {
+            // Do not leave a partial/corrupt EPUB on disk.
+            try? fm.removeItem(at: epubURL)
+            throw error
+        }
 
         return epubURL
     }
@@ -248,7 +256,13 @@ enum MinimalEPUBPackager {
                 includingPropertiesForKeys: Array(resourceKeys),
                 options: [.skipsHiddenFiles]
             ) else {
-                return
+                throw PackagerError.epubCreationFailed(
+                    NSError(
+                        domain: "MinimalEPUBPackager",
+                        code: 2,
+                        userInfo: [NSLocalizedDescriptionKey: "Could not enumerate EPUB staging directory"]
+                    )
+                )
             }
 
             for case let fileURL as URL in enumerator {

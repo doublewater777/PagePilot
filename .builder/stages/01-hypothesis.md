@@ -67,6 +67,6 @@ Assumptions to test:
 
 ## Change Log
 
-- 2026-07-29: Markdown import cycle passed with generated EPUBs opening through Readium and the full simulator test suite passing 130/130.
+- 2026-07-29: Markdown import cycle passed again after PR review hardening; 40/40 targeted and 151/151 full simulator tests passed.
 - 2026-07-29: Linked the Markdown publication import cycle.
 - 2026-06-07: Backfilled from `project.yaml` and launch copy before stage 02 interviews.
