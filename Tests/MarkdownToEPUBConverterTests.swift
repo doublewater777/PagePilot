@@ -220,13 +220,16 @@ final class MarkdownToEPUBConverterTests: XCTestCase {
         let epubURL = try await MarkdownToEPUBConverter.convert(from: url)
         defer { try? FileManager.default.removeItem(at: epubURL) }
 
-        let opf = MinimalEPUBPackager.buildOPF(
-            title: "Lang Book",
-            language: MarkdownToEPUBConverter.deriveLanguage(from: markdown),
-            chapters: [.init(title: "Lang Book", bodyHTML: "<p>Hola.</p>")]
-        )
+        let archive = try await Archive(url: epubURL, accessMode: .read)
+        let opfEntry = try await archive.get("OEBPS/content.opf")
+        let entry = try XCTUnwrap(opfEntry, "missing OEBPS/content.opf in \(epubURL.path)")
+
+        var opfData = Data()
+        _ = try await archive.extract(entry, skipCRC32: true) { chunk in
+            opfData.append(chunk)
+        }
+        let opf = try XCTUnwrap(String(data: opfData, encoding: .utf8))
         XCTAssertTrue(opf.contains("<dc:language>es</dc:language>"), opf)
-        XCTAssertTrue(FileManager.default.fileExists(atPath: epubURL.path))
     }
 
     // MARK: - Front matter boundaries
