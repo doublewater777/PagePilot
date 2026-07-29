@@ -4,5 +4,5 @@
   "marketingUrl": "https://pagepilot.doublewaterapps.com/",
   "promotionalText": "用 Apple Watch 表冠翻页，躺着看书再也不用伸手戳屏幕",
   "supportUrl": "https://pagepilot.doublewaterapps.com/",
-  "whatsNew": "支持导入 Markdown，从「文件」打开后直接进入阅读，并避免重复入架。\n\n【全新】\n\n• 支持从「文件」、Wi-Fi 传书或“用 PagePilot 打开”导入 .md / .markdown。\n• 从「文件」用 PagePilot 打开书籍时，导入后直接进入阅读器。\n\n【改进】\n\n• 重复导入同一本书不会再在书架上出现多份。\n• 修复局域网传书、TTS、OPDS、免费额度限制与残留文件清理等相关稳定性问题。"
+  "whatsNew": "支持导入 Markdown，从「文件」打开后直接进入阅读，并避免重复入架。\n\n【全新】\n\n• 支持从「文件」、Wi-Fi 传书或“用 PagePilot 打开”导入 .md / .markdown。\n• 从「文件」用 PagePilot 打开书籍时，导入后直接进入阅读器。\n\n【改进】\n\n• 重复导入同一本书不会再在书架上出现多份。\n• 修复局域网传书、TTS、OPDS、免费额度限制与残留文件清理等相关稳定性问题。\n\n【修复】\n\n• 修复从「文件」导入的书在重启 App 后可能消失的问题。\n• 可重排书籍的阅读器底部改为显示阅读百分比，不再显示易误解的位置计数。"
 }
