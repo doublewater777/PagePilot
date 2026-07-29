@@ -30,6 +30,7 @@ xcodebuild test -project PagePilot.xcodeproj -scheme PagePilot \
 
 - Targeted `MarkdownToEPUBConverterTests`: **Executed 40 tests, with 0 failures** → `TEST SUCCEEDED` (includes href removal, ZIP structure, image fallback, and Readium open).
 - Full suite: **Executed 151 tests, with 0 failures (0 unexpected)** → `TEST SUCCEEDED`.
+- GitHub Actions `CI / iOS tests` runs the same full suite for pull requests targeting `main` and pushes to `main`.
 - `plutil -lint` passed for the edited Info.plist and both localization files.
 - `git diff --check` passed.
 - Dependency licenses were verified from resolved packages: Ink and ReadiumZIPFoundation are MIT; both are offline at runtime. Readium already uses the same ZIPFoundation product, so the direct dependency exposes packaging APIs without adding a second SPM product.

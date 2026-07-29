@@ -16,6 +16,8 @@ A non-empty archive is not a valid EPUB. Extra ZIP directory nesting passed shal
 
 PR review also showed: front-matter fences must require key-value metadata so leading horizontal rules are not swallowed; ATX H1 needs a space after `#` and must ignore fenced code; images should degrade to text rather than vanish silently; size limits and staging cleanup matter for robustness.
 
+Local test evidence does not create a GitHub merge gate. A permanent pull-request CI workflow keeps the full suite visible to reviewers and prevents an empty check set from blocking guarded landing.
+
 ## Dependencies
 
 - **Ink**: offline parse only; no network runtime.

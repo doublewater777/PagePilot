@@ -38,6 +38,7 @@ This keeps Markdown out of the Reader layer and avoids a second navigation imple
 7. Update onboarding's supported-format copy in English and Simplified Chinese.
 8. Package with explicit **ReadiumZIPFoundation** (readium/ZIPFoundation ≥ 3.0.1): root entries, `mimetype` first and uncompressed; staging dir cleaned on all failure paths.
 9. Focused unit tests: rendering, sanitization contracts, title/language, front-matter boundaries, size limits, ZIP structure, and real Readium open.
+10. Run the full test suite in GitHub Actions on `macos-26` with an `iPhone 17` simulator for pull requests targeting `main` and pushes to `main`.
 
 ## PR Review Reopening (this iteration)
 
