@@ -187,18 +187,24 @@ final class MarkdownToEPUBConverter {
     /// Images become plain-text placeholders; no src is retained.
     /// Output uses XML syntax so void tags are self-closing XHTML.
     static func sanitizeHTML(_ html: String) throws -> String {
-        let withImagePlaceholders = try replaceImagesWithPlaceholders(in: html)
-        let safelist = readingSafelist()
-        let outputSettings = OutputSettings()
-            .syntax(syntax: .xml)
-            .prettyPrint(pretty: false)
-            .escapeMode(Entities.EscapeMode.xhtml)
-        guard let cleaned = try clean(withImagePlaceholders, "", safelist, outputSettings) else {
+        do {
+            let withImagePlaceholders = try replaceImagesWithPlaceholders(in: html)
+            let safelist = readingSafelist()
+            let outputSettings = OutputSettings()
+                .syntax(syntax: .xml)
+                .prettyPrint(pretty: false)
+                .escapeMode(Entities.EscapeMode.xhtml)
+            guard let cleaned = try clean(withImagePlaceholders, "", safelist, outputSettings) else {
+                throw ConversionError.sanitizationFailed
+            }
+            // Defense in depth: drop hrefs whose scheme is unsafe after whitespace/control stripping
+            // (e.g. `java\nscript:`, mixed case, leading spaces before `data:`).
+            return try scrubUnsafeAnchorHrefs(in: cleaned)
+        } catch let error as ConversionError {
+            throw error
+        } catch {
             throw ConversionError.sanitizationFailed
         }
-        // Defense in depth: drop hrefs whose scheme is unsafe after whitespace/control stripping
-        // (e.g. `java\nscript:`, mixed case, leading spaces before `data:`).
-        return try scrubUnsafeAnchorHrefs(in: cleaned)
     }
 
     // MARK: - Front matter / body

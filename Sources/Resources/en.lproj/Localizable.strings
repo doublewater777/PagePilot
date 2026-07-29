@@ -29,7 +29,7 @@
 "onboarding_welcome_title" = "Welcome to PagePilot";
 "onboarding_welcome_message" = "A quiet place for your books, built for reading on iPhone.";
 "onboarding_import_title" = "Bring your library";
-"onboarding_import_message" = "Add EPUB, PDF, CBZ, and audiobook files from Files, sharing, or a direct link.";
+"onboarding_import_message" = "Add EPUB, PDF, CBZ, TXT, Markdown, and audiobook files from Files, sharing, or a direct link.";
 "onboarding_watch_title" = "Turn pages from your wrist";
 "onboarding_watch_message" = "Read on iPhone and use Apple Watch as a simple page-turning remote.";
 "onboarding_close_accessibility" = "Close onboarding";

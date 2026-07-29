@@ -28,4 +28,4 @@ Keep the converter-backed design and ship the review fixes.
 
 ## Archive / Continue / Loop Back
 
-Completed. Loop back only if real-world Markdown needs scoped embedded media or raw HTML beyond the current security surface.
+Completed. Loop back only if real-world Markdown requires scoped support for embedded media or raw HTML beyond the current security surface.

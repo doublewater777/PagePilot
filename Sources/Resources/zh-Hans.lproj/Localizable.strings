@@ -29,7 +29,7 @@
 "onboarding_welcome_title" = "欢迎使用 PagePilot";
 "onboarding_welcome_message" = "一个安静的书架，用来在 iPhone 上继续读下去。";
 "onboarding_import_title" = "带上你的书";
-"onboarding_import_message" = "从文件 App、分享菜单或链接添加 EPUB、PDF、CBZ 和有声书。";
+"onboarding_import_message" = "从文件 App、分享菜单或链接添加 EPUB、PDF、CBZ、TXT、Markdown 和有声书。";
 "onboarding_watch_title" = "用手表翻页";
 "onboarding_watch_message" = "在 iPhone 上阅读，用 Apple Watch 作为简单的翻页遥控器。";
 "onboarding_close_accessibility" = "关闭新手引导";

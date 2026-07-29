@@ -422,7 +422,7 @@ final class MarkdownToEPUBConverterTests: XCTestCase {
             for anchor in anchors {
                 XCTAssertFalse(
                     anchor.hasAttr("href"),
-                    "\(label) must not keep href: \(try? anchor.outerHtml() ?? "")"
+                    "\(label) must not keep href: \((try? anchor.outerHtml()) ?? "")"
                 )
             }
         }
@@ -449,7 +449,10 @@ final class MarkdownToEPUBConverterTests: XCTestCase {
             let anchors = try body.select("a").array().filter { (try? $0.text()) == label }
             // Ink may render as bare text if URL is invalid, or as <a> without href after scrub.
             for anchor in anchors {
-                XCTAssertFalse(anchor.hasAttr("href"), "\(label): \(try? anchor.outerHtml() ?? "")")
+                XCTAssertFalse(
+                    anchor.hasAttr("href"),
+                    "\(label): \((try? anchor.outerHtml()) ?? "")"
+                )
             }
         }
 

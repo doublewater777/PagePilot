@@ -118,9 +118,15 @@ final class WiFiTransferServer {
 
             let attributes = try? FileManager.default.attributesOfItem(atPath: tempPath)
             let fileSize = (attributes?[.size] as? NSNumber)?.intValue ?? 0
-            guard fileSize <= Self.maxUploadBytes else {
+            let isMarkdown = MarkdownToEPUBConverter.isMarkdownFileExtension(fileExtension)
+            let maxBytes = isMarkdown
+                ? Int(MarkdownToEPUBConverter.maxMarkdownBytes)
+                : Self.maxUploadBytes
+            guard fileSize <= maxBytes else {
                 failedFiles.append(originalName)
-                errors[originalName] = "File is larger than 200 MB"
+                errors[originalName] = isMarkdown
+                    ? NSLocalizedString("markdown_error_file_too_large", comment: "")
+                    : "File is larger than 200 MB"
                 continue
             }
 
