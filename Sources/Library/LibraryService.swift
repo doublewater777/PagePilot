@@ -116,13 +116,22 @@ final class LibraryService: Loggable {
 
         var url = url
 
-        // Convert TXT files to EPUB before importing
-        if let file = url.fileURL, file.url.pathExtension.lowercased() == "txt" {
-            let epubURL = try TXTToEPUBConverter.convert(from: file.url)
-            guard let converted = epubURL.anyURL.absoluteURL else {
-                throw LibraryError.importFailed(TXTToEPUBConverter.ConversionError.invalidOutputURL)
+        // Convert TXT / Markdown to EPUB before Readium format sniffing.
+        if let file = url.fileURL {
+            let ext = file.url.pathExtension.lowercased()
+            if ext == "txt" {
+                let epubURL = try await TXTToEPUBConverter.convert(from: file.url)
+                guard let converted = epubURL.anyURL.absoluteURL else {
+                    throw LibraryError.importFailed(TXTToEPUBConverter.ConversionError.invalidOutputURL)
+                }
+                url = converted
+            } else if MarkdownToEPUBConverter.isMarkdownFileExtension(ext) {
+                let epubURL = try await MarkdownToEPUBConverter.convert(from: file.url)
+                guard let converted = epubURL.anyURL.absoluteURL else {
+                    throw LibraryError.importFailed(MarkdownToEPUBConverter.ConversionError.invalidOutputURL)
+                }
+                url = converted
             }
-            url = converted
         }
 
         if let file = url.fileURL {

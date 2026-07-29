@@ -7,10 +7,10 @@ core_pain: Touching the screen to turn pages breaks posture, comfort, and readin
 core_action: Import a local book, open it in PagePilot, and turn pages from Apple Watch.
 active_cycle: 2026-06-06-app-store-approval-launch
 latest_gate:
-  stage: 10-growth-channel
-  cycle: 2026-06-06-app-store-approval-launch
-  verdict: weak_pass
-  date: 2026-06-06
+  stage: 01-hypothesis
+  cycle: 2026-07-29-markdown-import
+  verdict: pass
+  date: 2026-07-29
   loop_back_to:
 cycles:
   - id: 2026-06-06-app-store-approval-launch
@@ -25,4 +25,10 @@ cycles:
     started_at: 2026-07-19
     completed_at: 2026-07-19
     linked_stage: 01-hypothesis
-updated_at: 2026-07-19
+  - id: 2026-07-29-markdown-import
+    feature: Markdown publication import
+    status: completed
+    started_at: 2026-07-29
+    completed_at: 2026-07-29
+    linked_stage: 01-hypothesis
+updated_at: 2026-07-29

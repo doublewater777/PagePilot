@@ -41,7 +41,7 @@
 "onboarding_import_source_wifi" = "Wi-Fi 传书";
 "onboarding_import_source_opds" = "浏览 OPDS 书源";
 "onboarding_use_sample" = "使用样书";
-"onboarding_supported_formats" = "支持 EPUB、PDF、CBZ、TXT 和有声书";
+"onboarding_supported_formats" = "支持 EPUB、PDF、CBZ、TXT、Markdown 和有声书";
 "onboarding_sample_error" = "暂时无法打开样书，请重试。";
 "onboarding_target_title" = "你想在哪台设备上阅读？";
 "onboarding_target_subtitle" = "Apple Watch 会把翻页指令发送到你选择的 Reader。";
@@ -803,6 +803,14 @@
 "txt_error_invalid_output" = "输出文件路径无效。";
 "txt_chapter_preface" = "前言";
 "txt_chapter_number" = "第 %d 章";
+
+/* MARK: Markdown Import */
+"markdown_error_unsupported_extension" = "不支持的 Markdown 文件扩展名。";
+"markdown_error_cannot_read" = "无法读取 Markdown 文件。";
+"markdown_error_encoding" = "Markdown 文件必须是有效的 UTF-8 编码。";
+"markdown_error_sanitization" = "Markdown HTML 清理失败。";
+"markdown_error_conversion" = "Markdown 转换 EPUB 失败：%@";
+"markdown_error_invalid_output" = "输出文件路径无效。";
 
 /* TTS Settings (revamped) */
 "tts_settings_voice_label" = "音色";

@@ -17,3 +17,13 @@ Weakest assumption: Alternative import sources help enough new users to justify 
 Decision: Reuse the existing flows and require every successful source to continue the same onboarding activation path.
 Next stage: 10-growth-channel
 Loop-back: Keep Files as the direct action if source selection creates friction or alternative paths do not complete reliably.
+
+## 2026-07-29 - 01-hypothesis
+
+Cycle: 2026-07-29-markdown-import
+Verdict: pass
+Evidence: Markdown conversion and security tests pass; generated EPUB opens through Readium; the full iPhone 17 simulator suite passed 130/130; project generation, plist validation, and diff checks passed.
+Weakest assumption: Safe Markdown-to-EPUB conversion preserves enough formatting to feel like native format support.
+Decision: Ship conversion at the Library import boundary and reuse the existing EPUB Reader.
+Next stage: 10-growth-channel
+Loop-back: Add narrowly scoped Markdown features only when real imported files demonstrate missing structure or media needs.

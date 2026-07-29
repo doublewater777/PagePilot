@@ -20,6 +20,12 @@ packages:
   SwiftSoup:
     url: https://github.com/scinfu/SwiftSoup.git
     from: 2.3.2
+  Ink:
+    url: https://github.com/JohnSundell/Ink.git
+    from: 0.6.0
+  ZIPFoundation:
+    url: https://github.com/readium/ZIPFoundation.git
+    from: 3.0.1
 schemes:
   PagePilot:
     build:
@@ -62,6 +68,9 @@ targets:
       - package: Kingfisher
       - package: MBProgressHUD
       - package: SwiftSoup
+      - package: Ink
+      - package: ZIPFoundation
+        product: ReadiumZIPFoundation
     settings:
       PRODUCT_BUNDLE_IDENTIFIER: com.panyang.PagePilot
       DEVELOPMENT_TEAM: ${RD_DEVELOPMENT_TEAM}
