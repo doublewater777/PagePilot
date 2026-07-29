@@ -4,6 +4,7 @@
 //  available in the top-level LICENSE file of the project.
 //
 
+import CryptoKit
 import Foundation
 import ReadiumShared
 
@@ -14,6 +15,7 @@ import ReadiumShared
 /// - Automatic encoding detection (UTF-8, GBK, GB18030, Latin-1)
 /// - Chapter splitting by common Chinese/English chapter patterns
 /// - Proper EPUB 3 structure with navigation document
+/// - Deterministic `dc:identifier` from source file bytes so re-imports can dedupe
 final class TXTToEPUBConverter {
 
     enum ConversionError: LocalizedError {
@@ -38,9 +40,20 @@ final class TXTToEPUBConverter {
 
     // MARK: - Public
 
+    /// Stable publication identifier for a TXT source, derived from raw file bytes.
+    static func contentIdentifier(for sourceURL: URL) throws -> String {
+        let data = try Data(contentsOf: sourceURL)
+        let digest = SHA256.hash(data: data)
+        let hex = digest.map { String(format: "%02x", $0) }.joined()
+        return "urn:pagepilot:txt:\(hex)"
+    }
+
     /// Converts the TXT file at `sourceURL` into an EPUB file.
     /// Returns the URL of the generated `.epub` file in the temporary directory.
-    static func convert(from sourceURL: URL) async throws -> URL {
+    ///
+    /// - Parameter identifier: Optional stable identifier. When omitted, derived
+    ///   from the source file contents so identical re-imports share an id.
+    static func convert(from sourceURL: URL, identifier: String? = nil) async throws -> URL {
         let text = try readTextFile(at: sourceURL)
         let title = sourceURL.deletingPathExtension().lastPathComponent
         let chapters = splitIntoChapters(text: text, fallbackTitle: title)
@@ -50,9 +63,15 @@ final class TXTToEPUBConverter {
                 bodyHTML: plainTextBodyHTML(title: chapter.title, content: chapter.content)
             )
         }
+        let resolvedIdentifier = try identifier ?? contentIdentifier(for: sourceURL)
 
         do {
-            return try await MinimalEPUBPackager.package(title: title, language: "zh", chapters: packagerChapters)
+            return try await MinimalEPUBPackager.package(
+                title: title,
+                language: "zh",
+                chapters: packagerChapters,
+                identifier: resolvedIdentifier
+            )
         } catch let error as MinimalEPUBPackager.PackagerError {
             switch error {
             case .epubCreationFailed(let underlying):

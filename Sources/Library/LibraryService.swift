@@ -5,6 +5,7 @@
 //
 
 import Combine
+import CryptoKit
 import Foundation
 import ReadiumShared
 import ReadiumStreamer
@@ -98,14 +99,16 @@ final class LibraryService: Loggable {
     ///
     /// DRM services are used to fulfill the publication, in case the URL
     /// locates a licensing document.
+    ///
+    /// Already-imported publications are returned without creating a second
+    /// bookshelf entry (matched by publication identifier, or by a content
+    /// hash when the publication has no stable identifier).
     @discardableResult
     func importPublication(
         from url: AbsoluteURL,
         sender: UIViewController? = nil,
         progress: @escaping (Double) -> Void = { _ in }
     ) async throws -> Book {
-        try await ensureCanImport(additionalBookCount: 1)
-
         // Necessary to read URL exported from the Files app, for example.
         let shouldRelinquishAccess = url.url.startAccessingSecurityScopedResource()
         defer {
@@ -115,6 +118,7 @@ final class LibraryService: Loggable {
         }
 
         var url = url
+        let sourceFileHash = url.fileURL.flatMap { Self.sha256Hex(of: $0.url) }
         var generatedPublicationURL: URL?
         defer {
             if let generatedPublicationURL {
@@ -123,17 +127,27 @@ final class LibraryService: Loggable {
         }
 
         // Convert TXT / Markdown to EPUB before Readium format sniffing.
+        // Content-derived identifiers let re-opens of the same file dedupe
+        // without converting again.
         if let file = url.fileURL {
             let ext = file.url.pathExtension.lowercased()
             if ext == "txt" {
-                let epubURL = try await TXTToEPUBConverter.convert(from: file.url)
+                let txtIdentifier = try TXTToEPUBConverter.contentIdentifier(for: file.url)
+                if let existing = try await books.getByIdentifier(txtIdentifier) {
+                    return existing
+                }
+                let epubURL = try await TXTToEPUBConverter.convert(from: file.url, identifier: txtIdentifier)
                 generatedPublicationURL = epubURL
                 guard let converted = epubURL.anyURL.absoluteURL else {
                     throw LibraryError.importFailed(TXTToEPUBConverter.ConversionError.invalidOutputURL)
                 }
                 url = converted
             } else if MarkdownToEPUBConverter.isMarkdownFileExtension(ext) {
-                let epubURL = try await MarkdownToEPUBConverter.convert(from: file.url)
+                let mdIdentifier = try MarkdownToEPUBConverter.contentIdentifier(for: file.url)
+                if let existing = try await books.getByIdentifier(mdIdentifier) {
+                    return existing
+                }
+                let epubURL = try await MarkdownToEPUBConverter.convert(from: file.url, identifier: mdIdentifier)
                 generatedPublicationURL = epubURL
                 guard let converted = epubURL.anyURL.absoluteURL else {
                     throw LibraryError.importFailed(MarkdownToEPUBConverter.ConversionError.invalidOutputURL)
@@ -147,6 +161,19 @@ final class LibraryService: Loggable {
         }
 
         let (pub, format) = try await openPublication(at: url, allowUserInteraction: false, sender: sender)
+
+        let resolvedIdentifier = Self.resolvedIdentifier(
+            publicationIdentifier: pub.metadata.identifier,
+            sourceFileHash: sourceFileHash
+        )
+        if let resolvedIdentifier,
+           let existing = try await books.getByIdentifier(resolvedIdentifier)
+        {
+            return existing
+        }
+
+        try await ensureCanImport(additionalBookCount: 1)
+
         let title = pub.metadata.title ?? url.url.deletingPathExtension().lastPathComponent
         let coverPath = try await importCover(of: pub)
 
@@ -158,6 +185,11 @@ final class LibraryService: Loggable {
                 format: format
             )
             movedFileURL = moved
+            // File left Documents staging; clear so the generated-temp defer
+            // does not try to delete the moved path after a successful move.
+            if generatedPublicationURL == file.url {
+                generatedPublicationURL = nil
+            }
             url = moved
         }
 
@@ -167,7 +199,8 @@ final class LibraryService: Loggable {
                 publication: pub,
                 mediaType: format.mediaType,
                 title: title,
-                coverPath: coverPath
+                coverPath: coverPath,
+                identifier: resolvedIdentifier
             )
         } catch {
             // Compensating cleanup: DB insert failed, remove the files we
@@ -182,6 +215,26 @@ final class LibraryService: Loggable {
             }
             throw error
         }
+    }
+
+    /// Prefers the publication's own identifier; falls back to a content hash
+    /// of the source file so identifier-less files still dedupe on re-import.
+    private static func resolvedIdentifier(
+        publicationIdentifier: String?,
+        sourceFileHash: String?
+    ) -> String? {
+        if let publicationIdentifier, !publicationIdentifier.isEmpty {
+            return publicationIdentifier
+        }
+        if let sourceFileHash {
+            return "urn:pagepilot:file:\(sourceFileHash)"
+        }
+        return nil
+    }
+
+    private static func sha256Hex(of fileURL: URL) -> String? {
+        guard let data = try? Data(contentsOf: fileURL) else { return nil }
+        return SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
     }
 
     /// Fast-fail UX check: rejects obviously over-limit batches before any
@@ -250,13 +303,14 @@ final class LibraryService: Loggable {
         publication: Publication,
         mediaType: MediaType?,
         title: String,
-        coverPath: String?
+        coverPath: String?,
+        identifier: String?
     ) async throws -> Book {
         // Makes the URL relative to the Documents/ folder if possible.
         let url: AnyURL = Paths.documents.relativize(url)?.anyURL ?? url.anyURL
 
         let book = Book(
-            identifier: publication.metadata.identifier,
+            identifier: identifier ?? publication.metadata.identifier,
             title: title,
             authors: publication.metadata.authors
                 .map(\.name)

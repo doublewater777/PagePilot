@@ -398,19 +398,41 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         return true
     }
 
+    /// External document entry (Files → Open In / Share). Imports if needed,
+    /// then opens the book in the reader instead of leaving the user on the
+    /// bookshelf.
     func importPublication(from url: AbsoluteURL, sender vc: UIViewController) {
         guard app != nil else { return }
 
         Task {
             do {
-                try await app.library.importPublication(from: url, sender: vc, progress: { _ in })
+                let book = try await app.library.importPublication(from: url, sender: vc, progress: { _ in })
+                await openImportedBook(book)
             } catch {
-                guard let error = error as? UserErrorConvertible else {
-                    print(error)
-                    return
+                await MainActor.run {
+                    guard let error = error as? UserErrorConvertible else {
+                        print(error)
+                        return
+                    }
+                    vc.alert(error)
                 }
-                vc.alert(error)
             }
+        }
+    }
+
+    @MainActor
+    private func openImportedBook(_ book: Book) async {
+        guard let app else { return }
+
+        app.tabBarController?.selectedIndex = 1
+        let nav = app.library.rootViewController
+        nav.popToRootViewController(animated: false)
+
+        do {
+            guard let publication = try await app.library.openBook(book, sender: nav) else { return }
+            app.reader.presentPublication(publication: publication, book: book, in: nav)
+        } catch {
+            presentErrorIfPossible(error, from: nav)
         }
     }
 

@@ -24,7 +24,13 @@ enum MinimalEPUBPackager {
 
     /// Creates a temporary `.epub` and returns its file URL.
     /// - Parameter language: BCP 47 language tag written to `dc:language` (XML-escaped).
-    static func package(title: String, language: String, chapters: [Chapter]) async throws -> URL {
+    /// - Parameter identifier: Optional stable `dc:identifier`. When omitted, a new UUID is used.
+    static func package(
+        title: String,
+        language: String,
+        chapters: [Chapter],
+        identifier: String? = nil
+    ) async throws -> URL {
         let epubDir = Paths.makeTemporaryURL().url
         // Always remove the staging directory on success or failure.
         defer { try? FileManager.default.removeItem(at: epubDir) }
@@ -47,7 +53,7 @@ enum MinimalEPUBPackager {
             encoding: .utf8
         )
 
-        let opf = buildOPF(title: title, language: language, chapters: chapters)
+        let opf = buildOPF(title: title, language: language, chapters: chapters, identifier: identifier)
         try opf.write(to: oebps.appendingPathComponent("content.opf"), atomically: true, encoding: .utf8)
 
         let toc = buildTOC(title: title, chapters: chapters)
@@ -85,9 +91,18 @@ enum MinimalEPUBPackager {
     """
 
     /// Builds the package OPF document. Internal for unit tests.
-    static func buildOPF(title: String, language: String, chapters: [Chapter]) -> String {
-        let uuid = UUID().uuidString
-        let date = ISO8601DateFormatter().string(from: Date())
+    static func buildOPF(
+        title: String,
+        language: String,
+        chapters: [Chapter],
+        identifier: String? = nil
+    ) -> String {
+        let resolvedIdentifier = (identifier?.isEmpty == false)
+            ? identifier!
+            : "urn:uuid:\(UUID().uuidString)"
+        // Fixed modified date keeps regenerated packages closer across re-imports;
+        // identity is still governed by `identifier` for library dedupe.
+        let date = "1970-01-01T00:00:00Z"
 
         var manifestItems = """
             <item id="toc" href="toc.xhtml" media-type="application/xhtml+xml" properties="nav"/>
@@ -107,7 +122,7 @@ enum MinimalEPUBPackager {
         <?xml version="1.0" encoding="UTF-8"?>
         <package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="uid">
           <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
-            <dc:identifier id="uid">urn:uuid:\(uuid)</dc:identifier>
+            <dc:identifier id="uid">\(resolvedIdentifier.xmlEscaped)</dc:identifier>
             <dc:title>\(title.xmlEscaped)</dc:title>
             <dc:language>\(language.xmlEscaped)</dc:language>
             <dc:creator>Unknown</dc:creator>

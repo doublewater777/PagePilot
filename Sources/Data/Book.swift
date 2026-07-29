@@ -116,6 +116,16 @@ final class BookRepository {
         }
     }
 
+    /// Returns the first book with the given publication identifier, if any.
+    func getByIdentifier(_ identifier: String) async throws -> Book? {
+        guard !identifier.isEmpty else { return nil }
+        return try await db.read { db in
+            try Book
+                .filter(Book.Columns.identifier == identifier)
+                .fetchOne(db)
+        }
+    }
+
     func observe(_ id: Book.Id) -> AnyPublisher<Book?, Error> {
         db.observe { db in
             try Book.fetchOne(db, key: id)

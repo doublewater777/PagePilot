@@ -4,6 +4,7 @@
 //  available in the top-level LICENSE file of the project.
 //
 
+import CryptoKit
 import Foundation
 import Ink
 import SwiftSoup
@@ -70,9 +71,20 @@ final class MarkdownToEPUBConverter {
         return ext == "md" || ext == "markdown"
     }
 
+    /// Stable publication identifier for a Markdown source, derived from raw file bytes.
+    static func contentIdentifier(for sourceURL: URL) throws -> String {
+        let data = try Data(contentsOf: sourceURL)
+        let digest = SHA256.hash(data: data)
+        let hex = digest.map { String(format: "%02x", $0) }.joined()
+        return "urn:pagepilot:md:\(hex)"
+    }
+
     /// Converts the Markdown file at `sourceURL` into an EPUB file.
     /// Returns the URL of the generated `.epub` in the temporary directory.
-    static func convert(from sourceURL: URL) async throws -> URL {
+    ///
+    /// - Parameter identifier: Optional stable identifier. When omitted, derived
+    ///   from the source file contents so identical re-imports share an id.
+    static func convert(from sourceURL: URL, identifier: String? = nil) async throws -> URL {
         guard isMarkdownFileExtension(sourceURL.pathExtension) else {
             throw ConversionError.unsupportedExtension
         }
@@ -108,6 +120,7 @@ final class MarkdownToEPUBConverter {
         let title = deriveTitle(from: markdown, filename: filename)
         let language = deriveLanguage(from: markdown)
         let bodyHTML = try renderAndSanitize(markdown)
+        let resolvedIdentifier = try identifier ?? contentIdentifier(for: sourceURL)
 
         do {
             return try await MinimalEPUBPackager.package(
@@ -115,7 +128,8 @@ final class MarkdownToEPUBConverter {
                 language: language,
                 chapters: [
                     .init(title: title, bodyHTML: bodyHTML),
-                ]
+                ],
+                identifier: resolvedIdentifier
             )
         } catch let error as MinimalEPUBPackager.PackagerError {
             switch error {

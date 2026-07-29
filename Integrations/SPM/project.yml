@@ -76,7 +76,7 @@ targets:
       DEVELOPMENT_TEAM: ${RD_DEVELOPMENT_TEAM}
       CODE_SIGN_ENTITLEMENTS: iPhone/pagepilot.entitlements
       MARKETING_VERSION: 1.0.15
-      CURRENT_PROJECT_VERSION: 6
+      CURRENT_PROJECT_VERSION: 21
     entitlements:
       path: iPhone/pagepilot.entitlements
 
@@ -92,7 +92,7 @@ targets:
       PRODUCT_BUNDLE_IDENTIFIER: com.panyang.PagePilot.WatchRemote
       DEVELOPMENT_TEAM: ${RD_DEVELOPMENT_TEAM}
       MARKETING_VERSION: 1.0.15
-      CURRENT_PROJECT_VERSION: 6
+      CURRENT_PROJECT_VERSION: 21
 
   PagePilotTests:
     type: bundle.unit-test
