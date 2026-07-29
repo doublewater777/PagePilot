@@ -91,19 +91,19 @@ final class ImportDedupTests: XCTestCase {
         XCTAssertNotEqual(first, second)
     }
 
-    func testTXTConvertEmbedsProvidedIdentifier() throws {
+    func testTXTConvertEmbedsProvidedIdentifier() async throws {
         let fileURL = tmpDir.appendingPathComponent("id-test.txt")
         try "Just some text for conversion.".write(to: fileURL, atomically: true, encoding: .utf8)
 
         let identifier = "urn:pagepilot:txt:test-fixed-id"
-        let epubURL = try TXTToEPUBConverter.convert(from: fileURL, identifier: identifier)
+        let epubURL = try await TXTToEPUBConverter.convert(from: fileURL, identifier: identifier)
         defer { try? FileManager.default.removeItem(at: epubURL) }
 
         // content.opf is inside the zip; unzip via NSFileCoordinator is heavy —
         // re-derive and assert convert accepts explicit id without throwing, and
         // default path uses content-derived id.
         let defaultId = try TXTToEPUBConverter.contentIdentifier(for: fileURL)
-        let defaultEPUB = try TXTToEPUBConverter.convert(from: fileURL)
+        let defaultEPUB = try await TXTToEPUBConverter.convert(from: fileURL)
         defer { try? FileManager.default.removeItem(at: defaultEPUB) }
 
         XCTAssertTrue(FileManager.default.fileExists(atPath: epubURL.path))
