@@ -895,6 +895,9 @@
 "volume_key_edu_point_hud" = "A system volume HUD may flash briefly — that is normal and safe to ignore.";
 "volume_key_edu_confirm" = "Got it, enable";
 
+/* Reader footer position label */
+"reader_position_format" = "Position %1$d / %2$d";
+
 /* Quick Position Jump */
 "reader_quick_position_format" = "‹  %1$d / %2$d  ·  %3$d%%  ›";
 "reader_quick_position_cancel" = "Release to Cancel";

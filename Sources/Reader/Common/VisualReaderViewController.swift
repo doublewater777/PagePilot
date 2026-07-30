@@ -545,22 +545,38 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
 
     // MARK: - VisualNavigatorDelegate
 
+    /// Whether locator positions correspond to actual pages (PDF, fixed-layout
+    /// publications) rather than Readium's synthetic reflowable positions.
+    var positionsArePages: Bool {
+        publication.metadata.layout == .fixed
+    }
+
     override func navigator(_ navigator: Navigator, locationDidChange locator: Locator) {
         super.navigator(navigator, locationDidChange: locator)
 
         positionLabel.text = {
-            if let positionCount = positionCount, let position = locator.locations.position {
+            if positionsArePages {
+                // PDF / fixed-layout: positions are actual page numbers.
+                guard let positionCount = positionCount, let position = locator.locations.position else {
+                    return nil
+                }
                 return "\(position) / \(positionCount)"
-            } else if let progression = locator.locations.totalProgression {
-                let percentage = QuickPositionJumpPolicy.percentage(
-                    totalProgression: progression,
-                    targetPosition: locator.locations.position ?? 1,
-                    positionCount: positionCount ?? 1
-                )
-                return "\(percentage)%"
-            } else {
-                return nil
             }
+            // Reflowable publications have no stable page concept: Readium's
+            // synthetic positions (~1 per 1,024 characters) change meaning
+            // with font size and screen size. Show the reading percentage
+            // instead of a number users would read as a page count.
+            if let progression = locator.locations.totalProgression {
+                let percentage = Int((progression * 100).rounded())
+                return "\(percentage)%"
+            }
+            if let positionCount = positionCount, let position = locator.locations.position {
+                return String(
+                    format: NSLocalizedString("reader_position_format", comment: "Reader footer: current reading position out of total positions"),
+                    position, positionCount
+                )
+            }
+            return nil
         }()
 
         // Update Watch progress

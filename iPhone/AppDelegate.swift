@@ -70,6 +70,18 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         UISceneConfiguration(name: "Default Configuration", sessionRole: connectingSceneSession.role)
     }
 
+    /// Best-effort cleanup of orphaned files from crashed imports or failed
+    /// deletes. Runs on background entry rather than at launch, where it
+    /// raced cold-start imports and deleted freshly imported publications.
+    func applicationDidEnterBackground(_ application: UIApplication) {
+        guard let service = app?.library.service else { return }
+        let taskID = application.beginBackgroundTask(withName: "OrphanedFileCleanup") {}
+        Task.detached {
+            await service.cleanOrphanedFiles()
+            application.endBackgroundTask(taskID)
+        }
+    }
+
     /// Configures the shared `AVAudioSession` so that audio features (audiobook
     /// playback and text-to-speech) keep playing when the app is sent to the
     /// background or the device is locked.
