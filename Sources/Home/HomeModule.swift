@@ -23,6 +23,49 @@ protocol HomeModuleDelegate: ModuleDelegate {
     func homeDidSelectGoToLibrary()
 }
 
+private final class HomeNavigationController: UINavigationController {
+    private var didBecomeActiveObserver: NSObjectProtocol?
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+
+        didBecomeActiveObserver = NotificationCenter.default.addObserver(
+            forName: UIApplication.didBecomeActiveNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.enforceHiddenNavigationBar()
+        }
+        enforceHiddenNavigationBar()
+    }
+
+    deinit {
+        if let didBecomeActiveObserver {
+            NotificationCenter.default.removeObserver(didBecomeActiveObserver)
+        }
+    }
+
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        enforceHiddenNavigationBar()
+    }
+
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        enforceHiddenNavigationBar()
+    }
+
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        enforceHiddenNavigationBar()
+    }
+
+    private func enforceHiddenNavigationBar() {
+        guard !isNavigationBarHidden else { return }
+        setNavigationBarHidden(true, animated: false)
+    }
+}
+
 final class HomeModule: HomeModuleAPI {
     weak var delegate: HomeModuleDelegate?
 
@@ -45,7 +88,7 @@ final class HomeModule: HomeModuleAPI {
             }
             return UIColor(red: 246 / 255, green: 248 / 255, blue: 252 / 255, alpha: 1)
         }
-        let navigationController = UINavigationController(rootViewController: hostingController)
+        let navigationController = HomeNavigationController(rootViewController: hostingController)
         navigationController.setNavigationBarHidden(true, animated: false)
         navigationController.view.backgroundColor = hostingController.view.backgroundColor
         return navigationController

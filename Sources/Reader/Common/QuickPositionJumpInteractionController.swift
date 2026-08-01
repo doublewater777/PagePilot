@@ -2,6 +2,13 @@ import ReadiumShared
 import UIKit
 
 @MainActor
+private protocol ReaderPositionDisplayContext: AnyObject {
+    var positionsArePages: Bool { get }
+}
+
+extension VisualReaderViewController: ReaderPositionDisplayContext {}
+
+@MainActor
 final class QuickPositionJumpInteractionController: NSObject {
     enum Outcome {
         case cancelled
@@ -10,10 +17,15 @@ final class QuickPositionJumpInteractionController: NSObject {
         case interrupted
     }
 
-    var positions: [Locator] = []
+    var positions: [Locator] = [] {
+        didSet {
+            refreshPositionLabelIfNeeded()
+        }
+    }
     var isActive: Bool { session.state != .idle || recoveryTask != nil }
 
     private weak var hostView: UIView?
+    private weak var positionLabel: UILabel?
     private let overlay: QuickPositionJumpOverlay
     private let currentLocator: () -> Locator?
     private let onTap: () -> Void
@@ -48,6 +60,7 @@ final class QuickPositionJumpInteractionController: NSObject {
         onDeferredCleanup: @escaping (Bool) -> Void
     ) {
         self.hostView = hostView
+        self.positionLabel = positionLabel
         self.overlay = QuickPositionJumpOverlay(hostView: hostView, positionLabel: positionLabel)
         self.currentLocator = currentLocator
         self.onTap = onTap
@@ -76,6 +89,7 @@ final class QuickPositionJumpInteractionController: NSObject {
     deinit {
         NotificationCenter.default.removeObserver(self)
     }
+
     func cancel() {
         guard session.state != .idle else { return }
         if session.state == .preparing {
@@ -94,6 +108,7 @@ final class QuickPositionJumpInteractionController: NSObject {
     @objc private func appDidEnterBackground() {
         cancel()
     }
+
     @objc private func handleTap() {
         guard session.state == .idle else { return }
         onTap()
@@ -114,6 +129,40 @@ final class QuickPositionJumpInteractionController: NSObject {
         @unknown default:
             cancel()
         }
+    }
+
+    private func refreshPositionLabelIfNeeded() {
+        guard !positions.isEmpty,
+              let positionLabel,
+              positionLabel.text?.isEmpty != false,
+              let position = currentLocator()?.locations.position
+        else {
+            return
+        }
+
+        if readerPositionDisplayContext?.positionsArePages == true {
+            positionLabel.text = "\(position) / \(positions.count)"
+        } else {
+            positionLabel.text = String(
+                format: NSLocalizedString(
+                    "reader_position_format",
+                    comment: "Reader footer: current reading position out of total positions"
+                ),
+                position,
+                positions.count
+            )
+        }
+    }
+
+    private var readerPositionDisplayContext: ReaderPositionDisplayContext? {
+        var responder: UIResponder? = hostView
+        while let current = responder {
+            if let context = current as? ReaderPositionDisplayContext {
+                return context
+            }
+            responder = current.next
+        }
+        return nil
     }
 
     private func begin(at point: CGPoint) {
@@ -269,6 +318,7 @@ final class QuickPositionJumpInteractionController: NSObject {
             percentage
         )
     }
+
     private func resolvedPosition(for locator: Locator) -> Int {
         if let position = locator.locations.position,
            positions.indices.contains(position - 1) {
