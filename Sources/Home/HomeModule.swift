@@ -23,6 +23,13 @@ protocol HomeModuleDelegate: ModuleDelegate {
     func homeDidSelectGoToLibrary()
 }
 
+private final class HomeHostingController<Content: View>: UIHostingController<Content> {
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        navigationController?.setNavigationBarHidden(true, animated: false)
+    }
+}
+
 final class HomeModule: HomeModuleAPI {
     weak var delegate: HomeModuleDelegate?
 
@@ -38,7 +45,7 @@ final class HomeModule: HomeModuleAPI {
             viewModel: HomeViewModel(books: books),
             delegate: delegate
         )
-        let hostingController = UIHostingController(rootView: homeView)
+        let hostingController = HomeHostingController(rootView: homeView)
         hostingController.view.backgroundColor = UIColor { traits in
             if traits.userInterfaceStyle == .dark {
                 return UIColor(red: 15 / 255, green: 16 / 255, blue: 19 / 255, alpha: 1)
