@@ -1,6 +1,7 @@
 import ReadiumShared
 import UIKit
 
+@MainActor
 private protocol ReaderPositionDisplayContext: AnyObject {
     var positionsArePages: Bool { get }
 }
