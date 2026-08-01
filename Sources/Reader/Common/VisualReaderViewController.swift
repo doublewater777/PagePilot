@@ -555,28 +555,27 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
         super.navigator(navigator, locationDidChange: locator)
 
         positionLabel.text = {
+            guard let positionCount = positionCount,
+                  let position = locator.locations.position
+            else {
+                return nil
+            }
+
             if positionsArePages {
                 // PDF / fixed-layout: positions are actual page numbers.
-                guard let positionCount = positionCount, let position = locator.locations.position else {
-                    return nil
-                }
                 return "\(position) / \(positionCount)"
             }
-            // Reflowable publications have no stable page concept: Readium's
-            // synthetic positions (~1 per 1,024 characters) change meaning
-            // with font size and screen size. Show the reading percentage
-            // instead of a number users would read as a page count.
-            if let progression = locator.locations.totalProgression {
-                let percentage = Int((progression * 100).rounded())
-                return "\(percentage)%"
-            }
-            if let positionCount = positionCount, let position = locator.locations.position {
-                return String(
-                    format: NSLocalizedString("reader_position_format", comment: "Reader footer: current reading position out of total positions"),
-                    position, positionCount
-                )
-            }
-            return nil
+
+            // Reflowable publications use Readium positions. Keep the footer
+            // stable instead of switching to a percentage.
+            return String(
+                format: NSLocalizedString(
+                    "reader_position_format",
+                    comment: "Reader footer: current reading position out of total positions"
+                ),
+                position,
+                positionCount
+            )
         }()
 
         // Update Watch progress
