@@ -1,0 +1,4 @@
+/* InfoPlist.strings - English (Base) */
+
+/* NSLocalNetworkUsageDescription */
+"NSLocalNetworkUsageDescription" = "PagePilot utiliza la red local para buscar y conectarse a su lector iPad.";

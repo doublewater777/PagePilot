@@ -1,0 +1,4 @@
+/* InfoPlist.strings - English (Base) */
+
+/* NSLocalNetworkUsageDescription */
+"NSLocalNetworkUsageDescription" = "PagePilot verwendet das lokale Netzwerk, um Ihren iPad-Reader zu finden und eine Verbindung herzustellen.";

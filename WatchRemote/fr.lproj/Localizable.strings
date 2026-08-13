@@ -1,0 +1,17 @@
+/* Watch Remote */
+"watch.connected" = "Connectée";
+"watch.iphoneRelay" = "Relais iPhone";
+"watch.ipadConnected" = "iPad connecté";
+"watch.iphoneConnected" = "iPhone connecté";
+"watch.notConnected" = "Non connectée";
+"watch.crownHint" = "Tournez la couronne pour tourner les pages";
+"watch.hint.openIPhone" = "Ouvrez PagePilot sur l’iPhone";
+"watch.hint.openIPad" = "Ouvrez PagePilot sur l’iPad";
+"watch.hint.openBookIPhone" = "Ouvrez un livre sur l’iPhone";
+"watch.hint.openBookIPad" = "Ouvrez un livre sur l’iPad";
+"watch.error.sendFailed" = "Envoi impossible. Réessayez.";
+"watch.error.ipadNotFound" = "Ouvrez PagePilot sur l’iPad et gardez les deux appareils sur le même réseau Wi‑Fi.";
+"watch.error.ipadTimeout" = "Impossible de joindre l’iPad. Vérifiez le Wi‑Fi et gardez PagePilot ouvert.";
+"watch.error.openIPhone" = "Ouvrez PagePilot sur l’iPhone";
+"watch.error.generic" = "Impossible de tourner la page. Réessayez.";
+"watch.error.proRequired" = "Pour tourner les pages sur iPad, PagePilot Pro doit être installé sur l’iPhone.";

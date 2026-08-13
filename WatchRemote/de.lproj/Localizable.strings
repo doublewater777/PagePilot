@@ -1,0 +1,17 @@
+/* Watch Remote */
+"watch.connected" = "Verbunden";
+"watch.iphoneRelay" = "iPhone-Weiterleitung";
+"watch.ipadConnected" = "iPad verbunden";
+"watch.iphoneConnected" = "iPhone verbunden";
+"watch.notConnected" = "Nicht verbunden";
+"watch.crownHint" = "Mit der Krone umblättern";
+"watch.hint.openIPhone" = "PagePilot auf dem iPhone öffnen";
+"watch.hint.openIPad" = "PagePilot auf dem iPad öffnen";
+"watch.hint.openBookIPhone" = "Ein Buch auf dem iPhone öffnen";
+"watch.hint.openBookIPad" = "Ein Buch auf dem iPad öffnen";
+"watch.error.sendFailed" = "Senden fehlgeschlagen. Bitte versuchen Sie es erneut.";
+"watch.error.ipadNotFound" = "Öffnen Sie PagePilot auf dem iPad und lassen Sie beide Geräte im selben WLAN.";
+"watch.error.ipadTimeout" = "Das iPad ist nicht erreichbar. Überprüfen Sie das WLAN und lassen Sie PagePilot geöffnet.";
+"watch.error.openIPhone" = "PagePilot auf dem iPhone öffnen";
+"watch.error.generic" = "Die Seite konnte nicht gewechselt werden. Bitte versuchen Sie es erneut.";
+"watch.error.proRequired" = "Zum Umblättern auf dem iPad ist PagePilot Pro auf dem iPhone erforderlich.";
