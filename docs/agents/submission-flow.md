@@ -22,7 +22,7 @@ Always do these steps unless the user explicitly says otherwise:
 2. **Detect mode**:
    - **new** — first 提审 for this target: bump marketing version, scaffold metadata, increment build.
    - **resubmit** — target already prepared: keep marketing version, increment build only, update metadata.
-3. **Update What's New** in `en-US.json` and `zh-Hans.json`.
+3. **Update What's New** in every locale under the target version directory (currently `en-US`, `zh-Hans`, `es-ES`, `fr-FR`, and `de-DE`).
 4. **Commit, tag (first time only), and push** before building or uploading.
 5. **Build, upload, stage metadata, and submit** on App Store Connect.
 6. **After approval and going live**, run `./scripts/mark-shipped.sh <version>`.
@@ -48,8 +48,9 @@ Explicit target (must be greater than shipped):
 | App Store live version | `SHIPPED_VERSION` |
 | Repo / commit version | `VERSION` |
 | Build number | `CFBundleVersion` in `iPhone/Info.plist` and `WatchRemote/Info.plist` |
-| Per-version ASC copy | `metadata/version/<version>/en-US.json`, `zh-Hans.json` |
-| App-level ASC copy | `metadata/app-info/` |
+| Per-version ASC copy | `metadata/version/<version>/<locale>.json` (`en-US`, `zh-Hans`, `es-ES`, `fr-FR`, `de-DE`) |
+| App-level ASC copy | `metadata/app-info/<locale>.json` |
+| App bundle locales | `en`, `zh-Hans`, `es`, `fr`, `de` (distinct from ASC locale identifiers) |
 
 App Store app ID: `6760964443`
 
@@ -150,5 +151,6 @@ git push origin HEAD
 ## What's New guidance
 
 - Lead with the most user-visible change in the first sentence.
-- Update both `en-US` and `zh-Hans`.
+- Update `whatsNew` for every locale under the target version directory (`en-US`, `zh-Hans`, `es-ES`, `fr-FR`, and `de-DE`).
+- Keep ASC locale identifiers (`es-ES`, `fr-FR`, `de-DE`) distinct from app-bundle identifiers (`es`, `fr`, `de`).
 - On resubmit, mention review fixes if relevant.

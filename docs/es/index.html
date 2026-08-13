@@ -1,15 +1,15 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PagePilot - 用 Apple Watch 翻页的本地电子书阅读器 | Hands-Free EPUB & PDF Ebook Reader</title>
+    <title>PagePilot - Lector de libros manos libres</title>
     
     <!-- Meta Descriptions -->
-    <meta name="description" content="PagePilot 是一款支持 Apple Watch 遥控翻页的 iPhone/iPad 本地电子书阅读器 (EPUB, PDF, CBZ)。支持局域网 WiFi 极速传书、设备间 Bonjour 隔空互传、本地阅读进度与数据统计以及系统级 TTS 朗读听书，100% 数据保存在设备本地，完美保护隐私。 PagePilot is a local-first EPUB/PDF/CBZ ebook reader for iPhone & iPad. Turn pages from Apple Watch via tap or Digital Crown, featuring local WiFi transfer and offline reading stats.">
+    <meta name="description" content="PagePilot es un lector local de EPUB, PDF, CBZ y audiolibros para iPhone y iPad con control de páginas desde Apple Watch.">
     <meta name="keywords" content="PagePilot, EPUB reader, Apple Watch page turn, PDF reader, Wifi transfer, ebook, 电子书, 翻页, 手表翻页, 电脑传书, CBZ reader, hands-free reading">
     <meta name="robots" content="index, follow">
-    <link rel="canonical" href="https://pagepilot.doublewaterapps.com/">
+    <link rel="canonical" href="https://pagepilot.doublewaterapps.com/es/">
 
     <!-- Social Cards -->
     <meta property="og:type" content="website">
@@ -29,7 +29,7 @@
     <meta name="twitter:description" content="Turn ebook pages from your Apple Watch. A local-first EPUB/PDF/CBZ reader for iPhone and iPad.">
     <meta name="twitter:image" content="https://pagepilot.doublewaterapps.com/social-card.png">
     <meta name="twitter:image:alt" content="PagePilot lets you turn ebook pages from Apple Watch.">
-    <link rel="icon" type="image/png" href="icon.png">
+    <link rel="icon" type="image/png" href="../icon.png">
     
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1075,7 +1075,7 @@
     }
     </script>
 </head>
-<body data-lang="zh" data-theme="dark">
+<body data-lang="es" data-theme="dark">
 
     <!-- Header Navigation -->
     <header>
@@ -1086,14 +1086,10 @@
             </a>
             
             <div class="nav-controls">
-                <!-- Language Toggle Button -->
-                <button class="btn-control" onclick="toggleLanguage()" id="langBtn" aria-label="Toggle Language">
-                    <svg viewBox="0 0 24 24">
-                        <path d="M12.87 15.07l-2.54-2.51.03-.03c1.74-1.94 2.98-4.17 3.71-6.53H17V4h-7V2H8v2H1v2h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z"/>
-                    </svg>
-                    <span class="lang-zh">English</span>
-                    <span class="lang-en">简体中文</span>
-                </button>
+                <!-- Language-prefixed routes -->
+                <nav class="lang-route-links" aria-label="Language">
+                    <a href="../zh-Hans/">中文</a> · <a href="../en/">EN</a> · <a href="../es/">ES</a> · <a href="../fr/">FR</a> · <a href="../de/">DE</a>
+                </nav>
                 
                 <!-- Theme Toggle Button -->
                 <button class="btn-control" onclick="toggleTheme()" id="themeBtn" aria-label="Toggle Theme">
@@ -1105,8 +1101,7 @@
                     <svg class="theme-icon-light" viewBox="0 0 24 24" style="display: none;">
                         <path d="M12.3 2a10 10 0 0 0-1.9 14 10 10 0 0 0 14-1.9 1 1 0 0 1 .7 1.6 11 11 0 1 1-14.4-14.4 1 1 0 0 1 1.6.7z"/>
                     </svg>
-                    <span class="lang-zh">浅色</span>
-                    <span class="lang-en">Light</span>
+                    <span class="lang-en">Claro</span>
                 </button>
             </div>
         </div>
@@ -1115,26 +1110,18 @@
     <!-- Hero Section -->
     <section class="hero">
         <div class="container hero-grid">
-            <div class="hero-info">
-                <h1 class="lang-zh">旋转表冠，让阅读<span>自由翻篇</span></h1>
-                <h1 class="lang-en">Turn pages, <span>with the Digital Crown</span></h1>
-                
-                <p class="hero-tagline lang-zh">PagePilot - 用手表翻页的阅读器</p>
-                <p class="hero-tagline lang-en">PagePilot - Turn pages with your Apple Watch</p>
-                
-                <p class="hero-desc lang-zh">
-                    PagePilot 专为 iPhone/iPad 打造。躺着把手机架在床边、在健身房边运动边阅读，或在高铁小桌板上安静看书，都能用 Apple Watch 轻轻一按或旋转表冠来遥控翻页。
-                </p>
+            <div class="hero-info"></h1>
+                <h1 class="lang-en">Pase páginas desde su Apple Watch.</h1>
+                <p class="hero-tagline lang-en">Pase páginas desde su Apple Watch.</p>
                 <p class="hero-desc lang-en">
-                    PagePilot is a book reader built for iPhone & iPad. Read in bed with your phone on a stand, keep reading at the gym, or settle in on a high-speed train and turn pages from your Apple Watch.
+                    PagePilot es un lector de libros diseñado para iPhone e iPad. Lea en la cama con el teléfono en un soporte, siga leyendo en el gimnasio o acomódese en un tren de alta velocidad y pase las páginas desde su Apple Watch.
                 </p>
                 
                 <a href="https://apps.apple.com/app/pagepilot/id6760964443" class="btn-download" target="_blank" rel="noopener noreferrer">
                     <svg viewBox="0 0 24 24">
                         <path d="M18.71 19.5C17.88 20.74 17 21.95 15.66 21.97C14.32 22 13.89 21.18 12.37 21.18C10.84 21.18 10.37 21.95 9.1 22C7.79 22.05 6.8 20.68 5.96 19.48C4.25 17 2.94 12.45 4.7 9.39C5.57 7.87 7.13 6.91 8.82 6.88C10.1 6.86 11.32 7.75 12.11 7.75C12.89 7.75 14.37 6.68 15.92 6.84C16.57 6.87 18.39 7.1 19.56 8.82C19.47 8.88 17.39 10.1 17.41 12.63C17.44 15.65 20.06 16.66 20.1 16.67C20.08 16.74 19.67 18.11 18.71 19.5M15.97 4.17C16.63 3.37 17.07 2.28 16.95 1C15.85 1.04 14.51 1.73 13.73 2.64C13.07 3.41 12.49 4.52 12.64 5.78C13.87 5.87 15.12 5.17 15.97 4.17Z"/>
                     </svg>
-                    <span class="lang-zh">在 App Store 下载</span>
-                    <span class="lang-en">Download on App Store</span>
+                    <span class="lang-en">Descargar en el App Store</span>
                 </a>
 
             </div>
@@ -1146,69 +1133,47 @@
                     <div class="phone-notch"></div>
                     <div class="phone-screen">
                         <div class="phone-book-header">
-                            <span class="lang-zh">《小王子》 第一章</span>
-                            <span class="lang-en">"The Little Prince" - Ch 1</span>
+                            <span class="lang-en">«El Principito» - Cap. 1</span>
                         </div>
                         
                         <div class="phone-book-content">
                             <!-- Page 1 (Active) -->
                             <div class="book-page active" id="page-1">
-                                <h3 class="lang-zh">1. 彻底解放双手</h3>
-                                <h3 class="lang-en">1. Completely Hands-Free</h3>
-                                <p class="lang-zh">
-                                    我们总是在各种不方便伸手点屏幕的场景下看书：躺在床上把手机架在一旁、健身房跑步或骑车时保持节奏，或者坐在高铁上把手机放在小桌板上。
+                                <h3 class="lang-en">1. 100 % manos libres</h3>
+                                <p class="lang-en">
+                                    A menudo leemos cuando estirar el brazo hasta la pantalla rompe el momento: acostados en la cama con el teléfono en un soporte, manteniendo el ritmo en el gimnasio o leyendo desde la bandeja del asiento en un tren de alta velocidad.
+                                </p>
                                 </p>
                                 <p class="lang-en">
-                                    We often read when reaching for the screen breaks the moment: lying in bed with the phone on a stand, staying in rhythm at the gym, or reading from a tray table on a high-speed train.
-                                </p>
-                                <p class="lang-zh">
-                                    <b>尝试点击右侧的 Apple Watch 按钮来翻页！</b>
-                                </p>
-                                <p class="lang-en">
-                                    <b>Try clicking the Digital Crown on the Apple Watch mockup to flip this page!</b>
+                                    <b>¡Pruebe a hacer clic en la Digital Crown de la maqueta del Apple Watch para pasar esta página!</b>
                                 </p>
                             </div>
                             
                             <!-- Page 2 -->
                             <div class="book-page" id="page-2">
-                                <h3 class="lang-zh">2. 极致纯净阅读</h3>
-                                <h3 class="lang-en">2. Clean & Pure Reading</h3>
-                                <p class="lang-zh">
-                                    PagePilot 支持 EPUB、PDF、有声书和 CBZ 漫画等多种格式。我们追求简洁的界面设计，提供自定义字体、行高、背景色，保证沉浸式体验。
+                                <h3 class="lang-en">2. Lectura limpia y pura</h3>
+                                <p class="lang-en">
+                                    PagePilot es compatible con EPUB, PDF, cómics CBZ y audiolibros. Nos centramos en una interfaz de lectura sin distracciones, con fuentes, interlineado y colores personalizables para que su lectura sea inmersiva.
                                 </p>
                                 <p class="lang-en">
-                                    PagePilot supports EPUB, PDF, CBZ comics, and Audiobooks. We focus on distraction-free reader UI, customizable fonts, leading, and colors to make your reading immersive.
-                                </p>
-                                <p class="lang-zh">
-                                    内置 WiFi 传书和设备间传书，只需局域网电脑拖拽，即可极速导入书籍。
-                                </p>
-                                <p class="lang-en">
-                                    Built-in WiFi Transfer and Device Transfer allow dragging books from a computer browser directly into your phone.
+                                    La transferencia Wi-Fi y la transferencia entre dispositivos integradas permiten arrastrar libros desde el navegador de un ordenador directamente a su teléfono.
                                 </p>
                             </div>
 
                             <!-- Page 3 -->
                             <div class="book-page" id="page-3">
-                                <h3 class="lang-zh">3. 数据本地与 Pro 统计</h3>
-                                <h3 class="lang-en">3. Local Data & Stats</h3>
-                                <p class="lang-zh">
-                                    我们不建立云端服务器，所有书籍与阅读统计数据 100% 存储于您的本地设备，最大化保障隐私。
+                                <h3 class="lang-en">3. Datos y estadísticas locales</h3>
+                                <p class="lang-en">
+                                    No se utilizan servidores en la nube. Todos sus libros importados y sus estadísticas de lectura se almacenan 100 % localmente en su propio dispositivo para una privacidad máxima.
                                 </p>
                                 <p class="lang-en">
-                                    No cloud servers are used. All your imported books and reading stats are stored 100% locally on your own device for maximum privacy.
-                                </p>
-                                <p class="lang-zh">
-                                    升级 Pro 版可以解锁周、月、年阅读时长趋势统计，以及连续阅读天数（Streak）记录，让习惯养成可视化。
-                                </p>
-                                <p class="lang-en">
-                                    Upgrade to Pro to unlock weekly, monthly, and yearly reading trend stats, and keep your reading streak alive.
+                                    Actualice a Pro para desbloquear las estadísticas de tendencias de lectura semanales, mensuales y anuales, y mantenga viva su racha de lectura.
                                 </p>
                             </div>
                         </div>
                         
                         <div class="phone-book-footer">
-                            <span class="lang-zh">进度 45%</span>
-                            <span class="lang-en">Progress 45%</span>
+                            <span class="lang-en">Progreso 45 %</span>
                             <span class="page-indicator"><span id="currPageNum">1</span> / 3</span>
                         </div>
                     </div>
@@ -1230,14 +1195,12 @@
                         </div>
                         
                         <div>
-                            <div class="watch-text lang-zh">点击翻页</div>
-                            <div class="watch-text lang-en">TAP FLIP</div>
+                            <div class="watch-text lang-en">TOCA PARA PASAR</div>
                         </div>
                     </div>
                     
                     <div class="click-prompt">
-                        <span class="lang-zh">👉 点我翻页</span>
-                        <span class="lang-en">👉 Click Me</span>
+                        <span class="lang-en">👉 Toque aquí</span>
                     </div>
                     <div class="watch-strap-bottom"></div>
                 </div>
@@ -1249,10 +1212,8 @@
     <section class="features" id="features">
         <div class="container">
             <div class="section-title">
-                <h2 class="lang-zh">精心打造的核心功能</h2>
-                <h2 class="lang-en">Core Features Carefully Crafted</h2>
-                <p class="lang-zh">一切功能的设计，都旨在给您更纯粹、顺畅的电子书阅读体验。</p>
-                <p class="lang-en">Every single feature is designed to bring you the purest, smoothest reading experience.</p>
+                <h2 class="lang-en">Funciones principales cuidadosamente diseñadas</h2>
+                <p class="lang-en">Cada función está diseñada para ofrecerle la experiencia de lectura más pura y fluida.</p>
             </div>
             
             <div class="features-grid">
@@ -1264,10 +1225,8 @@
                             <path d="M17 5H7c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm-5 11c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zM8 1h8v3H8V1zm0 19h8v3H8v-3z"/>
                         </svg>
                     </div>
-                    <h3 class="lang-zh">Watch 遥控翻页</h3>
-                    <h3 class="lang-en">Watch Remote Page-Turn</h3>
-                    <p class="lang-zh">支持转动数码表冠（Digital Crown）或点击表盘按钮遥控翻页。即使手机离手 5 米开外，也能从容操作，阅读自由度瞬间飙升。</p>
-                    <p class="lang-en">Supports rotating the Digital Crown or tapping the watch screen button to turn pages. Control your reading even if your phone is 5 meters away.</p>
+                    <h3 class="lang-en">Pasar páginas a distancia con el Watch</h3>
+                    <p class="lang-en">Permite girar la Digital Crown o tocar el botón de la pantalla del reloj para pasar páginas. Controle su lectura incluso si el teléfono está a 5 metros.</p>
                 </div>
                 
                 <!-- Feature 2 -->
@@ -1278,10 +1237,8 @@
                             <path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0-2-.9-2-2V4c0-1.1-.9-2-2-2zm0 14H8V4h12v12z"/>
                         </svg>
                     </div>
-                    <h3 class="lang-zh">主流格式全支持</h3>
-                    <h3 class="lang-en">Multi-format Ebook Support</h3>
-                    <p class="lang-zh">兼容无版权保护的 EPUB、PDF、CBZ 格式漫画及有声书（Audiobooks），无需多款 App 切换，一站式管理整个电子书库。</p>
-                    <p class="lang-en">Full compatibility with EPUB, PDF, CBZ comics, and Audiobooks. Manage your unified library in one single application.</p>
+                    <h3 class="lang-en">Compatibilidad con varios formatos</h3>
+                    <p class="lang-en">Compatibilidad completa con EPUB, PDF, cómics CBZ y audiolibros. Gestione su biblioteca unificada en una sola aplicación.</p>
                 </div>
                 
                 <!-- Feature 3 -->
@@ -1292,10 +1249,8 @@
                             <path d="M12.01 21.49L23.64 7c-.45-.34-4.93-4-11.64-4C5.28 3 .81 6.66.36 7l11.63 14.49.01.01.01-.01zM3.53 9.51c.3-.23 3.56-2.9 8.47-2.9s8.17 2.67 8.47 2.9L12 18.01 3.53 9.51z"/>
                         </svg>
                     </div>
-                    <h3 class="lang-zh">极速局域网 WiFi 传书</h3>
-                    <h3 class="lang-en">Lightning WiFi Transfer</h3>
-                    <p class="lang-zh">无需任何数据线或第三方云服务。只需在同一 Wi-Fi 下，通过电脑浏览器访问手机端地址，拖拽文件即可秒速导入书籍。</p>
-                    <p class="lang-en">No cables or third-party cloud tools. Visit the provided address on your PC's browser to drag and drop files directly into your library.</p>
+                    <h3 class="lang-en">Transferencia Wi-Fi ultrarrápida</h3>
+                    <p class="lang-en">Sin cables ni herramientas de nube de terceros. Visite la dirección indicada en el navegador de su PC y arrastre los archivos directamente a su biblioteca.</p>
                 </div>
 
                 <!-- Feature 4 -->
@@ -1306,10 +1261,8 @@
                             <path d="M19 1H9c-1.1 0-2 .9-2 2v3h2V4h10v16H9v-2H7v3c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V3c0-1.1-.9-2-2-2zM5 7H1v10h4v3l5-4-5-4v3z"/>
                         </svg>
                     </div>
-                    <h3 class="lang-zh">设备间互传书</h3>
-                    <h3 class="lang-en">Device-to-Device Transfer</h3>
-                    <p class="lang-zh">支持 iPhone 和 iPad 在局域网下通过 Bonjour 服务自动发现对方，一键即可把图书发送到另一台设备，无需电脑中转。</p>
-                    <p class="lang-en">Discover near-by devices via Bonjour. Effortlessly send files between your iPhone and iPad on the local network without PC relays.</p>
+                    <h3 class="lang-en">Transferencia entre dispositivos</h3>
+                    <p class="lang-en">Descubra los dispositivos cercanos mediante Bonjour. Envíe archivos sin esfuerzo entre su iPhone y su iPad en la red local, sin intermediarios en el PC.</p>
                 </div>
                 
                 <!-- Feature 5 -->
@@ -1320,10 +1273,8 @@
                             <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/>
                         </svg>
                     </div>
-                    <h3 class="lang-zh">本地阅读统计</h3>
-                    <h3 class="lang-en">Local Reading Insights</h3>
-                    <p class="lang-zh">内置周、月、年阅读时长数据和连续阅读天数（Streak）记录。100% 存储于本地数据库，绝不上传，充分保障您的隐私。</p>
-                    <p class="lang-en">Analyze weekly, monthly, and yearly reading durations. Features a custom reading streak tracker. Stored locally with 0 server uploads.</p>
+                    <h3 class="lang-en">Análisis de lectura local</h3>
+                    <p class="lang-en">Analice la duración de lectura semanal, mensual y anual. Incluye un rastreador de racha de lectura personalizado. Todo se almacena localmente con 0 cargas al servidor.</p>
                 </div>
 
                 <!-- Feature 6 -->
@@ -1334,10 +1285,8 @@
                             <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
                         </svg>
                     </div>
-                    <h3 class="lang-zh">系统级语音朗读 (TTS)</h3>
-                    <h3 class="lang-en">System Text-to-Speech</h3>
-                    <p class="lang-zh">支持 iOS 系统全语言的发音引擎，可自由调节朗读速度与音调。做家务、闭目养神、通勤时亦可开启听书模式。</p>
-                    <p class="lang-en">Unlock complete system voices. Support customizable pronunciation rates and pitches so you can listen to books on the go.</p>
+                    <h3 class="lang-en">Texto a voz del sistema</h3>
+                    <p class="lang-en">Desbloquee las voces completas del sistema. Admite velocidades y tonos de pronunciación personalizables para que pueda escuchar libros en cualquier lugar.</p>
                 </div>
             </div>
         </div>
@@ -1347,38 +1296,30 @@
     <section class="how-it-works">
         <div class="container">
             <div class="section-title">
-                <h2 class="lang-zh">三步开启双手自由</h2>
-                <h2 class="lang-en">Get Started In 3 Easy Steps</h2>
-                <p class="lang-zh">配置极其简单，一次设置，畅享轻松看书。</p>
-                <p class="lang-en">Zero configuration required. Configure once, read hands-free forever.</p>
+                <h2 class="lang-en">Empiece en 3 sencillos pasos</h2>
+                <p class="lang-en">Sin necesidad de configuración. Configure una vez y lea sin manos para siempre.</p>
             </div>
             
             <div class="steps-container">
                 <!-- Step 1 -->
                 <div class="step-item">
                     <div class="step-number">1</div>
-                    <h3 class="lang-zh">极速导入电子书</h3>
-                    <h3 class="lang-en">Import Your Books</h3>
-                    <p class="lang-zh">通过局域网 WiFi 传书或 iPhone/iPad 隔空互传，将您的 EPUB、PDF 书籍导入书架。</p>
-                    <p class="lang-en">Import your EPUB or PDF books using WiFi Transfer or direct device-to-device sharing.</p>
+                    <h3 class="lang-en">Importe sus libros</h3>
+                    <p class="lang-en">Importe sus libros EPUB o PDF mediante la transferencia Wi-Fi o el intercambio directo entre dispositivos.</p>
                 </div>
                 
                 <!-- Step 2 -->
                 <div class="step-item">
                     <div class="step-number">2</div>
-                    <h3 class="lang-zh">打开手表端应用</h3>
-                    <h3 class="lang-en">Open Companion Watch App</h3>
-                    <p class="lang-zh">在 Apple Watch 上启动 PagePilot。手表与手机端会通过蓝牙/局域网自动建立安全连接。</p>
-                    <p class="lang-en">Launch PagePilot on your Apple Watch. Watch and phone connect automatically over Bluetooth.</p>
+                    <h3 class="lang-en">Abra la app del Watch</h3>
+                    <p class="lang-en">Abra PagePilot en su Apple Watch. El reloj y el teléfono se conectan automáticamente mediante Bluetooth.</p>
                 </div>
                 
                 <!-- Step 3 -->
                 <div class="step-item">
                     <div class="step-number">3</div>
-                    <h3 class="lang-zh">舒适阅读与翻页</h3>
-                    <h3 class="lang-en">Read and Turn Pages</h3>
-                    <p class="lang-zh">点击表盘的翻页按钮，或转动表冠，即可随心遥控手机/平板上的阅读页面。</p>
-                    <p class="lang-en">Tap the watch control button or turn the Digital Crown to flip pages on your mobile device.</p>
+                    <h3 class="lang-en">Lea y pase páginas</h3>
+                    <p class="lang-en">Toque el botón de control del reloj o gire la Digital Crown para pasar las páginas en su dispositivo móvil.</p>
                 </div>
             </div>
         </div>
@@ -1388,100 +1329,81 @@
     <section class="pricing" id="pricing">
         <div class="container">
             <div class="section-title">
-                <h2 class="lang-zh">选择适合您的版本</h2>
-                <h2 class="lang-en">Choose Your Perfect Edition</h2>
-                <p class="lang-zh">我们坚守体验，核心翻页功能永远免费。升级 Pro 将解锁更多高级习惯管理与大屏支持。</p>
-                <p class="lang-en">Basic Watch page-turning is free forever. Pro unlocks advanced insights and tablet page-turning.</p>
+                <h2 class="lang-en">Elija su edición perfecta</h2>
+                <p class="lang-en">La función básica de pasar páginas con el Watch es gratuita para siempre. Pro desbloquea análisis avanzados y el paso de páginas en la tableta.</p>
             </div>
             
             <div class="pricing-card">
                 <div class="pricing-badge">
-                    <span class="lang-zh">首选推荐</span>
-                    <span class="lang-en">BEST VALUE</span>
+                    <span class="lang-en">MEJOR VALOR</span>
                 </div>
                 
                 <div class="pricing-header">
                     <h3>PagePilot Pro</h3>
                     <div class="price-box">
-                        <span class="price-currency lang-zh">¥</span>
                         <span class="price-currency lang-en">$</span>
-                        <span class="price-amount lang-zh">19.9</span>
                         <span class="price-amount lang-en">2.99</span>
-                        <span class="price-duration lang-zh">/ 年</span>
-                        <span class="price-duration lang-en">/ Year</span>
+                        <span class="price-duration lang-en">/ año</span>
                     </div>
-                    <p class="lang-zh">同时支持年度、终身买断与灵活月度订阅方案。</p>
-                    <p class="lang-en">Annual, lifetime, and flexible monthly plans are available.</p>
+                    <p class="lang-en">Hay planes anuales, de por vida y mensuales flexibles disponibles.</p>
                 </div>
                 
                 <div class="comparison-grid">
                     <!-- Column 1: Free Tier -->
                     <div class="comparison-column">
-                        <h4 class="lang-zh">免费版免费体验</h4>
-                        <h4 class="lang-en">Free Edition</h4>
+                        <h4 class="lang-en">Edición gratuita</h4>
                         <ul class="comparison-list">
                             <li>
                                 <span class="list-badge free">Free</span>
-                                <span class="lang-zh">Watch 基础上一页/下一页</span>
-                                <span class="lang-en">Basic Watch Page Turning</span>
+                                <span class="lang-en">Pasar páginas básico con el Watch</span>
                             </li>
                             <li>
                                 <span class="list-badge free">Free</span>
-                                <span class="lang-zh">WiFi 局域网拖拽传书</span>
-                                <span class="lang-en">WiFi Local Drag &amp; Drop</span>
+                                <span class="lang-en">Arrastrar y soltar local por Wi-Fi</span>
                             </li>
                             <li>
                                 <span class="list-badge free">Free</span>
-                                <span class="lang-zh">iPhone-iPad 设备互传</span>
-                                <span class="lang-en">iPhone to iPad transfer</span>
+                                <span class="lang-en">Transferencia de iPhone a iPad</span>
                             </li>
                             <li>
                                 <span class="list-badge free">Free</span>
-                                <span class="lang-zh">支持导入最多 10 本书籍</span>
-                                <span class="lang-en">Up to 10 books in shelf</span>
+                                <span class="lang-en">Hasta 10 libros en la estantería</span>
                             </li>
                             <li>
                                 <span class="list-badge free">Free</span>
-                                <span class="lang-zh">每日阅读时长基础统计</span>
-                                <span class="lang-en">Basic daily reading stats</span>
+                                <span class="lang-en">Estadísticas básicas de lectura diarias</span>
                             </li>
                         </ul>
                     </div>
                     
                     <!-- Column 2: Pro Tier -->
                     <div class="comparison-column">
-                        <h4 class="lang-zh">Pro 版尊享权益</h4>
-                        <h4 class="lang-en">Pro Benefits</h4>
+                        <h4 class="lang-en">Ventajas de Pro</h4>
                         <ul class="comparison-list">
                             <li>
                                 <span class="list-badge pro">Pro</span>
-                                <span class="pricing-list-icon">✓</span>
-                                <span class="lang-zh"><b>无限量图书导入</b>（不设上限）</span>
-                                <span class="lang-en"><b>Unlimited book imports</b></span>
+                                <span class="pricing-list-icon">✓</span>（不设上限）</span>
+                                <span class="lang-en"><b>Importación de libros sin límite</b></span>
                             </li>
                             <li>
                                 <span class="list-badge pro">Pro</span>
-                                <span class="pricing-list-icon">✓</span>
-                                <span class="lang-zh"><b>周 / 月 / 年阅读统计汇总</b></span>
-                                <span class="lang-en"><b>Weekly/Monthly/Yearly stats</b></span>
+                                <span class="pricing-list-icon">✓</span></span>
+                                <span class="lang-en"><b>Estadísticas semanales, mensuales y anuales</b></span>
                             </li>
                             <li>
                                 <span class="list-badge pro">Pro</span>
-                                <span class="pricing-list-icon">✓</span>
-                                <span class="lang-zh"><b>连续阅读天数 (Streak) 追踪</b></span>
-                                <span class="lang-en"><b>Reading streak tracking</b></span>
+                                <span class="pricing-list-icon">✓</span></span>
+                                <span class="lang-en"><b>Seguimiento de la racha de lectura</b></span>
                             </li>
                             <li>
                                 <span class="list-badge pro">Pro</span>
-                                <span class="pricing-list-icon">✓</span>
-                                <span class="lang-zh"><b>iPad 原生界面及 Apple Watch 翻页</b></span>
-                                <span class="lang-en"><b>iPad Watch remote support</b></span>
+                                <span class="pricing-list-icon">✓</span></span>
+                                <span class="lang-en"><b>Control remoto con el Watch para iPad</b></span>
                             </li>
                             <li>
                                 <span class="list-badge pro">Pro</span>
-                                <span class="pricing-list-icon">✓</span>
-                                <span class="lang-zh"><b>Pro 用户优先反馈通道</b></span>
-                                <span class="lang-en"><b>Priority support channels</b></span>
+                                <span class="pricing-list-icon">✓</span></span>
+                                <span class="lang-en"><b>Canales de soporte prioritarios</b></span>
                             </li>
                         </ul>
                     </div>
@@ -1493,17 +1415,14 @@
     <!-- Download Banner -->
     <section class="download-banner">
         <div class="container">
-            <h2 class="lang-zh">立即下载 PagePilot</h2>
-            <h2 class="lang-en">Download PagePilot Now</h2>
-            <p class="lang-zh">躺着看书、健身房看书、高铁上看书，都能少一次伸手点屏幕。</p>
-            <p class="lang-en">Read in bed, at the gym, or on a high-speed train with fewer taps on the screen.</p>
+            <h2 class="lang-en">Descargar en el App Store</h2>
+            <p class="lang-en">Lea en la cama, en el gimnasio o en un tren de alta velocidad con menos toques en la pantalla.</p>
             
             <a href="https://apps.apple.com/app/pagepilot/id6760964443" class="btn-download" target="_blank" rel="noopener noreferrer">
                 <svg viewBox="0 0 24 24">
                     <path d="M18.71 19.5C17.88 20.74 17 21.95 15.66 21.97C14.32 22 13.89 21.18 12.37 21.18C10.84 21.18 10.37 21.95 9.1 22C7.79 22.05 6.8 20.68 5.96 19.48C4.25 17 2.94 12.45 4.7 9.39C5.57 7.87 7.13 6.91 8.82 6.88C10.1 6.86 11.32 7.75 12.11 7.75C12.89 7.75 14.37 6.68 15.92 6.84C16.57 6.87 18.39 7.1 19.56 8.82C19.47 8.88 17.39 10.1 17.41 12.63C17.44 15.65 20.06 16.66 20.1 16.67C20.08 16.74 19.67 18.11 18.71 19.5M15.97 4.17C16.63 3.37 17.07 2.28 16.95 1C15.85 1.04 14.51 1.73 13.73 2.64C13.07 3.41 12.49 4.52 12.64 5.78C13.87 5.87 15.12 5.17 15.97 4.17Z"/>
                 </svg>
-                <span class="lang-zh">在 App Store 下载</span>
-                <span class="lang-en">Download on App Store</span>
+                <span class="lang-en">Descargar en el App Store</span>
             </a>
 
 
@@ -1516,11 +1435,8 @@
             <p>&copy; 2026 PagePilot. All rights reserved. <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">浙ICP备2026041359号-1A</a></p>
             
             <div class="footer-links">
-                <a href="privacy.html" target="_blank" class="lang-zh">隐私政策</a>
-                <a href="privacy.html" target="_blank" class="lang-en">Privacy Policy</a>
-                
-                <a href="terms.html" target="_blank" class="lang-zh">服务条款</a>
-                <a href="terms.html" target="_blank" class="lang-en">Terms of Service</a>
+                <a href="privacy.html" target="_blank" class="lang-en">Política de privacidad</a>
+                <a href="terms.html" target="_blank" class="lang-en">Términos de uso</a>
                 
                 <a href="mailto:return_panyang@163.com">return_panyang@163.com</a>
             </div>
@@ -1658,11 +1574,9 @@
                 <path d="M68 28 L 80 20 L 84 32" />
             </svg>
         </div>
-        <div class="wechat-text">
-            <p class="lang-zh">点击右上角菜单 <span>•••</span></p>
-            <p class="lang-zh">选择 <strong>“在浏览器中打开”</strong> 即可正常跳转下载</p>
-            <p class="lang-en">Click the top-right menu <span>•••</span></p>
-            <p class="lang-en">and select <strong>“Open in Browser”</strong> to download</p>
+        <div class="wechat-text"></p> 即可正常跳转下载</p>
+            <p class="lang-en">Pulse el menú de la parte superior derecha <span>•••</span></p>
+            <p class="lang-en">y seleccione <strong>«Abrir en el navegador»</strong> para descargar</p>
         </div>
     </div>
 </body>
