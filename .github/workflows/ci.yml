@@ -30,6 +30,9 @@ jobs:
           brew install xcodegen
           make spm
 
+      - name: Validate localization
+        run: python3 scripts/validate-localization.py
+
       - name: Run test suite
         run: |
           xcodebuild test \

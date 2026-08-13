@@ -380,6 +380,9 @@ struct MeView: View {
 enum AppLanguage: String, CaseIterable, Identifiable {
     case english = "en"
     case simplifiedChinese = "zh-Hans"
+    case spanish = "es"
+    case french = "fr"
+    case german = "de"
 
     var id: String { rawValue }
 
@@ -389,6 +392,12 @@ enum AppLanguage: String, CaseIterable, Identifiable {
             return NSLocalizedString("settings_language_english", comment: "")
         case .simplifiedChinese:
             return NSLocalizedString("settings_language_chinese", comment: "")
+        case .spanish:
+            return NSLocalizedString("settings_language_spanish", comment: "")
+        case .french:
+            return NSLocalizedString("settings_language_french", comment: "")
+        case .german:
+            return NSLocalizedString("settings_language_german", comment: "")
         }
     }
 }
@@ -438,7 +447,20 @@ enum AppAppearancePreferences {
                let language = AppLanguage(rawValue: raw) {
                 return language
             }
-            return Locale.preferredLanguages.first?.hasPrefix("zh") == true ? .simplifiedChinese : .english
+            let preferredLanguage = Locale.preferredLanguages.first ?? ""
+            if preferredLanguage.hasPrefix("zh") {
+                return .simplifiedChinese
+            }
+            if preferredLanguage.hasPrefix("es") {
+                return .spanish
+            }
+            if preferredLanguage.hasPrefix("fr") {
+                return .french
+            }
+            if preferredLanguage.hasPrefix("de") {
+                return .german
+            }
+            return .english
         }
         set {
             UserDefaults.standard.set(newValue.rawValue, forKey: Keys.language)

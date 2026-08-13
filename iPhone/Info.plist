@@ -287,6 +287,9 @@
 	<array>
 		<string>zh-Hans</string>
 		<string>en</string>
+		<string>es</string>
+		<string>fr</string>
+		<string>de</string>
 	</array>
 	<key>CFBundleName</key>
 	<string>$(PRODUCT_NAME)</string>

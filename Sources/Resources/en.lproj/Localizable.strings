@@ -669,6 +669,10 @@
 "settings_language" = "Language";
 "settings_language_english" = "English";
 "settings_language_chinese" = "Simplified Chinese";
+"settings_language_spanish" = "Español";
+"settings_language_french" = "Français";
+"settings_language_german" = "Deutsch";
+"stats_minutes_unit" = "min";
 "settings_theme" = "Theme";
 "settings_theme_system" = "System";
 "settings_theme_light" = "Light";

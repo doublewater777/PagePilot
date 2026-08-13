@@ -1,0 +1,908 @@
+/* MARK: App */
+
+/* Library tab title */
+"library_title" = "Biblioteca";
+"home_tab" = "Hogar";
+"bookshelf_tab" = "Estante para libros";
+"catalogs_tab" = "Canales OPDS";
+"about_tab" = "Acerca de";
+
+/* Buttons */
+"ok_button" = "DE ACUERDO";
+"cancel_button" = "Cancelar";
+"confirm_button" = "Confirmar";
+"add_button" = "Agregar";
+"edit_button" = "Editar";
+"remove_button" = "Eliminar";
+"metadata_button" = "Información";
+"filter_button" = "Filtrar";
+"close_button" = "Cerca";
+
+/* Alerts */
+"success_title" = "Éxito";
+
+/* Onboarding */
+"onboarding_later_button" = "Más tarde";
+"onboarding_continue_button" = "Continuar";
+"onboarding_start_button" = "Empezar a leer";
+"onboarding_open_sample_button" = "Abrir libro de muestra";
+"onboarding_welcome_title" = "Bienvenido a PagePilot";
+"onboarding_welcome_message" = "Un lugar tranquilo para tus libros, diseñado para leer en iPhone.";
+"onboarding_import_title" = "Trae tu biblioteca";
+"onboarding_import_message" = "Agregue archivos EPUB, PDF, CBZ, TXT, Markdown y audiolibros desde Archivos, uso compartido o un enlace directo.";
+"onboarding_watch_title" = "Pasa páginas desde tu muñeca";
+"onboarding_watch_message" = "Lea en iPhone y use Apple Watch como un simple control remoto para pasar páginas.";
+"onboarding_close_accessibility" = "Cerrar incorporación";
+"onboarding_activation_title" = "Pasa páginas desde tu muñeca";
+"onboarding_activation_subtitle" = "Trae un libro que quieras leer y luego pasa la primera página con el Apple Watch.";
+"onboarding_import_one_book" = "Importar un libro";
+"onboarding_import_source_title" = "Elija una fuente de importación";
+"onboarding_import_source_files" = "Archivos";
+"onboarding_import_source_wifi" = "Transferencia Wi‑Fi";
+"onboarding_import_source_opds" = "Explorar canales OPDS";
+"onboarding_use_sample" = "Usar libro de muestra";
+"onboarding_supported_formats" = "Admite EPUB, PDF, CBZ, TXT, Markdown y audiolibros";
+"onboarding_sample_error" = "No se pudo abrir el muestrario. Por favor inténtalo de nuevo.";
+"onboarding_target_title" = "¿Dónde quieres leer?";
+"onboarding_target_subtitle" = "Apple Watch envía comandos de paso de página al lector que elijas.";
+"onboarding_target_this_iphone" = "Este iPhone";
+"onboarding_target_iphone_detail" = "Gratis: prueba Ver pasar página ahora";
+"onboarding_target_nearby_ipad" = "iPad cercano";
+"onboarding_target_ipad_detail" = "Controla el iPad Reader a través de tu iPhone";
+"onboarding_skip_watch" = "Ahora no";
+"onboarding_ipad_handoff_title" = "Continuar en tu iPad";
+"onboarding_ipad_handoff_subtitle" = "Su iPhone transmite la página de Apple Watch a un iPad cercano.";
+"onboarding_ipad_handoff_step1" = "Abre PagePilot en tu iPad (el mismo Wi‑Fi que este iPhone)";
+"onboarding_ipad_handoff_step2" = "Importa o recibe el libro que deseas leer";
+"onboarding_ipad_handoff_step3" = "Abra el libro en iPad: Pro inicia Watch Relay automáticamente";
+"onboarding_handoff_done" = "Hecho";
+"paywall_ipad_watch_title" = "Leer en iPad. Pasa páginas con Apple Watch.";
+"paywall_ipad_watch_subtitle" = "Desbloquee el relé del iPhone para que los comandos del reloj lleguen a un lector de iPad cercano.";
+"onboarding_watch_skip" = "Ahora no";
+"onboarding_watch_try" = "Pruebe Ver página y pasar la página";
+"onboarding_watch_dismiss_accessibility" = "Dejar de mostrar la sugerencia para pasar página Ver";
+"onboarding_watch_unpaired_title" = "Apple Watch no encontrado";
+"onboarding_watch_unpaired_detail" = "Después de emparejar un reloj, continúa en cualquier momento desde Configuración del reloj.";
+"onboarding_watch_install_title" = "Instalar PagePilot en Apple Watch";
+"onboarding_watch_install_detail" = "Instálalo desde la aplicación iPhone Watch y luego abre PagePilot en tu Watch.";
+"onboarding_watch_open_title" = "Abra PagePilot en su reloj";
+"onboarding_watch_open_detail" = "Mantenga el lector abierto y luego envíe una página desde su reloj.";
+"onboarding_watch_ready_title" = "Pasa una página desde tu muñeca";
+"onboarding_watch_ready_detail" = "Toque hacia adelante, hacia atrás o gire la corona y observe cómo cambia esta página.";
+"onboarding_watch_success" = "Conectado: listo para leer";
+"onboarding_ipad_reader_hint_title" = "¿Quieres controlar este iPad con Apple Watch?";
+"onboarding_ipad_reader_hint_detail" = "En el iPhone emparejado, configure el dispositivo de cambio de página en iPad. Mantenga ambos dispositivos en el mismo Wi‑Fi con un libro abierto aquí.";
+
+/* Caption for the app version in About screen */
+"app_version_caption" = "Versión de la aplicación:";
+/* Caption for the build version in About screen */
+"build_version_caption" = "Versión de compilación:";
+
+"error" = "Se produjo un error.";
+"error_cancelled" = "La operación fue cancelada.";
+"error_decoding" = "No se pudo decodificar el recurso.";
+"error_forbidden" = "No se le permite acceder a este recurso.";
+"error_io" = "Se produjo un error en el sistema de archivos.";
+"error_network" = "Se produjo un error de red.";
+"error_not_found" = "El recurso no fue encontrado.";
+"error_out_of_space" = "Tu almacenamiento está lleno. Libere espacio para continuar.";
+"error_read" = "No se pudo leer el recurso.";
+
+
+/* MARK: Library */
+
+/* Hint message when the library is empty */
+"library_empty_message" = "Agregue EPUB, PDF, cómics o audiolibros";
+
+/* Add book alert message */
+"library_add_book_title" = "Añade un libro a tu biblioteca";
+"library_add_book_from_device_button" = "Desde tu dispositivo";
+
+/* Alert when a publication is successfully imported */
+"library_import_success_message" = "Publicación agregada a la biblioteca.";
+/* Alert when a publication is successfully downloaded */
+"library_download_success_message" = "[%@] agregado a la biblioteca.";
+
+/* Import confirmation alert when the publication already exists in the library */
+"library_duplicate_alert_title" = "La publicación ya existe.";
+"library_duplicate_alert_message" = "¿Te gustaría agregarlo de todos modos?";
+
+/* Remove confirmation alert when the user deletes a publication */
+"library_delete_alert_title" = "¿Está seguro?";
+"library_delete_alert_message" = "Esto eliminará la publicación de su biblioteca.";
+
+/* Error message used when trying to import a publication that is not valid */
+"library_error_publicationIsNotValid" = "La publicación no es válida.";
+/* Error message used when trying to open a book whose file is not found */
+"library_error_bookNotFound" = "El archivo del libro no fue encontrado.";
+/* Error message used when a low-level error occured while importing a publication */
+"library_error_importFailed" = "No se pudo importar la publicación.";
+/* Error message used when a low-level error occured while opening a publication */
+"library_error_openFailed" = "No se pudo abrir la publicación.";
+/* Error message when the download of a publication failed */
+"library_error_downloadFailed" = "Descarga fallida";
+/* Error message when the deletion of a publication failed */
+"library_error_bookDeletionFailed" = "No se pudo eliminar la publicación.";
+/* Error message when the publication is still restricted. */
+"library_error_publicationIsRestricted" = "No tienes permiso para abrir esta publicación.";
+"library_error_bookLimitReached" = "La versión gratuita puede almacenar hasta libros %d. Actualice a Pro para obtener libros ilimitados.";
+
+/* Accessibility label for the library collection view */
+"library_a11y_label" = "Biblioteca";
+"library_book_limit_title" = "Biblioteca llena";
+"library_book_limit_message" = "La versión gratuita puede almacenar hasta libros %d. Actualice a Pro para obtener libros ilimitados.";
+"library_book_limit_upgrade" = "Actualízate a Pro";
+
+/* Accessibility hint for the publication collection cell */
+"library_publication_a11y_hint" = "Mantenga presionado para acceder a las opciones.";
+"library_select_books" = "Seleccionar libros";
+"library_view_mode_grid" = "Red";
+"library_view_mode_list" = "Lista";
+"library_view_mode_title" = "Modo de visualización";
+"library_sort_recent_read" = "Lectura reciente";
+"library_sort_title" = "Título";
+"library_sort_author" = "Autor";
+"library_sort_recent_added" = "Agregado recientemente";
+"library_sort_title_menu" = "Ordenar por";
+"library_search_placeholder" = "Buscar título o autor";
+"library_delete_selected_count" = "Eliminar libros seleccionados (%d)";
+"library_delete_books" = "Eliminar libros";
+"library_delete_confirm_title" = "Confirmar eliminación";
+"library_delete_confirm_message" = "¿Está seguro de que desea eliminar permanentemente los libros %d seleccionados de su biblioteca?";
+"library_delete_button" = "Borrar";
+"library_demo_book_title" = "Libro de demostración";
+"library_demo_book_message" = "\"%@\" es un libro de demostración simulado y no se puede abrir para leer.";
+"library_all_books" = "Todos los libros";
+
+
+/* MARK: Reader */
+
+/* Error message when adding a new bookmark failed */
+"reader_bookmark_failure_message" = "No se pudo agregar el marcador";
+/* Success message when adding a bookmark */
+"reader_bookmark_success_message" = "Marcador agregado";
+
+/* Error message when adding a new highlight failed */
+"reader_highlight_failure_message" = "No se pudo agregar resaltado";
+/* Success message when adding a highlight */
+"reader_highlight_success_message" = "Resaltado agregado";
+"reader_highlight_limit_title" = "Se alcanzó el límite de resaltado gratuito";
+"reader_highlight_limit_message" = "Has guardado los momentos destacados de %d. Actualice a Pro para obtener notas y momentos destacados ilimitados.";
+"reader_highlight_limit_upgrade" = "Actualízate a Pro";
+"reader_highlight_quota_warning" = "Quedan destacados gratuitos de %d";
+
+/* Error message when trying to read a publication with a unsupported format */
+"reader_error_formatNotSupported" = "Formato no compatible";
+"reader_error_schemeNotSupported" = "Esquema de recursos no admitidos";
+/* Error message when trying to read an EPUB that is invalid */
+"reader_error_epubNotValid" = "Archivo EPUB no válido";
+"reader_error_copyForbidden" = "Excediste la cantidad de caracteres permitidos para copiar.";
+"reader_error_search" = "No se pudo buscar esta publicación";
+"reader_error_tts" = "Se produjo un error al intentar leer en voz alta esta publicación.";
+"reader_error_tts_language_not_supported" = "El idioma seleccionado no es compatible con el motor TTS.";
+
+/* Accessibility label to go backward in the publication */
+"reader_backward_a11y_label" = "Capítulo anterior";
+/* Accessibility label to go forward in the publication */
+"reader_forward_a11y_label" = "Siguiente capítulo";
+
+/* Outline bookmark label when the position is available */
+"reader_outline_position_label" = "posición %d";
+/* Outline bookmark label when the progression is available */
+"reader_outline_progression_label" = "%.2f%% a través del capítulo";
+/* Outline tab name for Contents */
+"reader_outline_tab_contents" = "Contenido";
+/* Outline tab name for Bookmarks */
+"reader_outline_tab_bookmarks" = "Marcadores";
+/* Outline tab name for Pagelist */
+"reader_outline_tab_pagelist" = "Lista de páginas";
+/* Outline tab name for Landmarks */
+"reader_outline_tab_landmarks" = "Puntos de referencia";
+/* Outline tab name for Highlights */
+"reader_outline_tab_highlights" = "Reflejos";
+
+/* Title of the DRM management view */
+"reader_drm_management_title" = "Gestión DRM";
+/* Unlimited quantity for a given DRM consumable right */
+"reader_drm_unlimited_label" = "ilimitado";
+/* Title of the renew confirmation alert */
+"reader_drm_renew_title" = "Renovar licencia";
+/* Message of the renew confirmation alert */
+"reader_drm_renew_message" = "El proveedor recibirá su solicitud y la procesará.";
+/* Success message after renewing a publication */
+"reader_drm_renew_success_message" = "Publicación renovada con éxito.";
+/* Title of the return confirmation alert */
+"reader_drm_return_title" = "Licencia de devolución";
+/* Message of the return confirmation alert */
+"reader_drm_return_message" = "La devolución del préstamo le impedirá acceder a la publicación.";
+/* Success message after returning a publication */
+"reader_drm_return_success_message" = "La publicación se devolvió exitosamente.";
+
+
+/* MARK: LCP */
+"lcp_type" = "Readio LCP";
+
+/* Quantity of characters left to be copied */
+"lcp_characters_label" = "Caracteres %d";
+/* Quantity of pages left to be printed */
+"lcp_pages_label" = "Páginas %d";
+
+/* LCP errors */
+"lcp_error_missing_passphrase" = "La frase de contraseña es necesaria para abrir la publicación.";
+"lcp_error_internal" = "Se produjo un error interno crítico de LCP.";
+"lcp_error_invalid_license" = "La licencia LCP no es válida.";
+"lcp_error_invalid_operation" = "Esta acción no se puede realizar.";
+"lcp_error_container" = "No se pudo leer o escribir la licencia LCP.";
+"lcp_error_network" = "Se produjo un error de red.";
+"lcp_error_status_cancelled" = "Esta licencia fue cancelada el %@.";
+"lcp_error_status_returned" = "Esta licencia ha sido devuelta el %@.";
+"lcp_error_status_expired_start" = "Esta licencia comienza en %@.";
+"lcp_error_status_expired_end" = "Esta licencia expiró el %@.";
+"lcp_error_status_revoked" = "Esta licencia fue revocada por su proveedor en %1$@.\nFue registrada por el(los) dispositivo(s) %2$d";
+"lcp_error_renew_failed" = "Su publicación no se pudo renovar correctamente.";
+"lcp_error_invalid_renewal_period" = "Periodo de renovación incorrecto, tu publicación no pudo ser renovada.";
+"lcp_error_return_failed" = "Su publicación no pudo ser devuelta correctamente.";
+"lcp_error_already_returned_or_expired" = "Su publicación ya ha sido devuelta antes o ha caducado.";
+
+/* MARK: OPDS */
+
+/* Button to edit the OPDS catalog */
+"opds_edit_button" = "Editar catálogo";
+/* Button to expand a feed gallery */
+"opds_more_button" = "más >";
+"opds_more_button_a11y_label" = "ampliar feed";
+/* Title of the section displaying the feeds */
+"opds_add_feed" = "Agregar feed";
+/* Title of the OPDS feeds list page */
+"opds_my_feeds" = "Mis feeds";
+/* Title of the add feed alert */
+"opds_add_title" = "Ingrese el título del feed y la URL";
+/* Message when adding an invalid OPDS feed */
+"opds_add_failure_message" = "El feed no es válido, inténtalo de nuevo.";
+/* Label for the OPDS feed title field */
+"opds_feed_title_caption" = "Título del feed";
+/* Label for the OPDS feed URL field */
+"opds_feed_url_caption" = "URL del feed";
+/* Error message when the feed couldn't be loaded */
+"opds_failure_message" = "Algo salió mal.";
+/* Add OPDS Feed button label */
+"opds_add_button_a11y_label" = "Agregar fuente OPDS";
+"opds_show_detail_view_a11y_hint" = "toque para ver detalles";
+"opds_feed_header_a11y_hint" = "Encabezado del grupo de alimentación";
+
+/* Library additional */
+"library_import_local" = "Agregar libros";
+"library_wifi_transfer" = "Transferencia Wi‑Fi";
+/* OPDS additional */
+"opds_loading" = "Cargando...";
+"opds_load_error" = "No se pudo cargar el feed. Por favor inténtalo de nuevo.";
+"opds_load_error_detail" = "No se pudo cargar la fuente: %@";
+"opds_no_content" = "No hay contenido en este feed.";
+"opds_untitled" = "Intitulado";
+"opds_error_title_required" = "Título requerido";
+"opds_error_enter_title" = "Por favor introduce un título.";
+"opds_error_invalid_url" = "URL no válida";
+"opds_error_enter_valid_url" = "Por favor ingrese una URL válida.";
+"opds_no_acquisition_link" = "No se encontró ningún enlace de descarga para esta publicación.";
+"opds_download_done" = "Agregado a la estantería.";
+"opds_section_navigation" = "Catálogos";
+"opds_section_books" = "Libros";
+
+/* Reading stats */
+"stats_title" = "Estadísticas de lectura";
+"stats_tab_summary" = "Resumen";
+"stats_tab_day" = "Día";
+"stats_tab_week" = "Semana";
+"stats_tab_month" = "Mes";
+"stats_tab_year" = "Año";
+"stats_metric_time" = "tiempo de lectura";
+"stats_metric_days" = "Días activos";
+"stats_metric_sessions" = "Sesiones";
+"stats_metric_streak" = "Racha";
+"stats_metric_average" = "Promedio/día activo";
+"stats_metric_books" = "Libros";
+"stats_days_value" = "%d d";
+"stats_empty" = "Aún no hay datos de lectura.";
+"stats_pro_locked_title" = "Estadísticas profesionales";
+"stats_pro_locked_body" = "Las estadísticas del día permanecen disponibles para todos. Las vistas de resumen, semana, mes y año están reservadas para Pro.";
+"stats_upgrade_pro" = "Actualízate a Pro";
+"stats_subtitle" = "Una mirada más clara a su ritmo de lectura, rachas y actividad reciente.";
+"stats_metric_today" = "Hoy";
+"stats_metric_best_day" = "mejor dia";
+"stats_active" = "Activo";
+"stats_inactive" = "no hay tiempo";
+"stats_activity_title" = "Actividad de lectura";
+"stats_sessions_value" = "Sesiones %d";
+"stats_hours_minutes" = "%dh %dm";
+"stats_minutes" = "%dm";
+"stats_summary_all_time" = "Lectura de todos los tiempos";
+"stats_summary_today" = "Hoy";
+"stats_summary_week" = "Esta semana";
+"stats_summary_month" = "este mes";
+"stats_summary_year" = "este año";
+"stats_timeline_recent" = "Reciente";
+"stats_timeline_today" = "Hoy";
+"stats_timeline_week" = "Semana";
+"stats_timeline_month" = "Mes";
+"stats_timeline_year" = "Año";
+"stats_chart_goal_line" = "Objetivo diario";
+"stats_chart_goal_reached" = "¡Objetivo alcanzado!";
+"stats_book_ranking" = "Tabla de clasificación de lectura";
+"stats_unknown_book" = "Otro/Desconocido";
+"stats_chart_axis_time" = "Duración";
+"stats_nav_today" = "Hoy";
+"stats_chart_goal_line_val" = "Objetivo %d min";
+"stats_timeline_grouped_week" = "Semana %d";
+"stats_quick_return" = "Período actual";
+"stats_heatmap_active" = "Tiempo de lectura: %@";
+"stats_chart_average_label" = "Promedio: %@";
+"stats_week_group" = "Semana %d (%@)";
+"stats_rank_gold" = "Campeón";
+"stats_rank_silver" = "Subcampeón";
+"stats_rank_bronze" = "Tercer lugar";
+"stats_today_progress" = "El progreso de hoy";
+"stats_progress_done" = "Hecho";
+"stats_goal_remaining_message" = "%d Min restante para alcanzar la meta de hoy";
+"stats_goal_complete_message" = "El objetivo de hoy está completo. Bien hecho.";
+"stats_streak_sentence" = "Racha de lecturas de días %d";
+"stats_recent_7_days" = "Últimos 7 días";
+"stats_recent_7_days_subtitle" = "Una mirada tranquila a tu ritmo reciente.";
+"stats_total_reading" = "Todos los tiempos";
+"stats_30_day_trend" = "Últimos 30 días";
+"stats_30_day_trend_subtitle" = "Una visión más amplia de tu ritmo de lectura";
+"stats_pro_depth_title" = "Profundidad profesional";
+"stats_pro_deeper_title" = "Desbloquear una revisión de lectura más profunda";
+"stats_pro_deeper_body" = "Mantenga el panel liviano y luego agregue las tendencias de 30 días, el mejor día y la distribución de libros.";
+"stats_unlock_depth" = "Desbloquea estadísticas más profundas";
+"stats_book_mix" = "Distribución de libros";
+"stats_book_mix_subtitle" = "Vea a dónde va su tiempo de lectura";
+"stats_detailed_title" = "Estadísticas detalladas";
+"stats_detailed_subtitle" = "Ver datos de lectura de día, semana, mes, año y de todos los tiempos";
+
+/* Paywall */
+"paywall_title" = "Enfoque la lectura, obtenga más";
+"paywall_subtitle" = "Biblioteca ilimitada, cambios de página en el iPad y estadísticas más detalladas para una lectura más libre.";
+"paywall_pro_badge" = "Recomendado anualmente";
+"paywall_feature_unlimited_books" = "Libros ilimitados (la versión gratuita mantiene hasta 10)";
+"paywall_feature_ipad_page_turn" = "Utilice Apple Watch para pasar páginas en iPad";
+"paywall_feature_stats" = "Estadísticas semanales, mensuales y anuales";
+"paywall_feature_streak" = "Seguimiento de racha de lectura";
+"paywall_feature_unlimited_title" = "Biblioteca ilimitada";
+"paywall_feature_unlimited_subtitle" = "Sin límite de 10 libros";
+"paywall_feature_watch_title" = "Ver en iPad";
+"paywall_feature_watch_subtitle" = "iPhone se vuelve libre";
+"paywall_feature_stats_title" = "Estadísticas profundas";
+"paywall_feature_stats_subtitle" = "Semana, mes, año";
+"paywall_feature_streak_title" = "Manchas";
+"paywall_feature_streak_subtitle" = "Sigue tu ritmo";
+"paywall_feature_notes_title" = "Notas ilimitadas";
+"paywall_feature_notes_subtitle" = "Sin límite de resaltado";
+"paywall_assurance_trial" = "Prueba gratuita de 1 mes";
+"paywall_assurance_cancel" = "Cancelar en cualquier momento";
+"paywall_trial_note" = "La prueba se renueva automáticamente una vez finalizada. Puedes cancelar en cualquier momento en Configuración.";
+"paywall_one_time" = "Compra única, tuya para siempre";
+"paywall_buy_button" = "Comprar ahora";
+"paywall_restore_button" = "Restaurar compras";
+"paywall_close" = "Cerca";
+"paywall_loading_price" = "Cargando…";
+"paywall_load_failed_title" = "No se pudo cargar";
+"paywall_load_failed_message" = "No se puede cargar la información del producto. Por favor verifique su conexión de red.";
+"paywall_retry_button" = "Rever";
+"paywall_error_title" = "Compra fallida";
+"paywall_success_title" = "¡Pro desbloqueado!";
+"paywall_trial_badge" = "Prueba gratuita de 1 mes";
+
+/* Settings Pro */
+"settings_pro_unlocked" = "PagePilot Pro";
+"settings_pro_badge" = "desbloqueado";
+"settings_upgrade_pro" = "Actualizar a PagePilot Pro";
+"settings_pro_active_body" = "Tu experiencia de lectura completa está desbloqueada.";
+"settings_pro_upgrade_body" = "Desbloquea una biblioteca ilimitada, estadísticas más profundas, notas ilimitadas y más";
+"settings_pro_benefit_library" = "Biblioteca ilimitada";
+"settings_pro_benefit_stats" = "Estadísticas profundas";
+"settings_pro_benefit_watch" = "Ver en iPad";
+"settings_pro_benefit_notes" = "Notas ilimitadas";
+
+/* Purchase Errors */
+"purchase_error_product_not_found" = "Información del producto no encontrada";
+"purchase_error_failed" = "La compra falló, por favor inténtalo de nuevo.";
+"purchase_error_verification" = "No se puede verificar la compra, inténtalo de nuevo";
+"purchase_error_cancelled" = "Compra cancelada";
+"purchase_error_pending" = "Compra pendiente, requiere aprobación de los padres";
+"purchase_error_restore_failed" = "No se pueden restaurar las compras. Por favor inténtalo de nuevo.";
+"purchase_error_no_purchases_to_restore" = "No se encontró ninguna compra activa de PagePilot Pro para este ID de Apple.";
+
+/* Subscription & Purchase Tiers */
+"paywall_option_monthly" = "Plan Mensual";
+"paywall_option_yearly" = "Plan Anual";
+"paywall_option_lifetime" = "Plan de por vida";
+"paywall_price_monthly" = "$0.49";
+"paywall_price_yearly" = "$2.99";
+"paywall_price_yearly_monthly" = "$0.25";
+"paywall_price_lifetime" = "$3.99";
+"paywall_price_monthly_sub" = "Se renueva mensualmente";
+"paywall_price_yearly_sub" = "Sólo %@/mes, ahorra %@";
+"paywall_price_yearly_sub_no_savings" = "Sólo %@/mes";
+"paywall_price_lifetime_sub" = "Compra única, oferta por tiempo limitado";
+"paywall_terms_of_use" = "Condiciones de uso";
+"paywall_privacy_policy" = "política de privacidad";
+"paywall_recommended_badge" = "Recomendado";
+"paywall_limited_badge" = "Limitado";
+"paywall_trial_eligible_label" = "1 mes gratis";
+"paywall_lifetime_sub" = "Compra única";
+"paywall_save_badge" = "Ahorra 16%";
+"paywall_buy_button_eligible" = "Comience la prueba gratuita de 1 mes";
+"paywall_buy_button_ineligible" = "Continuar";
+"paywall_buy_button_lifetime" = "Desbloquear de por vida";
+"paywall_trial_duration_eligible_monthly" = "1 mes gratis, luego %@/mes";
+"paywall_trial_duration_eligible_yearly" = "1 mes gratis, luego %@/año";
+"paywall_trial_duration_ineligible_monthly" = "%@/mes";
+"paywall_trial_duration_ineligible_yearly" = "%@/año";
+"paywall_trial_duration_lifetime" = "%@ una vez";
+"paywall_subscription_billing_note" = "Los planes mensuales y anuales se renuevan automáticamente y se pueden cancelar en la configuración de la App Store. La vida es una compra única.";
+
+/* Bookshelf Status */
+"bookshelf_status_not_started" = "No iniciado";
+"bookshelf_status_reading" = "Lectura";
+"bookshelf_status_completed" = "Terminado";
+
+/* Feedback subjects */
+"feedback_subject_bug" = "[Error] Comentarios de PagePilot";
+"feedback_subject_feature" = "[Solicitud de función] Sugerencia de PagePilot";
+"feedback_subject_other" = "[Comentarios] Comentarios de PagePilot";
+
+/* Feedback body template fields */
+"feedback_body_device_info" = "Información del dispositivo";
+"feedback_body_description" = "Descripción";
+"feedback_body_reproduce_steps" = "Pasos para reproducirse";
+"feedback_body_expected" = "Comportamiento esperado";
+"feedback_body_actual" = "Comportamiento real";
+"feedback_body_feature_description" = "Descripción de la característica";
+"feedback_body_use_cases" = "Casos de uso";
+
+/* OPDS Empty State */
+"opds_empty_title" = "Aún no hay catálogos";
+"opds_empty_subtitle" = "Agregue una fuente OPDS para buscar y descargar libros directamente en la aplicación.";
+"opds_empty_what_title" = "¿Qué es OPDS?";
+"opds_empty_what_body" = "OPDS (Sistema Abierto de Distribución de Publicaciones) es un estándar abierto para buscar y descargar libros electrónicos. Muchas bibliotecas y editoriales ofrecen canales OPDS gratuitos que puede agregar aquí.";
+"opds_empty_search_title" = "Encuentra una fuente";
+"opds_empty_search_body" = "Busque en la web una URL de fuente OPDS, luego cópiela y agréguela a continuación.";
+"opds_empty_search_placeholder" = "Buscar palabras clave";
+"opds_empty_default_query" = "Alimentación OPDS";
+"opds_empty_how_title" = "Agregar una fuente";
+"opds_empty_how_body" = "Una vez que haya encontrado la URL de una fuente, toque el botón a continuación (o \"+\" en la parte superior derecha) y péguelo para comenzar a navegar.";
+"opds_empty_add_button" = "Añade tu primer feed";
+
+/* Search engines */
+"search_engine_baidu" = "Baidu";
+"search_engine_bing" = "Bing";
+"search_engine_google" = "Google";
+"search_engine_360" = "Búsqueda 360";
+"search_engine_sogou" = "Sogou";
+"search_engine_shenma" = "Shenma";
+
+/* WiFi Transfer */
+"wifi_transfer_title" = "Transferencia Wi‑Fi";
+"wifi_transfer_done" = "Hecho";
+"wifi_transfer_instruction" = "Abra esta dirección en el navegador de su computadora para cargar archivos:";
+"wifi_transfer_copy" = "Copiar URL";
+"wifi_transfer_copy_hint" = "Mantenga presionado para copiar";
+"wifi_transfer_uploaded_count" = "Archivo(s) %d recibidos";
+"wifi_transfer_no_wifi" = "Primero conéctese a una red Wi‑Fi.";
+"wifi_transfer_retry" = "Rever";
+"wifi_transfer_starting" = "Iniciando servidor...";
+"wifi_transfer_tip" = "Asegúrese de que su teléfono y computadora estén en la misma red Wi‑Fi. Los archivos cargados aparecerán en su estantería automáticamente.";
+
+/* Device Transfer */
+"library_device_transfer" = "Enviar a otro dispositivo";
+"transfer_title" = "Transferencia de dispositivo";
+"transfer_tab_send" = "Enviar";
+"transfer_tab_receive" = "Recibir";
+"transfer_searching" = "Buscando dispositivos cercanos...";
+"transfer_peers_found" = "Dispositivo(s) %d encontrados";
+"transfer_no_peers_hint" = "No se encontraron dispositivos. Asegúrese de que el otro dispositivo tenga la pestaña Recibir abierta en el mismo Wi‑Fi.";
+"transfer_send_to" = "Enviar a %@";
+"transfer_empty_library" = "Tu biblioteca está vacía. Importa algunos libros primero.";
+"transfer_receiving_active" = "Esperando recibir…";
+"transfer_receiving_idle" = "Recepción detenida";
+"transfer_receiving_hint" = "Mantenga esta pantalla abierta. El remitente ahora puede transferir libros a este dispositivo.";
+"transfer_received_count" = "Libro(s) %d recibidos";
+"transfer_start_receiving" = "Empezar a recibir";
+"transfer_stop_receiving" = "dejar de recibir";
+"transfer_error_send_failed" = "El envío falló. Por favor inténtalo de nuevo.";
+"transfer_error_peer_not_found" = "Dispositivo de destino no encontrado.";
+
+/* About */
+"about_version" = "Versión";
+"about_title" = "Acerca del kit de herramientas Readium Swift";
+"about_copyright" = "Derechos de autor";
+"about_copyright_text" = "© 2022 Laboratorio Europeo de Lectura Digital";
+"about_license" = "[Licencia BSD-3]";
+"about_acknowledgements" = "Expresiones de gratitud";
+"about_ack_text" = "R2 Reader no se habría desarrollado sin la ayuda financiera del Estado francés.";
+
+/* Search */
+"search_placeholder" = "Buscar";
+
+/* TTS */
+"tts_language" = "Idioma";
+"tts_voice" = "Voz";
+"tts_settings" = "Configuración de voz";
+"tts_default" = "Por defecto";
+
+/* MARK: Preferences */
+"prefs_auto" = "Auto";
+"prefs_yes" = "Sí";
+"prefs_no" = "No";
+"prefs_close" = "Cerca";
+"prefs_reset" = "Reiniciar";
+"prefs_language" = "Idioma";
+"prefs_reading_progression" = "Progresión de lectura";
+"prefs_background_color" = "Color de fondo";
+"prefs_scroll" = "Voluta";
+"prefs_scroll_axis" = "Eje de desplazamiento";
+"prefs_horizontal" = "Horizontal";
+"prefs_vertical" = "Vertical";
+"prefs_spread" = "Desparramar";
+"prefs_never" = "Nunca";
+"prefs_always" = "Siempre";
+"prefs_offset_first_page" = "Primera página desplazada";
+"prefs_width" = "Ancho";
+"prefs_page_spacing" = "Espaciado de página";
+"prefs_fit" = "Adaptar";
+"prefs_page" = "Página";
+"prefs_vertical_text" = "Texto vertical";
+"prefs_columns" = "columnas";
+"prefs_page_margins" = "Márgenes de página";
+"prefs_none" = "Ninguno";
+"prefs_theme" = "Tema";
+"prefs_text_color" = "Color del texto";
+"prefs_typeface" = "Tipo de letra";
+"prefs_sans_serif" = "Sans serifa";
+"prefs_font_size" = "Tamaño de fuente";
+"prefs_font_weight" = "Peso de fuente";
+"prefs_text_normalization" = "Normalización de texto";
+"prefs_publisher_styles" = "Estilos de editor";
+"prefs_text_alignment" = "Alineación de texto";
+"prefs_left" = "Izquierda";
+"prefs_end" = "Fin";
+"prefs_type_scale" = "Tipo de escala";
+"prefs_line_height" = "altura de la línea";
+"prefs_word_spacing" = "Espaciado de palabras";
+"prefs_light" = "Luz";
+"prefs_dark" = "Oscuro";
+"prefs_sepia" = "Sepia";
+"prefs_image_filter" = "Filtro de imagen";
+"prefs_darken_colors" = "Colores oscuros";
+"prefs_invert_colors" = "invertir colores";
+"prefs_typeface" = "Tipo de letra";
+"prefs_original" = "Original";
+"prefs_publisher_styles" = "Estilos de editor";
+"prefs_default" = "Por defecto";
+"prefs_center" = "Centro";
+"prefs_right" = "Bien";
+"prefs_justify" = "Justificar";
+"prefs_start" = "Comenzar";
+"prefs_paragraph_indent" = "Sangría de párrafo";
+"prefs_paragraph_spacing" = "Espaciado de párrafo";
+"prefs_letter_spacing" = "Espaciado entre letras";
+"prefs_hyphens" = "guiones";
+"prefs_ligatures" = "Ligaduras";
+"prefs_volume" = "Volumen";
+"prefs_speed" = "Velocidad";
+"prefs_ltr" = "LTR";
+"prefs_rtl" = "RTL";
+"prefs_no_user_preferences" = "No hay preferencias de usuario disponibles.";
+"prefs_user_preferences" = "Preferencias de usuario";
+
+/* MARK: Metadata */
+"metadata_publication" = "Publicación";
+"metadata_no_title" = "Sin título";
+"metadata_title" = "Título";
+"metadata_identifier" = "Identificador";
+"metadata_author" = "Autor";
+"metadata_authors" = "Autores";
+"metadata_publisher" = "Editor";
+"metadata_publishers" = "Editores";
+"metadata_publication_date" = "Fecha de publicación";
+"metadata_accessibility_claims" = "Accesibilidad";
+"metadata_show_fields_no_metadata" = "Mostrar campos sin metadatos";
+"metadata_show_descriptive_statements" = "Mostrar declaraciones descriptivas";
+
+/* MARK: Reader */
+"reader_highlight" = "Destacar";
+"reader_highlight_select_color" = "Seleccionar color de resaltado";
+"reader_highlight_color_yellow" = "Amarillo";
+"reader_highlight_color_green" = "Verde";
+"reader_highlight_color_blue" = "Azul";
+"reader_highlight_color_red" = "Rojo";
+"reader_add_note" = "Agregar nota";
+"reader_copy" = "Copiar";
+"reader_more" = "Más";
+"reader_lookup" = "Buscar";
+"reader_translate" = "Traducir";
+"reader_share" = "Compartir";
+"highlight_note_title" = "Agregar nota";
+"save_button" = "Ahorrar";
+
+/* MARK: Launch */
+"launch_tagline_1" = "Lee con tu Apple Watch";
+"launch_tagline_2" = "EPUB • PDF • Audiolibro";
+"home_greeting_morning" = "Buen día";
+"home_greeting_noon" = "Buen mediodía";
+"home_greeting_afternoon" = "Buenas tardes";
+"home_greeting_evening" = "Buenas noches";
+"home_greeting_night" = "Buenas noches";
+"home_reading_time_today" = "Hoy %@";
+"home_daily_goal" = "Meta de lectura diaria";
+"home_daily_goal_of" = "de %d mín.";
+"home_minutes" = "%d mín.";
+"home_continue_reading" = "Continuar leyendo";
+"home_book_progress" = "Progreso de lectura";
+"home_empty_title" = "Comienza tu primer libro";
+"home_empty_message" = "Elija o importe un EPUB/PDF de su estantería y luego pase las páginas con el Apple Watch.";
+"home_import_button" = "Ir a la estantería";
+"home_continue_reading_button" = "Continuar leyendo";
+"home_reread_button" = "Leer de nuevo";
+"home_finished_label" = "Finalizado";
+"home_streak_a11y_hint" = "Ver estadísticas de lectura";
+"home_shortcut_stats" = "Estadísticas de lectura";
+"home_shortcut_stats_subtitle" = "Ritmo y rayas";
+"home_shortcut_notes" = "Mis notas";
+"home_shortcut_notes_subtitle" = "Destacados y marcadores";
+
+/* MARK: Settings */
+"me_tab" = "A mí";
+"me_title" = "A mí";
+"settings_appearance_section" = "Apariencia";
+"settings_reading_section" = "Lectura";
+"settings_daily_goal" = "Objetivo diario";
+"settings_reminder" = "Recordatorio de lectura";
+"settings_reminder_time" = "Hora del recordatorio";
+"settings_reminder_footer" = "Reciba una notificación diaria en este momento para guiarlo hacia su objetivo de lectura.";
+"settings_reminder_denied_title" = "Notificaciones desactivadas";
+"settings_reminder_denied_body" = "Habilite las notificaciones en Configuración para recibir recordatorios de lectura.";
+"settings_reminder_open_settings" = "Abrir configuración";
+"reminder_title" = "hora de leer";
+"reminder_body" = "Un poco de tiempo para tu objetivo de lectura diario.";
+"reader_goal_reached" = "¡Objetivo diario alcanzado! 🎉";
+"settings_language" = "Idioma";
+"settings_language_english" = "Inglés";
+"settings_language_chinese" = "Chino simplificado";
+"settings_language_spanish" = "Español";
+"settings_language_french" = "francés";
+"settings_language_german" = "alemán";
+"stats_minutes_unit" = "mín.";
+"settings_theme" = "Tema";
+"settings_theme_system" = "Sistema";
+"settings_theme_light" = "Luz";
+"settings_theme_dark" = "Oscuro";
+"settings_stats_section" = "Estadísticas de lectura";
+"settings_stats" = "Estadísticas de lectura";
+"settings_tts_section" = "Texto a voz";
+"settings_tts_voice" = "Voz y velocidad";
+"settings_feedback_section" = "Comentario";
+"settings_feedback_bug" = "Informar un error";
+"settings_feedback_feature" = "Solicitar una función";
+"settings_feedback_other" = "Otros comentarios";
+"settings_feedback_mail_error_title" = "No puedo enviar correo electrónico";
+"settings_feedback_mail_error_message" = "El correo no está configurado en este dispositivo. Puede enviar comentarios manualmente a: %@";
+"settings_feedback_copy_email" = "Copiar dirección de correo electrónico";
+"settings_rate_app" = "Calificar PagePilot";
+"settings_share_app" = "Compartir PagePilot";
+"settings_share_app_message" = "Echa un vistazo a PagePilot: pasa páginas con las manos libres con tu Apple Watch.";
+"settings_about_section" = "Acerca de";
+"settings_about" = "Sobre nosotros";
+"settings_version" = "Versión";
+"settings_icp_filing" = "Presentación del PCI";
+
+/* TTS Settings */
+"tts_settings_title" = "Voz y velocidad";
+"tts_settings_voice_section" = "Voz";
+"tts_settings_speed_section" = "Velocidad y tono";
+"tts_settings_rate" = "Velocidad";
+"tts_settings_pitch" = "Paso";
+"tts_settings_preview" = "Vista previa de voz";
+"tts_settings_preview_text" = "Hola, esta es una vista previa de las configuraciones de voz y velocidad seleccionadas.";
+"tts_quality_premium" = "De primera calidad";
+"tts_quality_enhanced" = "Mejorado";
+"tts_quality_default" = "Por defecto";
+
+/* MARK: Watch Settings */
+"settings_watch_section" = "reloj de manzana";
+"settings_watch_page_turn" = "Configuración de paso de página";
+"watch_settings_title" = "Ver pasar página";
+"watch_connection_status" = "reloj de manzana";
+"watch_status_connected" = "Conectado";
+"watch_status_ipad_relay" = "iPad conectado (a través de iPhone)";
+"watch_status_iphone" = "iPhone conectado";
+"watch_status_disconnected" = "No conectado";
+"watch_target_section" = "Dispositivo de cambio de página";
+"watch_target_picker" = "Dispositivo de cambio de página";
+"watch_target_footer" = "Apple Watch controla el iPhone de forma predeterminada. Cambie al iPad cuando lea allí.";
+"watch_target_ipad" = "iPad";
+"watch_target_ipad_pro" = "%@ Pro";
+"watch_target_iphone" = "iPhone";
+"watch_input_mode_section" = "Modo de entrada";
+"watch_input_mode_footer" = "Elige cómo pasas las páginas en tu Apple Watch.";
+"watch_input_buttons_and_crown" = "Botones y corona";
+"watch_input_buttons_only" = "Sólo botones";
+"watch_input_crown_only" = "Sólo corona";
+"watch_haptic_section" = "Retroalimentación háptica";
+"watch_haptic_footer" = "Vibra cuando se pasa una página desde el reloj.";
+"watch_haptic_toggle" = "Háptico al pasar de página";
+"watch_double_tap_section" = "Doble toque";
+"watch_double_tap_footer" = "Toque dos veces el dedo índice y el pulgar juntos para pasar la página siguiente. Disponible en Apple Watch Series 9 y posteriores.";
+"watch_double_tap_toggle" = "Pasar página con doble toque";
+
+"watch_guidance_header" = "Pasos";
+"watch_guidance_ipad_step1" = "Conecta iPhone y iPad al mismo Wi‑Fi";
+"watch_guidance_ipad_step2" = "Abra un libro en iPad (Pro inicia la retransmisión automáticamente)";
+"watch_guidance_ipad_step3" = "Cambie la página y gire el dispositivo al iPad aquí";
+"watch_guidance_iphone_step1" = "Abrir un libro en iPhone";
+"watch_guidance_iphone_step2" = "Abra PagePilot en Apple Watch para pasar páginas";
+"watch_guidance_ipad_footer" = "iPhone y iPad deben estar en el mismo Wi‑Fi";
+"watch_guidance_iphone_footer" = "Controla el lector en este dispositivo";
+"watch_status_header" = "Conexión";
+"watch_status_supported" = "Este dispositivo es compatible con Apple Watch";
+"watch_status_unsupported" = "Este dispositivo no es compatible con Apple Watch";
+"watch_status_paired" = "Apple Watch está emparejado";
+"watch_status_not_paired" = "Ningún Apple Watch emparejado";
+"watch_status_app_installed" = "PagePilot está instalado en el reloj";
+"watch_status_app_missing" = "Instale PagePilot en su reloj";
+"watch_status_reachable" = "El reloj es accesible";
+"watch_status_not_reachable" = "Reloj no accesible: levante la muñeca y abra la aplicación";
+"watch_setup_guide_button" = "Ver guía de configuración";
+"watch_setup_title" = "Pasa páginas desde tu muñeca";
+"watch_setup_subtitle" = "Tres pasos: instalar la aplicación Watch, elegir un dispositivo, abrir un libro.";
+"watch_setup_step1_title" = "Instalar la aplicación Ver";
+"watch_setup_step1_body" = "En la aplicación Watch del iPhone, instale PagePilot para Apple Watch.";
+"watch_setup_step2_title" = "Elige dónde pasar las páginas";
+"watch_setup_step2_body" = "Arriba en esta pantalla, elija iPhone o iPad: su reloj controlará ese dispositivo.";
+"watch_setup_step3_title" = "Abrir un libro y pasar páginas.";
+"watch_setup_step3_body" = "Abra un libro en el dispositivo que eligió, abra PagePilot en Watch y luego toque o gire Digital Crown.";
+"watch_setup_done_button" = "empezar";
+"settings_ipad_watch_status" = "Ver enlace para pasar página";
+"ipad_watch_status_title" = "Ver enlace para pasar página";
+"ipad_watch_status_refresh" = "Refrescar";
+"ipad_watch_summary_probing" = "Probando conexión…";
+"ipad_watch_summary_probing_sub" = "Comprobando el servicio de este iPad y luego esperando una señal del iPhone.";
+"ipad_watch_summary_ready" = "Prueba superada";
+"ipad_watch_summary_ready_sub" = "El servicio local está bien y el iPhone llegó a este iPad. Abra un libro cuando quiera pasar las páginas.";
+"ipad_watch_summary_no_wifi" = "Aún no estoy conectado a Wi‑Fi";
+"ipad_watch_summary_no_wifi_sub" = "Conecte este iPad al mismo Wi‑Fi que su iPhone.";
+"ipad_watch_summary_service_fail" = "El servicio local falló";
+"ipad_watch_summary_service_fail_sub" = "Este iPad no está listo para recibir cambios de página. Toque Volver a probar a continuación.";
+"ipad_watch_summary_waiting_phone" = "Aún no hay señal de iPhone";
+"ipad_watch_summary_waiting_phone_sub" = "En iPhone, configure Ver objetivo en iPad y mantenga abierto PagePilot, luego toque Volver a probar aquí.";
+"ipad_watch_summary_almost" = "Casi llegamos";
+"ipad_watch_summary_almost_sub" = "Consulte la lista a continuación.";
+"ipad_watch_checklist_header" = "Lista de verificación";
+"ipad_watch_checklist_footer" = "La “prueba de iPhone” necesita que el iPhone esté en el mismo Wi‑Fi para contactar con este iPad. Al abrir esta página se ejecuta una prueba automáticamente.";
+"ipad_watch_check_wifi" = "Wi‑Fi";
+"ipad_watch_check_wifi_ok" = "Conectado";
+"ipad_watch_check_wifi_bad" = "No conectado: activa la conexión Wi‑Fi";
+"ipad_watch_check_ready" = "prueba de servicio local";
+"ipad_watch_check_ready_testing" = "Enviando una señal de prueba a este iPad...";
+"ipad_watch_check_ready_ok" = "Aprobado: listo para recibir cambios de página";
+"ipad_watch_check_ready_bad" = "Error: vuelva a probar o reinicie la aplicación";
+"ipad_watch_check_phone" = "prueba de iPhone";
+"ipad_watch_check_phone_testing" = "Esperando iPhone… (unos 10 segundos)";
+"ipad_watch_check_phone_ok" = "Recibí una visita de prueba del iPhone";
+"ipad_watch_check_phone_bad" = "Esta vez no hay visitas de iPhone";
+"ipad_watch_check_phone_diff_wifi" = "Recibí una visita, pero tal vez no sea la misma conexión Wi‑Fi";
+"ipad_watch_probe_button" = "Volver a probar";
+"ipad_watch_probe_running" = "Pruebas…";
+"ipad_watch_next_header" = "¿Qué hacer a continuación?";
+"ipad_watch_next_wifi" = "Únete a la misma red Wi‑Fi que tu iPhone.";
+"ipad_watch_next_restart" = "Toca Volver a probar. Si aún falla, salga de PagePilot y ábralo nuevamente.";
+"ipad_watch_next_phone" = "En iPhone: Yo → Ver pasar página → elegir iPad, mantener PagePilot abierto, luego regresar aquí y tocar Volver a probar. La misma conexión Wi‑Fi es suficiente; no se requiere el mismo ID de Apple.";
+"ipad_watch_how_header" = "como funciona";
+"ipad_watch_how_body" = "Tu reloj habla con el iPhone; El iPhone llega a este iPad a través de Wi‑Fi. Esta pantalla prueba automáticamente el servicio local y espera una visita de prueba desde el iPhone.";
+
+/* MARK: TXT Import */
+"txt_error_cannot_read" = "No se puede leer el archivo de texto.";
+"txt_error_encoding" = "No se puede detectar la codificación del archivo.";
+"txt_error_conversion" = "No se pudo convertir TXT a EPUB: %@";
+"txt_error_invalid_output" = "Ruta del archivo de salida no válida.";
+"txt_chapter_preface" = "Prefacio";
+"txt_chapter_number" = "Capítulo %d";
+
+/* MARK: Markdown Import */
+"markdown_error_unsupported_extension" = "Extensión de archivo Markdown no compatible.";
+"markdown_error_cannot_read" = "No se puede leer el archivo Markdown.";
+"markdown_error_encoding" = "Los archivos Markdown deben ser UTF-8 válidos.";
+"markdown_error_file_too_large" = "El archivo Markdown tiene más de 50 MB.";
+"markdown_error_sanitization" = "No se pudo desinfectar Markdown HTML.";
+"markdown_error_conversion" = "No se pudo convertir Markdown a EPUB: %@";
+"markdown_error_invalid_output" = "Ruta del archivo de salida no válida.";
+
+/* TTS Settings (revamped) */
+"tts_settings_voice_label" = "Voz";
+"tts_settings_voice_footer" = "Selecciona una voz de Apple. De forma predeterminada, se utiliza la voz del sistema para el idioma de la publicación.";
+"tts_settings_default_voice_footer" = "Utilice la voz predeterminada del sistema. Recomendado para la mayoría de usuarios.";
+"tts_settings_preview_stop" = "Detener vista previa";
+"tts_settings_preview_footer" = "Toque para escuchar cómo suenan la voz y la velocidad actuales.";
+"tts_settings_reset" = "Restablecer los valores predeterminados";
+
+/* TTS Premium Voice Prompt */
+"tts_premium_prompt_title" = "Actualizar la calidad de la voz";
+"tts_premium_prompt_body" = "Estás usando la voz estándar. Descargue una voz Premium o Mejorada en Configuración para obtener un habla más natural y humana.";
+"tts_premium_prompt_steps" = "Configuración → Accesibilidad → Contenido hablado → Voces → Elegir idioma → Descargar Premium";
+"tts_premium_prompt_dismiss" = "Entiendo";
+
+/* MARK: Device Transfer */
+"onboarding_transfer_title" = "Enviar libros localmente";
+"onboarding_transfer_message" = "Mueve libros entre tu iPhone y iPad a través de la misma red Wi‑Fi cuando ambos dispositivos estén cerca.";
+
+/* Achievements & Share Poster */
+"badge_section_title" = "Logros e insignias";
+"badge_early_bird_title" = "Pájaro temprano";
+"badge_early_bird_desc" = "Leer 5 mañanas (5:00 - 8:59 a. m.)";
+"badge_night_owl_title" = "Ave nocturna";
+"badge_night_owl_desc" = "Leer 5 noches (22:00 - 4:59 a.m.)";
+"badge_deep_reader_title" = "Lector profundo";
+"badge_deep_reader_desc" = "Leer durante 45 minutos en un solo día.";
+"badge_super_streak_title" = "Súper racha";
+"badge_super_streak_desc" = "Alcanza una racha de lectura de 7 días";
+"badge_book_collector_title" = "Coleccionista de libros";
+"badge_book_collector_desc" = "Lee 3 libros distintos en tu estantería";
+"badge_watch_pilot_title" = "Ver piloto";
+"badge_watch_pilot_desc" = "Pasa páginas con Apple Watch 10 veces";
+
+"share_card_title" = "Generar cartel";
+"share_card_save" = "Guardar en Fotos";
+"share_card_saved_success" = "¡Póster guardado en Fotos!";
+"share_card_saved_error" = "No se pudo guardar: verifique los permisos de las fotos";
+"share_card_quote" = "\"Una habitación sin libros es como un cuerpo sin alma\".";
+"share_card_reading_today" = "Lectura de hoy";
+"share_card_streak" = "Racha";
+"share_card_days" = "días";
+"share_card_subtitle" = "Compañero de lectura tranquilo";
+
+/* My Notes */
+"settings_my_notes" = "Mis notas";
+"my_notes_title" = "Mis notas";
+"my_notes_subtitle" = "Destacados y marcadores por libro.";
+"my_notes_quota_banner" = "Destacados gratuitos %d/%d utilizados · Actualización ilimitada";
+"my_notes_books_label" = "Libros";
+"my_notes_highlights_label" = "Reflejos";
+"my_notes_bookmark_label" = "Marcador";
+"my_notes_bookmarks_label" = "Marcadores";
+"my_notes_filter_all" = "Todo";
+"my_notes_filter_week" = "Semana";
+"my_notes_filter_month" = "Mes";
+"my_notes_filtered_empty" = "No hay notas en este período.";
+"my_notes_empty" = "Aún no hay notas. Agregue marcadores y resaltados mientras lee.";
+"my_notes_progress_format" = "%d%% leer";
+"my_notes_count_format" = "Notas %d";
+"my_notes_delete_confirm_title" = "¿Eliminar esta nota?";
+"my_notes_delete_error_title" = "No se pudo eliminar";
+"my_notes_delete_error_message" = "No se pudo eliminar la nota. Por favor inténtalo de nuevo.";
+"delete_button" = "Borrar";
+
+/* Page Turn Settings */
+"settings_page_turn_section" = "Configuración de paso de página";
+
+/* Volume Key Page Turn */
+"settings_volume_key_turn_page" = "Tecla de volumen Pasar página";
+"settings_tts_volume_key_turn_page" = "Mientras lee en voz alta";
+"settings_volume_key_mapping_title" = "Asignación de teclas de volumen";
+"settings_volume_key_down_forward" = "Abajo: Siguiente, Arriba: Anterior";
+"settings_volume_key_up_forward" = "Arriba: Siguiente, Abajo: Anterior";
+"settings_volume_key_explanation" = "Utilice las teclas de volumen para pasar las páginas mientras lee normalmente. Las teclas de volumen siguen siendo controles de volumen durante la lectura en voz alta, audiolibros, auriculares o reproducción en el automóvil.";
+"settings_volume_key_enabled_footer" = "Las teclas de volumen pasan páginas mientras lee. Puedes desactivar esto en cualquier momento.";
+"volume_key_edu_title" = "Habilitar paso de página con la tecla de volumen";
+"volume_key_edu_subtitle" = "Algunas reglas para que no parezca que el volumen de su sistema está roto.";
+"volume_key_edu_point_reading" = "Durante la lectura normal, subir/bajar el volumen pasa las páginas y no cambia el volumen del sistema.";
+"volume_key_edu_point_tts" = "Durante TTS, audiolibros o audio externo, las teclas de volumen aún controlan el volumen.";
+"volume_key_edu_point_hud" = "Un HUD de volumen del sistema puede parpadear brevemente; esto es normal y seguro de ignorar.";
+"volume_key_edu_confirm" = "Entendido, habilitar";
+
+/* Reader footer position label */
+"reader_position_format" = "Posición %1$d / %2$d";
+
+/* Quick Position Jump */
+"reader_quick_position_format" = "‹ %1$d / %2$d · %3$d%% ›";
+"reader_quick_position_cancel" = "Liberar para cancelar";
+"reader_quick_position_failure" = "No se puede saltar a esta posición";

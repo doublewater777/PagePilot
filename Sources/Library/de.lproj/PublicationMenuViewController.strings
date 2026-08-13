@@ -1,0 +1,15 @@
+
+/* Class = "UIButton"; accessibilityLabel = "Delete Publication"; ObjectID = "XNx-HX-fJ0"; */
+"XNx-HX-fJ0.accessibilityLabel" = "Publikation löschen";
+
+/* Class = "UIButton"; normalTitle = "Remove"; ObjectID = "XNx-HX-fJ0"; */
+"XNx-HX-fJ0.normalTitle" = "Entfernen";
+
+/* Class = "UIButton"; accessibilityLabel = "Publication Information"; ObjectID = "gmr-BT-CvG"; */
+"gmr-BT-CvG.accessibilityLabel" = "Publikationsinformationen";
+
+/* Class = "UIButton"; normalTitle = "Infos"; ObjectID = "gmr-BT-CvG"; */
+"gmr-BT-CvG.normalTitle" = "Infos";
+
+/* Class = "UIButton"; normalTitle = "Cancel"; ObjectID = "kn0-yM-9Ms"; */
+"kn0-yM-9Ms.normalTitle" = "Abbrechen";

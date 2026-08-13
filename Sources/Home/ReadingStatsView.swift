@@ -520,7 +520,7 @@ struct ReadingStatsView: View {
                 Spacer()
                 
                 if selectedStatsScope != .summary && selectedStatsScope != .day {
-                    Text("min")
+                    Text(NSLocalizedString("stats_minutes_unit", comment: "Reading stats minutes unit"))
                         .font(.system(size: 12, weight: .semibold))
                         .foregroundColor(AppColors.secondaryText)
                 }
