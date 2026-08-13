@@ -38,6 +38,7 @@ RELEASE_PATHS=(
   iPhone/Info.plist
   WatchRemote/Info.plist
   "metadata/version/${VERSION}"
+  metadata/app-info
 )
 
 if [[ ! -d "$METADATA_DIR" ]]; then

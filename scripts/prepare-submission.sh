@@ -92,9 +92,9 @@ Prepared submission (${MODE})
 ${METADATA_ACTION}
 
 Required manual/agent step before upload:
-  1. Update whatsNew in metadata/version/${TARGET_VERSION}/en-US.json
-  2. Update whatsNew in metadata/version/${TARGET_VERSION}/zh-Hans.json
-  3. Review description, keywords, promotionalText if needed
+  1. Update whatsNew in every locale file under metadata/version/${TARGET_VERSION}/
+  2. Review description, keywords, and promotionalText for every locale
+  3. Keep app-level localizations in metadata/app-info/ synchronized when changed
 EOF
 
 if [[ "$MODE" == "resubmit" ]]; then
