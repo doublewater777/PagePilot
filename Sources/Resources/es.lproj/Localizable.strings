@@ -377,7 +377,7 @@
 "paywall_feature_streak_subtitle" = "Sigue tu ritmo";
 "paywall_feature_notes_title" = "Notas ilimitadas";
 "paywall_feature_notes_subtitle" = "Sin límite de resaltado";
-"paywall_assurance_trial" = "Prueba gratuita de 1 mes";
+"paywall_assurance_trial" = "Prueba gratuita de 1 semana";
 "paywall_assurance_cancel" = "Cancelar en cualquier momento";
 "paywall_trial_note" = "La prueba se renueva automáticamente una vez finalizada. Puedes cancelar en cualquier momento en Configuración.";
 "paywall_one_time" = "Compra única, tuya para siempre";
@@ -390,7 +390,7 @@
 "paywall_retry_button" = "Rever";
 "paywall_error_title" = "Compra fallida";
 "paywall_success_title" = "¡Pro desbloqueado!";
-"paywall_trial_badge" = "Prueba gratuita de 1 mes";
+"paywall_trial_badge" = "Prueba gratuita de 1 semana";
 
 /* Settings Pro */
 "settings_pro_unlocked" = "PagePilot Pro";
@@ -428,14 +428,14 @@
 "paywall_privacy_policy" = "política de privacidad";
 "paywall_recommended_badge" = "Recomendado";
 "paywall_limited_badge" = "Limitado";
-"paywall_trial_eligible_label" = "1 mes gratis";
+"paywall_trial_eligible_label" = "1 semana gratis";
 "paywall_lifetime_sub" = "Compra única";
 "paywall_save_badge" = "Ahorra 16%";
-"paywall_buy_button_eligible" = "Comience la prueba gratuita de 1 mes";
+"paywall_buy_button_eligible" = "Comience la prueba gratuita de 1 semana";
 "paywall_buy_button_ineligible" = "Continuar";
 "paywall_buy_button_lifetime" = "Desbloquear de por vida";
-"paywall_trial_duration_eligible_monthly" = "1 mes gratis, luego %@/mes";
-"paywall_trial_duration_eligible_yearly" = "1 mes gratis, luego %@/año";
+"paywall_trial_duration_eligible_monthly" = "1 semana gratis, luego %@/mes";
+"paywall_trial_duration_eligible_yearly" = "1 semana gratis, luego %@/año";
 "paywall_trial_duration_ineligible_monthly" = "%@/mes";
 "paywall_trial_duration_ineligible_yearly" = "%@/año";
 "paywall_trial_duration_lifetime" = "%@ una vez";
@@ -900,7 +900,7 @@
 "volume_key_edu_confirm" = "Entendido, habilitar";
 
 /* Reader footer position label */
-"reader_position_format" = "Posición %1$d / %2$d";
+"reader_position_format" = "%1$d / %2$d";
 
 /* Quick Position Jump */
 "reader_quick_position_format" = "‹ %1$d / %2$d · %3$d%% ›";

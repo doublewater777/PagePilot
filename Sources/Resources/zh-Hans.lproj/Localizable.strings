@@ -377,7 +377,7 @@
 "paywall_feature_streak_subtitle" = "看见坚持节奏";
 "paywall_feature_notes_title" = "无限笔记";
 "paywall_feature_notes_subtitle" = "高亮摘录不设限";
-"paywall_assurance_trial" = "1 个月免费试用";
+"paywall_assurance_trial" = "1 周免费试用";
 "paywall_assurance_cancel" = "随时取消";
 "paywall_trial_note" = "试用结束后自动续费，可随时在设置中取消。";
 "paywall_one_time" = "一次性购买，终身使用";
@@ -390,7 +390,7 @@
 "paywall_retry_button" = "重试";
 "paywall_error_title" = "购买失败";
 "paywall_success_title" = "已解锁 Pro！";
-"paywall_trial_badge" = "免费试用 1 个月";
+"paywall_trial_badge" = "免费试用 1 周";
 
 /* Settings Pro */
 "settings_pro_unlocked" = "PagePilot Pro";
@@ -428,14 +428,14 @@
 "paywall_privacy_policy" = "隐私政策";
 "paywall_recommended_badge" = "主推";
 "paywall_limited_badge" = "限时";
-"paywall_trial_eligible_label" = "首月免费";
+"paywall_trial_eligible_label" = "首周免费";
 "paywall_lifetime_sub" = "一次性购买";
 "paywall_save_badge" = "立省 16%";
-"paywall_buy_button_eligible" = "开始 1 个月免费试用";
+"paywall_buy_button_eligible" = "开始 1 周免费试用";
 "paywall_buy_button_ineligible" = "继续";
 "paywall_buy_button_lifetime" = "解锁终身会员";
-"paywall_trial_duration_eligible_monthly" = "免费试用 1 个月，随后 %@/月";
-"paywall_trial_duration_eligible_yearly" = "免费试用 1 个月，随后 %@/年";
+"paywall_trial_duration_eligible_monthly" = "免费试用 1 周，随后 %@/月";
+"paywall_trial_duration_eligible_yearly" = "免费试用 1 周，随后 %@/年";
 "paywall_trial_duration_ineligible_monthly" = "%@/月";
 "paywall_trial_duration_ineligible_yearly" = "%@/年";
 "paywall_trial_duration_lifetime" = "%@ 一次性购买";
@@ -900,7 +900,7 @@
 "volume_key_edu_confirm" = "知道了，开启";
 
 /* Reader footer position label */
-"reader_position_format" = "位置 %1$d / %2$d";
+"reader_position_format" = "%1$d / %2$d";
 
 /* Quick Position Jump */
 "reader_quick_position_format" = "‹  %1$d / %2$d  ·  %3$d%%  ›";

@@ -377,7 +377,7 @@
 "paywall_feature_streak_subtitle" = "Suivez votre rythme";
 "paywall_feature_notes_title" = "Notes illimitées";
 "paywall_feature_notes_subtitle" = "Aucune limite de surlignages";
-"paywall_assurance_trial" = "Essai gratuit d’un mois";
+"paywall_assurance_trial" = "Essai gratuit d’une semaine";
 "paywall_assurance_cancel" = "Annulation à tout moment";
 "paywall_trial_note" = "L’essai se renouvelle automatiquement à son terme. Vous pouvez l’annuler à tout moment dans Réglages.";
 "paywall_one_time" = "Achat unique, à vous pour toujours";
@@ -390,7 +390,7 @@
 "paywall_retry_button" = "Réessayer";
 "paywall_error_title" = "Échec de l’achat";
 "paywall_success_title" = "Pro débloqué !";
-"paywall_trial_badge" = "Essai gratuit d’un mois";
+"paywall_trial_badge" = "Essai gratuit d’une semaine";
 
 /* Settings Pro */
 "settings_pro_unlocked" = "PagePilot Pro";
@@ -428,14 +428,14 @@
 "paywall_privacy_policy" = "Politique de confidentialité";
 "paywall_recommended_badge" = "Recommandé";
 "paywall_limited_badge" = "Limité";
-"paywall_trial_eligible_label" = "1 mois gratuit";
+"paywall_trial_eligible_label" = "1 semaine gratuite";
 "paywall_lifetime_sub" = "Achat unique";
 "paywall_save_badge" = "Économisez 16 %";
-"paywall_buy_button_eligible" = "Commencer l’essai gratuit d’un mois";
+"paywall_buy_button_eligible" = "Commencer l’essai gratuit d’une semaine";
 "paywall_buy_button_ineligible" = "Continuer";
 "paywall_buy_button_lifetime" = "Débloquer à vie";
-"paywall_trial_duration_eligible_monthly" = "1 mois gratuit, puis %@/mois";
-"paywall_trial_duration_eligible_yearly" = "1 mois gratuit, puis %@/an";
+"paywall_trial_duration_eligible_monthly" = "1 semaine gratuite, puis %@/mois";
+"paywall_trial_duration_eligible_yearly" = "1 semaine gratuite, puis %@/an";
 "paywall_trial_duration_ineligible_monthly" = "%@/mois";
 "paywall_trial_duration_ineligible_yearly" = "%@/an";
 "paywall_trial_duration_lifetime" = "%@ en un seul paiement";
@@ -900,7 +900,7 @@
 "volume_key_edu_confirm" = "J’ai compris, activer";
 
 /* Reader footer position label */
-"reader_position_format" = "Position %1$d / %2$d";
+"reader_position_format" = "%1$d / %2$d";
 
 /* Quick Position Jump */
 "reader_quick_position_format" = "‹  %1$d / %2$d  ·  %3$d%%  ›";

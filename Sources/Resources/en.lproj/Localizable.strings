@@ -377,7 +377,7 @@
 "paywall_feature_streak_subtitle" = "Track your rhythm";
 "paywall_feature_notes_title" = "Unlimited notes";
 "paywall_feature_notes_subtitle" = "No highlight cap";
-"paywall_assurance_trial" = "1-month free trial";
+"paywall_assurance_trial" = "1-week free trial";
 "paywall_assurance_cancel" = "Cancel anytime";
 "paywall_trial_note" = "Trial renews automatically after it ends. You can cancel anytime in Settings.";
 "paywall_one_time" = "One-time purchase, yours forever";
@@ -390,7 +390,7 @@
 "paywall_retry_button" = "Retry";
 "paywall_error_title" = "Purchase Failed";
 "paywall_success_title" = "Pro Unlocked!";
-"paywall_trial_badge" = "1-Month Free Trial";
+"paywall_trial_badge" = "1-Week Free Trial";
 
 /* Settings Pro */
 "settings_pro_unlocked" = "PagePilot Pro";
@@ -428,14 +428,14 @@
 "paywall_privacy_policy" = "Privacy Policy";
 "paywall_recommended_badge" = "Recommended";
 "paywall_limited_badge" = "Limited";
-"paywall_trial_eligible_label" = "1 Month Free";
+"paywall_trial_eligible_label" = "1 Week Free";
 "paywall_lifetime_sub" = "One-time purchase";
 "paywall_save_badge" = "Save 16%";
-"paywall_buy_button_eligible" = "Start 1-Month Free Trial";
+"paywall_buy_button_eligible" = "Start 1-Week Free Trial";
 "paywall_buy_button_ineligible" = "Continue";
 "paywall_buy_button_lifetime" = "Unlock Lifetime";
-"paywall_trial_duration_eligible_monthly" = "1 Month Free, then %@/month";
-"paywall_trial_duration_eligible_yearly" = "1 Month Free, then %@/year";
+"paywall_trial_duration_eligible_monthly" = "1 Week Free, then %@/month";
+"paywall_trial_duration_eligible_yearly" = "1 Week Free, then %@/year";
 "paywall_trial_duration_ineligible_monthly" = "%@/month";
 "paywall_trial_duration_ineligible_yearly" = "%@/year";
 "paywall_trial_duration_lifetime" = "%@ one-time";
@@ -900,7 +900,7 @@
 "volume_key_edu_confirm" = "Got it, enable";
 
 /* Reader footer position label */
-"reader_position_format" = "Position %1$d / %2$d";
+"reader_position_format" = "%1$d / %2$d";
 
 /* Quick Position Jump */
 "reader_quick_position_format" = "‹  %1$d / %2$d  ·  %3$d%%  ›";
