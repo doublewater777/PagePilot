@@ -31,7 +31,6 @@ struct OnboardingView: View {
     @State private var readerOpenTask: Task<Void, Never>?
 
     let importPublication: (URL) async throws -> OnboardingPublicationPresentation
-    let loadSamplePublication: () async -> OnboardingPublicationPresentation?
     let loadPublication: (Int64) async -> OnboardingPublicationPresentation?
     let presentWiFiTransfer: (@escaping (OnboardingPublicationPresentation) -> Void) -> Void
     let presentOPDS: (@escaping (OnboardingPublicationPresentation) -> Void) -> Void
@@ -43,7 +42,6 @@ struct OnboardingView: View {
     init(
         flow: OnboardingFlow,
         importPublication: @escaping (URL) async throws -> OnboardingPublicationPresentation,
-        loadSamplePublication: @escaping () async -> OnboardingPublicationPresentation?,
         loadPublication: @escaping (Int64) async -> OnboardingPublicationPresentation?,
         presentWiFiTransfer: @escaping (@escaping (OnboardingPublicationPresentation) -> Void) -> Void,
         presentOPDS: @escaping (@escaping (OnboardingPublicationPresentation) -> Void) -> Void,
@@ -54,7 +52,6 @@ struct OnboardingView: View {
     ) {
         _flow = State(initialValue: flow)
         self.importPublication = importPublication
-        self.loadSamplePublication = loadSamplePublication
         self.loadPublication = loadPublication
         self.presentWiFiTransfer = presentWiFiTransfer
         self.presentOPDS = presentOPDS
@@ -183,12 +180,6 @@ struct OnboardingView: View {
                 primaryButton("onboarding_import_one_book", systemImage: "square.and.arrow.down") {
                     showsImportSources = true
                 }
-
-                Button("onboarding_use_sample") {
-                    useSamplePublication()
-                }
-                .font(.body.weight(.semibold))
-                .disabled(isWorking)
 
                 Text("onboarding_supported_formats")
                     .font(.caption)
@@ -435,24 +426,6 @@ struct OnboardingView: View {
             } catch {
                 guard !Task.isCancelled, !hasFinished else { return }
                 errorMessage = error.localizedDescription
-            }
-            isWorking = false
-        }
-    }
-
-    private func useSamplePublication() {
-        guard !hasFinished else { return }
-        workTask?.cancel()
-        isWorking = true
-        errorMessage = nil
-        workTask = Task {
-            if let publication = await loadSamplePublication() {
-                guard !Task.isCancelled, !hasFinished else { return }
-                selectedPublication = publication
-                didChoosePublication(bookID: publication.bookID, source: .sample)
-            } else {
-                guard !Task.isCancelled, !hasFinished else { return }
-                errorMessage = NSLocalizedString("onboarding_sample_error", comment: "")
             }
             isWorking = false
         }

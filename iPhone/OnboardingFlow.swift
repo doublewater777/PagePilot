@@ -22,7 +22,6 @@ struct OnboardingFlow: Codable, Equatable {
 
     enum PublicationSource: Codable, Equatable {
         case user
-        case sample
     }
 
     enum ControlTarget: Codable, Equatable {

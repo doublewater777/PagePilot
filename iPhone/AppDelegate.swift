@@ -6,7 +6,6 @@
 
 import AVFoundation
 import Combine
-import OSLog
 import ReadiumShared
 import SwiftUI
 import UIKit
@@ -276,101 +275,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             .forEach { $0.updateLocalizedContent() }
     }
 
-    private let preloadedBooksKey = "preloadedBooksImported"
-
-    /// Imports preloaded sample books from the app bundle on first launch (fire-and-forget).
-    func importPreloadedBooks(sender rootVC: UIViewController) {
-        Task {
-            _ = await importPreloadedBooksIfNeeded(delayNanoseconds: 400_000_000)
-        }
-    }
-
-    /// Imports preloaded books if needed and returns bookshelf books (for opening a sample).
-    @discardableResult
-    func importPreloadedBooksIfNeeded(delayNanoseconds: UInt64 = 0) async -> [Book] {
-        guard let app else { return [] }
-
-        let log = Logger(subsystem: "com.panyang.PagePilot", category: "PreloadedBooks")
-
-        if UserDefaults.standard.bool(forKey: preloadedBooksKey) {
-            log.info("Already imported, loading existing books")
-            return (try? await app.books.allOnce()) ?? []
-        }
-
-        guard let resourceURL = Bundle.main.resourceURL else {
-            log.error("No resource URL")
-            return []
-        }
-
-        let fileManager = FileManager.default
-        var files: [URL] = []
-
-        let preloadedDir = resourceURL.appendingPathComponent("PreloadedBooks")
-        var isDir: ObjCBool = false
-        if fileManager.fileExists(atPath: preloadedDir.path, isDirectory: &isDir), isDir.boolValue {
-            if let contents = try? fileManager.contentsOfDirectory(at: preloadedDir, includingPropertiesForKeys: nil) {
-                files = contents.filter { $0.pathExtension == "epub" }
-            }
-        }
-
-        if files.isEmpty {
-            log.info("PreloadedBooks directory not found or empty. Searching bundle root...")
-            if let contents = try? fileManager.contentsOfDirectory(at: resourceURL, includingPropertiesForKeys: nil) {
-                files = contents.filter { $0.pathExtension == "epub" && $0.lastPathComponent == "pride_prejudice.epub" }
-            }
-        }
-
-        if files.isEmpty, let fallbackURL = Bundle.main.url(forResource: "pride_prejudice", withExtension: "epub") {
-            log.info("Using Bundle.main.url fallback for pride_prejudice.epub")
-            files = [fallbackURL]
-        }
-
-        guard !files.isEmpty else {
-            log.error("No preloaded epub files found")
-            return []
-        }
-
-        log.info("Found \(files.count) file(s) to import: \(files.map(\.lastPathComponent).joined(separator: ", "))")
-
-        let libraryService = app.library!
-        StartupProfiler.shared.record("importPreloadedBooks Triggered")
-        StartupProfiler.shared.record("importPreloadedBooks detached background Task Start")
-
-        if delayNanoseconds > 0 {
-            try? await Task.sleep(nanoseconds: delayNanoseconds)
-        }
-
-        var imported: [Book] = []
-        for fileURL in files {
-            guard let absoluteURL = fileURL.anyURL.absoluteURL else {
-                log.error("Failed to create AbsoluteURL for \(fileURL.lastPathComponent)")
-                continue
-            }
-
-            log.info("Importing: \(absoluteURL.string)")
-            do {
-                StartupProfiler.shared.record("Start importing: \(fileURL.lastPathComponent)")
-                let book = try await libraryService.importPublication(from: absoluteURL, sender: nil)
-                imported.append(book)
-                log.info("Imported book: \(book.title)")
-                StartupProfiler.shared.record("Finish importing: \(book.title)")
-            } catch {
-                log.error("Import failed for \(fileURL.lastPathComponent): \(String(describing: error))")
-                StartupProfiler.shared.record("Import failed for: \(fileURL.lastPathComponent)")
-            }
-        }
-
-        UserDefaults.standard.set(true, forKey: preloadedBooksKey)
-        log.info("All preloaded books import finished")
-        StartupProfiler.shared.record("All preloaded books import finished")
-        StartupProfiler.shared.printSummary()
-
-        if imported.isEmpty {
-            return (try? await app.books.allOnce()) ?? []
-        }
-        return imported
-    }
-
+    /// Opens a book that was selected during onboarding.
     @MainActor
     func openBookAfterOnboarding(_ book: Book, from rootViewController: UIViewController) async {
         guard let app else { return }
@@ -497,18 +402,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
                     guard let bookID = book.id?.rawValue else {
                         throw LibraryError.importFailed(URLError(.cannotCreateFile))
                     }
-                    // A successfully imported user publication replaces the bundled sample.
-                    UserDefaults.standard.set(true, forKey: self.preloadedBooksKey)
-                    return OnboardingPublicationPresentation(
-                        bookID: bookID,
-                        title: book.title,
-                        coverURL: book.cover?.url
-                    )
-                },
-                loadSamplePublication: { [weak self] in
-                    guard let self else { return nil }
-                    let books = await self.importPreloadedBooksIfNeeded()
-                    guard let book = books.first, let bookID = book.id?.rawValue else { return nil }
                     return OnboardingPublicationPresentation(
                         bookID: bookID,
                         title: book.title,
@@ -535,7 +428,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
                         library: self.app.library.service,
                         onPublicationImported: { [weak self] book in
                             guard let self, let bookID = book.id?.rawValue else { return }
-                            UserDefaults.standard.set(true, forKey: self.preloadedBooksKey)
                             let publication = OnboardingPublicationPresentation(
                                 bookID: bookID,
                                 title: book.title,
@@ -560,7 +452,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
                         library: self.app.library.service,
                         onPublicationImported: { [weak self] book in
                             guard let self, let bookID = book.id?.rawValue else { return }
-                            UserDefaults.standard.set(true, forKey: self.preloadedBooksKey)
                             let publication = OnboardingPublicationPresentation(
                                 bookID: bookID,
                                 title: book.title,
@@ -647,14 +538,6 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             from: rootViewController,
             initialURL: hasSeenOnboarding ? nil : initialURL
         )
-        
-        // Performance Optimization: Only import preloaded books if the user has already seen onboarding.
-        // For fresh installs, it will be triggered when onboarding gets dismissed to prevent stuttering.
-        if UserDefaults.standard.bool(forKey: appDelegate.hasSeenOnboardingKey) {
-            appDelegate.importPreloadedBooks(sender: rootViewController)
-        } else {
-            StartupProfiler.shared.record("First launch: Skipping preloaded books import during onboarding")
-        }
 
         if hasSeenOnboarding, let url = initialURL {
             appDelegate.importPublication(from: url, sender: rootViewController)

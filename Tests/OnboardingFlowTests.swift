@@ -59,7 +59,7 @@ final class OnboardingFlowTests: XCTestCase {
 
     func testSkippingControlTargetKeepsCollapsedWatchGuideEntry() {
         var flow = OnboardingFlow(platform: .iPhone)
-        flow.didChoosePublication(bookID: 42, source: .sample)
+        flow.didChoosePublication(bookID: 42, source: .user)
 
         flow.skipControlTarget()
 
@@ -106,7 +106,7 @@ final class OnboardingFlowTests: XCTestCase {
         defer { defaults.removePersistentDomain(forName: suiteName) }
         let store = OnboardingProgressStore(defaults: defaults)
         var flow = OnboardingFlow(platform: .iPhone)
-        flow.didChoosePublication(bookID: 42, source: .sample)
+        flow.didChoosePublication(bookID: 42, source: .user)
         flow.didChooseControlTarget(.iPhone, hasProAccess: false)
 
         store.save(flow)
