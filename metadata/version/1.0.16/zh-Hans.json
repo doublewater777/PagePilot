@@ -4,5 +4,5 @@
   "marketingUrl": "https://pagepilot.doublewaterapps.com/",
   "promotionalText": "用 Apple Watch 表冠翻页，躺着看书再也不用伸手戳屏幕",
   "supportUrl": "https://pagepilot.doublewaterapps.com/",
-  "whatsNew": "阅读位置现在会在书籍加载完成后保持显示并可靠更新，不再出现底部信息消失或停留在旧状态的问题。本次更新还会在阅读时保持 iPhone 竖屏，并让首页始终保持简洁、无干扰。\n\n【改进】\n\n• 阅读位置加载完成后，阅读器底部会自动刷新；阅读过程中显示也更加稳定。\n• 可重排书籍会持续显示当前阅读位置和总位置数，固定版式书籍则继续显示页码。\n\n【修复】\n\n• 修复返回 App 或屏幕更新时首页导航栏可能重新出现的问题。\n• 修复 iPhone 可能离开竖屏方向的问题。"
+  "whatsNew": "PagePilot 现在是纯粹的自带内容阅读工具。移除了原本内置的样书,首次启动时书架为空。导入你自己的 EPUB、PDF、CBZ 漫画或有声书即可开始阅读,所有内容 100% 保存在本机。"
 }

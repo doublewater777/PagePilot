@@ -4,5 +4,5 @@
   "marketingUrl": "https://pagepilot.doublewaterapps.com/",
   "promotionalText": "Turn pages with Apple Watch Digital Crown — no more reaching for the screen",
   "supportUrl": "https://pagepilot.doublewaterapps.com/",
-  "whatsNew": "Your reading position now stays visible and updates reliably as a book finishes loading—no more disappearing or stale footer information. This update also keeps iPhone in portrait while you read and preserves a clean, distraction-free Home screen.\n\nIMPROVED\n\n• The reader footer now refreshes when reading positions finish loading and remains stable as you move through a book.\n• Reflowable books consistently show the current reading position and total positions, while fixed-layout books continue to show page numbers.\n\nFIXED\n\n• Fixed an issue where the Home navigation bar could reappear after returning to the app or during screen updates.\n• Fixed an issue that could allow iPhone to rotate away from portrait orientation."
+  "whatsNew": "PagePilot is now a strict BYO-content reader. The previously bundled sample book has been removed, so your library starts empty on first launch. Import your own EPUB, PDF, CBZ comics, or audiobooks to start reading — and everything stays 100% on your device."
 }
