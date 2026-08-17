@@ -25,7 +25,6 @@
 "onboarding_later_button" = "Später";
 "onboarding_continue_button" = "Fortfahren";
 "onboarding_start_button" = "Lesen beginnen";
-"onboarding_open_sample_button" = "Beispielbuch öffnen";
 "onboarding_welcome_title" = "Willkommen bei PagePilot";
 "onboarding_welcome_message" = "Ein ruhiger Ort für Ihre Bücher, zum Lesen auf dem iPhone.";
 "onboarding_import_title" = "Bringen Sie Ihre Bibliothek mit";
@@ -40,9 +39,7 @@
 "onboarding_import_source_files" = "Dateien";
 "onboarding_import_source_wifi" = "WLAN-Übertragung";
 "onboarding_import_source_opds" = "OPDS-Feeds durchsuchen";
-"onboarding_use_sample" = "Beispielbuch verwenden";
 "onboarding_supported_formats" = "Unterstützt EPUB, PDF, CBZ, TXT, Markdown und Hörbücher";
-"onboarding_sample_error" = "Das Beispielbuch konnte nicht geöffnet werden. Bitte versuchen Sie es erneut.";
 "onboarding_target_title" = "Wo möchten Sie lesen?";
 "onboarding_target_subtitle" = "Die Apple Watch sendet Seitenwechselbefehle an den von Ihnen ausgewählten Reader.";
 "onboarding_target_this_iphone" = "Dieses iPhone";

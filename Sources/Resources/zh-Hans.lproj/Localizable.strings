@@ -25,7 +25,6 @@
 "onboarding_later_button" = "稍后";
 "onboarding_continue_button" = "继续";
 "onboarding_start_button" = "开始阅读";
-"onboarding_open_sample_button" = "打开演示书";
 "onboarding_welcome_title" = "欢迎使用 PagePilot";
 "onboarding_welcome_message" = "一个安静的书架，用来在 iPhone 上继续读下去。";
 "onboarding_import_title" = "带上你的书";
@@ -40,9 +39,7 @@
 "onboarding_import_source_files" = "从“文件”导入";
 "onboarding_import_source_wifi" = "Wi-Fi 传书";
 "onboarding_import_source_opds" = "浏览 OPDS 书源";
-"onboarding_use_sample" = "使用样书";
 "onboarding_supported_formats" = "支持 EPUB、PDF、CBZ、TXT、Markdown 和有声书";
-"onboarding_sample_error" = "暂时无法打开样书，请重试。";
 "onboarding_target_title" = "你想在哪台设备上阅读？";
 "onboarding_target_subtitle" = "Apple Watch 会把翻页指令发送到你选择的 Reader。";
 "onboarding_target_this_iphone" = "这台 iPhone";
