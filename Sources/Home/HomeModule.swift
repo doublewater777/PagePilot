@@ -61,6 +61,10 @@ private final class HomeNavigationController: UINavigationController {
     }
 
     private func enforceHiddenNavigationBar() {
+        // Home owns the hidden-navigation-bar policy only while its root view
+        // controller is visible. Pushed screens such as Reader manage their own
+        // navigation bar visibility.
+        guard topViewController === viewControllers.first else { return }
         guard !isNavigationBarHidden else { return }
         setNavigationBarHidden(true, animated: false)
     }
