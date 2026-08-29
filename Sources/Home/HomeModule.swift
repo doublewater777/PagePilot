@@ -19,6 +19,9 @@ protocol HomeModuleDelegate: ModuleDelegate {
     /// Called when user wants to continue reading a book
     func homeDidSelectContinueReading(bookId: Book.Id)
 
+    /// Called when user starts a time-boxed reading session.
+    func homeDidSelectMicroReading(bookId: Book.Id, minutes: Int)
+
     /// Called when user wants to go to library tab
     func homeDidSelectGoToLibrary()
 }
@@ -81,8 +84,9 @@ final class HomeModule: HomeModuleAPI {
     }
 
     private(set) lazy var rootViewController: UINavigationController = {
-        let homeView = HomeView(
-            viewModel: HomeViewModel(books: books),
+        let viewModel = HomeViewModel(books: books)
+        let homeView = HomeRootView(
+            viewModel: viewModel,
             delegate: delegate
         )
         let hostingController = UIHostingController(rootView: homeView)

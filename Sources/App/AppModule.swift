@@ -149,19 +149,33 @@ extension AppModule: ReaderModuleDelegate {}
 
 extension AppModule: HomeModuleDelegate {
     func homeDidSelectContinueReading(bookId: Book.Id) {
+        openBookFromHome(bookId: bookId)
+    }
+
+    func homeDidSelectMicroReading(bookId: Book.Id, minutes: Int) {
+        openBookFromHome(bookId: bookId, microReadingMinutes: minutes)
+    }
+
+    func homeDidSelectGoToLibrary() {
+        tabBarController?.selectedIndex = 1
+    }
+
+    private func openBookFromHome(bookId: Book.Id, microReadingMinutes: Int? = nil) {
         Task { @MainActor in
             let nav = home.rootViewController
             do {
                 guard let book = try await books.get(bookId) else { return }
                 guard let pub = try await library.openBook(book, sender: nav) else { return }
+                if let microReadingMinutes {
+                    MicroReadingLaunchStore.prepare(
+                        bookId: bookId,
+                        minutes: microReadingMinutes
+                    )
+                }
                 reader.presentPublication(publication: pub, book: book, in: nav)
             } catch {
                 presentError(UserError(error), from: nav)
             }
         }
-    }
-
-    func homeDidSelectGoToLibrary() {
-        tabBarController?.selectedIndex = 1
     }
 }

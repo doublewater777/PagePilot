@@ -65,6 +65,10 @@ final class ReaderModule: ReaderModuleAPI {
                 viewController.navigationItem.backBarButtonItem = backItem
                 viewController.hidesBottomBarWhenPushed = true
                 navigationController.pushViewController(viewController, animated: true)
+
+                if let session = MicroReadingLaunchStore.consume(for: bookId) {
+                    MicroReadingSessionPresenter.attach(session, to: viewController)
+                }
             }
 
             StartupProfiler.shared.record("ReaderModule: selecting format module")
@@ -95,6 +99,7 @@ final class ReaderModule: ReaderModuleAPI {
                 StartupProfiler.shared.record("ReaderModule: reader view controller ready")
                 await present(readerViewController)
             } catch {
+                await MicroReadingLaunchStore.clear()
                 delegate.presentError(UserError(error), from: navigationController)
             }
         }
