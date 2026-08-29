@@ -116,16 +116,22 @@ private final class MicroReadingSessionController: NSObject {
         resumeTimerIfNeeded()
     }
 
+    @objc private func timerDidFire() {
+        complete()
+    }
+
     private func resumeTimerIfNeeded() {
         guard !isComplete, remaining > 0, activeStartedAt == nil else { return }
 
         activeStartedAt = Date()
         timer?.invalidate()
-        timer = Timer.scheduledTimer(withTimeInterval: remaining, repeats: false) { [weak self] _ in
-            Task { @MainActor in
-                self?.complete()
-            }
-        }
+        timer = Timer.scheduledTimer(
+            timeInterval: remaining,
+            target: self,
+            selector: #selector(timerDidFire),
+            userInfo: nil,
+            repeats: false
+        )
     }
 
     private func pauseTimer() {
