@@ -60,12 +60,16 @@ struct WatchPageTurnSettings {
     /// Fixed crown sensitivity threshold (no longer configurable).
     var crownSensitivity: Double { 2.0 }
 
-    /// Returns a dictionary suitable for WCSession.updateApplicationContext
+    /// Returns a dictionary suitable for WCSession.updateApplicationContext.
+    /// Reading-session fields live beside the persisted Watch settings so any
+    /// progress/settings refresh keeps the dashboard session state intact.
     var watchContext: [String: Any] {
-        [
+        var context: [String: Any] = [
             Keys.controlTarget: controlTarget.rawValue,
             Keys.doubleTapPageTurn: doubleTapPageTurn,
         ]
+        context.merge(WatchReadingSessionContext.contextValues) { _, newValue in newValue }
+        return context
     }
 
     /// Syncs current settings to the paired Apple Watch.

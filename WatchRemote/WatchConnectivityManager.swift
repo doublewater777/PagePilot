@@ -18,6 +18,8 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
     @Published var readerReady = false
     @Published var hasReceivedStatus = false
     @Published var doubleTapPageTurn = true
+    @Published var readingSessionStartedAt: Date?
+    @Published var readingSessionStartProgress: Double = 0.0
 
     /// Last error message (visible on the watch UI for in-the-field debugging).
     @Published var lastError: String = ""
@@ -26,8 +28,12 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
 
     private let controlTargetKey = "watch_control_target"
     private let defaultTargetMigrationKey = "watch_default_target_iphone_migrated"
+    private let readingSessionActiveKey = "readingSessionActive"
+    private let readingSessionStartedAtKey = "readingSessionStartedAt"
+    private let readingSessionStartProgressKey = "readingSessionStartProgress"
     private let relayGraceInterval: TimeInterval = 8.0
     private var statusPollTimer: Timer?
+    private var hasAuthoritativeReadingSessionState = false
     private lazy var commandQueue = ThrottledCommandQueue(interval: 0.1, queue: .main) { [weak self] command, completion in
         self?.performSend(command, completion: completion)
     }
@@ -82,6 +88,18 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
             controlTarget = target
             UserDefaults.standard.set(rawTarget, forKey: controlTargetKey)
         }
+
+        if previousTarget != controlTarget {
+            relayReachable = false
+            bookTitle = ""
+            bookProgress = 0.0
+            readerReady = false
+            hasReceivedStatus = false
+            lastStatusOK = nil
+            lastError = ""
+            resetReadingSessionState()
+        }
+
         if let sensitivity = context["watch_crown_sensitivity"] as? Double {
             self.crownSensitivity = sensitivity
             UserDefaults.standard.set(sensitivity, forKey: "watch_crown_sensitivity")
@@ -97,19 +115,10 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
             if let progress = context["currentBookProgress"] as? Double {
                 self.bookProgress = progress
             }
+            _ = applyReadingSessionContext(context)
         }
-        if previousTarget != controlTarget {
-            relayReachable = false
-            bookTitle = ""
-            bookProgress = 0.0
-            readerReady = false
-            hasReceivedStatus = false
-            lastStatusOK = nil
-            lastError = ""
-            refreshStatusPolling()
-        } else {
-            refreshStatusPolling()
-        }
+
+        refreshStatusPolling()
     }
 
     func sendCommand(_ command: PageCommand) {
@@ -200,6 +209,10 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
                 let errorCode = reply["errorCode"] as? String
                 if errorCode == "NAVIGATOR_NOT_READY" {
                     self.readerReady = false
+                    if !self.hasAuthoritativeReadingSessionState {
+                        self.readingSessionStartedAt = nil
+                        self.readingSessionStartProgress = self.bookProgress
+                    }
                 }
                 if self.controlTarget == .iPad, route == "iPhoneRelay" {
                     if self.isRelayConnectivityError(errorCode) {
@@ -281,6 +294,7 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
 
     private func applyStatusPayload(_ json: [String: Any]) {
         DispatchQueue.main.async {
+            let wasReaderReady = self.readerReady
             self.hasReceivedStatus = true
             if let title = json["bookTitle"] as? String {
                 self.bookTitle = title
@@ -293,11 +307,62 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
             } else if !self.bookTitle.isEmpty {
                 self.readerReady = true
             }
+            if self.controlTarget == .iPhone {
+                _ = self.applyReadingSessionContext(json)
+            }
+            self.updateFallbackReadingSession(wasReaderReady: wasReaderReady)
             if let sensitivity = json["crownSensitivity"] as? Double {
                 self.crownSensitivity = sensitivity
                 UserDefaults.standard.set(sensitivity, forKey: "watch_crown_sensitivity")
             }
         }
+    }
+
+    @discardableResult
+    private func applyReadingSessionContext(_ payload: [String: Any]) -> Bool {
+        guard let active = payload[readingSessionActiveKey] as? Bool else {
+            return false
+        }
+
+        hasAuthoritativeReadingSessionState = true
+        guard active else {
+            readingSessionStartedAt = nil
+            readingSessionStartProgress = bookProgress
+            return true
+        }
+
+        let timestamp = payload[readingSessionStartedAtKey] as? Double ?? 0.0
+        readingSessionStartedAt = timestamp > 0
+            ? Date(timeIntervalSince1970: timestamp)
+            : Date()
+        readingSessionStartProgress = clampProgress(
+            payload[readingSessionStartProgressKey] as? Double ?? bookProgress
+        )
+        return true
+    }
+
+    private func updateFallbackReadingSession(wasReaderReady: Bool) {
+        guard !hasAuthoritativeReadingSessionState else { return }
+
+        if readerReady {
+            if !wasReaderReady || readingSessionStartedAt == nil {
+                readingSessionStartedAt = Date()
+                readingSessionStartProgress = clampProgress(bookProgress)
+            }
+        } else {
+            readingSessionStartedAt = nil
+            readingSessionStartProgress = clampProgress(bookProgress)
+        }
+    }
+
+    private func resetReadingSessionState() {
+        hasAuthoritativeReadingSessionState = false
+        readingSessionStartedAt = nil
+        readingSessionStartProgress = 0.0
+    }
+
+    private func clampProgress(_ value: Double) -> Double {
+        min(max(value, 0.0), 1.0)
     }
 
     private func localized(_ key: String) -> String {

@@ -96,7 +96,12 @@ class ReaderViewController<N: Navigator>: UIViewController,
 
     private func startReadingSessionIfNeeded() {
         guard readingSessionStartDate == nil else { return }
-        readingSessionStartDate = Date()
+        let startDate = Date()
+        readingSessionStartDate = startDate
+        WatchReadingSessionContext.begin(
+            at: startDate,
+            progression: WatchPageTurnService.shared.currentBookProgress
+        )
     }
 
     private func finishReadingSessionIfNeeded(celebrateGoal: Bool = true) {
@@ -104,6 +109,7 @@ class ReaderViewController<N: Navigator>: UIViewController,
 
         let endDate = Date()
         readingSessionStartDate = nil
+        WatchReadingSessionContext.end()
 
         ReadingStatsStore.shared.recordReadingSession(startDate: startDate, endDate: endDate, bookId: bookId)
 
