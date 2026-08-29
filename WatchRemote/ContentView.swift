@@ -75,7 +75,7 @@ struct ContentView: View {
         VStack(spacing: 6) {
             statusMessage
 
-            if connectivityManager.readerReady && !connectivityManager.bookTitle.isEmpty {
+            if isConnected && connectivityManager.readerReady && !connectivityManager.bookTitle.isEmpty {
                 readingDashboard
             } else {
                 Spacer(minLength: 0)
