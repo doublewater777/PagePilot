@@ -11,8 +11,8 @@ import Foundation
 ///
 /// The values are persisted because `WatchPageTurnSettings.watchContext` can
 /// be rebuilt from several call sites (settings changes, progress updates,
-/// reconnects). Keeping the session state here makes every rebuilt context
-/// carry the same authoritative session snapshot.
+/// reconnects). A per-process token prevents an interrupted session from being
+/// treated as active after the app is relaunched.
 enum WatchReadingSessionContext {
     enum Keys {
         static let isActive = "readingSessionActive"
@@ -24,12 +24,15 @@ enum WatchReadingSessionContext {
         static let isActive = "watch_reading_session_active"
         static let startedAt = "watch_reading_session_started_at"
         static let startProgress = "watch_reading_session_start_progress"
+        static let processToken = "watch_reading_session_process_token"
     }
 
     private static let defaults = UserDefaults.standard
+    private static let processToken = UUID().uuidString
 
     static var contextValues: [String: Any] {
-        let active = defaults.bool(forKey: StorageKeys.isActive)
+        let belongsToCurrentProcess = defaults.string(forKey: StorageKeys.processToken) == processToken
+        let active = belongsToCurrentProcess && defaults.bool(forKey: StorageKeys.isActive)
         return [
             Keys.isActive: active,
             Keys.startedAt: active ? defaults.double(forKey: StorageKeys.startedAt) : 0.0,
@@ -46,15 +49,18 @@ enum WatchReadingSessionContext {
         defaults.set(true, forKey: StorageKeys.isActive)
         defaults.set(startDate.timeIntervalSince1970, forKey: StorageKeys.startedAt)
         defaults.set(clampProgress(progression), forKey: StorageKeys.startProgress)
+        defaults.set(processToken, forKey: StorageKeys.processToken)
         publishCurrentReaderContext()
     }
 
     static func end() {
-        guard defaults.bool(forKey: StorageKeys.isActive) else { return }
+        guard defaults.string(forKey: StorageKeys.processToken) == processToken,
+              defaults.bool(forKey: StorageKeys.isActive) else { return }
 
         defaults.set(false, forKey: StorageKeys.isActive)
         defaults.removeObject(forKey: StorageKeys.startedAt)
         defaults.removeObject(forKey: StorageKeys.startProgress)
+        defaults.removeObject(forKey: StorageKeys.processToken)
         publishCurrentReaderContext()
     }
 
