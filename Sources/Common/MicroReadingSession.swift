@@ -1,6 +1,6 @@
 import Foundation
-import UIKit
 import ObjectiveC
+import UIKit
 
 /// A lightweight, time-boxed reading intention started from Home.
 struct MicroReadingSession: Equatable {
@@ -67,6 +67,7 @@ enum MicroReadingLaunchStore {
     }
 }
 
+@MainActor
 private var microReadingControllerAssociationKey: UInt8 = 0
 
 /// Owns the active-time timer for a Micro Reading session. It deliberately
