@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 /// Composes Home with lightweight actions that should stay outside the main
 /// Home layout. This keeps the existing dashboard stable while making short
