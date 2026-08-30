@@ -647,6 +647,13 @@
 "home_shortcut_stats_subtitle" = "Rhythm & streaks";
 "home_shortcut_notes" = "My Notes";
 "home_shortcut_notes_subtitle" = "Highlights & bookmarks";
+"micro_reading_title" = "Micro Reading";
+"micro_reading_minutes_format" = "%d min";
+"micro_reading_description" = "Choose a small promise. Only active reading time counts.";
+"micro_reading_gentle_reminder" = "We’ll remind you at the end. The Reader stays open.";
+"micro_reading_start_format" = "Start %@ Micro Reading";
+"micro_reading_badge_format" = "Micro Reading · %@";
+"micro_reading_complete_format" = "%@ complete — keep reading if you’d like";
 
 /* MARK: Settings */
 "me_tab" = "Me";

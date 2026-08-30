@@ -73,9 +73,15 @@ class ReaderViewController<N: Navigator>: UIViewController,
         startReadingSessionIfNeeded()
     }
 
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        MicroReadingSessionPresenter.readerDidAppear(self)
+    }
+
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
 
+        MicroReadingSessionPresenter.readerWillDisappear(self)
         finishReadingSessionIfNeeded()
         setMainTabBarHidden(false, animated: animated)
         if (isMovingFromParent || isBeingDismissed),

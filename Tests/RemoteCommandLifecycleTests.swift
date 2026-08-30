@@ -3,6 +3,21 @@ import XCTest
 @testable import PagePilot
 
 final class RemoteCommandLifecycleTests: XCTestCase {
+    func testWatchReaderIsUnavailableWhileAppIsInactive() {
+        XCTAssertTrue(
+            WatchReaderAvailabilityPolicy.isReady(
+                hasNavigator: true,
+                applicationIsActive: true
+            )
+        )
+        XCTAssertFalse(
+            WatchReaderAvailabilityPolicy.isReady(
+                hasNavigator: true,
+                applicationIsActive: false
+            )
+        )
+    }
+
     /// Verifies the registration pattern TTSViewModel now uses:
     /// register once, save token, remove on teardown.
     /// The old bug called addTarget on every start(), stacking targets.

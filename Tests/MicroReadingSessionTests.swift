@@ -51,4 +51,26 @@ final class MicroReadingSessionTests: XCTestCase {
             )
         }
     }
+
+    func testCountdownExcludesTimeWhilePaused() {
+        let startedAt = Date(timeIntervalSince1970: 1_000)
+        var countdown = MicroReadingCountdown(duration: 180)
+
+        countdown.resume(at: startedAt)
+        countdown.pause(at: startedAt.addingTimeInterval(45))
+
+        XCTAssertEqual(countdown.remaining(at: startedAt.addingTimeInterval(145)), 135)
+
+        countdown.resume(at: startedAt.addingTimeInterval(145))
+        XCTAssertEqual(countdown.remaining(at: startedAt.addingTimeInterval(160)), 120)
+    }
+
+    func testCountdownClampsAtZero() {
+        let startedAt = Date(timeIntervalSince1970: 1_000)
+        var countdown = MicroReadingCountdown(duration: 3)
+
+        countdown.resume(at: startedAt)
+
+        XCTAssertTrue(countdown.isComplete(at: startedAt.addingTimeInterval(4)))
+    }
 }

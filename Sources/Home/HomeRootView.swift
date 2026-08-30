@@ -1,81 +1,106 @@
 import SwiftUI
 import UIKit
 
-/// Composes Home with lightweight actions that should stay outside the main
-/// Home layout. This keeps the existing dashboard stable while making short
-/// reading sessions immediately available above the tab bar.
 struct HomeRootView: View {
     @ObservedObject var viewModel: HomeViewModel
     weak var delegate: HomeModuleDelegate?
 
     var body: some View {
         HomeView(viewModel: viewModel, delegate: delegate)
-            .safeAreaInset(edge: .bottom, spacing: 0) {
-                if let book = viewModel.lastReadBook {
-                    MicroReadingQuickStartBar { minutes in
-                        delegate?.homeDidSelectMicroReading(
-                            bookId: book.id,
-                            minutes: minutes
-                        )
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 8)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
-                }
-            }
-            .animation(
-                .spring(response: 0.35, dampingFraction: 0.8),
-                value: viewModel.lastReadBook?.id
-            )
     }
 }
 
-private struct MicroReadingQuickStartBar: View {
-    let onSelect: (Int) -> Void
+struct MicroReadingStartSheet: View {
+    let bookTitle: String
+    @Binding var selectedMinutes: Int
+    let onStart: (Int) -> Void
+
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "timer")
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(AppColors.accentTeal)
-                .accessibilityHidden(true)
+        ScrollView(.vertical, showsIndicators: false) {
+            VStack(spacing: 24) {
+                VStack(spacing: 10) {
+                    Image(systemName: "timer")
+                        .font(.system(size: 24, weight: .semibold))
+                        .foregroundStyle(AppColors.accentTeal)
+                        .frame(width: 52, height: 52)
+                        .background(AppColors.accentTeal.opacity(colorScheme == .dark ? 0.18 : 0.1))
+                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
 
-            ForEach(MicroReadingPolicy.supportedMinutes, id: \.self) { minutes in
-                Button {
-                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                    onSelect(minutes)
-                } label: {
-                    Text(MicroReadingPolicy.localizedDuration(forMinutes: minutes))
-                        .font(.system(size: 13, weight: .semibold, design: .rounded))
-                        .monospacedDigit()
+                    Text(NSLocalizedString("micro_reading_title", comment: ""))
+                        .font(.system(size: 22, weight: .bold))
                         .foregroundStyle(AppColors.primaryText)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 9)
-                        .background(AppColors.accentBlue.opacity(0.09))
-                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+
+                    Text(bookTitle)
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundStyle(AppColors.secondaryText)
+                        .lineLimit(1)
+
+                    Text(NSLocalizedString("micro_reading_description", comment: ""))
+                        .font(.system(size: 14))
+                        .foregroundStyle(AppColors.secondaryText)
+                        .multilineTextAlignment(.center)
                 }
-                .buttonStyle(.plain)
-                .accessibilityLabel(
-                    Text(MicroReadingPolicy.localizedDuration(forMinutes: minutes))
-                )
+
+                HStack(spacing: 10) {
+                    ForEach(MicroReadingPolicy.supportedMinutes, id: \.self) { minutes in
+                        Button {
+                            selectedMinutes = minutes
+                            UISelectionFeedbackGenerator().selectionChanged()
+                        } label: {
+                            Text(MicroReadingPolicy.localizedDuration(forMinutes: minutes))
+                                .font(.system(size: 15, weight: .semibold, design: .rounded))
+                                .monospacedDigit()
+                                .foregroundStyle(
+                                    selectedMinutes == minutes ? Color.white : AppColors.primaryText
+                                )
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 12)
+                                .background(
+                                    selectedMinutes == minutes
+                                        ? AnyShapeStyle(AppColors.horizontalGradient)
+                                        : AnyShapeStyle(AppColors.accentBlue.opacity(colorScheme == .dark ? 0.16 : 0.08))
+                                )
+                                .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityAddTraits(selectedMinutes == minutes ? .isSelected : [])
+                    }
+                }
+
+                VStack(spacing: 12) {
+                    Label(
+                        NSLocalizedString("micro_reading_gentle_reminder", comment: ""),
+                        systemImage: "bell.badge"
+                    )
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(AppColors.tertiaryText)
+
+                    Button {
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        onStart(selectedMinutes)
+                    } label: {
+                        Text(
+                            String(
+                                format: NSLocalizedString("micro_reading_start_format", comment: ""),
+                                MicroReadingPolicy.localizedDuration(forMinutes: selectedMinutes)
+                            )
+                        )
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 15)
+                        .background(AppColors.horizontalGradient)
+                        .clipShape(RoundedRectangle(cornerRadius: 15, style: .continuous))
+                    }
+                    .buttonStyle(.plain)
+                }
             }
+            .padding(.top, 24)
+            .padding(.horizontal, 24)
+            .padding(.bottom, 24)
         }
-        .padding(10)
-        .background(AppColors.cardBackground)
-        .clipShape(
-            RoundedRectangle(
-                cornerRadius: AppColors.cardCornerRadius,
-                style: .continuous
-            )
-        )
-        .overlay {
-            RoundedRectangle(
-                cornerRadius: AppColors.cardCornerRadius,
-                style: .continuous
-            )
-            .stroke(Color.primary.opacity(0.06), lineWidth: 1)
-        }
-        .shadow(color: Color.black.opacity(0.04), radius: 12, y: 6)
-        .accessibilityElement(children: .contain)
+        .background(AppColors.background)
     }
 }

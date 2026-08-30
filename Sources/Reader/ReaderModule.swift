@@ -73,6 +73,7 @@ final class ReaderModule: ReaderModuleAPI {
 
             StartupProfiler.shared.record("ReaderModule: selecting format module")
             guard let module = self.formatModules.first(where: { $0.supports(publication) }) else {
+                await MicroReadingLaunchStore.clear()
                 delegate.presentError(ReaderError.formatNotSupported, from: navigationController)
                 return
             }
@@ -136,4 +137,3 @@ extension ReaderModule: ReaderFormatModuleDelegate {
         delegate?.presentError(error, from: viewController)
     }
 }
-

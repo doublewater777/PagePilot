@@ -647,6 +647,13 @@
 "home_shortcut_stats_subtitle" = "Ritmo y rayas";
 "home_shortcut_notes" = "Mis notas";
 "home_shortcut_notes_subtitle" = "Destacados y marcadores";
+"micro_reading_title" = "Microlectura";
+"micro_reading_minutes_format" = "%d min";
+"micro_reading_description" = "Elige un pequeño compromiso. Solo cuenta el tiempo de lectura activa.";
+"micro_reading_gentle_reminder" = "Te avisaremos al terminar. El lector permanecerá abierto.";
+"micro_reading_start_format" = "Iniciar %@ de microlectura";
+"micro_reading_badge_format" = "Microlectura · %@";
+"micro_reading_complete_format" = "%@ completados — continúa si quieres";
 
 /* MARK: Settings */
 "me_tab" = "A mí";

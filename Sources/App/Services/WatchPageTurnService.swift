@@ -27,6 +27,12 @@ enum WatchAvailability {
     case ready
 }
 
+enum WatchReaderAvailabilityPolicy {
+    static func isReady(hasNavigator: Bool, applicationIsActive: Bool) -> Bool {
+        hasNavigator && applicationIsActive
+    }
+}
+
 private final class PagePilotLANBrowser: NSObject, NetServiceBrowserDelegate, NetServiceDelegate {
     static let shared = PagePilotLANBrowser()
 
@@ -636,7 +642,10 @@ final class WatchPageTurnService: NSObject, ObservableObject {
                         "status": "ok",
                         "ok": true,
                         "target": "ipad",
-                        "readerReady": WatchPageTurnService.shared.activeNavigator != nil,
+                        "readerReady": WatchReaderAvailabilityPolicy.isReady(
+                            hasNavigator: WatchPageTurnService.shared.activeNavigator != nil,
+                            applicationIsActive: UIApplication.shared.applicationState == .active
+                        ),
                         "bookTitle": title,
                         "bookProgress": progress,
                         "crownSensitivity": sensitivity
@@ -660,7 +669,11 @@ final class WatchPageTurnService: NSObject, ObservableObject {
                 Task { @MainActor in
                     WatchPageTurnService.shared.markLANWatchConnected(remoteAddress: remote)
 
-                    guard let navigator = WatchPageTurnService.shared.activeNavigator else {
+                    guard let navigator = WatchPageTurnService.shared.activeNavigator,
+                          WatchReaderAvailabilityPolicy.isReady(
+                              hasNavigator: true,
+                              applicationIsActive: UIApplication.shared.applicationState == .active
+                          ) else {
                         completionBlock(WatchPageTurnService.shared.jsonResponse(
                             WatchPageTurnService.shared.errorPayload(
                                 route: WatchPageTurnRoute.direct,

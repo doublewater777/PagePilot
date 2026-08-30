@@ -647,6 +647,13 @@
 "home_shortcut_stats_subtitle" = "节奏与连续天数";
 "home_shortcut_notes" = "我的笔记";
 "home_shortcut_notes_subtitle" = "高亮与书签";
+"micro_reading_title" = "微阅读";
+"micro_reading_minutes_format" = "%d 分钟";
+"micro_reading_description" = "给自己一个小约定，只计算真正阅读的时间。";
+"micro_reading_gentle_reminder" = "到点轻轻提醒，阅读器不会自动退出。";
+"micro_reading_start_format" = "开始 %@微阅读";
+"micro_reading_badge_format" = "微阅读 · %@";
+"micro_reading_complete_format" = "已完成 %@，想继续就继续";
 
 /* MARK: Settings */
 "me_tab" = "我";

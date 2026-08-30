@@ -287,6 +287,10 @@ struct HomeView: View {
     @State private var localizationRefreshID = AppAppearancePreferences.language.rawValue
     @State private var showStats = false
     @State private var showNotes = false
+    @State private var selectedMicroReadingMinutes = 5
+    @State private var pendingMicroReadingMinutes: Int?
+    @State private var pendingMicroReadingBookId: Book.Id?
+    @State private var microReadingBook: LastReadBook?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -370,6 +374,29 @@ struct HomeView: View {
             .navigationViewStyle(.stack)
             .presentationDragIndicator(.visible)
             .presentationBackground(Color(.systemGroupedBackground))
+        }
+        .sheet(
+            item: $microReadingBook,
+            onDismiss: {
+                guard let minutes = pendingMicroReadingMinutes,
+                      let bookId = pendingMicroReadingBookId else { return }
+                pendingMicroReadingMinutes = nil
+                pendingMicroReadingBookId = nil
+                delegate?.homeDidSelectMicroReading(bookId: bookId, minutes: minutes)
+            }
+        ) { book in
+            MicroReadingStartSheet(
+                bookTitle: book.title,
+                selectedMinutes: $selectedMicroReadingMinutes,
+                onStart: { minutes in
+                    pendingMicroReadingMinutes = minutes
+                    pendingMicroReadingBookId = book.id
+                    microReadingBook = nil
+                }
+            )
+            .presentationDetents([.medium])
+            .presentationDragIndicator(.visible)
+            .presentationBackground(AppColors.background)
         }
     }
 
@@ -526,6 +553,26 @@ struct HomeView: View {
                     .foregroundColor(AppColors.secondaryText)
 
                 Spacer()
+
+                Button {
+                    guard let book = viewModel.lastReadBook else { return }
+                    selectedMicroReadingMinutes = 5
+                    pendingMicroReadingMinutes = nil
+                    pendingMicroReadingBookId = nil
+                    microReadingBook = book
+                } label: {
+                    Label(
+                        NSLocalizedString("micro_reading_title", comment: ""),
+                        systemImage: "timer"
+                    )
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(AppColors.accentTeal)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(AppColors.accentTeal.opacity(colorScheme == .dark ? 0.16 : 0.08))
+                    .clipShape(Capsule())
+                }
+                .buttonStyle(.plain)
             }
             .padding(.leading, 4)
 

@@ -647,6 +647,13 @@
 "home_shortcut_stats_subtitle" = "Rhythmus und Serien";
 "home_shortcut_notes" = "Meine Notizen";
 "home_shortcut_notes_subtitle" = "Markierungen und Lesezeichen";
+"micro_reading_title" = "Kurzlesen";
+"micro_reading_minutes_format" = "%d Min.";
+"micro_reading_description" = "Setzen Sie sich ein kleines Ziel. Nur aktive Lesezeit zählt.";
+"micro_reading_gentle_reminder" = "Am Ende erinnern wir Sie. Der Reader bleibt geöffnet.";
+"micro_reading_start_format" = "%@ Kurzlesen starten";
+"micro_reading_badge_format" = "Kurzlesen · %@";
+"micro_reading_complete_format" = "%@ geschafft — lesen Sie gern weiter";
 
 /* MARK: Settings */
 "me_tab" = "Ich";

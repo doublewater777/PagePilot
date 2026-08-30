@@ -17,14 +17,42 @@ enum MicroReadingPolicy {
     }
 
     static func localizedDuration(forMinutes minutes: Int) -> String {
-        localizedDuration(seconds: TimeInterval(minutes * 60))
+        String(
+            format: NSLocalizedString("micro_reading_minutes_format", comment: ""),
+            minutes
+        )
     }
 
     static func localizedDuration(seconds: TimeInterval) -> String {
-        let formatter = DateComponentsFormatter()
-        formatter.allowedUnits = [.minute]
-        formatter.unitsStyle = .abbreviated
-        return formatter.string(from: seconds) ?? "\(max(1, Int(seconds / 60))) min"
+        localizedDuration(forMinutes: max(1, Int(seconds / 60)))
+    }
+}
+
+struct MicroReadingCountdown {
+    private(set) var remainingDuration: TimeInterval
+    private var activeStartedAt: Date?
+
+    init(duration: TimeInterval) {
+        remainingDuration = duration
+    }
+
+    mutating func resume(at date: Date = Date()) {
+        guard remainingDuration > 0, activeStartedAt == nil else { return }
+        activeStartedAt = date
+    }
+
+    mutating func pause(at date: Date = Date()) {
+        remainingDuration = remaining(at: date)
+        activeStartedAt = nil
+    }
+
+    func remaining(at date: Date = Date()) -> TimeInterval {
+        guard let activeStartedAt else { return remainingDuration }
+        return max(0, remainingDuration - date.timeIntervalSince(activeStartedAt))
+    }
+
+    func isComplete(at date: Date = Date()) -> Bool {
+        remaining(at: date) <= 0
     }
 }
 
@@ -70,6 +98,57 @@ enum MicroReadingLaunchStore {
 @MainActor
 private var microReadingControllerAssociationKey: UInt8 = 0
 
+private final class MicroReadingBadgeView: UIVisualEffectView {
+    private let iconView = UIImageView(image: UIImage(systemName: "timer"))
+    private let label = UILabel()
+
+    init() {
+        super.init(effect: UIBlurEffect(style: .systemThinMaterial))
+
+        translatesAutoresizingMaskIntoConstraints = false
+        layer.cornerRadius = 17
+        clipsToBounds = true
+        isUserInteractionEnabled = false
+        isAccessibilityElement = true
+        accessibilityIdentifier = "microReadingCountdown"
+
+        iconView.tintColor = UIColor(red: 41 / 255, green: 158 / 255, blue: 148 / 255, alpha: 1)
+        iconView.preferredSymbolConfiguration = UIImage.SymbolConfiguration(pointSize: 12, weight: .semibold)
+
+        label.font = .monospacedDigitSystemFont(ofSize: 13, weight: .semibold)
+        label.textColor = .label
+
+        let stack = UIStackView(arrangedSubviews: [iconView, label])
+        stack.axis = .horizontal
+        stack.alignment = .center
+        stack.spacing = 6
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        contentView.addSubview(stack)
+
+        NSLayoutConstraint.activate([
+            stack.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 12),
+            stack.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -12),
+            stack.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 8),
+            stack.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -8),
+        ])
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    func update(remaining: TimeInterval) {
+        let totalSeconds = max(0, Int(ceil(remaining)))
+        let time = String(format: "%d:%02d", totalSeconds / 60, totalSeconds % 60)
+        label.text = String(
+            format: NSLocalizedString("micro_reading_badge_format", comment: ""),
+            time
+        )
+        accessibilityLabel = label.text
+    }
+}
+
 /// Owns the active-time timer for a Micro Reading session. It deliberately
 /// does not auto-dismiss the Reader when time is up: reaching the target is a
 /// gentle checkpoint, not an interruption.
@@ -77,104 +156,125 @@ private var microReadingControllerAssociationKey: UInt8 = 0
 private final class MicroReadingSessionController: NSObject {
     private weak var viewController: UIViewController?
     private let session: MicroReadingSession
-    private var remaining: TimeInterval
-    private var activeStartedAt: Date?
+    private var countdown: MicroReadingCountdown
     private var timer: Timer?
+    private var badgeView: MicroReadingBadgeView?
+    private var isReaderVisible = false
     private var isComplete = false
 
     init(session: MicroReadingSession, viewController: UIViewController) {
         self.session = session
         self.viewController = viewController
-        remaining = session.duration
+        countdown = MicroReadingCountdown(duration: session.duration)
         super.init()
+    }
+
+    deinit {
+        timer?.invalidate()
+        NotificationCenter.default.removeObserver(self)
     }
 
     func start() {
         NotificationCenter.default.addObserver(
             self,
-            selector: #selector(appDidEnterBackground),
-            name: UIApplication.didEnterBackgroundNotification,
+            selector: #selector(appWillResignActive),
+            name: UIApplication.willResignActiveNotification,
             object: nil
         )
         NotificationCenter.default.addObserver(
             self,
-            selector: #selector(appWillEnterForeground),
-            name: UIApplication.willEnterForegroundNotification,
+            selector: #selector(appDidBecomeActive),
+            name: UIApplication.didBecomeActiveNotification,
             object: nil
         )
 
-        showStartCheckpoint()
+        installBadge()
+        isReaderVisible = viewController?.view.window != nil
         resumeTimerIfNeeded()
     }
 
-    @objc private func appDidEnterBackground() {
+    func readerDidAppear() {
+        isReaderVisible = true
+        resumeTimerIfNeeded()
+    }
+
+    func readerWillDisappear() {
+        isReaderVisible = false
         pauseTimer()
     }
 
-    @objc private func appWillEnterForeground() {
-        guard viewController?.view.window != nil else { return }
+    @objc private func appWillResignActive() {
+        pauseTimer()
+    }
+
+    @objc private func appDidBecomeActive() {
         resumeTimerIfNeeded()
     }
 
     @objc private func timerDidFire() {
-        complete()
+        let now = Date()
+        let remaining = countdown.remaining(at: now)
+        badgeView?.update(remaining: remaining)
+        if countdown.isComplete(at: now) {
+            complete(at: now)
+        }
     }
 
     private func resumeTimerIfNeeded() {
-        guard !isComplete, remaining > 0, activeStartedAt == nil else { return }
+        guard !isComplete,
+              isReaderVisible,
+              UIApplication.shared.applicationState == .active,
+              countdown.remainingDuration > 0,
+              timer == nil else { return }
 
-        activeStartedAt = Date()
-        timer?.invalidate()
-        timer = Timer.scheduledTimer(
-            timeInterval: remaining,
-            target: self,
-            selector: #selector(timerDidFire),
-            userInfo: nil,
-            repeats: false
-        )
+        countdown.resume()
+        let timer = Timer(timeInterval: 1, repeats: true) { [weak self] _ in
+            Task { @MainActor in
+                self?.timerDidFire()
+            }
+        }
+        self.timer = timer
+        RunLoop.main.add(timer, forMode: .common)
+        timerDidFire()
     }
 
     private func pauseTimer() {
-        guard let activeStartedAt else { return }
-
-        remaining = max(0, remaining - Date().timeIntervalSince(activeStartedAt))
-        self.activeStartedAt = nil
+        countdown.pause()
         timer?.invalidate()
         timer = nil
-
-        if remaining == 0 {
-            complete()
-        }
+        badgeView?.update(remaining: countdown.remainingDuration)
     }
 
-    private func complete() {
+    private func complete(at date: Date) {
         guard !isComplete else { return }
 
-        if let activeStartedAt {
-            remaining = max(0, remaining - Date().timeIntervalSince(activeStartedAt))
-        }
-        guard remaining <= 0.25 else {
-            self.activeStartedAt = nil
-            resumeTimerIfNeeded()
-            return
-        }
-
+        countdown.pause(at: date)
         isComplete = true
-        remaining = 0
-        self.activeStartedAt = nil
         timer?.invalidate()
         timer = nil
+        badgeView?.removeFromSuperview()
+        badgeView = nil
 
         guard let view = viewController?.view, view.window != nil else { return }
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
         let label = MicroReadingPolicy.localizedDuration(seconds: session.duration)
-        toast("✓ \(label)", on: view, duration: 2)
+        let message = String(
+            format: NSLocalizedString("micro_reading_complete_format", comment: ""),
+            label
+        )
+        toast(message, on: view, duration: 2.5)
     }
 
-    private func showStartCheckpoint() {
+    private func installBadge() {
         guard let view = viewController?.view else { return }
-        let label = MicroReadingPolicy.localizedDuration(seconds: session.duration)
-        toast("⏱︎ \(label)", on: view, duration: 1.5)
+        let badge = MicroReadingBadgeView()
+        badge.update(remaining: countdown.remainingDuration)
+        view.addSubview(badge)
+        NSLayoutConstraint.activate([
+            badge.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            badge.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 8),
+        ])
+        badgeView = badge
     }
 }
 
@@ -192,5 +292,20 @@ enum MicroReadingSessionPresenter {
             .OBJC_ASSOCIATION_RETAIN_NONATOMIC
         )
         controller.start()
+    }
+
+    static func readerDidAppear(_ viewController: UIViewController) {
+        controller(for: viewController)?.readerDidAppear()
+    }
+
+    static func readerWillDisappear(_ viewController: UIViewController) {
+        controller(for: viewController)?.readerWillDisappear()
+    }
+
+    private static func controller(for viewController: UIViewController) -> MicroReadingSessionController? {
+        objc_getAssociatedObject(
+            viewController,
+            &microReadingControllerAssociationKey
+        ) as? MicroReadingSessionController
     }
 }
