@@ -73,4 +73,9 @@ final class MicroReadingSessionTests: XCTestCase {
 
         XCTAssertTrue(countdown.isComplete(at: startedAt.addingTimeInterval(4)))
     }
+
+    func testCountdownTextRoundsUpToAvoidShowingZeroEarly() {
+        XCTAssertEqual(MicroReadingPolicy.countdownText(remaining: 59.1), "1:00")
+        XCTAssertEqual(MicroReadingPolicy.countdownText(remaining: 0), "0:00")
+    }
 }

@@ -26,6 +26,11 @@ enum MicroReadingPolicy {
     static func localizedDuration(seconds: TimeInterval) -> String {
         localizedDuration(forMinutes: max(1, Int(seconds / 60)))
     }
+
+    static func countdownText(remaining: TimeInterval) -> String {
+        let totalSeconds = max(0, Int(ceil(remaining)))
+        return String(format: "%d:%02d", totalSeconds / 60, totalSeconds % 60)
+    }
 }
 
 struct MicroReadingCountdown {
@@ -98,54 +103,29 @@ enum MicroReadingLaunchStore {
 @MainActor
 private var microReadingControllerAssociationKey: UInt8 = 0
 
-private final class MicroReadingBadgeView: UIVisualEffectView {
-    private let iconView = UIImageView(image: UIImage(systemName: "timer"))
-    private let label = UILabel()
-
+private final class MicroReadingStatusView: UILabel {
     init() {
-        super.init(effect: UIBlurEffect(style: .systemThinMaterial))
+        super.init(frame: .zero)
 
-        translatesAutoresizingMaskIntoConstraints = false
-        layer.cornerRadius = 17
-        clipsToBounds = true
         isUserInteractionEnabled = false
         isAccessibilityElement = true
         accessibilityIdentifier = "microReadingCountdown"
-
-        iconView.tintColor = UIColor(red: 41 / 255, green: 158 / 255, blue: 148 / 255, alpha: 1)
-        iconView.preferredSymbolConfiguration = UIImage.SymbolConfiguration(pointSize: 12, weight: .semibold)
-
-        label.font = .monospacedDigitSystemFont(ofSize: 13, weight: .semibold)
-        label.textColor = .label
-
-        let stack = UIStackView(arrangedSubviews: [iconView, label])
-        stack.axis = .horizontal
-        stack.alignment = .center
-        stack.spacing = 6
-        stack.translatesAutoresizingMaskIntoConstraints = false
-        contentView.addSubview(stack)
-
-        NSLayoutConstraint.activate([
-            stack.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 12),
-            stack.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -12),
-            stack.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 8),
-            stack.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -8),
-        ])
+        font = .monospacedDigitSystemFont(ofSize: 12, weight: .regular)
+        textColor = .secondaryLabel
     }
 
     @available(*, unavailable)
-    required init?(coder: NSCoder) {
+    required init(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
 
     func update(remaining: TimeInterval) {
-        let totalSeconds = max(0, Int(ceil(remaining)))
-        let time = String(format: "%d:%02d", totalSeconds / 60, totalSeconds % 60)
-        label.text = String(
+        let time = MicroReadingPolicy.countdownText(remaining: remaining)
+        text = "· \(time)"
+        accessibilityLabel = String(
             format: NSLocalizedString("micro_reading_badge_format", comment: ""),
             time
         )
-        accessibilityLabel = label.text
     }
 }
 
@@ -158,7 +138,7 @@ private final class MicroReadingSessionController: NSObject {
     private let session: MicroReadingSession
     private var countdown: MicroReadingCountdown
     private var timer: Timer?
-    private var badgeView: MicroReadingBadgeView?
+    private var statusView: MicroReadingStatusView?
     private var isReaderVisible = false
     private var isComplete = false
 
@@ -188,7 +168,7 @@ private final class MicroReadingSessionController: NSObject {
             object: nil
         )
 
-        installBadge()
+        installStatusView()
         isReaderVisible = viewController?.view.window != nil
         resumeTimerIfNeeded()
     }
@@ -214,7 +194,7 @@ private final class MicroReadingSessionController: NSObject {
     @objc private func timerDidFire() {
         let now = Date()
         let remaining = countdown.remaining(at: now)
-        badgeView?.update(remaining: remaining)
+        statusView?.update(remaining: remaining)
         if countdown.isComplete(at: now) {
             complete(at: now)
         }
@@ -242,7 +222,7 @@ private final class MicroReadingSessionController: NSObject {
         countdown.pause()
         timer?.invalidate()
         timer = nil
-        badgeView?.update(remaining: countdown.remainingDuration)
+        statusView?.update(remaining: countdown.remainingDuration)
     }
 
     private func complete(at date: Date) {
@@ -252,8 +232,7 @@ private final class MicroReadingSessionController: NSObject {
         isComplete = true
         timer?.invalidate()
         timer = nil
-        badgeView?.removeFromSuperview()
-        badgeView = nil
+        removeStatusView()
 
         guard let view = viewController?.view, view.window != nil else { return }
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
@@ -265,16 +244,27 @@ private final class MicroReadingSessionController: NSObject {
         toast(message, on: view, duration: 2.5)
     }
 
-    private func installBadge() {
+    private func installStatusView() {
         guard let view = viewController?.view else { return }
-        let badge = MicroReadingBadgeView()
-        badge.update(remaining: countdown.remainingDuration)
-        view.addSubview(badge)
+        let statusView = MicroReadingStatusView()
+        statusView.update(remaining: countdown.remainingDuration)
+        statusView.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(statusView)
         NSLayoutConstraint.activate([
-            badge.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            badge.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 8),
+            statusView.leadingAnchor.constraint(equalTo: view.centerXAnchor, constant: 40),
+            statusView.bottomAnchor.constraint(
+                equalTo: view.safeAreaLayoutGuide.bottomAnchor,
+                constant: -QuickPositionJumpPolicy.positionIndicatorBottomSpacing
+            ),
+            statusView.trailingAnchor.constraint(lessThanOrEqualTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -16),
         ])
-        badgeView = badge
+
+        self.statusView = statusView
+    }
+
+    private func removeStatusView() {
+        statusView?.removeFromSuperview()
+        statusView = nil
     }
 }
 
