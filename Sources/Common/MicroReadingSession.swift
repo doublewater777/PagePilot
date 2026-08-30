@@ -1,7 +1,6 @@
 import Foundation
 import ObjectiveC
 import UIKit
-import ActivityKit
 
 /// A lightweight, time-boxed reading intention started from Home.
 struct MicroReadingSession: Equatable {
@@ -31,15 +30,6 @@ enum MicroReadingPolicy {
     static func countdownText(remaining: TimeInterval) -> String {
         let totalSeconds = max(0, Int(ceil(remaining)))
         return String(format: "%d:%02d", totalSeconds / 60, totalSeconds % 60)
-    }
-}
-
-enum MicroReadingLiveActivityPolicy {
-    static func shouldUseLiveActivity(
-        isSupported: Bool,
-        areActivitiesEnabled: Bool
-    ) -> Bool {
-        isSupported && areActivitiesEnabled
     }
 }
 
@@ -149,7 +139,6 @@ private final class MicroReadingSessionController: NSObject {
     private var countdown: MicroReadingCountdown
     private var timer: Timer?
     private var statusView: MicroReadingStatusView?
-    private var liveActivity: Activity<MicroReadingLiveActivityAttributes>?
     private var isReaderVisible = false
     private var isComplete = false
 
@@ -180,7 +169,6 @@ private final class MicroReadingSessionController: NSObject {
         )
 
         installStatusView()
-        startLiveActivityIfPossible()
         isReaderVisible = viewController?.view.window != nil
         resumeTimerIfNeeded()
     }
@@ -200,7 +188,6 @@ private final class MicroReadingSessionController: NSObject {
     }
 
     @objc private func appDidBecomeActive() {
-        fallBackToFooterIfLiveActivitiesWereDisabled()
         resumeTimerIfNeeded()
     }
 
@@ -221,7 +208,6 @@ private final class MicroReadingSessionController: NSObject {
               timer == nil else { return }
 
         countdown.resume()
-        updateLiveActivity(isReading: true)
         let timer = Timer(timeInterval: 1, repeats: true) { [weak self] _ in
             Task { @MainActor in
                 self?.timerDidFire()
@@ -237,7 +223,6 @@ private final class MicroReadingSessionController: NSObject {
         timer?.invalidate()
         timer = nil
         statusView?.update(remaining: countdown.remainingDuration)
-        updateLiveActivity(isReading: false)
     }
 
     private func complete(at date: Date) {
@@ -248,7 +233,6 @@ private final class MicroReadingSessionController: NSObject {
         timer?.invalidate()
         timer = nil
         removeStatusView()
-        endLiveActivity()
 
         guard let view = viewController?.view, view.window != nil else { return }
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
@@ -281,70 +265,6 @@ private final class MicroReadingSessionController: NSObject {
     private func removeStatusView() {
         statusView?.removeFromSuperview()
         statusView = nil
-    }
-
-    private func startLiveActivityIfPossible() {
-        let isSupported: Bool
-        if #available(iOS 16.2, *) {
-            isSupported = true
-        } else {
-            isSupported = false
-        }
-
-        guard MicroReadingLiveActivityPolicy.shouldUseLiveActivity(
-            isSupported: isSupported,
-            areActivitiesEnabled: ActivityAuthorizationInfo().areActivitiesEnabled
-        ) else {
-            return
-        }
-
-        do {
-            let content = liveActivityContent(isReading: false)
-            liveActivity = try Activity.request(
-                attributes: MicroReadingLiveActivityAttributes(),
-                content: content,
-                pushType: nil
-            )
-            statusView?.isHidden = true
-        } catch {
-            // The system can decline an activity because of its active-activity
-            // limit. Keep the footer visible as the reliable fallback.
-        }
-    }
-
-    private func fallBackToFooterIfLiveActivitiesWereDisabled() {
-        guard liveActivity != nil,
-              !ActivityAuthorizationInfo().areActivitiesEnabled else {
-            return
-        }
-
-        statusView?.isHidden = false
-        endLiveActivity()
-    }
-
-    private func updateLiveActivity(isReading: Bool) {
-        guard let liveActivity else { return }
-        let content = liveActivityContent(isReading: isReading)
-        Task {
-            await liveActivity.update(content)
-        }
-    }
-
-    private func endLiveActivity() {
-        guard let liveActivity else { return }
-        self.liveActivity = nil
-        Task {
-            await liveActivity.end(liveActivityContent(isReading: false), dismissalPolicy: .immediate)
-        }
-    }
-
-    private func liveActivityContent(isReading: Bool) -> ActivityContent<MicroReadingLiveActivityAttributes.ContentState> {
-        let remaining = countdown.remaining()
-        let state = MicroReadingLiveActivityAttributes.ContentState(
-            endDate: isReading ? Date().addingTimeInterval(remaining) : nil,
-            pausedRemaining: isReading ? nil : remaining
-        )
-        return ActivityContent(state: state, staleDate: nil)
     }
 }
 

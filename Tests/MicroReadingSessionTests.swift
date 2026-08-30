@@ -78,25 +78,4 @@ final class MicroReadingSessionTests: XCTestCase {
         XCTAssertEqual(MicroReadingPolicy.countdownText(remaining: 59.1), "1:00")
         XCTAssertEqual(MicroReadingPolicy.countdownText(remaining: 0), "0:00")
     }
-
-    func testLiveActivityFallsBackWhenUnsupportedOrDisabled() {
-        XCTAssertTrue(
-            MicroReadingLiveActivityPolicy.shouldUseLiveActivity(
-                isSupported: true,
-                areActivitiesEnabled: true
-            )
-        )
-        XCTAssertFalse(
-            MicroReadingLiveActivityPolicy.shouldUseLiveActivity(
-                isSupported: false,
-                areActivitiesEnabled: true
-            )
-        )
-        XCTAssertFalse(
-            MicroReadingLiveActivityPolicy.shouldUseLiveActivity(
-                isSupported: true,
-                areActivitiesEnabled: false
-            )
-        )
-    }
 }

@@ -322,8 +322,6 @@
 	</array>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>PagePilot uses the local network to transfer books and connect to your iPad reader for Apple Watch page controls.</string>
-	<key>NSSupportsLiveActivities</key>
-	<true/>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
