@@ -16,6 +16,7 @@ struct MicroReadingStartSheet: View {
     let onStart: (Int) -> Void
 
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     var body: some View {
         ScrollView(.vertical, showsIndicators: false) {
@@ -97,8 +98,10 @@ struct MicroReadingStartSheet: View {
                     .buttonStyle(.plain)
                 }
             }
-            .padding(.top, 24)
-            .padding(.horizontal, 24)
+            .frame(maxWidth: horizontalSizeClass == .regular ? 560 : .infinity)
+            .frame(maxWidth: .infinity)
+            .padding(.top, horizontalSizeClass == .regular ? 32 : 24)
+            .padding(.horizontal, horizontalSizeClass == .regular ? 32 : 24)
             .padding(.bottom, 24)
         }
         .background(AppColors.background)
