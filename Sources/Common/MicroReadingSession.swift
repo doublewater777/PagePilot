@@ -251,11 +251,12 @@ private final class MicroReadingSessionController: NSObject {
         statusView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(statusView)
         NSLayoutConstraint.activate([
-            statusView.leadingAnchor.constraint(equalTo: view.centerXAnchor, constant: 40),
+            statusView.centerXAnchor.constraint(equalTo: view.safeAreaLayoutGuide.centerXAnchor),
             statusView.bottomAnchor.constraint(
                 equalTo: view.safeAreaLayoutGuide.bottomAnchor,
-                constant: -QuickPositionJumpPolicy.positionIndicatorBottomSpacing
+                constant: -(QuickPositionJumpPolicy.positionIndicatorBottomSpacing + 20)
             ),
+            statusView.leadingAnchor.constraint(greaterThanOrEqualTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 16),
             statusView.trailingAnchor.constraint(lessThanOrEqualTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -16),
         ])
 
