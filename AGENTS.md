@@ -66,6 +66,16 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 platform=iOS Simulator,name=iPhone 17
 
+## 6. iPad and Adaptive Layout
+
+All user-facing iOS UI work must account for both iPhone and iPad.
+
+- Prefer the current container/view width, size classes, and safe areas over `UIDevice.current.orientation` or hard-coded device-specific layouts.
+- Layouts must remain usable when an iPad app is resized in Split View or Stage Manager, not only in full-screen portrait/landscape.
+- Avoid allowing forms, sheets, cards, or readable text to stretch unbounded across a wide iPad screen; use sensible maximum content widths when appropriate.
+- When a change affects layout, verify it on iPhone and iPad, including at least one narrow iPad window width when practical.
+- Rotation and window resizing must not require relaunching the screen to obtain the correct layout.
+
 ---
 
 **These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
