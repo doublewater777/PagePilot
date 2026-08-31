@@ -10,6 +10,12 @@ extension LibraryViewController {
         // Keep the cover close to the original XIB's 150 x 220 book shape.
         static let coverAspectRatio: CGFloat = 220.0 / 150.0
 
+        // Keep grid cards near a comfortable book-cover width while allowing
+        // the column count to adapt to iPad Split View and Stage Manager.
+        static let preferredGridCardWidth: CGFloat = 176
+        static let minimumGridColumns = 2
+        static let maximumGridColumns = 8
+
         // The metadata stack can contain a two-line title, author and reading
         // status. 56 pt was too short once the status row was added.
         static let metadataHeight: CGFloat = 64
@@ -31,7 +37,22 @@ extension LibraryViewController {
             return flowLayout.itemSize
         }
 
-        let width = flowLayout.itemSize.width
+        let contentWidth = max(
+            0,
+            collectionView.bounds.width
+                - collectionView.adjustedContentInset.left
+                - collectionView.adjustedContentInset.right
+        )
+        let spacing = flowLayout.minimumInteritemSpacing
+        let proposedColumns = Int(
+            ((contentWidth + spacing) / (BookCardMetrics.preferredGridCardWidth + spacing)).rounded()
+        )
+        let columnCount = min(
+            max(proposedColumns, BookCardMetrics.minimumGridColumns),
+            BookCardMetrics.maximumGridColumns
+        )
+        let totalSpacing = CGFloat(columnCount - 1) * spacing
+        let width = floor(max(0, contentWidth - totalSpacing) / CGFloat(columnCount))
         let coverWidth = max(0, width - BookCardMetrics.coverHorizontalInset)
         let coverHeight = coverWidth * BookCardMetrics.coverAspectRatio
         let height = ceil(
