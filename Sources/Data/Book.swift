@@ -13,37 +13,28 @@ struct Book: Codable {
     struct Id: EntityId { let rawValue: Int64 }
 
     let id: Id?
-    /// Canonical identifier for the publication, extracted from its metadata.
     var identifier: String?
-    /// Title of the publication, extracted from its metadata.
     var title: String
-    /// Authors of the publication, separated by commas.
     var authors: String?
-    /// Media type associated to the publication.
     var type: String
-    /// Location of the packaged publication or a manifest. It can be a relative
-    /// path to the Documents/ folder, or an absolute URL.
     var url: String
-    /// Location of the cover.
     var coverPath: String?
-    /// Last read location in the publication.
     var locator: Locator? {
         didSet { progression = locator?.locations.totalProgression ?? 0 }
     }
-
-    /// Current progression in the publication, extracted from the locator.
     var progression: Double
-    /// Date of creation.
     var created: Date
-    /// JSON of user preferences specific to this publication (e.g. language,
-    /// reading progression, spreads).
     var preferencesJSON: String?
-    /// Stable cross-device identifier used as the CloudKit record identity.
+
+    /// Stable identity shared by the Book record and all child records.
     var syncID: String
-    /// Domain modification timestamp used for deterministic conflict merging.
+    /// Timestamp for the lightweight ReadingProgress record.
     var updatedAt: Date
-    /// Durable local outbox bit. It is only cleared after CloudKit confirms save.
+    /// Dirty bit for ReadingProgress only.
     var needsSync: Bool
+    /// Dirty bit for the publication metadata/file/cover record. Reading
+    /// progress updates never flip this bit, avoiding repeated CKAsset uploads.
+    var contentNeedsSync: Bool
 
     var mediaType: MediaType {
         MediaType(type) ?? .binary
@@ -62,7 +53,8 @@ struct Book: Codable {
         preferencesJSON: String? = nil,
         syncID: String? = nil,
         updatedAt: Date? = nil,
-        needsSync: Bool = true
+        needsSync: Bool = true,
+        contentNeedsSync: Bool = true
     ) {
         self.id = id
         self.identifier = identifier
@@ -78,14 +70,13 @@ struct Book: Codable {
         self.syncID = syncID ?? CloudSyncIdentifier.book(identifier: identifier)
         self.updatedAt = updatedAt ?? created
         self.needsSync = needsSync
+        self.contentNeedsSync = contentNeedsSync
     }
 
     var cover: FileURL? {
         coverPath.map { Paths.covers.appendingPath($0, isDirectory: false) }
     }
 
-    /// Returns the absolute file URL for the book's local file, or nil if
-    /// the book is remote / the file can't be resolved.
     func absoluteFileURL() throws -> URL? {
         guard let anyURL = AnyURL(string: url) else { return nil }
         switch anyURL {
@@ -112,7 +103,7 @@ struct Book: Codable {
 extension Book: TableRecord, FetchableRecord, PersistableRecord {
     enum Columns: String, ColumnExpression {
         case id, identifier, title, authors, type, url, coverPath, locator, progression, created, preferencesJSON
-        case syncID, updatedAt, needsSync
+        case syncID, updatedAt, needsSync, contentNeedsSync
     }
 }
 
@@ -129,7 +120,6 @@ final class BookRepository {
         }
     }
 
-    /// Returns the first book with the given publication identifier, if any.
     func getByIdentifier(_ identifier: String) async throws -> Book? {
         guard !identifier.isEmpty else { return nil }
         return try await db.read { db in
@@ -173,9 +163,6 @@ final class BookRepository {
         return id
     }
 
-    /// Inserts `book` only when the free-tier book count stays within `limit`,
-    /// unless `hasProAccess` is true. The count check and insert run in the
-    /// same database transaction to eliminate TOCTOU races.
     @discardableResult
     func addIfWithinLimit(_ book: Book, limit: Int, hasProAccess: Bool) async throws -> Book.Id {
         let id = try await db.write { db in
@@ -215,6 +202,11 @@ final class BookRepository {
             }
             if !book.syncID.isEmpty {
                 try SyncTombstone(
+                    recordType: CloudSyncRecordType.progress.rawValue,
+                    syncID: CloudSyncIdentifier.progress(forBookSyncID: book.syncID),
+                    deletedAt: now
+                ).save(db)
+                try SyncTombstone(
                     recordType: CloudSyncRecordType.book.rawValue,
                     syncID: book.syncID,
                     deletedAt: now
@@ -244,10 +236,7 @@ final class BookRepository {
 
     func savePreferences<Preferences: Encodable>(_ preferences: Preferences, of id: Book.Id) async throws {
         try await db.write { db in
-            guard var book = try Book.fetchOne(db, key: id) else {
-                return
-            }
-
+            guard var book = try Book.fetchOne(db, key: id) else { return }
             try book.setPreferences(preferences)
             book.updatedAt = Date()
             book.needsSync = true
