@@ -3,19 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PagePilot - Hands-Free EPUB & PDF Ebook Reader</title>
+    <title>PagePilot - Hands-Free EPUB &amp; PDF Ebook Reader</title>
     
     <!-- Meta Descriptions -->
-    <meta name="description" content="PagePilot is a local-first EPUB/PDF/CBZ ebook reader for iPhone and iPad. Turn pages from your Apple Watch.">
-    <meta name="keywords" content="PagePilot, EPUB reader, Apple Watch page turn, PDF reader, Wifi transfer, ebook, 电子书, 翻页, 手表翻页, 电脑传书, CBZ reader, hands-free reading">
+    <meta name="description" content="PagePilot is a local-first ebook reader for iPhone and iPad with EPUB, PDF, and CBZ support, Apple Watch page turning, Wi-Fi transfer, reading stats, and system text-to-speech.">
+    <meta name="keywords" content="PagePilot, ebook reader, EPUB reader, PDF reader, CBZ reader, Apple Watch page turn, hands-free reading, local ebook reader, Wi-Fi book transfer">
     <meta name="robots" content="index, follow">
     <link rel="canonical" href="https://pagepilot.doublewaterapps.com/en/">
+    <link rel="alternate" hreflang="zh-CN" href="https://pagepilot.doublewaterapps.com/zh-Hans/">
+    <link rel="alternate" hreflang="en" href="https://pagepilot.doublewaterapps.com/en/">
+    <link rel="alternate" hreflang="es" href="https://pagepilot.doublewaterapps.com/es/">
+    <link rel="alternate" hreflang="fr" href="https://pagepilot.doublewaterapps.com/fr/">
+    <link rel="alternate" hreflang="de" href="https://pagepilot.doublewaterapps.com/de/">
+    <link rel="alternate" hreflang="x-default" href="https://pagepilot.doublewaterapps.com/">
 
     <!-- Social Cards -->
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://pagepilot.doublewaterapps.com/">
-    <meta property="og:title" content="PagePilot eBook Reader">
-    <meta property="og:description" content="Turn ebook pages from your Apple Watch. A local-first EPUB/PDF/CBZ reader for iPhone and iPad.">
+    <meta property="og:url" content="https://pagepilot.doublewaterapps.com/en/">
+    <meta property="og:locale" content="en_US">
+    <meta property="og:locale:alternate" content="zh_CN">
+    <meta property="og:locale:alternate" content="es_ES">
+    <meta property="og:locale:alternate" content="fr_FR">
+    <meta property="og:locale:alternate" content="de_DE">
+    <meta property="og:title" content="PagePilot - Hands-Free EPUB &amp; PDF Ebook Reader">
+    <meta property="og:description" content="A local-first ebook reader for iPhone and iPad with EPUB, PDF, and CBZ support, Apple Watch page turning, Wi-Fi transfer, and system text-to-speech.">
     <meta property="og:image" content="https://pagepilot.doublewaterapps.com/social-card.png">
     <meta property="og:image:secure_url" content="https://pagepilot.doublewaterapps.com/social-card.png">
     <meta property="og:image:alt" content="PagePilot lets you turn ebook pages from Apple Watch.">
@@ -25,8 +36,8 @@
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:site" content="@PanYang0203">
     <meta name="twitter:creator" content="@PanYang0203">
-    <meta name="twitter:title" content="PagePilot eBook Reader">
-    <meta name="twitter:description" content="Turn ebook pages from your Apple Watch. A local-first EPUB/PDF/CBZ reader for iPhone and iPad.">
+    <meta name="twitter:title" content="PagePilot - Hands-Free EPUB &amp; PDF Ebook Reader">
+    <meta name="twitter:description" content="A local-first ebook reader for iPhone and iPad with EPUB, PDF, and CBZ support, Apple Watch page turning, Wi-Fi transfer, and system text-to-speech.">
     <meta name="twitter:image" content="https://pagepilot.doublewaterapps.com/social-card.png">
     <meta name="twitter:image:alt" content="PagePilot lets you turn ebook pages from Apple Watch.">
     <link rel="icon" type="image/png" href="../icon.png">
@@ -34,7 +45,7 @@
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;family=Outfit:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
     
     <style>
         :root {
@@ -1056,8 +1067,11 @@
       "@context": "https://schema.org",
       "@type": "SoftwareApplication",
       "name": "PagePilot",
+      "url": "https://pagepilot.doublewaterapps.com/en/",
+      "inLanguage": "en",
       "operatingSystem": "iOS",
       "applicationCategory": "BooksApplication",
+      "isAccessibleForFree": true,
       "offers": {
         "@type": "Offer",
         "price": "0",
@@ -1067,7 +1081,7 @@
       "installUrl": "https://apps.apple.com/app/pagepilot/id6760964443",
       "description": "PagePilot is a local-first ebook reader for iPhone and iPad. Turn EPUB, PDF, and CBZ pages using your Apple Watch via Digital Crown or taps.",
       "featureList": "Apple Watch Remote Page Turning, EPUB/PDF/CBZ support, Local WiFi Transfer, Device-to-Device Sharing, Local Reading Stats, System Text-to-Speech (TTS)",
-      "screenshot": "https://pagepilot.doublewaterapps.com/social-card.png",
+      "image": "https://pagepilot.doublewaterapps.com/social-card.png",
       "publisher": {
         "@type": "Person",
         "name": "Yang Pan"
@@ -1075,12 +1089,12 @@
     }
     </script>
 </head>
-<body data-lang="en" data-theme="dark">
+<body data-lang="en" data-theme="dark" data-lang-fixed="true">
 
     <!-- Header Navigation -->
     <header>
         <div class="container nav-container">
-            <a href="#" class="logo-area">
+            <a href="./" class="logo-area">
                 <img src="icon.png" alt="PagePilot Logo" class="logo-img">
                 <span class="logo-text">PagePilot</span>
             </a>
@@ -1110,7 +1124,7 @@
     <!-- Hero Section -->
     <section class="hero">
         <div class="container hero-grid">
-            <div class="hero-info"></h1>
+            <div class="hero-info">
                 <h1 class="lang-en">Turn pages, <span>with the Digital Crown</span></h1>
                 <p class="hero-tagline lang-en">PagePilot - Turn pages with your Apple Watch</p>
                 <p class="hero-desc lang-en">
@@ -1480,15 +1494,18 @@
             const storedLang = localStorage.getItem('pagepilot-lang');
             const storedTheme = localStorage.getItem('pagepilot-theme');
             
-            // Detect browser language if not set
-            if (storedLang) {
-                document.body.setAttribute('data-lang', storedLang);
-            } else {
-                const userLang = navigator.language || navigator.userLanguage;
-                if (userLang.startsWith('en')) {
-                    document.body.setAttribute('data-lang', 'en');
+            // Language-prefixed pages always keep their URL language.
+            if (!document.body.dataset.langFixed) {
+                // Detect browser language if not set
+                if (storedLang) {
+                    document.body.setAttribute('data-lang', storedLang);
                 } else {
-                    document.body.setAttribute('data-lang', 'zh');
+                    const userLang = navigator.language || navigator.userLanguage;
+                    if (userLang.startsWith('en')) {
+                        document.body.setAttribute('data-lang', 'en');
+                    } else {
+                        document.body.setAttribute('data-lang', 'zh');
+                    }
                 }
             }
 

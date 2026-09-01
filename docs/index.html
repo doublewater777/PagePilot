@@ -3,38 +3,49 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PagePilot - 用 Apple Watch 翻页的本地电子书阅读器 | Hands-Free EPUB & PDF Ebook Reader</title>
+    <title>PagePilot - 用 Apple Watch 翻页的本地电子书阅读器</title>
     
     <!-- Meta Descriptions -->
-    <meta name="description" content="PagePilot 是一款支持 Apple Watch 遥控翻页的 iPhone/iPad 本地电子书阅读器 (EPUB, PDF, CBZ)。支持局域网 WiFi 极速传书、设备间 Bonjour 隔空互传、本地阅读进度与数据统计以及系统级 TTS 朗读听书，100% 数据保存在设备本地，完美保护隐私。 PagePilot is a local-first EPUB/PDF/CBZ ebook reader for iPhone & iPad. Turn pages from Apple Watch via tap or Digital Crown, featuring local WiFi transfer and offline reading stats.">
-    <meta name="keywords" content="PagePilot, EPUB reader, Apple Watch page turn, PDF reader, Wifi transfer, ebook, 电子书, 翻页, 手表翻页, 电脑传书, CBZ reader, hands-free reading">
+    <meta name="description" content="PagePilot 是一款本地优先的 iPhone 和 iPad 电子书阅读器，支持 EPUB、PDF、CBZ、Apple Watch 遥控翻页、Wi-Fi 传书、阅读统计和系统 TTS 朗读。书籍与阅读数据保存在设备本地。">
+    <meta name="keywords" content="PagePilot, 本地电子书阅读器, EPUB 阅读器, PDF 阅读器, CBZ 阅读器, Apple Watch 翻页, 手表翻页, Wi-Fi 传书, 有声书, TTS 朗读">
     <meta name="robots" content="index, follow">
     <link rel="canonical" href="https://pagepilot.doublewaterapps.com/">
+    <link rel="alternate" hreflang="zh-CN" href="https://pagepilot.doublewaterapps.com/zh-Hans/">
+    <link rel="alternate" hreflang="en" href="https://pagepilot.doublewaterapps.com/en/">
+    <link rel="alternate" hreflang="es" href="https://pagepilot.doublewaterapps.com/es/">
+    <link rel="alternate" hreflang="fr" href="https://pagepilot.doublewaterapps.com/fr/">
+    <link rel="alternate" hreflang="de" href="https://pagepilot.doublewaterapps.com/de/">
+    <link rel="alternate" hreflang="x-default" href="https://pagepilot.doublewaterapps.com/">
 
     <!-- Social Cards -->
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://pagepilot.doublewaterapps.com/">
-    <meta property="og:title" content="PagePilot eBook Reader">
-    <meta property="og:description" content="Turn ebook pages from your Apple Watch. A local-first EPUB/PDF/CBZ reader for iPhone and iPad.">
+    <meta property="og:locale" content="zh_CN">
+    <meta property="og:locale:alternate" content="en_US">
+    <meta property="og:locale:alternate" content="es_ES">
+    <meta property="og:locale:alternate" content="fr_FR">
+    <meta property="og:locale:alternate" content="de_DE">
+    <meta property="og:title" content="PagePilot - 用 Apple Watch 翻页的本地电子书阅读器">
+    <meta property="og:description" content="本地优先的 iPhone 和 iPad 电子书阅读器，支持 EPUB、PDF、CBZ、Apple Watch 遥控翻页、Wi-Fi 传书和系统 TTS 朗读。">
     <meta property="og:image" content="https://pagepilot.doublewaterapps.com/social-card.png">
     <meta property="og:image:secure_url" content="https://pagepilot.doublewaterapps.com/social-card.png">
-    <meta property="og:image:alt" content="PagePilot lets you turn ebook pages from Apple Watch.">
+    <meta property="og:image:alt" content="PagePilot 可通过 Apple Watch 翻阅电子书。">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
     <meta property="og:site_name" content="PagePilot">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:site" content="@PanYang0203">
     <meta name="twitter:creator" content="@PanYang0203">
-    <meta name="twitter:title" content="PagePilot eBook Reader">
-    <meta name="twitter:description" content="Turn ebook pages from your Apple Watch. A local-first EPUB/PDF/CBZ reader for iPhone and iPad.">
+    <meta name="twitter:title" content="PagePilot - 用 Apple Watch 翻页的本地电子书阅读器">
+    <meta name="twitter:description" content="本地优先的 iPhone 和 iPad 电子书阅读器，支持 EPUB、PDF、CBZ、Apple Watch 遥控翻页、Wi-Fi 传书和系统 TTS 朗读。">
     <meta name="twitter:image" content="https://pagepilot.doublewaterapps.com/social-card.png">
-    <meta name="twitter:image:alt" content="PagePilot lets you turn ebook pages from Apple Watch.">
+    <meta name="twitter:image:alt" content="PagePilot 可通过 Apple Watch 翻阅电子书。">
     <link rel="icon" type="image/png" href="icon.png">
     
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;family=Outfit:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
     
     <style>
         :root {
@@ -237,6 +248,12 @@
             background: var(--accent-gradient);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+        }
+
+        .hero-info h1 > .hero-title-language {
+            background: none;
+            -webkit-background-clip: initial;
+            -webkit-text-fill-color: var(--text-primary);
         }
 
         .hero-tagline {
@@ -1056,8 +1073,11 @@
       "@context": "https://schema.org",
       "@type": "SoftwareApplication",
       "name": "PagePilot",
+      "url": "https://pagepilot.doublewaterapps.com/",
+      "inLanguage": "zh-CN",
       "operatingSystem": "iOS",
       "applicationCategory": "BooksApplication",
+      "isAccessibleForFree": true,
       "offers": {
         "@type": "Offer",
         "price": "0",
@@ -1065,9 +1085,9 @@
       },
       "downloadUrl": "https://apps.apple.com/app/pagepilot/id6760964443",
       "installUrl": "https://apps.apple.com/app/pagepilot/id6760964443",
-      "description": "PagePilot is a local-first ebook reader for iPhone and iPad. Turn EPUB, PDF, and CBZ pages using your Apple Watch via Digital Crown or taps.",
-      "featureList": "Apple Watch Remote Page Turning, EPUB/PDF/CBZ support, Local WiFi Transfer, Device-to-Device Sharing, Local Reading Stats, System Text-to-Speech (TTS)",
-      "screenshot": "https://pagepilot.doublewaterapps.com/social-card.png",
+      "description": "PagePilot 是一款本地优先的 iPhone 和 iPad 电子书阅读器，支持 EPUB、PDF、CBZ、Apple Watch 遥控翻页、Wi-Fi 传书和系统 TTS 朗读。",
+      "featureList": "Apple Watch 遥控翻页、EPUB/PDF/CBZ 支持、局域网 Wi-Fi 传书、设备间互传、本地阅读统计、系统 TTS 朗读",
+      "image": "https://pagepilot.doublewaterapps.com/social-card.png",
       "publisher": {
         "@type": "Person",
         "name": "Yang Pan"
@@ -1080,7 +1100,7 @@
     <!-- Header Navigation -->
     <header>
         <div class="container nav-container">
-            <a href="#" class="logo-area">
+            <a href="./" class="logo-area">
                 <img src="icon.png" alt="PagePilot Logo" class="logo-img">
                 <span class="logo-text">PagePilot</span>
             </a>
@@ -1116,8 +1136,10 @@
     <section class="hero">
         <div class="container hero-grid">
             <div class="hero-info">
-                <h1 class="lang-zh">旋转表冠，让阅读<span>自由翻篇</span></h1>
-                <h1 class="lang-en">Turn pages, <span>with the Digital Crown</span></h1>
+                <h1>
+                    <span class="lang-zh hero-title-language">旋转表冠，让阅读<span>自由翻篇</span></span>
+                    <span class="lang-en hero-title-language">Turn pages, <span>with the Digital Crown</span></span>
+                </h1>
                 
                 <p class="hero-tagline lang-zh">PagePilot - 用手表翻页的阅读器</p>
                 <p class="hero-tagline lang-en">PagePilot - Turn pages with your Apple Watch</p>

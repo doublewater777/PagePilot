@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://pagepilot.doublewaterapps.com/sitemap.xml
