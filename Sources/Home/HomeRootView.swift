@@ -10,12 +10,22 @@ struct HomeRootView: View {
     }
 }
 
+private struct MicroReadingContentHeightKey: PreferenceKey {
+    static let defaultValue: CGFloat = 0
+
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
+    }
+}
+
 struct MicroReadingStartSheet: View {
     let bookTitle: String
     @Binding var selectedMinutes: Int
     let onStart: (Int) -> Void
 
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @State private var contentHeight: CGFloat = 420
 
     var body: some View {
         ScrollView(.vertical, showsIndicators: false) {
@@ -97,10 +107,28 @@ struct MicroReadingStartSheet: View {
                     .buttonStyle(.plain)
                 }
             }
-            .padding(.top, 24)
-            .padding(.horizontal, 24)
+            .frame(maxWidth: horizontalSizeClass == .regular ? 560 : .infinity)
+            .frame(maxWidth: .infinity)
+            .padding(.top, horizontalSizeClass == .regular ? 32 : 24)
+            .padding(.horizontal, horizontalSizeClass == .regular ? 32 : 24)
             .padding(.bottom, 24)
+            .background {
+                GeometryReader { proxy in
+                    Color.clear.preference(
+                        key: MicroReadingContentHeightKey.self,
+                        value: proxy.size.height
+                    )
+                }
+            }
         }
         .background(AppColors.background)
+        .onPreferenceChange(MicroReadingContentHeightKey.self) { height in
+            guard height > 0 else { return }
+            let measuredHeight = ceil(height)
+            if abs(contentHeight - measuredHeight) > 0.5 {
+                contentHeight = measuredHeight
+            }
+        }
+        .presentationDetents([.height(contentHeight)])
     }
 }
