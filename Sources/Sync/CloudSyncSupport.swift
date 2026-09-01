@@ -11,12 +11,14 @@ import GRDB
 
 enum CloudSyncRecordType: String, CaseIterable, Sendable {
     case book = "Book"
+    case progress = "ReadingProgress"
     case bookmark = "Bookmark"
     case highlight = "Highlight"
 
     var recordNamePrefix: String {
         switch self {
         case .book: return "book"
+        case .progress: return "progress"
         case .bookmark: return "bookmark"
         case .highlight: return "highlight"
         }
@@ -29,6 +31,10 @@ enum CloudSyncIdentifier {
             return "book-\(UUID().uuidString.lowercased())"
         }
         return "book-\(sha256(identifier))"
+    }
+
+    static func progress(forBookSyncID bookSyncID: String) -> String {
+        "progress-\(bookSyncID)"
     }
 
     static func bookmark() -> String {
