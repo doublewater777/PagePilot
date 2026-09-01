@@ -36,6 +36,7 @@ final class AppModule {
 
     let readium: Readium
     let db: Database
+    let cloudSync: CloudSyncService
 
     let books: BookRepository
     let bookmarkRepository: BookmarkRepository
@@ -50,6 +51,7 @@ final class AppModule {
         let file = Paths.library.appendingPath("database.db", isDirectory: false)
         StartupProfiler.shared.record("AppModule: Initializing SQLite Database Queue")
         db = try Database(file: file.url)
+        cloudSync = CloudSyncService(db: db)
         print("Created database at \(file.path)")
 
         let bookmarks = BookmarkRepository(db: db)
@@ -89,6 +91,10 @@ final class AppModule {
         #endif
 
         Self.shared = self
+
+        Task { [cloudSync] in
+            await cloudSync.start()
+        }
 
         StartupProfiler.shared.record("AppModule Init End")
 
