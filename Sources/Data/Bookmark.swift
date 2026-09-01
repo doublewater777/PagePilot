@@ -21,19 +21,36 @@ struct Bookmark: Codable {
     var progression: Double?
     /// Date of creation.
     var created: Date = .init()
+    /// Stable cross-device identity.
+    var syncID: String
+    /// Domain modification timestamp for conflict resolution.
+    var updatedAt: Date
+    /// Durable local outbox bit.
+    var needsSync: Bool
 
-    init(id: Id? = nil, bookId: Book.Id, locator: Locator, created: Date = Date()) {
+    init(
+        id: Id? = nil,
+        bookId: Book.Id,
+        locator: Locator,
+        created: Date = Date(),
+        syncID: String? = nil,
+        updatedAt: Date? = nil,
+        needsSync: Bool = true
+    ) {
         self.id = id
         self.bookId = bookId
         self.locator = locator
         progression = locator.locations.totalProgression
         self.created = created
+        self.syncID = syncID ?? CloudSyncIdentifier.bookmark()
+        self.updatedAt = updatedAt ?? created
+        self.needsSync = needsSync
     }
 }
 
 extension Bookmark: TableRecord, FetchableRecord, PersistableRecord {
     enum Columns: String, ColumnExpression {
-        case id, bookId, locator, progression, created
+        case id, bookId, locator, progression, created, syncID, updatedAt, needsSync
     }
 }
 
@@ -55,14 +72,27 @@ final class BookmarkRepository {
 
     @discardableResult
     func add(_ bookmark: Bookmark) async throws -> Bookmark.Id {
-        return try await db.write { db in
+        let id = try await db.write { db in
             try bookmark.insert(db)
             return Bookmark.Id(rawValue: db.lastInsertedRowID)
         }
+        notifyCloudSync()
+        return id
     }
 
     func remove(_ id: Bookmark.Id) async throws {
-        try await db.write { db in try Bookmark.deleteOne(db, key: id) }
+        try await db.write { db in
+            guard let bookmark = try Bookmark.fetchOne(db, key: id) else { return }
+            if !bookmark.syncID.isEmpty {
+                try SyncTombstone(
+                    recordType: CloudSyncRecordType.bookmark.rawValue,
+                    syncID: bookmark.syncID,
+                    deletedAt: Date()
+                ).save(db)
+            }
+            try Bookmark.deleteOne(db, key: id)
+        }
+        notifyCloudSync()
     }
 
     func distinctBookIds() async throws -> [Book.Id] {
@@ -80,6 +110,10 @@ final class BookmarkRepository {
                 .filter(Bookmark.Columns.bookId == bookId)
                 .fetchCount(db)
         }
+    }
+
+    private func notifyCloudSync() {
+        NotificationCenter.default.post(name: .cloudSyncLocalDataDidChange, object: nil)
     }
 }
 
