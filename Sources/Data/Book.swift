@@ -38,6 +38,12 @@ struct Book: Codable {
     /// JSON of user preferences specific to this publication (e.g. language,
     /// reading progression, spreads).
     var preferencesJSON: String?
+    /// Stable cross-device identifier used as the CloudKit record identity.
+    var syncID: String
+    /// Domain modification timestamp used for deterministic conflict merging.
+    var updatedAt: Date
+    /// Durable local outbox bit. It is only cleared after CloudKit confirms save.
+    var needsSync: Bool
 
     var mediaType: MediaType {
         MediaType(type) ?? .binary
@@ -53,7 +59,10 @@ struct Book: Codable {
         coverPath: String? = nil,
         locator: Locator? = nil,
         created: Date = Date(),
-        preferencesJSON: String? = nil
+        preferencesJSON: String? = nil,
+        syncID: String? = nil,
+        updatedAt: Date? = nil,
+        needsSync: Bool = true
     ) {
         self.id = id
         self.identifier = identifier
@@ -66,6 +75,9 @@ struct Book: Codable {
         progression = locator?.locations.totalProgression ?? 0
         self.created = created
         self.preferencesJSON = preferencesJSON
+        self.syncID = syncID ?? CloudSyncIdentifier.book(identifier: identifier)
+        self.updatedAt = updatedAt ?? created
+        self.needsSync = needsSync
     }
 
     var cover: FileURL? {
@@ -99,7 +111,8 @@ struct Book: Codable {
 
 extension Book: TableRecord, FetchableRecord, PersistableRecord {
     enum Columns: String, ColumnExpression {
-        case id, identifier, title, type, url, coverPath, locator, progression, created, preferencesJSON
+        case id, identifier, title, authors, type, url, coverPath, locator, progression, created, preferencesJSON
+        case syncID, updatedAt, needsSync
     }
 }
 
@@ -152,10 +165,12 @@ final class BookRepository {
 
     @discardableResult
     func add(_ book: Book) async throws -> Book.Id {
-        try await db.write { db in
+        let id = try await db.write { db in
             try book.insert(db)
             return Book.Id(rawValue: db.lastInsertedRowID)
         }
+        notifyCloudSync()
+        return id
     }
 
     /// Inserts `book` only when the free-tier book count stays within `limit`,
@@ -163,7 +178,7 @@ final class BookRepository {
     /// same database transaction to eliminate TOCTOU races.
     @discardableResult
     func addIfWithinLimit(_ book: Book, limit: Int, hasProAccess: Bool) async throws -> Book.Id {
-        try await db.write { db in
+        let id = try await db.write { db in
             if !hasProAccess {
                 let count = try Book.fetchCount(db)
                 guard count + 1 <= limit else {
@@ -173,22 +188,58 @@ final class BookRepository {
             try book.insert(db)
             return Book.Id(rawValue: db.lastInsertedRowID)
         }
+        notifyCloudSync()
+        return id
     }
 
     func remove(_ id: Book.Id) async throws {
-        try await db.write { db in try Book.deleteOne(db, key: id) }
+        try await db.write { db in
+            guard let book = try Book.fetchOne(db, key: id) else { return }
+            let bookmarks = try Bookmark.filter(Bookmark.Columns.bookId == id).fetchAll(db)
+            let highlights = try Highlight.filter(Highlight.Columns.bookId == id).fetchAll(db)
+            let now = Date()
+
+            for bookmark in bookmarks where !bookmark.syncID.isEmpty {
+                try SyncTombstone(
+                    recordType: CloudSyncRecordType.bookmark.rawValue,
+                    syncID: bookmark.syncID,
+                    deletedAt: now
+                ).save(db)
+            }
+            for highlight in highlights where !highlight.syncID.isEmpty {
+                try SyncTombstone(
+                    recordType: CloudSyncRecordType.highlight.rawValue,
+                    syncID: highlight.syncID,
+                    deletedAt: now
+                ).save(db)
+            }
+            if !book.syncID.isEmpty {
+                try SyncTombstone(
+                    recordType: CloudSyncRecordType.book.rawValue,
+                    syncID: book.syncID,
+                    deletedAt: now
+                ).save(db)
+            }
+            try Book.deleteOne(db, key: id)
+        }
+        notifyCloudSync()
     }
 
     func saveProgress(for id: Book.Id, locator: Locator) async throws {
         let json = try locator.jsonString()
+        let now = Date()
 
         try await db.write { db in
             try db.execute(literal: """
                 UPDATE book
-                   SET locator = \(json), progression = \(locator.locations.totalProgression ?? 0)
+                   SET locator = \(json),
+                       progression = \(locator.locations.totalProgression ?? 0),
+                       updatedAt = \(now),
+                       needsSync = 1
                  WHERE id = \(id)
             """)
         }
+        notifyCloudSync()
     }
 
     func savePreferences<Preferences: Encodable>(_ preferences: Preferences, of id: Book.Id) async throws {
@@ -198,7 +249,14 @@ final class BookRepository {
             }
 
             try book.setPreferences(preferences)
+            book.updatedAt = Date()
+            book.needsSync = true
             try book.save(db)
         }
+        notifyCloudSync()
+    }
+
+    private func notifyCloudSync() {
+        NotificationCenter.default.post(name: .cloudSyncLocalDataDidChange, object: nil)
     }
 }
