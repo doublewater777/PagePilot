@@ -52,7 +52,6 @@ final class Database {
                 t.column("created", .datetime).notNull()
             }
 
-            // create an index to make sorting by progression faster
             try db.create(index: "index_highlight_progression", on: "highlight", columns: ["bookId", "progression"], ifNotExists: true)
             try db.create(index: "index_bookmark_progression", on: "bookmark", columns: ["bookId", "progression"], ifNotExists: true)
         }
@@ -79,8 +78,9 @@ final class Database {
                 t.add(column: "syncID", .text).notNull().defaults(to: "")
                 t.add(column: "updatedAt", .datetime).notNull().defaults(to: epoch)
                 t.add(column: "needsSync", .boolean).notNull().defaults(to: true)
+                t.add(column: "contentNeedsSync", .boolean).notNull().defaults(to: true)
             }
-            try db.execute(sql: "UPDATE book SET updatedAt = created, needsSync = 1")
+            try db.execute(sql: "UPDATE book SET updatedAt = created, needsSync = 1, contentNeedsSync = 1")
 
             try db.alter(table: "bookmark") { t in
                 t.add(column: "syncID", .text).notNull().defaults(to: "")
@@ -149,10 +149,6 @@ final class Database {
     }
 }
 
-/// Protocol for a database entity id.
-///
-/// Using this instead of regular integers makes the code safer, because we can only give ids of the
-/// right model in APIs. It also helps self-document APIs.
 protocol EntityId: Codable, Hashable, RawRepresentable, ExpressibleByIntegerLiteral, CustomStringConvertible, DatabaseValueConvertible where RawValue == Int64 {}
 
 extension EntityId {
@@ -169,13 +165,9 @@ extension EntityId {
 }
 
 extension EntityId {
-    // MARK: - ExpressibleByIntegerLiteral
-
     init(integerLiteral value: Int64) {
         self.init(rawValue: value)!
     }
-
-    // MARK: - Codable
 
     init(from decoder: Decoder) throws {
         try self.init(rawValue: decoder.singleValueContainer().decode(Int64.self))!
@@ -186,13 +178,9 @@ extension EntityId {
         try container.encode(rawValue)
     }
 
-    // MARK: - CustomStringConvertible
-
     var description: String {
         "\(Self.self)(\(rawValue))"
     }
-
-    // MARK: - DatabaseValueConvertible
 
     var databaseValue: DatabaseValue {
         rawValue.databaseValue
