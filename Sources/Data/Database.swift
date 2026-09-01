@@ -115,6 +115,16 @@ final class Database {
             try db.create(index: "index_highlight_sync_id", on: "highlight", columns: ["syncID"], ifNotExists: true)
         }
 
+        migrator.registerMigration("addDeferredCloudRecords") { db in
+            try db.create(table: "deferredCloudRecord") { t in
+                t.column("recordType", .text).notNull()
+                t.column("syncID", .text).notNull()
+                t.column("payload", .blob).notNull()
+                t.column("receivedAt", .datetime).notNull()
+                t.primaryKey(["recordType", "syncID"])
+            }
+        }
+
         try migrator.migrate(writer)
     }
 
