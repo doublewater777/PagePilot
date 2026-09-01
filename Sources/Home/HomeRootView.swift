@@ -18,6 +18,10 @@ struct MicroReadingStartSheet: View {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
+    private var preferredPresentationDetent: PresentationDetent {
+        horizontalSizeClass == .regular ? .height(430) : .medium
+    }
+
     var body: some View {
         ScrollView(.vertical, showsIndicators: false) {
             VStack(spacing: 24) {
@@ -105,5 +109,6 @@ struct MicroReadingStartSheet: View {
             .padding(.bottom, 24)
         }
         .background(AppColors.background)
+        .presentationDetents([preferredPresentationDetent])
     }
 }
