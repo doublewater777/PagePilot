@@ -524,9 +524,9 @@ func application(_ application: UIApplication, didFinishLaunchingWithOptions lau
 ## App Store Connect Configuration
 
 1. 创建 In-App Purchase / Subscription：
-   - 月度订阅：`com.panyang.PagePilot.pro.monthly`，¥2
-   - 年度订阅：`com.panyang.PagePilot.pro.yearly`，¥19.9，Paywall 默认推荐
-    - 终身买断：`com.panyang.PagePilot.pro.lifetime`，¥30，一次性购买
+   - 月度订阅：`com.panyang.PagePilot.pro.monthly`，美国区 $0.99 / 中国区 ¥6
+   - 年度订阅：`com.panyang.PagePilot.pro.yearly`，美国区 $4.99 / 中国区 ¥28，Paywall 默认推荐
+    - 终身买断：`com.panyang.PagePilot.pro.lifetime`，美国区 $6.99 / 中国区 ¥68，一次性购买
    - 审核截图：需要一张展示 Pro 功能的截图
 
 2. 付费协议：确保 Apple Developer Account 已签署 Paid Apps Agreement

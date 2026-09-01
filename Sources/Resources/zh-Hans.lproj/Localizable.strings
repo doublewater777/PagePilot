@@ -413,10 +413,10 @@
 "paywall_option_monthly" = "月度订阅";
 "paywall_option_yearly" = "年度订阅";
 "paywall_option_lifetime" = "终身会员";
-"paywall_price_monthly" = "¥2";
-"paywall_price_yearly" = "¥19.9";
-"paywall_price_yearly_monthly" = "¥1.66";
-"paywall_price_lifetime" = "¥30";
+"paywall_price_monthly" = "¥6";
+"paywall_price_yearly" = "¥28";
+"paywall_price_yearly_monthly" = "¥2.33";
+"paywall_price_lifetime" = "¥68";
 "paywall_price_monthly_sub" = "按月续订，随时可取消";
 "paywall_price_yearly_sub" = "仅 %@/月，省 %@";
 "paywall_price_yearly_sub_no_savings" = "仅 %@/月";
