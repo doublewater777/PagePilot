@@ -72,6 +72,49 @@ final class Database {
             }
         }
 
+        migrator.registerMigration("addCloudSync") { db in
+            let epoch = Date(timeIntervalSince1970: 0)
+
+            try db.alter(table: "book") { t in
+                t.add(column: "syncID", .text).notNull().defaults(to: "")
+                t.add(column: "updatedAt", .datetime).notNull().defaults(to: epoch)
+                t.add(column: "needsSync", .boolean).notNull().defaults(to: true)
+            }
+            try db.execute(sql: "UPDATE book SET updatedAt = created, needsSync = 1")
+
+            try db.alter(table: "bookmark") { t in
+                t.add(column: "syncID", .text).notNull().defaults(to: "")
+                t.add(column: "updatedAt", .datetime).notNull().defaults(to: epoch)
+                t.add(column: "needsSync", .boolean).notNull().defaults(to: true)
+            }
+            try db.execute(sql: "UPDATE bookmark SET updatedAt = created, needsSync = 1")
+
+            try db.alter(table: "highlight") { t in
+                t.add(column: "syncID", .text).notNull().defaults(to: "")
+                t.add(column: "updatedAt", .datetime).notNull().defaults(to: epoch)
+                t.add(column: "needsSync", .boolean).notNull().defaults(to: true)
+            }
+            try db.execute(sql: "UPDATE highlight SET updatedAt = created, needsSync = 1")
+
+            try db.create(table: "syncTombstone") { t in
+                t.column("recordType", .text).notNull()
+                t.column("syncID", .text).notNull()
+                t.column("deletedAt", .datetime).notNull()
+                t.primaryKey(["recordType", "syncID"])
+            }
+
+            try db.create(table: "cloudRecordMetadata") { t in
+                t.column("recordType", .text).notNull()
+                t.column("syncID", .text).notNull()
+                t.column("systemFields", .blob).notNull()
+                t.primaryKey(["recordType", "syncID"])
+            }
+
+            try db.create(index: "index_book_sync_id", on: "book", columns: ["syncID"], ifNotExists: true)
+            try db.create(index: "index_bookmark_sync_id", on: "bookmark", columns: ["syncID"], ifNotExists: true)
+            try db.create(index: "index_highlight_sync_id", on: "highlight", columns: ["syncID"], ifNotExists: true)
+        }
+
         try migrator.migrate(writer)
     }
 
