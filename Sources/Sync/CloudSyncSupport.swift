@@ -75,6 +75,19 @@ struct CloudRecordMetadata: Codable, FetchableRecord, PersistableRecord, Sendabl
     let systemFields: Data
 }
 
+/// Full remote records whose parent Book has not reached the local database
+/// yet. Keeping the archive on disk prevents a child record from being lost if
+/// CKSyncEngine splits related zone changes across fetch events or the app is
+/// terminated between those events.
+struct DeferredCloudRecord: Codable, FetchableRecord, PersistableRecord, Sendable {
+    static let databaseTableName = "deferredCloudRecord"
+
+    let recordType: String
+    let syncID: String
+    let payload: Data
+    let receivedAt: Date
+}
+
 enum CloudSyncPreferences {
     static let enabledKey = "cloud_sync_enabled"
     static let lastSuccessfulSyncKey = "cloud_sync_last_success"
@@ -110,9 +123,6 @@ enum CloudSyncStatus: Equatable, Sendable {
 }
 
 struct CloudSyncMergePolicy {
-    /// Last-write-wins is deliberately based on the domain timestamp rather
-    /// than CloudKit's server modification date, so offline edits can be
-    /// compared consistently after either device reconnects.
     static func remoteWins(localUpdatedAt: Date, remoteUpdatedAt: Date) -> Bool {
         remoteUpdatedAt >= localUpdatedAt
     }
@@ -133,5 +143,13 @@ extension CKRecord {
         unarchiver.requiresSecureCoding = true
         defer { unarchiver.finishDecoding() }
         return CKRecord(coder: unarchiver)
+    }
+
+    func archivedForDeferredMerge() throws -> Data {
+        try NSKeyedArchiver.archivedData(withRootObject: self, requiringSecureCoding: true)
+    }
+
+    static func fromDeferredArchive(_ data: Data) throws -> CKRecord? {
+        try NSKeyedUnarchiver.unarchivedObject(ofClass: CKRecord.self, from: data)
     }
 }
