@@ -94,14 +94,24 @@ enum CloudSyncPreferences {
     static let stateSerializationKey = "cloud_sync_engine_state"
 
     static var isEnabled: Bool {
-        get {
-            if UserDefaults.standard.object(forKey: enabledKey) == nil {
-                return true
-            }
-            return UserDefaults.standard.bool(forKey: enabledKey)
+        get { isEnabled(in: .standard) }
+        set { setEnabled(newValue, in: .standard) }
+    }
+
+    static func isEnabled(in defaults: UserDefaults) -> Bool {
+        if defaults.object(forKey: enabledKey) == nil {
+            return true
         }
-        set {
-            UserDefaults.standard.set(newValue, forKey: enabledKey)
+        return defaults.bool(forKey: enabledKey)
+    }
+
+    static func setEnabled(
+        _ isEnabled: Bool,
+        in defaults: UserDefaults,
+        postNotification: Bool = true
+    ) {
+        defaults.set(isEnabled, forKey: enabledKey)
+        if postNotification {
             NotificationCenter.default.post(name: .cloudSyncPreferenceDidChange, object: nil)
         }
     }
