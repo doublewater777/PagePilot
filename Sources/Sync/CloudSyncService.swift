@@ -49,7 +49,7 @@ final actor CloudSyncService: CKSyncEngineDelegate {
     }
 
     func syncNow() async {
-        guard CloudSyncPreferences.isEnabled else {
+        guard CloudSyncPreferences.isEnabled(in: defaults) else {
             await setStatus(.disabled)
             return
         }
@@ -73,7 +73,7 @@ final actor CloudSyncService: CKSyncEngineDelegate {
     // MARK: - Lifecycle
 
     private func configureForCurrentPreference() async {
-        guard CloudSyncPreferences.isEnabled else {
+        guard CloudSyncPreferences.isEnabled(in: defaults) else {
             if let syncEngine {
                 await syncEngine.cancelOperations()
             }
@@ -143,7 +143,7 @@ final actor CloudSyncService: CKSyncEngineDelegate {
     /// another slice after each completion avoids a huge first-launch engine
     /// state for users with large libraries.
     private func enqueueDirtyChanges() async throws {
-        guard CloudSyncPreferences.isEnabled, let syncEngine else { return }
+        guard CloudSyncPreferences.isEnabled(in: defaults), let syncEngine else { return }
         let changes = try await store.pendingChanges(limit: 400)
         guard !changes.isEmpty else { return }
 
