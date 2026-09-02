@@ -20,6 +20,21 @@ final class CloudSyncSupportTests: XCTestCase {
         XCTAssertTrue(CloudSyncIdentifier.highlight().hasPrefix("highlight-"))
     }
 
+    func testCloudSyncPreferenceUsesInjectedDefaults() throws {
+        let suiteName = "CloudSyncSupportTests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defaults.removePersistentDomain(forName: suiteName)
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        XCTAssertTrue(CloudSyncPreferences.isEnabled(in: defaults))
+
+        CloudSyncPreferences.setEnabled(false, in: defaults, postNotification: false)
+        XCTAssertFalse(CloudSyncPreferences.isEnabled(in: defaults))
+
+        CloudSyncPreferences.setEnabled(true, in: defaults, postNotification: false)
+        XCTAssertTrue(CloudSyncPreferences.isEnabled(in: defaults))
+    }
+
     func testRemoteWinsWhenItIsNewerOrEqual() {
         let local = Date(timeIntervalSince1970: 100)
 
