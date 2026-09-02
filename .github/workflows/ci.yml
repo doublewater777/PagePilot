@@ -35,7 +35,30 @@ jobs:
 
       - name: Run test suite
         run: |
+          log_file="$RUNNER_TEMP/xcodebuild.log"
+
+          set +e
           xcodebuild test \
             -project PagePilot.xcodeproj \
             -scheme PagePilot \
-            -destination 'platform=iOS Simulator,name=iPhone 17,OS=latest'
+            -destination 'platform=iOS Simulator,name=iPhone 17,OS=latest' \
+            2>&1 | tee "$log_file"
+          xcodebuild_status=${PIPESTATUS[0]}
+          set -e
+
+          diagnostics="$(grep -E -n 'error:|fatal error:|Testing failed:|TEST FAILED' "$log_file" | tail -n 120 || true)"
+          {
+            echo '## xcodebuild diagnostics'
+            echo
+            echo "xcodebuild exit status: \`$xcodebuild_status\`"
+            echo
+            echo '```text'
+            if [[ -n "$diagnostics" ]]; then
+              printf '%s\n' "$diagnostics"
+            else
+              echo 'No matching compiler diagnostics found in the captured output.'
+            fi
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          exit "$xcodebuild_status"
