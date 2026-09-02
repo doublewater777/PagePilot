@@ -345,7 +345,7 @@ final class CloudSyncStore {
         else { return false }
 
         let identifier = record["identifier"] as? String
-        let existing = try await db.read { db in
+        let existing = try await db.read { db -> Book? in
             if let exact = try Book.filter(Book.Columns.syncID == syncID).fetchOne(db) {
                 return exact
             }
@@ -669,14 +669,14 @@ final class CloudSyncStore {
                             .fetchAll(db)
                         try Book.deleteOne(db, key: id)
                         for childID in bookmarkIDs {
-                            try deleteMetadata(db: db, type: .bookmark, syncID: childID)
+                            try self.deleteMetadata(db: db, type: .bookmark, syncID: childID)
                         }
                         for childID in highlightIDs {
-                            try deleteMetadata(db: db, type: .highlight, syncID: childID)
+                            try self.deleteMetadata(db: db, type: .highlight, syncID: childID)
                         }
                     }
                 }
-                try deleteMetadata(
+                try self.deleteMetadata(
                     db: db,
                     type: .progress,
                     syncID: CloudSyncIdentifier.progress(forBookSyncID: syncID)
@@ -697,7 +697,7 @@ final class CloudSyncStore {
             try SyncTombstone
                 .filter(Column("recordType") == type.rawValue && Column("syncID") == syncID)
                 .deleteAll(db)
-            try deleteMetadata(db: db, type: type, syncID: syncID)
+            try self.deleteMetadata(db: db, type: type, syncID: syncID)
             try DeferredCloudRecord
                 .filter(Column("recordType") == type.rawValue && Column("syncID") == syncID)
                 .deleteAll(db)
@@ -763,7 +763,7 @@ final class CloudSyncStore {
             try SyncTombstone
                 .filter(Column("recordType") == type.rawValue && Column("syncID") == syncID)
                 .deleteAll(db)
-            try deleteMetadata(db: db, type: type, syncID: syncID)
+            try self.deleteMetadata(db: db, type: type, syncID: syncID)
         }
     }
 
@@ -771,7 +771,7 @@ final class CloudSyncStore {
         let syncID = recordID.recordName
         guard let type = type(for: syncID) else { return }
         try await db.write { db in
-            try deleteMetadata(db: db, type: type, syncID: syncID)
+            try self.deleteMetadata(db: db, type: type, syncID: syncID)
         }
     }
 
