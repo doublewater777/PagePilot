@@ -181,6 +181,23 @@ struct OnboardingView: View {
                     showsImportSources = true
                 }
 
+                Button(action: importSample) {
+                    Label(
+                        NSLocalizedString(
+                            "onboarding_use_sample_book",
+                            tableName: "Onboarding",
+                            comment: "Onboarding sample book button"
+                        ),
+                        systemImage: "book.closed"
+                    )
+                    .font(.headline)
+                    .frame(maxWidth: .infinity)
+                    .frame(minHeight: 48)
+                }
+                .buttonStyle(.bordered)
+                .tint(AppColors.accentBlue)
+                .disabled(isWorking)
+
                 Text("onboarding_supported_formats")
                     .font(.caption)
                     .foregroundStyle(.tertiary)
@@ -412,7 +429,19 @@ struct OnboardingView: View {
         }
     }
 
-    private func importURL(_ url: URL) {
+    private func importSample() {
+        guard !hasFinished else { return }
+        do {
+            importURL(try OnboardingSamplePublication.makeURL(), source: .sample)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    private func importURL(
+        _ url: URL,
+        source: OnboardingFlow.PublicationSource = .user
+    ) {
         guard !hasFinished else { return }
         workTask?.cancel()
         isWorking = true
@@ -422,7 +451,7 @@ struct OnboardingView: View {
                 let publication = try await importPublication(url)
                 guard !Task.isCancelled, !hasFinished else { return }
                 selectedPublication = publication
-                didChoosePublication(bookID: publication.bookID, source: .user)
+                didChoosePublication(bookID: publication.bookID, source: source)
             } catch {
                 guard !Task.isCancelled, !hasFinished else { return }
                 errorMessage = error.localizedDescription
