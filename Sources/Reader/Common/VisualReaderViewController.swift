@@ -13,8 +13,12 @@ import UIKit
 import WatchConnectivity
 
 /// Base class for the reader view controller of a `VisualNavigator`.
-class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewController<N>, VisualNavigatorDelegate {
+class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewController<N>, VisualNavigatorDelegate, ReaderPositionIndicatorProviding {
     private lazy var positionLabel = UILabel()
+
+    var positionIndicatorView: UIView {
+        positionLabel
+    }
 
     private var ttsViewModel: TTSViewModel?
     private var ttsControlsViewController: UIHostingController<TTSControls>?
