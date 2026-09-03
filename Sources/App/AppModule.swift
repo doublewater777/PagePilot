@@ -151,7 +151,7 @@ extension AppModule: ModuleDelegate {
 
 extension AppModule: LibraryModuleDelegate {
     func libraryDidSelectPublication(_ publication: Publication, book: Book) {
-        reader.presentPublication(publication: publication, book: book, in: library.rootViewController)
+        reader.presentPublication(publication, book: book, in: library.rootViewController)
     }
 }
 
@@ -182,7 +182,7 @@ extension AppModule: HomeModuleDelegate {
                         minutes: microReadingMinutes
                     )
                 }
-                reader.presentPublication(pub, book: book, in: nav)
+                reader.presentPublication(publication: pub, book: book, in: nav)
             } catch {
                 presentError(UserError(error), from: nav)
             }
