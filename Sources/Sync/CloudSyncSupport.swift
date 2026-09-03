@@ -117,10 +117,17 @@ enum CloudSyncPreferences {
     }
 }
 
+enum CloudSyncAccessPolicy {
+    static func canSync(isEnabled: Bool, hasProAccess: Bool) -> Bool {
+        isEnabled && hasProAccess
+    }
+}
+
 extension Notification.Name {
     static let cloudSyncLocalDataDidChange = Notification.Name("PagePilot.CloudSyncLocalDataDidChange")
     static let cloudSyncPreferenceDidChange = Notification.Name("PagePilot.CloudSyncPreferenceDidChange")
     static let cloudSyncStatusDidChange = Notification.Name("PagePilot.CloudSyncStatusDidChange")
+    static let proAccessDidChange = Notification.Name("PagePilot.ProAccessDidChange")
 }
 
 enum CloudSyncStatus: Equatable, Sendable {

@@ -24,6 +24,7 @@ final actor CloudSyncService: CKSyncEngineDelegate {
     private var syncEngine: CKSyncEngine?
     private var localChangesTask: Task<Void, Never>?
     private var preferenceTask: Task<Void, Never>?
+    private var entitlementTask: Task<Void, Never>?
     private var enqueueTask: Task<Void, Never>?
     private var status: CloudSyncStatus = .starting
     private var canPersistEngineState = true
@@ -37,6 +38,7 @@ final actor CloudSyncService: CKSyncEngineDelegate {
     deinit {
         localChangesTask?.cancel()
         preferenceTask?.cancel()
+        entitlementTask?.cancel()
         enqueueTask?.cancel()
     }
 
@@ -50,7 +52,7 @@ final actor CloudSyncService: CKSyncEngineDelegate {
     }
 
     func syncNow() async {
-        guard CloudSyncPreferences.isEnabled(in: defaults) else {
+        guard canSync else {
             await setStatus(.disabled)
             return
         }
@@ -74,7 +76,7 @@ final actor CloudSyncService: CKSyncEngineDelegate {
     // MARK: - Lifecycle
 
     private func configureForCurrentPreference() async {
-        guard CloudSyncPreferences.isEnabled(in: defaults) else {
+        guard canSync else {
             if let syncEngine {
                 await syncEngine.cancelOperations()
             }
@@ -131,9 +133,17 @@ final actor CloudSyncService: CKSyncEngineDelegate {
                 await self.configureForCurrentPreference()
             }
         }
+
+        entitlementTask = Task { [weak self] in
+            for await _ in NotificationCenter.default.notifications(named: .proAccessDidChange) {
+                guard !Task.isCancelled, let self else { break }
+                await self.configureForCurrentPreference()
+            }
+        }
     }
 
     private func scheduleEnqueue() {
+        guard canSync else { return }
         enqueueTask?.cancel()
         enqueueTask = Task { [weak self] in
             try? await Task.sleep(for: .milliseconds(350))
@@ -146,7 +156,7 @@ final actor CloudSyncService: CKSyncEngineDelegate {
     /// another slice after each completion avoids a huge first-launch engine
     /// state for users with large libraries.
     private func enqueueDirtyChanges() async throws {
-        guard CloudSyncPreferences.isEnabled(in: defaults), let syncEngine else { return }
+        guard canSync, let syncEngine else { return }
         let changes = try await store.pendingChanges(limit: 400)
         guard !changes.isEmpty else { return }
 
@@ -170,6 +180,7 @@ final actor CloudSyncService: CKSyncEngineDelegate {
         _ context: CKSyncEngine.SendChangesContext,
         syncEngine: CKSyncEngine
     ) async -> CKSyncEngine.RecordZoneChangeBatch? {
+        guard canSync else { return nil }
         let scope = context.options.scope
         let changes = syncEngine.state.pendingRecordZoneChanges.filter { scope.contains($0) }
         let store = self.store
@@ -188,6 +199,12 @@ final actor CloudSyncService: CKSyncEngineDelegate {
     }
 
     func handleEvent(_ event: CKSyncEngine.Event, syncEngine: CKSyncEngine) async {
+        guard canSync else {
+            await syncEngine.cancelOperations()
+            self.syncEngine = nil
+            await setStatus(.disabled)
+            return
+        }
         switch event {
         case .stateUpdate(let event):
             if canPersistEngineState {
@@ -375,6 +392,13 @@ final actor CloudSyncService: CKSyncEngineDelegate {
     }
 
     // MARK: - State / status
+
+    private var canSync: Bool {
+        CloudSyncAccessPolicy.canSync(
+            isEnabled: CloudSyncPreferences.isEnabled(in: defaults),
+            hasProAccess: ProPurchaseManager.shared.hasProAccess
+        )
+    }
 
     private func loadStateSerialization() -> CKSyncEngine.State.Serialization? {
         guard let data = defaults.data(forKey: CloudSyncPreferences.stateSerializationKey) else {

@@ -9,6 +9,7 @@
 "cloud_sync_status_failed" = "Sync Failed";
 "cloud_sync_last_success" = "Last Successful Sync";
 "cloud_sync_never_synced" = "Not Yet";
+"cloud_sync_service_unavailable" = "The sync service is unavailable.";
 "cloud_sync_sync_now" = "Sync Now";
 "cloud_sync_learn_more" = "How iCloud Sync Works";
 "cloud_sync_disabled_detail" = "Sync is off. Your library on this device is kept unchanged.";

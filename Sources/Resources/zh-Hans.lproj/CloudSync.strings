@@ -9,6 +9,7 @@
 "cloud_sync_status_failed" = "同步失败";
 "cloud_sync_last_success" = "上次成功同步";
 "cloud_sync_never_synced" = "尚未成功";
+"cloud_sync_service_unavailable" = "同步服务暂不可用。";
 "cloud_sync_sync_now" = "立即同步";
 "cloud_sync_learn_more" = "了解 iCloud 同步";
 "cloud_sync_disabled_detail" = "同步已关闭，本机现有书架不会被删除。";

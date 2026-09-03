@@ -660,6 +660,11 @@
 "me_title" = "A mí";
 "settings_appearance_section" = "Apariencia";
 "settings_reading_section" = "Lectura";
+"settings_reading_data_section" = "Lectura y datos";
+"settings_goal_reminder" = "Objetivo diario y recordatorio";
+"settings_control_speech_section" = "Controles y lectura en voz alta";
+"settings_general_preferences_section" = "General y preferencias";
+"settings_support_about_section" = "Soporte y acerca de";
 "settings_daily_goal" = "Objetivo diario";
 "settings_reminder" = "Recordatorio de lectura";
 "settings_reminder_time" = "Hora del recordatorio";
@@ -697,6 +702,8 @@
 "settings_share_app_message" = "Echa un vistazo a PagePilot: pasa páginas con las manos libres con tu Apple Watch.";
 "settings_about_section" = "Acerca de";
 "settings_about" = "Sobre nosotros";
+"paywall_cloud_sync_title" = "Desbloquea la sincronización con iCloud";
+"paywall_cloud_sync_subtitle" = "Actualiza a Pro para sincronizar automáticamente tus libros, progreso y notas entre dispositivos.";
 "settings_version" = "Versión";
 "settings_icp_filing" = "Presentación del PCI";
 

@@ -36,6 +36,13 @@ final class CloudSyncSupportTests: XCTestCase {
         XCTAssertTrue(CloudSyncPreferences.isEnabled(in: defaults))
     }
 
+    func testCloudSyncRequiresBothEnabledPreferenceAndProAccess() {
+        XCTAssertFalse(CloudSyncAccessPolicy.canSync(isEnabled: false, hasProAccess: false))
+        XCTAssertFalse(CloudSyncAccessPolicy.canSync(isEnabled: true, hasProAccess: false))
+        XCTAssertFalse(CloudSyncAccessPolicy.canSync(isEnabled: false, hasProAccess: true))
+        XCTAssertTrue(CloudSyncAccessPolicy.canSync(isEnabled: true, hasProAccess: true))
+    }
+
     func testRemoteWinsWhenItIsNewerOrEqual() {
         let local = Date(timeIntervalSince1970: 100)
 

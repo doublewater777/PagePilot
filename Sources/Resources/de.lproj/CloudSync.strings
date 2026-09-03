@@ -9,6 +9,7 @@
 "cloud_sync_status_failed" = "Synchronisierung fehlgeschlagen";
 "cloud_sync_last_success" = "Letzte erfolgreiche Synchronisierung";
 "cloud_sync_never_synced" = "Noch nicht";
+"cloud_sync_service_unavailable" = "Der Synchronisierungsdienst ist nicht verfügbar.";
 "cloud_sync_sync_now" = "Jetzt synchronisieren";
 "cloud_sync_learn_more" = "So funktioniert die Synchronisierung";
 "cloud_sync_disabled_detail" = "Die Synchronisierung ist aus. Die Bibliothek auf diesem Gerät bleibt unverändert.";
