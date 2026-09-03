@@ -25,13 +25,55 @@ struct CloudSyncSettingsView: View {
 
     var body: some View {
         List {
-            if proPurchase.hasProAccess {
-                syncControlsSection
-            } else {
-                previewHeroSection
-                previewFeaturesSection
-                upgradeSection
-                previewDetailsSections
+            Section {
+                Toggle(isOn: enabledBinding) {
+                    Label {
+                        Text(CloudSyncL10n.text("cloud_sync_toggle"))
+                    } icon: {
+                        Image(systemName: "icloud")
+                            .foregroundStyle(.blue)
+                    }
+                }
+
+                HStack(spacing: 12) {
+                    Text(CloudSyncL10n.text("cloud_sync_status"))
+                    Spacer(minLength: 12)
+                    statusIndicator
+                }
+
+                HStack(spacing: 12) {
+                    Text(CloudSyncL10n.text("cloud_sync_last_success"))
+                    Spacer(minLength: 12)
+                    Text(lastSuccessText)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.trailing)
+                }
+
+                Button {
+                    guard proPurchase.hasProAccess else {
+                        showPaywall = true
+                        return
+                    }
+                    Task {
+                        await service?.syncNow()
+                    }
+                } label: {
+                    Label(
+                        CloudSyncL10n.text("cloud_sync_sync_now"),
+                        systemImage: "arrow.triangle.2.circlepath"
+                    )
+                }
+                .disabled(!isEnabled || status.isBusy)
+
+                NavigationLink {
+                    CloudSyncInfoView()
+                        .navigationBarTitleDisplayMode(.inline)
+                } label: {
+                    Label(CloudSyncL10n.text("cloud_sync_learn_more"), systemImage: "info.circle")
+                }
+            } footer: {
+                Text(statusDetail)
+                    .foregroundStyle(statusDetailColor)
             }
         }
         .listStyle(.insetGrouped)
@@ -41,27 +83,20 @@ struct CloudSyncSettingsView: View {
         .toolbarBackground(Color(uiColor: .systemGroupedBackground), for: .navigationBar)
         .toolbarBackground(.visible, for: .navigationBar)
         .task {
-            if proPurchase.hasProAccess {
-                status = await service?.currentStatus() ?? .unavailable(
-                    CloudSyncL10n.text("cloud_sync_service_unavailable")
-                )
-                refreshLastSuccessfulSync()
-            } else {
-                isEnabled = false
-                status = .disabled
-            }
+            status = await service?.currentStatus() ?? .unavailable(
+                CloudSyncL10n.text("cloud_sync_service_unavailable")
+            )
+            refreshLastSuccessfulSync()
         }
         .onReceive(NotificationCenter.default.publisher(for: .cloudSyncStatusDidChange)) { notification in
-            guard proPurchase.hasProAccess,
-                  let newStatus = notification.object as? CloudSyncStatus
-            else { return }
+            guard let newStatus = notification.object as? CloudSyncStatus else { return }
             status = newStatus
             if case .synced(let date) = newStatus {
                 lastSuccessfulSync = date
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: .cloudSyncPreferenceDidChange)) { _ in
-            isEnabled = proPurchase.hasProAccess && CloudSyncPreferences.isEnabled
+            isEnabled = CloudSyncPreferences.isEnabled
             if !isEnabled {
                 status = .disabled
             }
@@ -71,211 +106,11 @@ struct CloudSyncSettingsView: View {
             isEnabled = hasProAccess && CloudSyncPreferences.isEnabled
             if !hasProAccess {
                 status = .disabled
-            } else {
-                Task {
-                    status = await service?.currentStatus() ?? .unavailable(
-                        CloudSyncL10n.text("cloud_sync_service_unavailable")
-                    )
-                    refreshLastSuccessfulSync()
-                }
             }
         }
         .sheet(isPresented: $showPaywall) {
             PaywallView(context: .cloudSync)
         }
-    }
-
-    private var syncControlsSection: some View {
-        Section {
-            Toggle(isOn: enabledBinding) {
-                Label {
-                    Text(CloudSyncL10n.text("cloud_sync_toggle"))
-                } icon: {
-                    Image(systemName: "icloud")
-                        .foregroundStyle(.blue)
-                }
-            }
-
-            HStack(spacing: 12) {
-                Text(CloudSyncL10n.text("cloud_sync_status"))
-                Spacer(minLength: 12)
-                statusIndicator
-            }
-
-            HStack(spacing: 12) {
-                Text(CloudSyncL10n.text("cloud_sync_last_success"))
-                Spacer(minLength: 12)
-                Text(lastSuccessText)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.trailing)
-            }
-
-            Button {
-                Task {
-                    await service?.syncNow()
-                }
-            } label: {
-                Label(
-                    CloudSyncL10n.text("cloud_sync_sync_now"),
-                    systemImage: "arrow.triangle.2.circlepath"
-                )
-            }
-            .disabled(!isEnabled || status.isBusy)
-
-            NavigationLink {
-                CloudSyncInfoView()
-                    .navigationBarTitleDisplayMode(.inline)
-            } label: {
-                Label(CloudSyncL10n.text("cloud_sync_learn_more"), systemImage: "info.circle")
-            }
-        } footer: {
-            Text(statusDetail)
-                .foregroundStyle(statusDetailColor)
-        }
-    }
-
-    private var previewHeroSection: some View {
-        Section {
-            VStack(spacing: 12) {
-                Image(systemName: "icloud.fill")
-                    .font(.system(size: 34, weight: .semibold))
-                    .foregroundStyle(.blue)
-                    .frame(width: 68, height: 68)
-                    .background(Color.blue.opacity(0.12))
-                    .clipShape(Circle())
-
-                Text(CloudSyncL10n.text("cloud_sync_preview_title"))
-                    .font(.title3.bold())
-                    .multilineTextAlignment(.center)
-
-                Text(CloudSyncL10n.text("cloud_sync_preview_subtitle"))
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                Text("PRO")
-                    .font(.system(size: 11, weight: .bold))
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 9)
-                    .padding(.vertical, 4)
-                    .background(AppColors.horizontalGradient)
-                    .clipShape(Capsule())
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 10)
-        }
-    }
-
-    private var previewFeaturesSection: some View {
-        Section(CloudSyncL10n.text("cloud_sync_preview_features_title")) {
-            previewFeatureRow(
-                icon: "books.vertical.fill",
-                color: .cyan,
-                titleKey: "cloud_sync_feature_books_title",
-                subtitleKey: "cloud_sync_feature_books_subtitle"
-            )
-            previewFeatureRow(
-                icon: "book.pages.fill",
-                color: .blue,
-                titleKey: "cloud_sync_feature_progress_title",
-                subtitleKey: "cloud_sync_feature_progress_subtitle"
-            )
-            previewFeatureRow(
-                icon: "highlighter",
-                color: .orange,
-                titleKey: "cloud_sync_feature_annotations_title",
-                subtitleKey: "cloud_sync_feature_annotations_subtitle"
-            )
-            previewFeatureRow(
-                icon: "lock.shield.fill",
-                color: .green,
-                titleKey: "cloud_sync_feature_private_title",
-                subtitleKey: "cloud_sync_feature_private_subtitle"
-            )
-        }
-    }
-
-    private var upgradeSection: some View {
-        Section {
-            Button {
-                Analytics.shared.log(.paywallViewed(source: "cloud_sync_preview_upgrade"))
-                showPaywall = true
-            } label: {
-                HStack(spacing: 12) {
-                    Image(systemName: "crown.fill")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundStyle(.white)
-                        .frame(width: 34, height: 34)
-                        .background(AppColors.horizontalGradient)
-                        .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
-
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text(CloudSyncL10n.text("cloud_sync_pro_title"))
-                            .font(.system(size: 15, weight: .semibold))
-                            .foregroundStyle(.primary)
-                        Text(CloudSyncL10n.text("cloud_sync_pro_body"))
-                            .font(.system(size: 12))
-                            .foregroundStyle(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-
-                    Spacer(minLength: 4)
-
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(.tertiary)
-                }
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-        }
-    }
-
-    @ViewBuilder
-    private var previewDetailsSections: some View {
-        Section(CloudSyncL10n.text("cloud_sync_first_sync_title")) {
-            Text(CloudSyncL10n.text("cloud_sync_first_sync_body"))
-        }
-
-        Section(CloudSyncL10n.text("cloud_sync_conflicts_title")) {
-            Text(CloudSyncL10n.text("cloud_sync_conflicts_body"))
-        }
-
-        Section(CloudSyncL10n.text("cloud_sync_deletions_title")) {
-            Text(CloudSyncL10n.text("cloud_sync_deletions_body"))
-        }
-
-        Section(CloudSyncL10n.text("cloud_sync_privacy_title")) {
-            Text(CloudSyncL10n.text("cloud_sync_privacy_body"))
-        }
-    }
-
-    private func previewFeatureRow(
-        icon: String,
-        color: Color,
-        titleKey: String,
-        subtitleKey: String
-    ) -> some View {
-        HStack(alignment: .top, spacing: 12) {
-            Image(systemName: icon)
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(color)
-                .frame(width: 32, height: 32)
-                .background(color.opacity(0.12))
-                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-
-            VStack(alignment: .leading, spacing: 3) {
-                Text(CloudSyncL10n.text(titleKey))
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(.primary)
-                Text(CloudSyncL10n.text(subtitleKey))
-                    .font(.system(size: 12))
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-        .padding(.vertical, 2)
     }
 
     private var enabledBinding: Binding<Bool> {

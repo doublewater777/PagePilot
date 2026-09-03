@@ -26,17 +26,3 @@
 "cloud_sync_deletions_body" = "Das Löschen eines Buchs, Lesezeichens oder einer Markierung wird auch auf andere synchronisierte Geräte übertragen. Offline-Löschungen bleiben ausstehend, bis iCloud wieder verfügbar ist.";
 "cloud_sync_privacy_title" = "Datenschutz und Deaktivieren";
 "cloud_sync_privacy_body" = "Synchronisierte Daten liegen in deiner privaten iCloud-CloudKit-Datenbank. Das Ausschalten beendet weitere Synchronisierung, löscht aber nicht die bereits auf diesem Gerät gespeicherte Bibliothek.";
-"cloud_sync_preview_title" = "Dein Lesen bleibt synchron";
-"cloud_sync_preview_subtitle" = "Sieh dir zuerst an, was PagePilot zwischen deinen Apple-Geräten synchronisiert, bevor du die Funktion freischaltest.";
-"cloud_sync_preview_features_title" = "Das synchronisiert iCloud";
-"cloud_sync_feature_books_title" = "Bücher & Dateien";
-"cloud_sync_feature_books_subtitle" = "Importierte Bücher und Cover können auf deine anderen Geräte übertragen werden.";
-"cloud_sync_feature_progress_title" = "Lesefortschritt";
-"cloud_sync_feature_progress_subtitle" = "Leseposition und Leseeinstellungen bleiben aktuell.";
-"cloud_sync_feature_annotations_title" = "Lesezeichen & Notizen";
-"cloud_sync_feature_annotations_subtitle" = "Lesezeichen, Markierungen und Notizen werden geräteübergreifend synchronisiert.";
-"cloud_sync_feature_private_title" = "Privates iCloud";
-"cloud_sync_feature_private_subtitle" = "Synchronisierte Daten bleiben in deiner privaten iCloud-CloudKit-Datenbank.";
-"cloud_sync_paywall_feature_subtitle" = "Bücher, Fortschritt, Lesezeichen & Notizen";
-"cloud_sync_pro_title" = "iCloud-Synchronisierung mit PagePilot PRO freischalten";
-"cloud_sync_pro_body" = "iCloud-Synchronisierung ist eine PRO-Funktion. Informiere dich unten über die Funktionsweise und entscheide dann, ob du upgraden möchtest.";

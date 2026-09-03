@@ -116,11 +116,22 @@ struct MeView: View {
                 )
             }
 
-            NavigationLink {
-                CloudSyncSettingsView(service: AppModule.shared?.cloudSync)
-                    .navigationBarTitleDisplayMode(.inline)
-            } label: {
-                CloudSyncRow(showsChevron: false)
+            if proPurchase.hasProAccess {
+                NavigationLink {
+                    CloudSyncSettingsView(service: AppModule.shared?.cloudSync)
+                        .navigationBarTitleDisplayMode(.inline)
+                } label: {
+                    CloudSyncRow(showsChevron: false)
+                }
+            } else {
+                Button {
+                    Analytics.shared.log(.paywallViewed(source: "settings_cloud_sync"))
+                    paywallContext = .cloudSync
+                    showPaywall = true
+                } label: {
+                    CloudSyncRow(showsChevron: true)
+                }
+                .buttonStyle(.plain)
             }
         }
     }

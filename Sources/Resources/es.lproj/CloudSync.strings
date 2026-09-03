@@ -26,17 +26,3 @@
 "cloud_sync_deletions_body" = "Al eliminar un libro, marcador o destacado, también se elimina en los demás dispositivos sincronizados. Las eliminaciones sin conexión quedan pendientes hasta que iCloud vuelva a estar disponible.";
 "cloud_sync_privacy_title" = "Privacidad y desactivación";
 "cloud_sync_privacy_body" = "Los datos se guardan en tu base de datos privada de iCloud CloudKit. Desactivar la sincronización detiene futuros cambios, pero no borra la biblioteca guardada en este dispositivo.";
-"cloud_sync_preview_title" = "Mantén tu lectura sincronizada";
-"cloud_sync_preview_subtitle" = "Consulta primero qué puede mantener PagePilot sincronizado entre tus dispositivos Apple antes de decidir si quieres desbloquearlo.";
-"cloud_sync_preview_features_title" = "Qué incluye la sincronización con iCloud";
-"cloud_sync_feature_books_title" = "Libros y archivos";
-"cloud_sync_feature_books_subtitle" = "Los libros importados y sus portadas pueden aparecer en tus otros dispositivos.";
-"cloud_sync_feature_progress_title" = "Progreso de lectura";
-"cloud_sync_feature_progress_subtitle" = "La posición de lectura y las preferencias se mantienen actualizadas.";
-"cloud_sync_feature_annotations_title" = "Marcadores y notas";
-"cloud_sync_feature_annotations_subtitle" = "Marcadores, destacados y notas se sincronizan entre dispositivos.";
-"cloud_sync_feature_private_title" = "iCloud privado";
-"cloud_sync_feature_private_subtitle" = "Los datos sincronizados permanecen en tu base privada de iCloud CloudKit.";
-"cloud_sync_paywall_feature_subtitle" = "Libros, progreso, marcadores y notas";
-"cloud_sync_pro_title" = "Desbloquea iCloud con PagePilot PRO";
-"cloud_sync_pro_body" = "La sincronización con iCloud es una función PRO. Revisa cómo funciona más abajo y actualiza solo si encaja con tu forma de leer.";

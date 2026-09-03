@@ -26,17 +26,3 @@
 "cloud_sync_deletions_body" = "Deleting a book, bookmark, or highlight also deletes it on your other synced devices. Offline deletions stay pending and are sent when iCloud becomes available again.";
 "cloud_sync_privacy_title" = "Privacy and Turning Sync Off";
 "cloud_sync_privacy_body" = "Sync data is stored in your private iCloud CloudKit database. Turning sync off stops future syncing; it does not delete the library already stored on this device.";
-"cloud_sync_preview_title" = "Keep Your Reading in Sync";
-"cloud_sync_preview_subtitle" = "See what PagePilot can keep consistent across your Apple devices before you decide to unlock it.";
-"cloud_sync_preview_features_title" = "What iCloud Sync Includes";
-"cloud_sync_feature_books_title" = "Books & Files";
-"cloud_sync_feature_books_subtitle" = "Imported books and covers can follow you to your other devices.";
-"cloud_sync_feature_progress_title" = "Reading Progress";
-"cloud_sync_feature_progress_subtitle" = "Reading position and reader preferences stay up to date.";
-"cloud_sync_feature_annotations_title" = "Bookmarks & Notes";
-"cloud_sync_feature_annotations_subtitle" = "Bookmarks, highlights, and notes sync across devices.";
-"cloud_sync_feature_private_title" = "Private iCloud";
-"cloud_sync_feature_private_subtitle" = "Sync data stays in your private iCloud CloudKit database.";
-"cloud_sync_paywall_feature_subtitle" = "Books, progress, bookmarks & notes";
-"cloud_sync_pro_title" = "Unlock iCloud Sync with PagePilot PRO";
-"cloud_sync_pro_body" = "iCloud Sync is a PRO feature. Review how it works below, then upgrade only if it fits your reading setup.";
