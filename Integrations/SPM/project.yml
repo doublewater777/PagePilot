@@ -81,8 +81,10 @@ targets:
       configs:
         Debug:
           APS_ENVIRONMENT: development
+          ICLOUD_CONTAINER_ENVIRONMENT: Development
         Release:
           APS_ENVIRONMENT: production
+          ICLOUD_CONTAINER_ENVIRONMENT: Production
   PagePilotWatch:
     type: application
     platform: watchOS
