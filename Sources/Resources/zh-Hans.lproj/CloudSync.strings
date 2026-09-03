@@ -40,3 +40,7 @@
 "cloud_sync_paywall_feature_subtitle" = "书籍、进度、书签与笔记";
 "cloud_sync_pro_title" = "使用 PagePilot PRO 解锁 iCloud 同步";
 "cloud_sync_pro_body" = "iCloud 同步是 PRO 功能。你可以先在下方了解同步规则，确认适合自己后再升级。";
+"pro_paywall_title" = "让阅读在每台设备上无缝继续";
+"pro_paywall_subtitle" = "用 iCloud 同步书籍、进度、书签与笔记，并解锁无限书架、Watch 控制和深度统计。";
+"pro_settings_upgrade_body" = "解锁 iCloud 云同步、无限书架、Watch 控制与深度统计";
+"pro_settings_active_body" = "iCloud 同步、无限书架、Watch 控制与深度统计已解锁。";
