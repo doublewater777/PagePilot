@@ -40,3 +40,7 @@
 "cloud_sync_paywall_feature_subtitle" = "Livres, progression, signets et notes";
 "cloud_sync_pro_title" = "Débloquer iCloud avec PagePilot PRO";
 "cloud_sync_pro_body" = "La synchronisation iCloud est une fonction PRO. Consultez son fonctionnement ci-dessous, puis mettez à niveau seulement si elle correspond à vos besoins.";
+"pro_paywall_title" = "Continuez à lire sur tous vos appareils";
+"pro_paywall_subtitle" = "Synchronisez livres, progression, signets et notes avec iCloud, puis profitez aussi d’une bibliothèque illimitée, des commandes Watch et de statistiques avancées.";
+"pro_settings_upgrade_body" = "Débloquez iCloud, la bibliothèque illimitée, les commandes Watch et les statistiques avancées";
+"pro_settings_active_body" = "iCloud, la bibliothèque illimitée, les commandes Watch et les statistiques avancées sont débloqués.";
