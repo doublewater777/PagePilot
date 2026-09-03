@@ -27,6 +27,7 @@ struct MeView: View {
             
             readingSection
             statsSection
+            cloudSyncSection
             
             pageTurnSection
             ttsSection
@@ -897,7 +898,6 @@ private struct AboutDetailView: View {
 }
 
 // MARK: - Identifiable URL Wrapper
-
 struct IdentifiableURL: Identifiable {
     let id = UUID()
     let url: URL

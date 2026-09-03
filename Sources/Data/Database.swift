@@ -52,7 +52,6 @@ final class Database {
                 t.column("created", .datetime).notNull()
             }
 
-            // create an index to make sorting by progression faster
             try db.create(index: "index_highlight_progression", on: "highlight", columns: ["bookId", "progression"], ifNotExists: true)
             try db.create(index: "index_bookmark_progression", on: "bookmark", columns: ["bookId", "progression"], ifNotExists: true)
         }
@@ -69,6 +68,60 @@ final class Database {
                 t.column("title", .text).notNull()
                 t.column("url", .text).notNull()
                 t.column("created", .datetime).notNull()
+            }
+        }
+
+        migrator.registerMigration("addCloudSync") { db in
+            let epoch = Date(timeIntervalSince1970: 0)
+
+            try db.alter(table: "book") { t in
+                t.add(column: "syncID", .text).notNull().defaults(to: "")
+                t.add(column: "updatedAt", .datetime).notNull().defaults(to: epoch)
+                t.add(column: "needsSync", .boolean).notNull().defaults(to: true)
+                t.add(column: "contentNeedsSync", .boolean).notNull().defaults(to: true)
+            }
+            try db.execute(sql: "UPDATE book SET updatedAt = created, needsSync = 1, contentNeedsSync = 1")
+
+            try db.alter(table: "bookmark") { t in
+                t.add(column: "syncID", .text).notNull().defaults(to: "")
+                t.add(column: "updatedAt", .datetime).notNull().defaults(to: epoch)
+                t.add(column: "needsSync", .boolean).notNull().defaults(to: true)
+            }
+            try db.execute(sql: "UPDATE bookmark SET updatedAt = created, needsSync = 1")
+
+            try db.alter(table: "highlight") { t in
+                t.add(column: "syncID", .text).notNull().defaults(to: "")
+                t.add(column: "updatedAt", .datetime).notNull().defaults(to: epoch)
+                t.add(column: "needsSync", .boolean).notNull().defaults(to: true)
+            }
+            try db.execute(sql: "UPDATE highlight SET updatedAt = created, needsSync = 1")
+
+            try db.create(table: "syncTombstone") { t in
+                t.column("recordType", .text).notNull()
+                t.column("syncID", .text).notNull()
+                t.column("deletedAt", .datetime).notNull()
+                t.primaryKey(["recordType", "syncID"])
+            }
+
+            try db.create(table: "cloudRecordMetadata") { t in
+                t.column("recordType", .text).notNull()
+                t.column("syncID", .text).notNull()
+                t.column("systemFields", .blob).notNull()
+                t.primaryKey(["recordType", "syncID"])
+            }
+
+            try db.create(index: "index_book_sync_id", on: "book", columns: ["syncID"], ifNotExists: true)
+            try db.create(index: "index_bookmark_sync_id", on: "bookmark", columns: ["syncID"], ifNotExists: true)
+            try db.create(index: "index_highlight_sync_id", on: "highlight", columns: ["syncID"], ifNotExists: true)
+        }
+
+        migrator.registerMigration("addDeferredCloudRecords") { db in
+            try db.create(table: "deferredCloudRecord") { t in
+                t.column("recordType", .text).notNull()
+                t.column("syncID", .text).notNull()
+                t.column("payload", .blob).notNull()
+                t.column("receivedAt", .datetime).notNull()
+                t.primaryKey(["recordType", "syncID"])
             }
         }
 
@@ -106,10 +159,6 @@ final class Database {
     }
 }
 
-/// Protocol for a database entity id.
-///
-/// Using this instead of regular integers makes the code safer, because we can only give ids of the
-/// right model in APIs. It also helps self-document APIs.
 protocol EntityId: Codable, Hashable, RawRepresentable, ExpressibleByIntegerLiteral, CustomStringConvertible, DatabaseValueConvertible where RawValue == Int64 {}
 
 extension EntityId {
@@ -126,13 +175,9 @@ extension EntityId {
 }
 
 extension EntityId {
-    // MARK: - ExpressibleByIntegerLiteral
-
     init(integerLiteral value: Int64) {
         self.init(rawValue: value)!
     }
-
-    // MARK: - Codable
 
     init(from decoder: Decoder) throws {
         try self.init(rawValue: decoder.singleValueContainer().decode(Int64.self))!
@@ -143,13 +188,9 @@ extension EntityId {
         try container.encode(rawValue)
     }
 
-    // MARK: - CustomStringConvertible
-
     var description: String {
         "\(Self.self)(\(rawValue))"
     }
-
-    // MARK: - DatabaseValueConvertible
 
     var databaseValue: DatabaseValue {
         rawValue.databaseValue

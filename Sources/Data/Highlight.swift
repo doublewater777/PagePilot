@@ -49,6 +49,12 @@ struct Highlight: Codable {
     var progression: Double?
     /// Optional user note attached to this highlight.
     var note: String?
+    /// Stable cross-device identity.
+    var syncID: String
+    /// Domain modification timestamp for conflict resolution.
+    var updatedAt: Date
+    /// Durable local outbox bit.
+    var needsSync: Bool
 
     init(
         id: Id? = nil,
@@ -56,7 +62,10 @@ struct Highlight: Codable {
         locator: Locator,
         color: HighlightColor,
         created: Date = Date(),
-        note: String? = nil
+        note: String? = nil,
+        syncID: String? = nil,
+        updatedAt: Date? = nil,
+        needsSync: Bool = true
     ) {
         self.id = id
         self.bookId = bookId
@@ -65,12 +74,15 @@ struct Highlight: Codable {
         self.color = color
         self.created = created
         self.note = note
+        self.syncID = syncID ?? CloudSyncIdentifier.highlight()
+        self.updatedAt = updatedAt ?? created
+        self.needsSync = needsSync
     }
 }
 
 extension Highlight: TableRecord, FetchableRecord, PersistableRecord {
     enum Columns: String, ColumnExpression {
-        case id, bookId, locator, color, created, progression, note
+        case id, bookId, locator, color, created, progression, note, syncID, updatedAt, needsSync
     }
 }
 
@@ -103,30 +115,55 @@ final class HighlightRepository {
 
     @discardableResult
     func add(_ highlight: Highlight) async throws -> Highlight.Id {
-        return try await db.write { db in
+        let id = try await db.write { db in
             try highlight.insert(db)
             return Highlight.Id(rawValue: db.lastInsertedRowID)
         }
+        notifyCloudSync()
+        return id
     }
 
     func update(_ id: Highlight.Id, color: HighlightColor) async throws {
         try await db.write { db in
             let filtered = Highlight.filter(Highlight.Columns.id == id)
-            let assignment = Highlight.Columns.color.set(to: color)
-            try filtered.updateAll(db, onConflict: nil, assignment)
+            try filtered.updateAll(
+                db,
+                onConflict: nil,
+                Highlight.Columns.color.set(to: color),
+                Highlight.Columns.updatedAt.set(to: Date()),
+                Highlight.Columns.needsSync.set(to: true)
+            )
         }
+        notifyCloudSync()
     }
 
     func update(_ id: Highlight.Id, note: String?) async throws {
         try await db.write { db in
             let filtered = Highlight.filter(Highlight.Columns.id == id)
-            let assignment = Highlight.Columns.note.set(to: note)
-            try filtered.updateAll(db, onConflict: nil, assignment)
+            try filtered.updateAll(
+                db,
+                onConflict: nil,
+                Highlight.Columns.note.set(to: note),
+                Highlight.Columns.updatedAt.set(to: Date()),
+                Highlight.Columns.needsSync.set(to: true)
+            )
         }
+        notifyCloudSync()
     }
 
     func remove(_ id: Highlight.Id) async throws {
-        try await db.write { db in try Highlight.deleteOne(db, key: id) }
+        try await db.write { db in
+            guard let highlight = try Highlight.fetchOne(db, key: id) else { return }
+            if !highlight.syncID.isEmpty {
+                try SyncTombstone(
+                    recordType: CloudSyncRecordType.highlight.rawValue,
+                    syncID: highlight.syncID,
+                    deletedAt: Date()
+                ).save(db)
+            }
+            try Highlight.deleteOne(db, key: id)
+        }
+        notifyCloudSync()
     }
 
     func distinctBookIds() async throws -> [Book.Id] {
@@ -150,6 +187,10 @@ final class HighlightRepository {
         try await db.read { db in
             try Highlight.fetchCount(db)
         }
+    }
+
+    private func notifyCloudSync() {
+        NotificationCenter.default.post(name: .cloudSyncLocalDataDidChange, object: nil)
     }
 }
 
