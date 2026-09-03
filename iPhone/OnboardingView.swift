@@ -431,10 +431,21 @@ struct OnboardingView: View {
 
     private func importSample() {
         guard !hasFinished else { return }
-        do {
-            importURL(try OnboardingSamplePublication.makeURL(), source: .sample)
-        } catch {
-            errorMessage = error.localizedDescription
+        workTask?.cancel()
+        isWorking = true
+        errorMessage = nil
+        workTask = Task {
+            do {
+                let url = try await OnboardingSamplePublication.makeURL()
+                let publication = try await importPublication(url)
+                guard !Task.isCancelled, !hasFinished else { return }
+                selectedPublication = publication
+                didChoosePublication(bookID: publication.bookID, source: .sample)
+            } catch {
+                guard !Task.isCancelled, !hasFinished else { return }
+                errorMessage = error.localizedDescription
+            }
+            isWorking = false
         }
     }
 

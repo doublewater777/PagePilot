@@ -146,15 +146,12 @@ final class OnboardingFlowTests: XCTestCase {
         XCTAssertEqual(store.load(platform: .iPhone).step, .choosePublication)
     }
 
-    func testSamplePublicationWritesMarkdownSource() throws {
-        let url = try OnboardingSamplePublication.makeURL()
+    func testSamplePublicationCreatesMultiChapterEPUB() async throws {
+        let url = try await OnboardingSamplePublication.makeURL()
         defer { try? FileManager.default.removeItem(at: url) }
 
-        XCTAssertEqual(url.lastPathComponent, OnboardingSamplePublication.fileName)
-        XCTAssertEqual(url.pathExtension, "md")
-        XCTAssertEqual(
-            try String(contentsOf: url, encoding: .utf8),
-            OnboardingSamplePublication.markdown
-        )
+        XCTAssertEqual(url.pathExtension, "epub")
+        XCTAssertGreaterThan(OnboardingSamplePublication.chapterCount, 1)
+        XCTAssertGreaterThan(try Data(contentsOf: url).count, 0)
     }
 }
