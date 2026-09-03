@@ -135,10 +135,10 @@ private struct CloudSyncSettingsSection: View {
             return L10n.text("cloud_sync_syncing_detail")
         case .synced:
             return L10n.text("cloud_sync_synced_detail")
-        case .unavailable:
-            return L10n.text("cloud_sync_unavailable_detail")
-        case .failed:
-            return L10n.text("cloud_sync_failed_detail")
+        case .unavailable(let reason):
+            return "\(L10n.text(\"cloud_sync_unavailable_detail\"))\n\(reason)"
+        case .failed(let reason):
+            return "\(L10n.text(\"cloud_sync_failed_detail\"))\n\(reason)"
         }
     }
 
