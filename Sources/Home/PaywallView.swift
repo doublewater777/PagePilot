@@ -11,6 +11,7 @@ import SwiftUI
 enum PaywallContext {
     case general
     case iPadWatchRelay
+    case cloudSync
 }
 
 struct PaywallView: View {
@@ -45,6 +46,17 @@ struct PaywallView: View {
 
     private var isPad: Bool {
         UIDevice.current.userInterfaceIdiom == .pad
+    }
+
+    private var heroContent: (icon: String, titleKey: String, subtitleKey: String) {
+        switch context {
+        case .general:
+            return ("crown.fill", "paywall_title", "paywall_subtitle")
+        case .iPadWatchRelay:
+            return ("ipad.and.iphone", "paywall_ipad_watch_title", "paywall_ipad_watch_subtitle")
+        case .cloudSync:
+            return ("icloud.fill", "paywall_cloud_sync_title", "paywall_cloud_sync_subtitle")
+        }
     }
 
     var body: some View {
@@ -114,7 +126,7 @@ struct PaywallView: View {
 
     private var hero: some View {
         VStack(spacing: 7) {
-            Image(systemName: context == .iPadWatchRelay ? "ipad.and.iphone" : "crown.fill")
+            Image(systemName: heroContent.icon)
                 .font(.system(size: 18, weight: .bold))
                 .foregroundColor(.orange)
                 .frame(width: 36, height: 36)
@@ -122,7 +134,7 @@ struct PaywallView: View {
                 .clipShape(Circle())
 
             Text(NSLocalizedString(
-                context == .iPadWatchRelay ? "paywall_ipad_watch_title" : "paywall_title",
+                heroContent.titleKey,
                 comment: ""
             ))
                 .font(.system(size: 23, weight: .bold))
@@ -130,7 +142,7 @@ struct PaywallView: View {
                 .multilineTextAlignment(.center)
 
             Text(NSLocalizedString(
-                context == .iPadWatchRelay ? "paywall_ipad_watch_subtitle" : "paywall_subtitle",
+                heroContent.subtitleKey,
                 comment: ""
             ))
                 .font(.system(size: 13, weight: .medium))

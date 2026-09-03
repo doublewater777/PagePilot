@@ -236,6 +236,9 @@ final class ProPurchaseManager: ObservableObject {
         let previous = defaults.bool(forKey: proKey)
         defaults.set(hasAccess, forKey: proKey)
         objectWillChange.send()
+        if previous != hasAccess {
+            NotificationCenter.default.post(name: .proAccessDidChange, object: hasAccess)
+        }
         // Pro may land on iPad after purchase on iPhone; start LAN as soon as
         // entitlement is known so Watch relay works without a diagnostics visit.
         if hasAccess, !previous {

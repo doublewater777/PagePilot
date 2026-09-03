@@ -13,28 +13,20 @@ import SwiftUI
 struct MeView: View {
     @AppStorage(AppAppearancePreferences.Keys.language) private var selectedLanguage = AppAppearancePreferences.language.rawValue
     @AppStorage(AppAppearancePreferences.Keys.theme) private var selectedTheme = AppTheme.system.rawValue
-    @AppStorage(ReadingPreferences.Keys.dailyGoalMinutes) private var dailyGoalMinutes = ReadingPreferences.defaultDailyGoalMinutes
     @State private var localizationRefreshID = AppAppearancePreferences.language.rawValue
     @State private var showPaywall = false
+    @State private var paywallContext: PaywallContext = .general
     @ObservedObject private var proPurchase = ProPurchaseManager.shared
-    @AppStorage(ReadingPreferences.Keys.reminderEnabled) private var reminderEnabled = ReadingPreferences.defaultReminderEnabled
-    @State private var showNotificationDeniedAlert = false
     private static var hasAutoShownPaywall = false
 
     var body: some View {
         List {
             proSection
-            
-            readingSection
-            statsSection
-            
-            pageTurnSection
-            ttsSection
-            
+
+            readingAndDataSection
+            controlAndSpeechSection
             appearanceSection
-            
-            feedbackSection
-            aboutSection
+            supportAndAboutSection
         }
         .listStyle(.insetGrouped)
         .scrollContentBackground(.hidden)
@@ -49,17 +41,7 @@ struct MeView: View {
             localizationRefreshID = AppAppearancePreferences.language.rawValue
         }
         .sheet(isPresented: $showPaywall) {
-            PaywallView()
-        }
-        .alert(NSLocalizedString("settings_reminder_denied_title", comment: ""), isPresented: $showNotificationDeniedAlert) {
-            Button(NSLocalizedString("cancel_button", comment: ""), role: .cancel) {}
-            Button(NSLocalizedString("settings_reminder_open_settings", comment: "")) {
-                if let url = URL(string: UIApplication.openSettingsURLString) {
-                    UIApplication.shared.open(url)
-                }
-            }
-        } message: {
-            Text(NSLocalizedString("settings_reminder_denied_body", comment: ""))
+            PaywallView(context: paywallContext)
         }
         .onAppear {
             if ProcessInfo.processInfo.arguments.contains("-ShowPaywall") && !Self.hasAutoShownPaywall {
@@ -67,15 +49,12 @@ struct MeView: View {
                 showPaywall = true
             }
         }
-        .onChange(of: dailyGoalMinutes) { _, newValue in
-            NotificationCenter.default.post(name: ReadingPreferences.dailyGoalDidChange, object: newValue)
-        }
     }
 
     // MARK: - Sections
 
     private var appearanceSection: some View {
-        Section(NSLocalizedString("settings_appearance_section", comment: "")) {
+        Section(NSLocalizedString("settings_general_preferences_section", comment: "")) {
             Picker(selection: languageBinding) {
                 ForEach(AppLanguage.allCases) { language in
                     Text(language.localizedName).tag(language.rawValue)
@@ -102,91 +81,63 @@ struct MeView: View {
         }
     }
 
-    private var readingSection: some View {
-        Section {
-            Picker(selection: $dailyGoalMinutes) {
-                ForEach(Array(stride(
-                    from: ReadingPreferences.dailyGoalRange.lowerBound,
-                    through: ReadingPreferences.dailyGoalRange.upperBound,
-                    by: 5
-                )), id: \.self) { minute in
-                    Text(String(format: NSLocalizedString("home_minutes", comment: ""), minute)).tag(minute)
-                }
+    private var readingAndDataSection: some View {
+        Section(NSLocalizedString("settings_reading_data_section", comment: "")) {
+            NavigationLink {
+                LazyView(ReadingGoalSettingsView())
+                    .navigationBarTitleDisplayMode(.inline)
             } label: {
                 MeRow(
                     icon: "target",
                     iconColor: .blue,
-                    title: NSLocalizedString("settings_daily_goal", comment: "")
+                    title: NSLocalizedString("settings_goal_reminder", comment: "")
                 )
             }
-            .pickerStyle(.menu)
 
-            Toggle(isOn: $reminderEnabled) {
-                Text(NSLocalizedString("settings_reminder", comment: ""))
+            NavigationLink {
+                LazyView(ReadingStatsView())
+                    .navigationBarTitleDisplayMode(.inline)
+            } label: {
+                MeRow(
+                    icon: "chart.bar.xaxis",
+                    iconColor: .blue,
+                    title: NSLocalizedString("settings_stats", comment: "")
+                )
             }
-            .onChange(of: reminderEnabled) { _, newValue in
-                Task {
-                    if newValue {
-                        ensureReminderTimeDefaults()
-                        let granted = await ReadingReminderScheduler.shared.requestAuthorization()
-                        if granted {
-                            await ReadingReminderScheduler.shared.reschedule()
-                        } else {
-                            await MainActor.run {
-                                reminderEnabled = false
-                                showNotificationDeniedAlert = true
-                            }
-                        }
-                    } else {
-                        await ReadingReminderScheduler.shared.reschedule()
-                    }
+
+            NavigationLink {
+                LazyView(MyNotesView())
+                    .navigationBarTitleDisplayMode(.inline)
+            } label: {
+                MeRow(
+                    icon: "bookmark.fill",
+                    iconColor: .blue,
+                    title: NSLocalizedString("settings_my_notes", comment: "")
+                )
+            }
+
+            if proPurchase.hasProAccess {
+                NavigationLink {
+                    CloudSyncSettingsView(service: AppModule.shared?.cloudSync)
+                        .navigationBarTitleDisplayMode(.inline)
+                } label: {
+                    CloudSyncRow(showsChevron: false)
                 }
-            }
-
-            if reminderEnabled {
-                DatePicker(
-                    NSLocalizedString("settings_reminder_time", comment: ""),
-                    selection: reminderTimeBinding,
-                    displayedComponents: .hourAndMinute
-                )
-            }
-        } header: {
-            Text(NSLocalizedString("settings_reading_section", comment: ""))
-        } footer: {
-            if reminderEnabled {
-                Text(NSLocalizedString("settings_reminder_footer", comment: ""))
+            } else {
+                Button {
+                    Analytics.shared.log(.paywallViewed(source: "settings_cloud_sync"))
+                    paywallContext = .cloudSync
+                    showPaywall = true
+                } label: {
+                    CloudSyncRow(showsChevron: true)
+                }
+                .buttonStyle(.plain)
             }
         }
     }
 
-    private func ensureReminderTimeDefaults() {
-        if UserDefaults.standard.object(forKey: ReadingPreferences.Keys.reminderHour) == nil {
-            ReadingPreferences.reminderHour = ReadingPreferences.defaultReminderHour
-        }
-        if UserDefaults.standard.object(forKey: ReadingPreferences.Keys.reminderMinute) == nil {
-            ReadingPreferences.reminderMinute = ReadingPreferences.defaultReminderMinute
-        }
-    }
-
-    private var reminderTimeBinding: Binding<Date> {
-        Binding(
-            get: {
-                var components = DateComponents()
-                components.hour = ReadingPreferences.reminderHour
-                components.minute = ReadingPreferences.reminderMinute
-                return Calendar.current.date(from: components) ?? Date()
-            },
-            set: { newValue in
-                let components = Calendar.current.dateComponents([.hour, .minute], from: newValue)
-                ReadingPreferences.reminderHour = components.hour ?? ReadingPreferences.defaultReminderHour
-                ReadingPreferences.reminderMinute = components.minute ?? ReadingPreferences.defaultReminderMinute
-                Task { await ReadingReminderScheduler.shared.reschedule() }
-            }
-        )
-    }
-
-    private var pageTurnSection: some View {
-        Section(NSLocalizedString("settings_page_turn_section", comment: "")) {
+    private var controlAndSpeechSection: some View {
+        Section(NSLocalizedString("settings_control_speech_section", comment: "")) {
             if UIDevice.current.userInterfaceIdiom == .phone {
                 NavigationLink {
                     LazyView(WatchSettingsView())
@@ -222,11 +173,7 @@ struct MeView: View {
                     )
                 }
             }
-        }
-    }
 
-    private var ttsSection: some View {
-        Section(NSLocalizedString("settings_tts_section", comment: "")) {
             NavigationLink {
                 LazyView(TTSSettingsView())
                     .navigationBarTitleDisplayMode(.inline)
@@ -253,6 +200,7 @@ struct MeView: View {
             Section {
                 Button(action: {
                     Analytics.shared.log(.paywallViewed(source: "settings_upgrade_row"))
+                    paywallContext = .general
                     showPaywall = true
                 }) {
                     HStack(spacing: 12) {
@@ -286,59 +234,19 @@ struct MeView: View {
         }
     }
 
-    private var statsSection: some View {
-        Section(NSLocalizedString("settings_stats_section", comment: "")) {
+    private var supportAndAboutSection: some View {
+        Section(NSLocalizedString("settings_support_about_section", comment: "")) {
             NavigationLink {
-                LazyView(ReadingStatsView())
+                FeedbackDetailView()
                     .navigationBarTitleDisplayMode(.inline)
             } label: {
                 MeRow(
-                    icon: "chart.bar.xaxis",
-                    iconColor: .blue,
-                    title: NSLocalizedString("settings_stats", comment: "")
+                    icon: "envelope.fill",
+                    iconColor: .green,
+                    title: NSLocalizedString("settings_feedback_section", comment: "")
                 )
             }
 
-            NavigationLink {
-                LazyView(MyNotesView())
-                    .navigationBarTitleDisplayMode(.inline)
-            } label: {
-                MeRow(
-                    icon: "bookmark.fill",
-                    iconColor: .blue,
-                    title: NSLocalizedString("settings_my_notes", comment: "")
-                )
-            }
-        }
-    }
-
-    private var feedbackSection: some View {
-        Section(NSLocalizedString("settings_feedback_section", comment: "")) {
-            FeedbackRow(
-                type: .bug,
-                icon: "ladybug.fill",
-                iconColor: .red,
-                title: NSLocalizedString("settings_feedback_bug", comment: "")
-            )
-            FeedbackRow(
-                type: .feature,
-                icon: "lightbulb.fill",
-                iconColor: .yellow,
-                title: NSLocalizedString("settings_feedback_feature", comment: "")
-            )
-            FeedbackRow(
-                type: .other,
-                icon: "envelope.fill",
-                iconColor: .green,
-                title: NSLocalizedString("settings_feedback_other", comment: "")
-            )
-            RateAppRow()
-            ShareAppRow()
-        }
-    }
-
-    private var aboutSection: some View {
-        Section(NSLocalizedString("settings_about_section", comment: "")) {
             NavigationLink {
                 AboutDetailView()
                     .navigationTitle(NSLocalizedString("settings_about", comment: ""))
@@ -350,6 +258,9 @@ struct MeView: View {
                     title: NSLocalizedString("settings_about", comment: "")
                 )
             }
+
+            RateAppRow()
+            ShareAppRow()
         }
     }
 
@@ -373,6 +284,157 @@ struct MeView: View {
         )
     }
 
+}
+
+// MARK: - Reading Goal & Reminder
+
+private struct ReadingGoalSettingsView: View {
+    @AppStorage(ReadingPreferences.Keys.dailyGoalMinutes) private var dailyGoalMinutes = ReadingPreferences.defaultDailyGoalMinutes
+    @AppStorage(ReadingPreferences.Keys.reminderEnabled) private var reminderEnabled = ReadingPreferences.defaultReminderEnabled
+    @State private var showNotificationDeniedAlert = false
+
+    var body: some View {
+        List {
+            Section {
+                Picker(selection: $dailyGoalMinutes) {
+                    ForEach(Array(stride(
+                        from: ReadingPreferences.dailyGoalRange.lowerBound,
+                        through: ReadingPreferences.dailyGoalRange.upperBound,
+                        by: 5
+                    )), id: \.self) { minute in
+                        Text(String(format: NSLocalizedString("home_minutes", comment: ""), minute)).tag(minute)
+                    }
+                } label: {
+                    MeRow(
+                        icon: "target",
+                        iconColor: .blue,
+                        title: NSLocalizedString("settings_daily_goal", comment: "")
+                    )
+                }
+                .pickerStyle(.menu)
+
+                Toggle(isOn: $reminderEnabled) {
+                    MeRow(
+                        icon: "bell.fill",
+                        iconColor: .orange,
+                        title: NSLocalizedString("settings_reminder", comment: "")
+                    )
+                }
+
+                if reminderEnabled {
+                    DatePicker(
+                        NSLocalizedString("settings_reminder_time", comment: ""),
+                        selection: reminderTimeBinding,
+                        displayedComponents: .hourAndMinute
+                    )
+                }
+            } footer: {
+                if reminderEnabled {
+                    Text(NSLocalizedString("settings_reminder_footer", comment: ""))
+                }
+            }
+        }
+        .listStyle(.insetGrouped)
+        .scrollContentBackground(.hidden)
+        .background(Color(uiColor: .systemGroupedBackground))
+        .navigationTitle(NSLocalizedString("settings_goal_reminder", comment: ""))
+        .toolbarBackground(Color(uiColor: .systemGroupedBackground), for: .navigationBar)
+        .toolbarBackground(.visible, for: .navigationBar)
+        .alert(
+            NSLocalizedString("settings_reminder_denied_title", comment: ""),
+            isPresented: $showNotificationDeniedAlert
+        ) {
+            Button(NSLocalizedString("cancel_button", comment: ""), role: .cancel) {}
+            Button(NSLocalizedString("settings_reminder_open_settings", comment: "")) {
+                if let url = URL(string: UIApplication.openSettingsURLString) {
+                    UIApplication.shared.open(url)
+                }
+            }
+        } message: {
+            Text(NSLocalizedString("settings_reminder_denied_body", comment: ""))
+        }
+        .onChange(of: dailyGoalMinutes) { _, newValue in
+            NotificationCenter.default.post(name: ReadingPreferences.dailyGoalDidChange, object: newValue)
+        }
+        .onChange(of: reminderEnabled) { _, newValue in
+            Task {
+                if newValue {
+                    ensureReminderTimeDefaults()
+                    let granted = await ReadingReminderScheduler.shared.requestAuthorization()
+                    if granted {
+                        await ReadingReminderScheduler.shared.reschedule()
+                    } else {
+                        await MainActor.run {
+                            reminderEnabled = false
+                            showNotificationDeniedAlert = true
+                        }
+                    }
+                } else {
+                    await ReadingReminderScheduler.shared.reschedule()
+                }
+            }
+        }
+    }
+
+    private var reminderTimeBinding: Binding<Date> {
+        Binding(
+            get: {
+                var components = DateComponents()
+                components.hour = ReadingPreferences.reminderHour
+                components.minute = ReadingPreferences.reminderMinute
+                return Calendar.current.date(from: components) ?? Date()
+            },
+            set: { newValue in
+                let components = Calendar.current.dateComponents([.hour, .minute], from: newValue)
+                ReadingPreferences.reminderHour = components.hour ?? ReadingPreferences.defaultReminderHour
+                ReadingPreferences.reminderMinute = components.minute ?? ReadingPreferences.defaultReminderMinute
+                Task { await ReadingReminderScheduler.shared.reschedule() }
+            }
+        )
+    }
+
+    private func ensureReminderTimeDefaults() {
+        if UserDefaults.standard.object(forKey: ReadingPreferences.Keys.reminderHour) == nil {
+            ReadingPreferences.reminderHour = ReadingPreferences.defaultReminderHour
+        }
+        if UserDefaults.standard.object(forKey: ReadingPreferences.Keys.reminderMinute) == nil {
+            ReadingPreferences.reminderMinute = ReadingPreferences.defaultReminderMinute
+        }
+    }
+}
+
+private struct CloudSyncRow: View {
+    let showsChevron: Bool
+
+    var body: some View {
+        HStack(spacing: 12) {
+            MeRow(
+                icon: "icloud.fill",
+                iconColor: .cyan,
+                title: CloudSyncL10n.text("cloud_sync_section")
+            )
+            Spacer(minLength: 8)
+            ProBadge()
+            if showsChevron {
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(.tertiary)
+            }
+        }
+        .contentShape(Rectangle())
+    }
+}
+
+private struct ProBadge: View {
+    var body: some View {
+        Text("PRO")
+            .font(.system(size: 10, weight: .bold))
+            .foregroundStyle(.white)
+            .padding(.horizontal, 7)
+            .padding(.vertical, 3)
+            .background(AppColors.horizontalGradient)
+            .clipShape(Capsule())
+    }
 }
 
 // MARK: - App Appearance Preferences
@@ -616,6 +678,39 @@ private struct MeRow: View {
 }
 
 // MARK: - Feedback
+
+private struct FeedbackDetailView: View {
+    var body: some View {
+        List {
+            Section {
+                FeedbackRow(
+                    type: .bug,
+                    icon: "ladybug.fill",
+                    iconColor: .red,
+                    title: NSLocalizedString("settings_feedback_bug", comment: "")
+                )
+                FeedbackRow(
+                    type: .feature,
+                    icon: "lightbulb.fill",
+                    iconColor: .yellow,
+                    title: NSLocalizedString("settings_feedback_feature", comment: "")
+                )
+                FeedbackRow(
+                    type: .other,
+                    icon: "envelope.fill",
+                    iconColor: .green,
+                    title: NSLocalizedString("settings_feedback_other", comment: "")
+                )
+            }
+        }
+        .listStyle(.insetGrouped)
+        .scrollContentBackground(.hidden)
+        .background(Color(uiColor: .systemGroupedBackground))
+        .navigationTitle(NSLocalizedString("settings_feedback_section", comment: ""))
+        .toolbarBackground(Color(uiColor: .systemGroupedBackground), for: .navigationBar)
+        .toolbarBackground(.visible, for: .navigationBar)
+    }
+}
 
 private enum FeedbackType {
     case bug, feature, other
@@ -897,7 +992,6 @@ private struct AboutDetailView: View {
 }
 
 // MARK: - Identifiable URL Wrapper
-
 struct IdentifiableURL: Identifiable {
     let id = UUID()
     let url: URL
