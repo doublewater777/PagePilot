@@ -1,87 +1,126 @@
-PagePilot.xcodeproj
-PagePilot.xcworkspace
-PagePilot.xctestplan
-/project.yml
-# IntelliJ AppCode
-.idea
+# ==========================================
+# Xcode
+# ==========================================
 
-Carthage/
-Cartfile
-Cartfile.resolved
+# Generated project files (managed by XcodeGen)
+*.xcodeproj
+*.xcworkspace
+*.xctestplan
 
-.DS_Store
+# Build artifacts
+build/
+build_derived/
+DerivedData/
+*.ipa
+*.dSYM
+*.dSYM.zip
 
+# User-specific Xcode settings
+xcuserdata/
+*.xcscmblueprint
 
+# Obj-C / Swift
+*.hmap
+*.o
+*.d
+
+# Playgrounds
+timeline.xctimeline
+playground.xcworkspace
+
+# ==========================================
 # Swift Package Manager
+# ==========================================
+
 .build/
 .swiftpm/
 Package.resolved
 
-# Carthage
-./Carthage/
+# ==========================================
+# CocoaPods (legacy, kept for safety)
+# ==========================================
+
+Pods/
+Podfile.lock
+
+# ==========================================
+# Carthage (legacy, kept for safety)
+# ==========================================
+
+Carthage/Build/
 Cartfile.resolved
 
-# Xcode
-build
-*.xcodeproj
-*.xcworkspace
-
-## User settings
-xcuserdata/
-
-## Obj-C/Swift specific
-*.hmap
-
-## App packaging
-*.ipa
-*.dSYM.zip
-*.dSYM
-*.mobileprovision
-*.provisionprofile
-
-## Playgrounds
-timeline.xctimeline
-playground.xcworkspace
-
-
-# JetBrains AppCode
-# Reference: https://intellij-support.jetbrains.com/hc/en-us/articles/206544839
-
-## User-specific stuff
-.idea/**/workspace.xml
-.idea/**/tasks.xml
-.idea/**/usage.statistics.xml
-.idea/**/dictionaries
-.idea/**/shelf
-
-## Generated files
-.idea/**/contentModel.xml
-
-## Sensitive or high-churn files
-.idea/**/dataSources/
-.idea/**/dataSources.ids
-.idea/**/dataSources.local.xml
-.idea/**/sqlDataSources.xml
-.idea/**/dynamic.xml
-.idea/**/uiDesigner.xml
-.idea/**/dbnavigator.xml
-
-## File-based project format
-*.iws
-
-## IntelliJ
-out/
-
-
-# DocC generation
-.build-docs
-docs-site
+# ==========================================
+# Signing & Secrets
+# ==========================================
 
 *.p8
-.asc
+*.p12
+*.mobileprovision
+*.provisionprofile
+*.cer
+*.certSigningRequest
+
+# ==========================================
+# Project-specific ignores
+# ==========================================
+
+# XcodeGen source (generated from project.yml)
+/project.yml
+
+# Local-only integrations (secrets, personal config)
+Integrations/Local/
+
+# asc CLI workspace (tokens, caches, local state)
+.asc/
+
+# gstack workspace
 .gstack/
 
-design-demos
-.kiro
-
+# App Store Connect export options for distribution (has signing identity)
 ExportOptionsExport.plist
+
+# Design demos (large binary assets, not source)
+design-demos/
+
+# Kiro AI workspace
+.kiro/
+
+# ==========================================
+# macOS
+# ==========================================
+
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# ==========================================
+# Editors
+# ==========================================
+
+# VSCode
+.vscode/
+
+# JetBrains / AppCode
+.idea/
+*.iws
+out/
+
+# ==========================================
+# Python (scripts/)
+# ==========================================
+
+__pycache__/
+*.pyc
+*.pyo
+.venv*/
+.venv-shots/
+
+# ==========================================
+# Misc
+# ==========================================
+
+*.log
