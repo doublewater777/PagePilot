@@ -40,3 +40,7 @@
 "cloud_sync_paywall_feature_subtitle" = "Bücher, Fortschritt, Lesezeichen & Notizen";
 "cloud_sync_pro_title" = "iCloud-Synchronisierung mit PagePilot PRO freischalten";
 "cloud_sync_pro_body" = "iCloud-Synchronisierung ist eine PRO-Funktion. Informiere dich unten über die Funktionsweise und entscheide dann, ob du upgraden möchtest.";
+"pro_paywall_title" = "Auf jedem Gerät nahtlos weiterlesen";
+"pro_paywall_subtitle" = "Synchronisiere Bücher, Fortschritt, Lesezeichen und Notizen mit iCloud und schalte zusätzlich eine unbegrenzte Bibliothek, Watch-Steuerung und detaillierte Statistiken frei.";
+"pro_settings_upgrade_body" = "iCloud-Sync, unbegrenzte Bibliothek, Watch-Steuerung und detaillierte Statistiken freischalten";
+"pro_settings_active_body" = "iCloud-Sync, unbegrenzte Bibliothek, Watch-Steuerung und detaillierte Statistiken sind freigeschaltet.";

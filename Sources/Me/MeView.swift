@@ -204,7 +204,7 @@ struct MeView: View {
                             Text(NSLocalizedString("settings_upgrade_pro", comment: ""))
                                 .font(.system(size: 16, weight: .semibold))
                                 .foregroundStyle(.primary)
-                            Text(NSLocalizedString("settings_pro_upgrade_body", comment: ""))
+                            Text(CloudSyncL10n.text("pro_settings_upgrade_body"))
                                 .font(.system(size: 12))
                                 .foregroundStyle(.secondary)
                                 .lineLimit(2)
@@ -600,7 +600,7 @@ private struct ProEntitlementCard: View {
                     Text(NSLocalizedString("settings_pro_unlocked", comment: ""))
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundStyle(.primary)
-                    Text(NSLocalizedString("settings_pro_active_body", comment: ""))
+                    Text(CloudSyncL10n.text("pro_settings_active_body"))
                         .font(.system(size: 12))
                         .foregroundStyle(.secondary)
                 }
