@@ -71,6 +71,9 @@ targets:
       - package: Ink
       - package: ZIPFoundation
         product: ReadiumZIPFoundation
+    configFiles:
+      Debug: Integrations/SPM/CloudKit.Debug.xcconfig
+      Release: Integrations/SPM/CloudKit.Release.xcconfig
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.panyang.PagePilot
@@ -81,10 +84,8 @@ targets:
       configs:
         Debug:
           APS_ENVIRONMENT: development
-          ICLOUD_CONTAINER_ENVIRONMENT: Development
         Release:
           APS_ENVIRONMENT: production
-          ICLOUD_CONTAINER_ENVIRONMENT: Production
   PagePilotWatch:
     type: application
     platform: watchOS
