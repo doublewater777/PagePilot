@@ -92,7 +92,11 @@ final class AppModule {
 
         Self.shared = self
 
+        // Do not let CloudKit act on a stale cached Pro flag during cold launch.
+        // Verify StoreKit first, then let CloudSyncService apply its normal
+        // preference + entitlement gate before creating/starting CKSyncEngine.
         Task { [cloudSync] in
+            await ProPurchaseManager.shared.verifyCurrentEntitlements()
             await cloudSync.start()
         }
 
@@ -178,7 +182,7 @@ extension AppModule: HomeModuleDelegate {
                         minutes: microReadingMinutes
                     )
                 }
-                reader.presentPublication(publication: pub, book: book, in: nav)
+                reader.presentPublication(pub, book: book, in: nav)
             } catch {
                 presentError(UserError(error), from: nav)
             }
