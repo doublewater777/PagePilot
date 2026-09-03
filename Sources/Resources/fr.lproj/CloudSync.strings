@@ -26,3 +26,17 @@
 "cloud_sync_deletions_body" = "La suppression d’un livre, d’un signet ou d’un surlignage est aussi synchronisée sur les autres appareils. Hors ligne, la suppression reste en attente jusqu’au retour d’iCloud.";
 "cloud_sync_privacy_title" = "Confidentialité et désactivation";
 "cloud_sync_privacy_body" = "Les données sont stockées dans votre base privée iCloud CloudKit. Désactiver la synchronisation arrête les prochains échanges sans supprimer la bibliothèque déjà enregistrée sur cet appareil.";
+"cloud_sync_preview_title" = "Gardez votre lecture synchronisée";
+"cloud_sync_preview_subtitle" = "Découvrez d’abord ce que PagePilot synchronise entre vos appareils Apple avant de décider de débloquer la fonction.";
+"cloud_sync_preview_features_title" = "Ce que synchronise iCloud";
+"cloud_sync_feature_books_title" = "Livres et fichiers";
+"cloud_sync_feature_books_subtitle" = "Les livres importés et leurs couvertures peuvent suivre sur vos autres appareils.";
+"cloud_sync_feature_progress_title" = "Progression";
+"cloud_sync_feature_progress_subtitle" = "La position de lecture et les préférences restent à jour.";
+"cloud_sync_feature_annotations_title" = "Signets et notes";
+"cloud_sync_feature_annotations_subtitle" = "Signets, surlignages et notes sont synchronisés entre vos appareils.";
+"cloud_sync_feature_private_title" = "iCloud privé";
+"cloud_sync_feature_private_subtitle" = "Les données synchronisées restent dans votre base iCloud CloudKit privée.";
+"cloud_sync_paywall_feature_subtitle" = "Livres, progression, signets et notes";
+"cloud_sync_pro_title" = "Débloquer iCloud avec PagePilot PRO";
+"cloud_sync_pro_body" = "La synchronisation iCloud est une fonction PRO. Consultez son fonctionnement ci-dessous, puis mettez à niveau seulement si elle correspond à vos besoins.";

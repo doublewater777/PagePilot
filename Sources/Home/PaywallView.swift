@@ -123,7 +123,6 @@ struct PaywallView: View {
 
     // MARK: - Hero
 
-
     private var hero: some View {
         VStack(spacing: 7) {
             Image(systemName: heroContent.icon)
@@ -153,33 +152,63 @@ struct PaywallView: View {
         .padding(.horizontal, 10)
     }
 
+    @ViewBuilder
     private var featureList: some View {
         VStack(spacing: 10) {
             HStack(alignment: .top, spacing: 0) {
-                miniFeature(
-                    icon: "books.vertical.fill",
-                    iconColor: AppColors.accentTeal,
-                    title: NSLocalizedString("paywall_feature_unlimited_title", comment: ""),
-                    subtitle: NSLocalizedString("paywall_feature_unlimited_subtitle", comment: "")
-                )
-                miniFeature(
-                    icon: "applewatch.watchface",
-                    iconColor: .purple,
-                    title: NSLocalizedString("paywall_feature_watch_title", comment: ""),
-                    subtitle: NSLocalizedString("paywall_feature_watch_subtitle", comment: "")
-                )
-                miniFeature(
-                    icon: "chart.bar.xaxis",
-                    iconColor: AppColors.accentBlue,
-                    title: NSLocalizedString("paywall_feature_stats_title", comment: ""),
-                    subtitle: NSLocalizedString("paywall_feature_stats_subtitle", comment: "")
-                )
-                miniFeature(
-                    icon: "highlighter",
-                    iconColor: .orange,
-                    title: NSLocalizedString("paywall_feature_notes_title", comment: ""),
-                    subtitle: NSLocalizedString("paywall_feature_notes_subtitle", comment: "")
-                )
+                switch context {
+                case .cloudSync:
+                    miniFeature(
+                        icon: "books.vertical.fill",
+                        iconColor: AppColors.accentTeal,
+                        title: CloudSyncL10n.text("cloud_sync_feature_books_title"),
+                        subtitle: CloudSyncL10n.text("cloud_sync_feature_books_subtitle")
+                    )
+                    miniFeature(
+                        icon: "book.pages.fill",
+                        iconColor: AppColors.accentBlue,
+                        title: CloudSyncL10n.text("cloud_sync_feature_progress_title"),
+                        subtitle: CloudSyncL10n.text("cloud_sync_feature_progress_subtitle")
+                    )
+                    miniFeature(
+                        icon: "highlighter",
+                        iconColor: .orange,
+                        title: CloudSyncL10n.text("cloud_sync_feature_annotations_title"),
+                        subtitle: CloudSyncL10n.text("cloud_sync_feature_annotations_subtitle")
+                    )
+                    miniFeature(
+                        icon: "lock.shield.fill",
+                        iconColor: .green,
+                        title: CloudSyncL10n.text("cloud_sync_feature_private_title"),
+                        subtitle: CloudSyncL10n.text("cloud_sync_feature_private_subtitle")
+                    )
+
+                case .general, .iPadWatchRelay:
+                    miniFeature(
+                        icon: "books.vertical.fill",
+                        iconColor: AppColors.accentTeal,
+                        title: NSLocalizedString("paywall_feature_unlimited_title", comment: ""),
+                        subtitle: NSLocalizedString("paywall_feature_unlimited_subtitle", comment: "")
+                    )
+                    miniFeature(
+                        icon: "icloud.fill",
+                        iconColor: AppColors.accentBlue,
+                        title: CloudSyncL10n.text("cloud_sync_section"),
+                        subtitle: CloudSyncL10n.text("cloud_sync_paywall_feature_subtitle")
+                    )
+                    miniFeature(
+                        icon: "applewatch.watchface",
+                        iconColor: .purple,
+                        title: NSLocalizedString("paywall_feature_watch_title", comment: ""),
+                        subtitle: NSLocalizedString("paywall_feature_watch_subtitle", comment: "")
+                    )
+                    miniFeature(
+                        icon: "chart.bar.xaxis",
+                        iconColor: AppColors.accentBlue,
+                        title: NSLocalizedString("paywall_feature_stats_title", comment: ""),
+                        subtitle: NSLocalizedString("paywall_feature_stats_subtitle", comment: "")
+                    )
+                }
             }
 
             Divider()
