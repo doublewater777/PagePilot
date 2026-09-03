@@ -151,7 +151,7 @@ extension AppModule: ModuleDelegate {
 
 extension AppModule: LibraryModuleDelegate {
     func libraryDidSelectPublication(_ publication: Publication, book: Book) {
-        reader.presentPublication(publication, book: book, in: library.rootViewController)
+        reader.presentPublication(publication: publication, book: book, in: library.rootViewController)
     }
 }
 
