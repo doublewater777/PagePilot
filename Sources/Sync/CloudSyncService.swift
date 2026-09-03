@@ -27,6 +27,7 @@ final actor CloudSyncService: CKSyncEngineDelegate {
     private var enqueueTask: Task<Void, Never>?
     private var status: CloudSyncStatus = .starting
     private var canPersistEngineState = true
+    private var accountAvailable = true
 
     init(db: Database, defaults: UserDefaults = .standard) {
         store = CloudSyncStore(db: db)
@@ -83,6 +84,7 @@ final actor CloudSyncService: CKSyncEngineDelegate {
         }
 
         await setStatus(.starting)
+        accountAvailable = true
         do {
             try await store.prepareStableIDs()
 
@@ -106,6 +108,7 @@ final actor CloudSyncService: CKSyncEngineDelegate {
             try await engine.fetchChanges()
             try await updateSettledStatus()
         } catch let error as CKError where error.code == .notAuthenticated {
+            accountAvailable = false
             await setStatus(.unavailable("iCloud account unavailable"))
         } catch {
             await setStatus(.failed(error.localizedDescription))
@@ -204,7 +207,9 @@ final actor CloudSyncService: CKSyncEngineDelegate {
             await handleSentRecordZoneChanges(event, syncEngine: syncEngine)
 
         case .willFetchChanges, .willSendChanges:
-            await setStatus(.syncing)
+            if accountAvailable && canPersistEngineState {
+                await setStatus(.syncing)
+            }
 
         case .didFetchChanges, .didSendChanges:
             await updateSettledStatusIgnoringErrors()
@@ -346,10 +351,12 @@ final actor CloudSyncService: CKSyncEngineDelegate {
     ) async {
         switch event.changeType {
         case .signOut:
+            accountAvailable = false
             await setStatus(.unavailable("iCloud account unavailable"))
 
         case .signIn, .switchAccounts:
             do {
+                accountAvailable = true
                 // Keep the local-first library intact. CKSyncEngine resets its
                 // account-scoped state; record system fields are account-scoped
                 // too, so discard them and publish the local cache to the newly
@@ -390,6 +397,7 @@ final actor CloudSyncService: CKSyncEngineDelegate {
     }
 
     private func updateSettledStatus() async throws {
+        guard accountAvailable, canPersistEngineState else { return }
         let pending = try await store.pendingChanges(limit: 1)
         if pending.isEmpty {
             let date = Date()

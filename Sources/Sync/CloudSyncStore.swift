@@ -462,7 +462,7 @@ final class CloudSyncStore {
         }
 
         let remoteUpdatedAt = record["updatedAt"] as? Date ?? record.modificationDate ?? .distantPast
-        let locator = try decodeLocator(record["locatorJSON"] as? String)
+        let locator = try Self.decodeLocator(record["locatorJSON"] as? String)
         let progression = (record["progression"] as? NSNumber)?.doubleValue
             ?? locator?.locations.totalProgression
             ?? 0
@@ -493,7 +493,7 @@ final class CloudSyncStore {
     private func applyBookmark(_ record: CKRecord) async throws -> Bool {
         let syncID = record.recordID.recordName
         guard let bookSyncID = record["bookSyncID"] as? String,
-              let locator = try decodeLocator(record["locatorJSON"] as? String),
+              let locator = try Self.decodeLocator(record["locatorJSON"] as? String),
               let created = record["created"] as? Date
         else { return false }
         guard try await hasBook(syncID: bookSyncID) else {
@@ -541,7 +541,7 @@ final class CloudSyncStore {
     private func applyHighlight(_ record: CKRecord) async throws -> Bool {
         let syncID = record.recordID.recordName
         guard let bookSyncID = record["bookSyncID"] as? String,
-              let locator = try decodeLocator(record["locatorJSON"] as? String),
+              let locator = try Self.decodeLocator(record["locatorJSON"] as? String),
               let colorRaw = (record["color"] as? NSNumber)?.uint8Value,
               let color = HighlightColor(rawValue: colorRaw),
               let created = record["created"] as? Date
@@ -844,9 +844,9 @@ final class CloudSyncStore {
         }
     }
 
-    private func decodeLocator(_ json: String?) throws -> Locator? {
-        guard let json, let data = json.data(using: .utf8) else { return nil }
-        return try JSONDecoder().decode(Locator.self, from: data)
+    static func decodeLocator(_ json: String?) throws -> Locator? {
+        guard let json else { return nil }
+        return try Locator(jsonString: json)
     }
 
     private func hasReachableFile(_ book: Book?) -> Bool {

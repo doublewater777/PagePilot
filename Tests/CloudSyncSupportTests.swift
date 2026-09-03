@@ -3,6 +3,7 @@
 //
 
 import Foundation
+import ReadiumShared
 import XCTest
 @testable import PagePilot
 
@@ -56,5 +57,19 @@ final class CloudSyncSupportTests: XCTestCase {
                 remoteUpdatedAt: Date(timeIntervalSince1970: 101)
             )
         )
+    }
+
+    func testCloudLocatorJSONRoundTrips() throws {
+        let locator = Locator(
+            href: AnyURL(string: "chapter.xhtml")!,
+            mediaType: .xhtml,
+            locations: .init(progression: 0.25, totalProgression: 0.5)
+        )
+
+        let decoded = try XCTUnwrap(
+            CloudSyncStore.decodeLocator(locator.jsonString())
+        )
+
+        XCTAssertEqual(decoded, locator)
     }
 }
