@@ -40,3 +40,7 @@
 "cloud_sync_paywall_feature_subtitle" = "Books, progress, bookmarks & notes";
 "cloud_sync_pro_title" = "Unlock iCloud Sync with PagePilot PRO";
 "cloud_sync_pro_body" = "iCloud Sync is a PRO feature. Review how it works below, then upgrade only if it fits your reading setup.";
+"pro_paywall_title" = "Keep Reading Across Every Device";
+"pro_paywall_subtitle" = "Sync books, progress, bookmarks, and notes with iCloud, plus unlock an unlimited library, Watch controls, and deeper stats.";
+"pro_settings_upgrade_body" = "Unlock iCloud sync, unlimited library, Watch controls, and deeper stats";
+"pro_settings_active_body" = "iCloud sync, unlimited library, Watch controls, and deeper stats are unlocked.";
