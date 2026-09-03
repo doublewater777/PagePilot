@@ -48,14 +48,26 @@ struct PaywallView: View {
         UIDevice.current.userInterfaceIdiom == .pad
     }
 
-    private var heroContent: (icon: String, titleKey: String, subtitleKey: String) {
+    private var heroContent: (icon: String, title: String, subtitle: String) {
         switch context {
         case .general:
-            return ("crown.fill", "paywall_title", "paywall_subtitle")
+            return (
+                "crown.fill",
+                CloudSyncL10n.text("pro_paywall_title"),
+                CloudSyncL10n.text("pro_paywall_subtitle")
+            )
         case .iPadWatchRelay:
-            return ("ipad.and.iphone", "paywall_ipad_watch_title", "paywall_ipad_watch_subtitle")
+            return (
+                "ipad.and.iphone",
+                NSLocalizedString("paywall_ipad_watch_title", comment: ""),
+                NSLocalizedString("paywall_ipad_watch_subtitle", comment: "")
+            )
         case .cloudSync:
-            return ("icloud.fill", "paywall_cloud_sync_title", "paywall_cloud_sync_subtitle")
+            return (
+                "icloud.fill",
+                NSLocalizedString("paywall_cloud_sync_title", comment: ""),
+                NSLocalizedString("paywall_cloud_sync_subtitle", comment: "")
+            )
         }
     }
 
@@ -132,18 +144,12 @@ struct PaywallView: View {
                 .background(Color.orange.opacity(colorScheme == .dark ? 0.18 : 0.12))
                 .clipShape(Circle())
 
-            Text(NSLocalizedString(
-                heroContent.titleKey,
-                comment: ""
-            ))
+            Text(heroContent.title)
                 .font(.system(size: 23, weight: .bold))
                 .foregroundColor(AppColors.primaryText)
                 .multilineTextAlignment(.center)
 
-            Text(NSLocalizedString(
-                heroContent.subtitleKey,
-                comment: ""
-            ))
+            Text(heroContent.subtitle)
                 .font(.system(size: 13, weight: .medium))
                 .foregroundColor(AppColors.secondaryText)
                 .multilineTextAlignment(.center)
