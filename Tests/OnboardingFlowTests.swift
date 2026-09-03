@@ -17,6 +17,15 @@ final class OnboardingFlowTests: XCTestCase {
         XCTAssertEqual(flow.publication, .init(bookID: 42, source: .user))
     }
 
+    func testSamplePublicationUsesSameIPhoneFlow() {
+        var flow = OnboardingFlow(platform: .iPhone)
+
+        flow.didChoosePublication(bookID: 7, source: .sample)
+
+        XCTAssertEqual(flow.step, .chooseControlTarget)
+        XCTAssertEqual(flow.publication, .init(bookID: 7, source: .sample))
+    }
+
     func testImportedPublicationAdvancesToReaderOnIPad() {
         var flow = OnboardingFlow(platform: .iPad)
 
@@ -135,5 +144,17 @@ final class OnboardingFlowTests: XCTestCase {
         store.reset()
 
         XCTAssertEqual(store.load(platform: .iPhone).step, .choosePublication)
+    }
+
+    func testSamplePublicationWritesMarkdownSource() throws {
+        let url = try OnboardingSamplePublication.makeURL()
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        XCTAssertEqual(url.lastPathComponent, OnboardingSamplePublication.fileName)
+        XCTAssertEqual(url.pathExtension, "md")
+        XCTAssertEqual(
+            try String(contentsOf: url, encoding: .utf8),
+            OnboardingSamplePublication.markdown
+        )
     }
 }
