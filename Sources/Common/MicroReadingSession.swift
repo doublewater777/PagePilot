@@ -103,6 +103,11 @@ enum MicroReadingLaunchStore {
 @MainActor
 private var microReadingControllerAssociationKey: UInt8 = 0
 
+@MainActor
+protocol ReaderPositionIndicatorProviding: AnyObject {
+    var positionIndicatorView: UIView { get }
+}
+
 private final class MicroReadingStatusView: UILabel {
     init() {
         super.init(frame: .zero)
@@ -250,15 +255,27 @@ private final class MicroReadingSessionController: NSObject {
         statusView.update(remaining: countdown.remainingDuration)
         statusView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(statusView)
-        NSLayoutConstraint.activate([
-            statusView.centerXAnchor.constraint(equalTo: view.safeAreaLayoutGuide.centerXAnchor),
-            statusView.bottomAnchor.constraint(
-                equalTo: view.safeAreaLayoutGuide.bottomAnchor,
-                constant: -(QuickPositionJumpPolicy.positionIndicatorBottomSpacing + 20)
-            ),
-            statusView.leadingAnchor.constraint(greaterThanOrEqualTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 16),
-            statusView.trailingAnchor.constraint(lessThanOrEqualTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -16),
-        ])
+        if let provider = viewController as? ReaderPositionIndicatorProviding {
+            NSLayoutConstraint.activate([
+                statusView.leadingAnchor.constraint(
+                    equalTo: provider.positionIndicatorView.trailingAnchor,
+                    constant: 4
+                ),
+                statusView.centerYAnchor.constraint(equalTo: provider.positionIndicatorView.centerYAnchor),
+                statusView.trailingAnchor.constraint(
+                    lessThanOrEqualTo: view.safeAreaLayoutGuide.trailingAnchor,
+                    constant: -16
+                ),
+            ])
+        } else {
+            NSLayoutConstraint.activate([
+                statusView.centerXAnchor.constraint(equalTo: view.safeAreaLayoutGuide.centerXAnchor),
+                statusView.bottomAnchor.constraint(
+                    equalTo: view.safeAreaLayoutGuide.bottomAnchor,
+                    constant: -QuickPositionJumpPolicy.positionIndicatorBottomSpacing
+                ),
+            ])
+        }
 
         self.statusView = statusView
     }
