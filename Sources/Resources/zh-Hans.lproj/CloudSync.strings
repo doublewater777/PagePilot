@@ -26,3 +26,17 @@
 "cloud_sync_deletions_body" = "删除书籍、书签或高亮后，删除也会同步到其他设备。离线时的删除会保留为待同步状态，在 iCloud 恢复可用后继续发送。";
 "cloud_sync_privacy_title" = "隐私与关闭同步";
 "cloud_sync_privacy_body" = "同步数据保存在你的私人 iCloud CloudKit 数据库中。关闭同步只会停止后续同步，不会删除本机已经保存的书架。";
+"cloud_sync_preview_title" = "让阅读内容跟着你走";
+"cloud_sync_preview_subtitle" = "先看看 PagePilot 会在你的 Apple 设备之间同步哪些内容，再决定是否解锁。";
+"cloud_sync_preview_features_title" = "iCloud 同步包含";
+"cloud_sync_feature_books_title" = "书籍与文件";
+"cloud_sync_feature_books_subtitle" = "导入的书籍文件和封面可同步到你的其他设备。";
+"cloud_sync_feature_progress_title" = "阅读进度";
+"cloud_sync_feature_progress_subtitle" = "阅读位置和阅读偏好会保持最新。";
+"cloud_sync_feature_annotations_title" = "书签与笔记";
+"cloud_sync_feature_annotations_subtitle" = "书签、高亮和笔记可在设备之间同步。";
+"cloud_sync_feature_private_title" = "私人 iCloud";
+"cloud_sync_feature_private_subtitle" = "同步数据保存在你的私人 iCloud CloudKit 数据库中。";
+"cloud_sync_paywall_feature_subtitle" = "书籍、进度、书签与笔记";
+"cloud_sync_pro_title" = "使用 PagePilot PRO 解锁 iCloud 同步";
+"cloud_sync_pro_body" = "iCloud 同步是 PRO 功能。你可以先在下方了解同步规则，确认适合自己后再升级。";
