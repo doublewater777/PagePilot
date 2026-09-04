@@ -116,11 +116,22 @@ struct MeView: View {
                 )
             }
 
-            NavigationLink {
-                CloudSyncSettingsView(service: AppModule.shared?.cloudSync)
-                    .navigationBarTitleDisplayMode(.inline)
-            } label: {
-                CloudSyncRow(showsChevron: false)
+            if proPurchase.hasProAccess {
+                NavigationLink {
+                    CloudSyncSettingsView(service: AppModule.shared?.cloudSync)
+                        .navigationBarTitleDisplayMode(.inline)
+                } label: {
+                    CloudSyncRow(showsChevron: false, showsProBadge: false)
+                }
+            } else {
+                Button {
+                    Analytics.shared.log(.paywallViewed(source: "settings_cloud_sync"))
+                    paywallContext = .cloudSync
+                    showPaywall = true
+                } label: {
+                    CloudSyncRow(showsChevron: true, showsProBadge: true)
+                }
+                .buttonStyle(.plain)
             }
         }
     }
@@ -394,6 +405,7 @@ private struct ReadingGoalSettingsView: View {
 
 private struct CloudSyncRow: View {
     let showsChevron: Bool
+    let showsProBadge: Bool
 
     var body: some View {
         HStack(spacing: 12) {
@@ -403,7 +415,9 @@ private struct CloudSyncRow: View {
                 title: CloudSyncL10n.text("cloud_sync_section")
             )
             Spacer(minLength: 8)
-            ProBadge()
+            if showsProBadge {
+                ProBadge()
+            }
             if showsChevron {
                 Image(systemName: "chevron.right")
                     .font(.system(size: 13, weight: .semibold))
@@ -579,12 +593,14 @@ private extension Bundle {
 private struct ProEntitlementCard: View {
     @Environment(\.colorScheme) private var colorScheme
 
-    private let benefits: [(icon: String, key: String)] = [
-        ("books.vertical.fill", "settings_pro_benefit_library"),
-        ("chart.bar.xaxis", "settings_pro_benefit_stats"),
-        ("applewatch", "settings_pro_benefit_watch"),
-        ("highlighter", "settings_pro_benefit_notes"),
-    ]
+    private var benefits: [(icon: String, title: String)] {
+        [
+            ("icloud.fill", CloudSyncL10n.text("cloud_sync_section")),
+            ("books.vertical.fill", NSLocalizedString("settings_pro_benefit_library", comment: "")),
+            ("highlighter", NSLocalizedString("settings_pro_benefit_notes", comment: "")),
+            ("applewatch", NSLocalizedString("settings_pro_benefit_watch", comment: "")),
+        ]
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -628,7 +644,7 @@ private struct ProEntitlementCard: View {
                             .background(AppColors.accentTeal.opacity(colorScheme == .dark ? 0.2 : 0.12))
                             .clipShape(Circle())
 
-                        Text(NSLocalizedString(benefit.key, comment: ""))
+                        Text(benefit.title)
                             .font(.system(size: 11, weight: .medium))
                             .foregroundStyle(.secondary)
                             .multilineTextAlignment(.center)
@@ -726,13 +742,43 @@ private enum FeedbackType {
             let stepsHeader = NSLocalizedString("feedback_body_reproduce_steps", comment: "")
             let expectedHeader = NSLocalizedString("feedback_body_expected", comment: "")
             let actualHeader = NSLocalizedString("feedback_body_actual", comment: "")
-            return "\n\n\n---\n\(deviceInfoHeader): \(systemInfo)\n\n\(descHeader):\n\n\(stepsHeader):\n1. \n2. \n3. \n\n\(expectedHeader):\n\n\(actualHeader):\n"
+            return """
+
+
+---
+\(deviceInfoHeader): \(systemInfo)
+
+\(descHeader):
+
+\(stepsHeader):
+1. 
+2. 
+3. 
+
+\(expectedHeader):
+
+\(actualHeader):
+"""
         case .feature:
             let descHeader = NSLocalizedString("feedback_body_feature_description", comment: "")
             let useCasesHeader = NSLocalizedString("feedback_body_use_cases", comment: "")
-            return "\n\n\n---\n\(deviceInfoHeader): \(systemInfo)\n\n\(descHeader):\n\n\(useCasesHeader):\n"
+            return """
+
+
+---
+\(deviceInfoHeader): \(systemInfo)
+
+\(descHeader):
+
+\(useCasesHeader):
+"""
         case .other:
-            return "\n\n\n---\n\(deviceInfoHeader): \(systemInfo)\n"
+            return """
+
+
+---
+\(deviceInfoHeader): \(systemInfo)
+"""
         }
     }
 }
