@@ -251,7 +251,6 @@ private final class PagePilotLANBrowser: NSObject, NetServiceBrowserDelegate, Ne
             }
             oldService.stop()
         }
-        services.removeAll { replaced.contains(where: { $0 === $0 }) }
         services.removeAll { existing in
             replaced.contains(where: { $0 === existing })
         }
