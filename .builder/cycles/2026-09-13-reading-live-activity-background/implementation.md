@@ -1,6 +1,5 @@
 # Implementation
 
-- Keep `ReaderViewController` responsible for ending the session when its view disappears.
-- Remove the `willEnterForeground` observer and Reader-session restart path.
-- Let the background handler update foreground-facing state without clearing the stored session.
-- Reuse the existing Watch context and Reading Live Activity coordinator; no new ActivityKit lifecycle is introduced.
+- Revert to a single `readingSessionStartDate` lifecycle: start on appear, finish on disappear or on backgrounding (with `celebrateGoal: false`).
+- Restart the session from the `willEnterForeground` handler.
+- Remove the foreground-stats pause/resume split introduced earlier today; one session timer covers stats again.

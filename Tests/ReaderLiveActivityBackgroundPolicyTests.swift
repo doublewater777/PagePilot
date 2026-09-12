@@ -2,52 +2,56 @@ import Foundation
 import XCTest
 
 final class ReaderLiveActivityBackgroundPolicyTests: XCTestCase {
-    func testReaderBackgroundingDoesNotFinishReadingSession() throws {
+    func testReaderBackgroundingFinishesReadingSession() throws {
         let source = try Self.readerViewControllerSource()
+
+        XCTAssertNil(
+            Self.range(of: "pauseForegroundReadingStatsIfNeeded", in: source),
+            "Backgrounding ends the session, so there is no foreground stats to pause."
+        )
 
         let backgroundHandler = try Self.requiredLine(
             "@objc private func appDidEnterBackground()",
             in: source
         )
-        let backgroundFinishCall = try Self.requiredLine(
-            "pauseForegroundReadingStatsIfNeeded()",
+        let finishCall = try Self.requiredLine(
+            "finishReadingSessionIfNeeded(celebrateGoal: false)",
             in: source,
             startingAfter: backgroundHandler
         )
+        let nextBoundary = try Self.requiredLine(
+            "@objc private func appWillEnterForeground()",
+            in: source,
+            startingAfter: finishCall
+        )
 
-        XCTAssertGreaterThan(backgroundFinishCall, backgroundHandler)
+        XCTAssertGreaterThan(finishCall, backgroundHandler)
         XCTAssertNil(
-            Self.range(
-                of: "finishReadingSessionIfNeeded(celebrateGoal: false)",
-                in: source,
-                startingAfter: backgroundHandler
-            ),
-            "Backgrounding must not end the visual Reader session or its Live Activity."
+            Self.range(of: "startReadingSessionIfNeeded()", in: source, startingAfter: backgroundHandler)
+                .flatMap { $0 < nextBoundary ? $0 : nil },
+            "Backgrounding must not restart a session it just ended."
         )
     }
 
-    func testReaderForegroundingResumesStatsWithoutRestartingWatchSession() throws {
+    func testReaderForegroundingRestartsReadingSession() throws {
         let source = try Self.readerViewControllerSource()
+
+        XCTAssertNil(
+            Self.range(of: "resumeForegroundReadingStatsIfNeeded", in: source),
+            "Foregrounding restarts the session, so there is no separate stats resume."
+        )
 
         let foregroundHandler = try Self.requiredLine(
             "@objc private func appWillEnterForeground()",
             in: source
         )
-        let resumeCall = try Self.requiredLine(
-            "resumeForegroundReadingStatsIfNeeded()",
+        let startCall = try Self.requiredLine(
+            "startReadingSessionIfNeeded()",
             in: source,
             startingAfter: foregroundHandler
         )
 
-        XCTAssertGreaterThan(resumeCall, foregroundHandler)
-        XCTAssertNil(
-            Self.range(
-                of: "startReadingSessionIfNeeded()",
-                in: source,
-                startingAfter: foregroundHandler
-            ),
-            "Foregrounding must not restart an ended Watch reading session or Live Activity."
-        )
+        XCTAssertGreaterThan(startCall, foregroundHandler)
     }
 
     func testReaderExitStillEndsWatchSessionAndLiveActivity() throws {

@@ -25,7 +25,7 @@ PagePilot targets Apple ecosystem readers who lose reading flow when they must t
 - `2026-09-13-missing-publication-recovery` — protects the core open → read action when a stored Book has lost its local Publication.
 - `2026-09-13-watch-live-activity-launch` — shortens the Watch control path by launching the Watch app from the reading Live Activity.
 - `2026-09-13-watch-cold-start-control` — tests whether a clear connection state and one buffered command remove cold-start control friction.
-- `2026-09-13-reading-live-activity-background` — tests whether preserving the visual Reader activity across backgrounding matches the expected Lock Screen flow.
+- `2026-09-13-reading-live-activity-background` — tests whether ending the Reader activity on backgrounding matches the Watch page-turn purpose better than retaining it.
 - `2026-09-13-ipad-reader-watch-hint` — tests whether outcome-first Watch copy makes the current Live Activity flow clearer than setup instructions.
 - `2026-09-13-watch-app-install-guidance` — tests whether a direct "open Watch app" action removes the install dead-end before users meet the Smart Stack fallback.
 

@@ -68,15 +68,15 @@ Decision: show an explicit connecting state and replay at most one early page-tu
 Next stage: 10-growth-channel
 Loop-back: Revisit the grace period or delayed-command behavior if paired-device testing shows longer activation or surprising turns.
 
-## 2026-09-13 - 01-hypothesis (Reading Live Activity background retention)
+## 2026-09-13 - 01-hypothesis (Reading Live Activity background policy)
 
 Cycle: 2026-09-13-reading-live-activity-background
 Verdict: pass
-Evidence: Focused lifecycle tests fail on the old background finish path and pass after the split; focused Live Activity suites pass 20/20 and the full simulator suite passes 241/241.
-Weakest assumption: ActivityKit retains the existing visual reading activity correctly through real lock-screen and app-switching sessions.
-Decision: preserve the Watch reading session and Live Activity across backgrounding; end them only when the visual Reader disappears.
+Evidence: Reversed source-boundary tests fail on the retained-session implementation and pass after restoring background finish/foreground restart; the full iPhone 17 simulator suite passes 245/245; the iPad mini build succeeds.
+Weakest assumption: readers do not need Lock Screen reading status when they cannot turn pages from it.
+Decision: end the reading session, stats, and Live Activity on backgrounding; restart on foregrounding.
 Next stage: 10-growth-channel
-Loop-back: Reconsider if a retained activity ever survives an actual Reader dismissal on device.
+Loop-back: Revisit only if readers report missing the Lock Screen reading presence.
 
 ## 2026-09-13 - 01-hypothesis (iPad Reader Watch hint)
 

@@ -50,7 +50,7 @@ cycles:
     completed_at: 2026-09-13
     linked_stage: 01-hypothesis
   - id: 2026-09-13-reading-live-activity-background
-    feature: Reading Live Activity background retention
+    feature: Reading Live Activity background policy
     status: completed
     started_at: 2026-09-13
     completed_at: 2026-09-13

@@ -1,6 +1,5 @@
 # Assumptions
 
-- A visual Reader remains the active reading session while its view controller stays in the app navigation stack, even when iOS moves the app to the background.
-- ActivityKit may continue to display and refresh the existing Live Activity while the app is backgrounded.
-- Watch readers expect the session timer to remain meaningful across short app switches rather than resetting on each backgrounding.
-- Falsifier: real-device behavior shows iOS rejects or visibly degrades the retained Live Activity often enough that users prefer immediate cleanup.
+- A Live Activity that only exists to support Watch page turning has no value once the app is backgrounded, because the Reader is no longer the visible surface.
+- Ending the session on backgrounding and restarting it on foregrounding is cheap and keeps state easy to reason about.
+- Falsifier: real-device use shows readers want the Lock Screen timer or progress visible even when they cannot turn pages.

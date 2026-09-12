@@ -23,7 +23,6 @@ class ReaderViewController<N: Navigator>: UIViewController,
     private let books: BookRepository
     private let bookmarks: BookmarkRepository
     private var readingSessionStartDate: Date?
-    private var foregroundReadingStatsStartDate: Date?
     private var suppressedReadingProgress: Locator?
     private(set) var isReadingProgressPersistenceSuppressed = false
 
@@ -108,7 +107,6 @@ class ReaderViewController<N: Navigator>: UIViewController,
         guard readingSessionStartDate == nil else { return }
         let startDate = Date()
         readingSessionStartDate = startDate
-        foregroundReadingStatsStartDate = startDate
         WatchReadingSessionContext.begin(
             at: startDate,
             progression: WatchPageTurnService.shared.currentBookProgress
@@ -120,17 +118,13 @@ class ReaderViewController<N: Navigator>: UIViewController,
 
         let endDate = Date()
         readingSessionStartDate = nil
-        let foregroundStatsStartDate = foregroundReadingStatsStartDate
-        foregroundReadingStatsStartDate = nil
         WatchReadingSessionContext.end()
 
-        if let foregroundStatsStartDate {
-            ReadingStatsStore.shared.recordReadingSession(
-                startDate: foregroundStatsStartDate,
-                endDate: endDate,
-                bookId: bookId
-            )
-        }
+        ReadingStatsStore.shared.recordReadingSession(
+            startDate: startDate,
+            endDate: endDate,
+            bookId: bookId
+        )
 
         // Celebrate the daily goal once per day, only on a visible exit (not
         // backgrounding) so the toast is actually seen.
@@ -147,33 +141,13 @@ class ReaderViewController<N: Navigator>: UIViewController,
     }
 
     @objc private func appDidEnterBackground() {
-        // Backgrounding is not a Reader exit. Keep the Watch context and Live
-        // Activity alive, but stop accumulating foreground reading time until
-        // the user either returns to this Reader or actually leaves it.
-        pauseForegroundReadingStatsIfNeeded()
+        // Backgrounding ends the reading session: the Watch is no longer a
+        // page-turn surface, so the Live Activity and stats session stop here.
+        finishReadingSessionIfNeeded(celebrateGoal: false)
     }
 
     @objc private func appWillEnterForeground() {
-        resumeForegroundReadingStatsIfNeeded()
-    }
-
-    private func pauseForegroundReadingStatsIfNeeded() {
-        guard let startDate = foregroundReadingStatsStartDate else { return }
-        let endDate = Date()
-        foregroundReadingStatsStartDate = nil
-        ReadingStatsStore.shared.recordReadingSession(
-            startDate: startDate,
-            endDate: endDate,
-            bookId: bookId
-        )
-    }
-
-    private func resumeForegroundReadingStatsIfNeeded() {
-        guard foregroundReadingStatsStartDate == nil,
-              readingSessionStartDate != nil,
-              view.window != nil
-        else { return }
-        foregroundReadingStatsStartDate = Date()
+        startReadingSessionIfNeeded()
     }
 
     // MARK: - Navigation bar
