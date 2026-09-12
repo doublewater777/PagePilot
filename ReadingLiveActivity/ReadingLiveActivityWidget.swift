@@ -19,8 +19,6 @@ struct ReadingLiveActivityWidget: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: ReadingLiveActivityAttributes.self) { context in
             ReadingLiveActivityContent(context: context)
-                .activityBackgroundTint(.clear)
-                .activitySystemActionForegroundColor(.primary)
         } dynamicIsland: { context in
             DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
