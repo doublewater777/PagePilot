@@ -139,7 +139,11 @@ final class ReadingLiveActivityCoordinator {
         await startActivityIfNeeded(for: next)
     }
 
-    func end() async {
+    func end(startedAt: Date) async {
+        if let session, session.startedAt != startedAt {
+            return
+        }
+
         let finalState = session?.state
         session = nil
 
