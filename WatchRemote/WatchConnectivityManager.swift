@@ -154,7 +154,7 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
         var message = command.message
         message["target"] = destination.rawValue
         message["commandId"] = commandID
-        let token = responseEpoch.beginRequest(to: destination)
+        let token = responseEpoch.beginRequest(to: destination, kind: .command)
 
         WCSession.default.sendMessage(
             message,
@@ -245,7 +245,7 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
     }
 
     private func pollStatus(for destination: WatchReaderDestination) {
-        let token = responseEpoch.beginRequest(to: destination)
+        let token = responseEpoch.beginRequest(to: destination, kind: .status)
         WCSession.default.sendMessage(
             ["action": "status", "target": destination.rawValue],
             replyHandler: { [weak self] reply in
