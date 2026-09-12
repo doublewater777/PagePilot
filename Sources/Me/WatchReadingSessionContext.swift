@@ -72,13 +72,17 @@ enum WatchReadingSessionContext {
         guard defaults.string(forKey: StorageKeys.processToken) == processToken,
               defaults.bool(forKey: StorageKeys.isActive) else { return }
 
+        let startedAt = Date(
+            timeIntervalSince1970: defaults.double(forKey: StorageKeys.startedAt)
+        )
+
         defaults.set(false, forKey: StorageKeys.isActive)
         defaults.removeObject(forKey: StorageKeys.startedAt)
         defaults.removeObject(forKey: StorageKeys.startProgress)
         defaults.removeObject(forKey: StorageKeys.processToken)
 
         Task { @MainActor in
-            await ReadingLiveActivityCoordinator.shared.end()
+            await ReadingLiveActivityCoordinator.shared.end(startedAt: startedAt)
         }
         publishCurrentReaderContext()
     }
@@ -94,12 +98,19 @@ enum WatchReadingSessionContext {
         let progression = clampProgress(progression)
 
         Task { @MainActor in
+            guard isCurrentSession(startedAt: startedAt) else { return }
             await ReadingLiveActivityCoordinator.shared.sync(
                 title: title,
                 progression: progression,
                 startedAt: startedAt
             )
         }
+    }
+
+    private static func isCurrentSession(startedAt: Date) -> Bool {
+        defaults.string(forKey: StorageKeys.processToken) == processToken
+            && defaults.bool(forKey: StorageKeys.isActive)
+            && defaults.double(forKey: StorageKeys.startedAt) == startedAt.timeIntervalSince1970
     }
 
     private static func publishCurrentReaderContext() {
