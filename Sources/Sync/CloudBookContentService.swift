@@ -6,6 +6,7 @@
 
 import CloudKit
 import Foundation
+import ReadiumShared
 
 /// Stores publication files separately from the automatically-synced library zone.
 ///
@@ -23,19 +24,15 @@ final actor CloudBookContentService {
         database = container.privateCloudDatabase
     }
 
-    func uploadIfNeeded(from bookRecord: CKRecord) async throws {
-        guard bookRecord.recordType == CloudSyncRecordType.book.rawValue,
-              let asset = bookRecord["publication"] as? CKAsset,
-              let fileURL = asset.fileURL,
-              FileManager.default.fileExists(atPath: fileURL.path)
-        else {
+    func uploadIfNeeded(syncID: String, fileURL: URL?, fileName: String?) async throws {
+        guard let fileURL, FileManager.default.fileExists(atPath: fileURL.path) else {
             return
         }
 
         try await saveContent(
-            syncID: bookRecord.recordID.recordName,
+            syncID: syncID,
             fileURL: fileURL,
-            fileName: (bookRecord["fileName"] as? String) ?? fileURL.lastPathComponent
+            fileName: fileName ?? fileURL.lastPathComponent
         )
     }
 
@@ -44,7 +41,7 @@ final actor CloudBookContentService {
     /// During the v1 -> v2 transition, fall back to the legacy `Book.publication`
     /// asset so users do not lose access before another device has republished the
     /// file into the dedicated content zone.
-    func download(_ book: Book) async throws -> AnyURL {
+    func download(syncID: String, title: String) async throws -> AnyURL {
         guard CloudSyncAccessPolicy.canSync(
             isEnabled: CloudSyncPreferences.isEnabled,
             hasProAccess: ProPurchaseManager.shared.hasProAccess
@@ -56,13 +53,13 @@ final actor CloudBookContentService {
 
         let payload: (asset: CKAsset, fileName: String)
         do {
-            let record = try await database.record(for: contentRecordID(for: book.syncID))
+            let record = try await database.record(for: contentRecordID(for: syncID))
             guard let asset = record["publication"] as? CKAsset else {
                 throw LibraryError.bookNotFound
             }
-            payload = (asset, (record["fileName"] as? String) ?? book.title)
+            payload = (asset, (record["fileName"] as? String) ?? title)
         } catch let error as CKError where error.code == .unknownItem {
-            payload = try await legacyPayload(for: book)
+            payload = try await legacyPayload(syncID: syncID, title: title)
         }
 
         guard let assetURL = payload.asset.fileURL else {
@@ -118,14 +115,14 @@ final actor CloudBookContentService {
         isZoneReady = true
     }
 
-    private func legacyPayload(for book: Book) async throws -> (asset: CKAsset, fileName: String) {
+    private func legacyPayload(syncID: String, title: String) async throws -> (asset: CKAsset, fileName: String) {
         let legacyZone = CKRecordZone(zoneName: CloudSyncService.zoneName)
-        let recordID = CKRecord.ID(recordName: book.syncID, zoneID: legacyZone.zoneID)
+        let recordID = CKRecord.ID(recordName: syncID, zoneID: legacyZone.zoneID)
         let record = try await database.record(for: recordID)
         guard let asset = record["publication"] as? CKAsset else {
             throw LibraryError.bookNotFound
         }
-        return (asset, (record["fileName"] as? String) ?? book.title)
+        return (asset, (record["fileName"] as? String) ?? title)
     }
 
     private func contentRecordID(for syncID: String) -> CKRecord.ID {
