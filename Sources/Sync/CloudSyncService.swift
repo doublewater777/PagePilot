@@ -199,9 +199,12 @@ final actor CloudSyncService: CKSyncEngineDelegate {
             do {
                 if let record = try await store.record(for: recordID) {
                     if record.recordType == CloudSyncRecordType.book.rawValue {
-                        try await contentService.uploadIfNeeded(from: record)
-                        let hasCloudContent = record["publication"] != nil
-                        record["hasCloudContent"] = hasCloudContent ? Int64(1) : Int64(0)
+                        let asset = record["publication"] as? CKAsset
+                        try await contentService.uploadIfNeeded(
+                            syncID: record.recordID.recordName,
+                            fileURL: asset?.fileURL,
+                            fileName: record["fileName"] as? String
+                        )
                         // Publication assets are intentionally not part of the
                         // automatically-synced library zone anymore.
                         record["publication"] = nil
