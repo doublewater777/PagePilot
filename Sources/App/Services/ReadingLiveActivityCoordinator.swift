@@ -83,6 +83,7 @@ final class ReadingLiveActivityCoordinator {
         let startedAt: Date
         var title: String
         var progression: Double
+        var lastPublishedState: ReadingLiveActivityAttributes.ContentState?
 
         var attributes: ReadingLiveActivityAttributes {
             ReadingLiveActivityAttributes(sessionID: id, startedAt: startedAt)
@@ -104,21 +105,41 @@ final class ReadingLiveActivityCoordinator {
         self.client = client
     }
 
+    /// Best-effort reconciliation for a fresh app process. ActivityKit can keep
+    /// Live Activities alive after the app process is terminated, while the
+    /// Reader session itself is intentionally process-scoped. End any activities
+    /// that existed before this process has established a new reading session.
+    func reconcileOnLaunch() async {
+        guard session == nil, activityID == nil else { return }
+
+        let staleActivityIDs = client.activeActivityIDs
+        for id in staleActivityIDs {
+            do {
+                try await client.end(activityID: id, state: nil)
+            } catch {
+                print("ReadingLiveActivityCoordinator: launch cleanup failed: \(error)")
+            }
+        }
+    }
+
     func sync(title: String, progression: Double, startedAt: Date) async {
         let progression = min(max(progression, 0.0), 1.0)
 
         if var current = session, current.startedAt == startedAt {
-            let shouldPublishUpdate = current.title != title
-                || abs(current.progression - progression) >= Self.progressionUpdateThreshold
-
             current.title = title
             current.progression = progression
+            let stateToPublish = current.state
+            let shouldPublishUpdate = shouldPublish(
+                stateToPublish,
+                after: current.lastPublishedState
+            )
             session = current
 
             if let activityID {
                 guard shouldPublishUpdate else { return }
                 do {
-                    try await client.update(activityID: activityID, state: current.state)
+                    try await client.update(activityID: activityID, state: stateToPublish)
+                    markPublished(stateToPublish, forSessionID: current.id)
                 } catch {
                     print("ReadingLiveActivityCoordinator: update failed: \(error)")
                 }
@@ -132,7 +153,8 @@ final class ReadingLiveActivityCoordinator {
             id: UUID().uuidString,
             startedAt: startedAt,
             title: title,
-            progression: progression
+            progression: progression,
+            lastPublishedState: nil
         )
         session = next
         activityID = nil
@@ -162,6 +184,24 @@ final class ReadingLiveActivityCoordinator {
         }
     }
 
+    private func shouldPublish(
+        _ state: ReadingLiveActivityAttributes.ContentState,
+        after lastPublishedState: ReadingLiveActivityAttributes.ContentState?
+    ) -> Bool {
+        guard let lastPublishedState else { return true }
+        return lastPublishedState.title != state.title
+            || abs(lastPublishedState.progression - state.progression) >= Self.progressionUpdateThreshold
+    }
+
+    private func markPublished(
+        _ state: ReadingLiveActivityAttributes.ContentState,
+        forSessionID sessionID: String
+    ) {
+        guard var current = session, current.id == sessionID else { return }
+        current.lastPublishedState = state
+        session = current
+    }
+
     private func startActivityIfNeeded(for expectedSession: Session) async {
         guard client.areActivitiesEnabled else { return }
 
@@ -182,10 +222,12 @@ final class ReadingLiveActivityCoordinator {
         else { return }
 
         do {
-            activityID = try client.request(
+            let newActivityID = try client.request(
                 attributes: current.attributes,
                 state: current.state
             )
+            activityID = newActivityID
+            markPublished(current.state, forSessionID: current.id)
         } catch {
             print("ReadingLiveActivityCoordinator: request failed: \(error)")
         }
