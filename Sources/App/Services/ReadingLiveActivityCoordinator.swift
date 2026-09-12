@@ -107,7 +107,11 @@ final class ReadingLiveActivityCoordinator {
     private var session: Session?
     private var activityID: String?
 
-    init(client: ReadingLiveActivityClient = ActivityKitReadingLiveActivityClient()) {
+    init() {
+        self.client = ActivityKitReadingLiveActivityClient()
+    }
+
+    init(client: ReadingLiveActivityClient) {
         self.client = client
     }
 
