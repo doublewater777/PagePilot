@@ -62,6 +62,18 @@ final class ProPurchaseManager: ObservableObject {
     private init() {
         updateListenerTask = listenForTransactions()
         setupForegroundObservation()
+
+        // A returning Pro user may launch before StoreKit finishes its network
+        // refresh (or while offline). Use the cached entitlement immediately so
+        // automatic iPad relay discovery/server startup is not delayed by the
+        // removed Page Turn Device setting.
+        if hasProAccess {
+            Task { @MainActor in
+                WatchPageTurnService.shared.enableIPadRelay()
+                WatchPageTurnService.shared.prepareIPadRelay()
+            }
+        }
+
         Task { await loadProducts() }
     }
 
