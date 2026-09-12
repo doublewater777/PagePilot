@@ -1,3 +1,4 @@
+import Foundation
 import XCTest
 @testable import PagePilot
 
@@ -102,8 +103,8 @@ final class PagePilotLANRecoveryPolicyTests: XCTestCase {
         XCTAssertNotEqual(first.id, second.id)
         XCTAssertTrue(state.isActive(second.id))
 
-        // Simulates the 3-second timeout from lookup A firing after lookup B
-        // has already started. The stale timer must not finish B.
+        // Simulates lookup A's delayed timeout after lookup B starts without a
+        // discovery-generation change. The stale timer cannot finish B.
         XCTAssertFalse(state.finish(first.id))
         XCTAssertTrue(state.isActive(second.id))
     }
@@ -118,82 +119,91 @@ final class PagePilotLANRecoveryPolicyTests: XCTestCase {
         XCTAssertNotEqual(first.id, second.id)
         XCTAssertFalse(state.isActive(first.id))
 
-        // Simulates revoke/clear cancelling lookup A followed by a new lookup B.
+        // Simulates Pro revoke/clear cancelling A, followed by a new lookup B.
         XCTAssertFalse(state.finish(first.id))
         XCTAssertTrue(state.isActive(second.id))
     }
 
-    func testEndpointCandidateRejectsRemovedBonjourService() {
+    func testBonjourCandidateIsRejectedAfterItsServiceIsRemoved() throws {
         let service = NSObject()
         let serviceID = ObjectIdentifier(service)
         let candidate = PagePilotLANEndpointCandidate(
-            url: URL(string: "http://192.0.2.1:61482")!,
+            url: try XCTUnwrap(URL(string: "http://192.168.1.20:61482")),
             generation: 4,
             source: .bonjour(serviceID)
         )
 
-        XCTAssertFalse(
-            PagePilotLANEndpointCandidatePolicy.isCurrent(
-                candidate,
-                currentGeneration: 4,
-                knownServiceIDs: [],
-                knownServiceCount: 0,
-                fallbackWasInvalidated: false
-            )
-        )
+        XCTAssertTrue(PagePilotLANEndpointCandidatePolicy.isCurrent(
+            candidate,
+            currentGeneration: 4,
+            knownServiceIDs: [serviceID],
+            knownServiceCount: 1,
+            fallbackWasInvalidated: false
+        ))
+        XCTAssertFalse(PagePilotLANEndpointCandidatePolicy.isCurrent(
+            candidate,
+            currentGeneration: 4,
+            knownServiceIDs: [],
+            knownServiceCount: 0,
+            fallbackWasInvalidated: false
+        ))
     }
 
-    func testEndpointCandidateRejectsPreviousDiscoveryGeneration() {
+    func testEndpointCandidateIsRejectedAfterDiscoveryGenerationChanges() throws {
+        let service = NSObject()
+        let serviceID = ObjectIdentifier(service)
         let candidate = PagePilotLANEndpointCandidate(
-            url: URL(string: "http://iPad.local:61482")!,
-            generation: 4,
+            url: try XCTUnwrap(URL(string: "http://192.168.1.20:61482")),
+            generation: 7,
+            source: .bonjour(serviceID)
+        )
+
+        XCTAssertFalse(PagePilotLANEndpointCandidatePolicy.isCurrent(
+            candidate,
+            currentGeneration: 8,
+            knownServiceIDs: [serviceID],
+            knownServiceCount: 1,
+            fallbackWasInvalidated: false
+        ))
+    }
+
+    func testFallbackCandidateCannotOverrideKnownBonjourService() throws {
+        let service = NSObject()
+        let candidate = PagePilotLANEndpointCandidate(
+            url: try XCTUnwrap(URL(string: "http://iPad.local:61482")),
+            generation: 2,
             source: .fallback
         )
 
-        XCTAssertFalse(
-            PagePilotLANEndpointCandidatePolicy.isCurrent(
-                candidate,
-                currentGeneration: 5,
-                knownServiceIDs: [],
-                knownServiceCount: 0,
-                fallbackWasInvalidated: false
-            )
-        )
+        XCTAssertTrue(PagePilotLANEndpointCandidatePolicy.isCurrent(
+            candidate,
+            currentGeneration: 2,
+            knownServiceIDs: [],
+            knownServiceCount: 0,
+            fallbackWasInvalidated: false
+        ))
+        XCTAssertFalse(PagePilotLANEndpointCandidatePolicy.isCurrent(
+            candidate,
+            currentGeneration: 2,
+            knownServiceIDs: [ObjectIdentifier(service)],
+            knownServiceCount: 1,
+            fallbackWasInvalidated: false
+        ))
     }
 
-    func testFallbackCandidateCannotOverrideKnownBonjourService() {
+    func testInvalidatedFallbackCandidateCannotBeRemembered() throws {
         let candidate = PagePilotLANEndpointCandidate(
-            url: URL(string: "http://iPad.local:61482")!,
-            generation: 5,
+            url: try XCTUnwrap(URL(string: "http://iPad.local:61482")),
+            generation: 3,
             source: .fallback
         )
 
-        XCTAssertFalse(
-            PagePilotLANEndpointCandidatePolicy.isCurrent(
-                candidate,
-                currentGeneration: 5,
-                knownServiceIDs: [],
-                knownServiceCount: 1,
-                fallbackWasInvalidated: false
-            )
-        )
-    }
-
-    func testInvalidatedFallbackCandidateIsRejected() {
-        let candidate = PagePilotLANEndpointCandidate(
-            url: URL(string: "http://iPad.local:61482")!,
-            generation: 5,
-            source: .fallback
-        )
-
-        XCTAssertFalse(
-            PagePilotLANEndpointCandidatePolicy.isCurrent(
-                candidate,
-                currentGeneration: 5,
-                knownServiceIDs: [],
-                knownServiceCount: 0,
-                fallbackWasInvalidated: true
-            )
-        )
+        XCTAssertFalse(PagePilotLANEndpointCandidatePolicy.isCurrent(
+            candidate,
+            currentGeneration: 3,
+            knownServiceIDs: [],
+            knownServiceCount: 0,
+            fallbackWasInvalidated: true
+        ))
     }
 }
