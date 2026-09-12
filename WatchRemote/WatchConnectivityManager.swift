@@ -21,9 +21,9 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
     @Published var readingSessionStartedAt: Date?
     @Published var readingSessionStartProgress: Double = 0.0
 
-    /// Last error message (visible on the watch UI for in-the-field debugging).
-    /// Optional iPad relay failures are intentionally not surfaced here because
-    /// the iPhone Reader remains independently usable.
+    /// Last actionable error visible on the Watch. Optional iPad relay failures
+    /// stay hidden while either Reader is active, but become visible when the
+    /// relay is the only possible path and cannot respond.
     @Published var lastError: String = ""
     /// Timestamp of last successful iPad relay response.
     @Published var lastStatusOK: Date? = nil
@@ -41,6 +41,8 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
     private var iPhoneBookProgress = 0.0
     private var iPadBookTitle = ""
     private var iPadBookProgress = 0.0
+    private var iPhoneErrorMessage = ""
+    private var iPadErrorMessage = ""
 
     private lazy var commandQueue = ThrottledCommandQueue(interval: 0.1, queue: .main) { [weak self] command, completion in
         self?.performSend(command, completion: completion)
@@ -103,13 +105,15 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
         }
         _ = applyReadingSessionContext(context)
         recomputeAggregateReaderState()
+        refreshVisibleError()
         refreshStatusPolling()
     }
 
     func sendCommand(_ command: PageCommand) {
         guard WCSession.default.isReachable else {
             DispatchQueue.main.async {
-                self.lastError = self.localized("watch.error.openIPhone")
+                self.iPhoneErrorMessage = self.localized("watch.error.openIPhone")
+                self.refreshVisibleError()
             }
             return
         }
@@ -148,10 +152,11 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
                     guard let self else { return }
                     switch destination {
                     case .iPhone:
-                        self.lastError = self.localized("watch.error.sendFailed")
+                        self.iPhoneErrorMessage = self.localized("watch.error.sendFailed")
                     case .iPad:
                         self.markRelayFailure()
                     }
+                    self.refreshVisibleError()
                 }
             }
         )
@@ -206,6 +211,7 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
                         self.iPadReaderReady = false
                     }
                     self.recomputeAggregateReaderState()
+                    self.refreshVisibleError()
                 }
             }
         )
@@ -222,45 +228,54 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
                     switch destination {
                     case .iPhone:
                         self.iPhoneReaderReady = false
+                        self.iPhoneErrorMessage = ""
                     case .iPad:
                         self.iPadReaderReady = false
+                        self.iPadErrorMessage = self.localized("watch.hint.openBookIPad")
                         self.markRelaySuccess(clearError: false)
                     }
                     self.recomputeAggregateReaderState()
+                    self.refreshVisibleError()
                     return
                 }
 
                 switch destination {
                 case .iPad:
-                    // iPad is an optional Pro fan-out path. PRO_REQUIRED,
-                    // discovery misses and relay timeouts must stay silent on
-                    // the Watch because the local iPhone path still works.
-                    if errorCode == "PRO_REQUIRED" || self.isRelayConnectivityError(errorCode) {
-                        self.iPadReaderReady = false
-                        self.markRelayFailure()
-                        self.recomputeAggregateReaderState()
-                        return
-                    }
                     self.iPadReaderReady = false
+                    if errorCode == "PRO_REQUIRED" {
+                        // A Free user should not be told that an optional iPad
+                        // path failed; local iPhone page turning remains valid.
+                        self.iPadErrorMessage = ""
+                        self.markRelayFailure()
+                    } else if self.isRelayConnectivityError(errorCode) {
+                        self.iPadErrorMessage = self.errorMessage(code: errorCode, error: error)
+                        self.markRelayFailure()
+                    } else {
+                        self.iPadErrorMessage = self.errorMessage(code: errorCode, error: error)
+                    }
                     self.recomputeAggregateReaderState()
+                    self.refreshVisibleError()
                     return
 
                 case .iPhone:
                     self.iPhoneReaderReady = false
+                    self.iPhoneErrorMessage = self.errorMessage(code: errorCode, error: error)
                     self.recomputeAggregateReaderState()
-                    self.lastError = self.errorMessage(code: errorCode, error: error)
+                    self.refreshVisibleError()
                     return
                 }
             }
 
             switch destination {
             case .iPhone:
-                self.lastError = ""
+                self.iPhoneErrorMessage = ""
+                self.applyStatusPayload(reply, from: destination)
             case .iPad:
+                self.iPadErrorMessage = ""
                 self.markRelaySuccess()
+                self.applyStatusPayload(reply, from: destination)
             }
-
-            self.applyStatusPayload(reply, from: destination)
+            self.refreshVisibleError()
         }
     }
 
@@ -272,8 +287,8 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
     private func markRelaySuccess(clearError: Bool = true) {
         relayReachable = true
         lastStatusOK = Date()
-        if clearError, lastError == localized("watch.error.ipadTimeout") || lastError == localized("watch.error.ipadNotFound") {
-            lastError = ""
+        if clearError {
+            iPadErrorMessage = ""
         }
     }
 
@@ -288,9 +303,15 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
 
     private func errorMessage(code: String?, error: String) -> String {
         switch code {
+        case "IPAD_NOT_FOUND":
+            return localized("watch.error.ipadNotFound")
+        case "RELAY_TIMEOUT":
+            return localized("watch.error.ipadTimeout")
         case "INVALID_COMMAND":
             return localized("watch.error.generic")
         case "NAVIGATOR_NOT_READY":
+            return ""
+        case "PRO_REQUIRED":
             return ""
         default:
             if error.localizedCaseInsensitiveContains("reader") {
@@ -350,6 +371,18 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
         }
 
         updateFallbackReadingSession(wasReaderReady: previousReady)
+    }
+
+    private func refreshVisibleError() {
+        if readerReady {
+            lastError = ""
+            return
+        }
+        if !iPhoneErrorMessage.isEmpty {
+            lastError = iPhoneErrorMessage
+            return
+        }
+        lastError = iPadErrorMessage
     }
 
     @discardableResult
@@ -414,7 +447,10 @@ extension WatchConnectivityManager: WCSessionDelegate {
                 self.iPhoneReaderReady = false
                 self.iPadReaderReady = false
                 self.relayReachable = false
+                self.iPhoneErrorMessage = self.localized("watch.error.openIPhone")
+                self.iPadErrorMessage = ""
                 self.recomputeAggregateReaderState()
+                self.refreshVisibleError()
             }
             self.refreshConnectionStatus()
         }
