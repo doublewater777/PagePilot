@@ -88,7 +88,7 @@ struct Book: Codable {
     }
 
     var hasLocalFile: Bool {
-        guard let fileURL = try? absoluteFileURL(), let fileURL else { return false }
+        guard let fileURL = try? absoluteFileURL() else { return false }
         return FileManager.default.fileExists(atPath: fileURL.path)
     }
 
