@@ -534,7 +534,10 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
     }
 
     private func refreshVisibleError() {
-        lastError = commandOutcomeState.visibleError(fallback: routingState.visibleError)
+        lastError = commandOutcomeState.visibleError(
+            fallback: routingState.visibleError,
+            defaultCommandError: localized("watch.error.generic")
+        )
     }
 
     @discardableResult
