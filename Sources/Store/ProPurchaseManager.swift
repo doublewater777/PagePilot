@@ -256,9 +256,14 @@ final class ProPurchaseManager: ObservableObject {
         // Re-assert relay readiness every time StoreKit confirms Pro so a
         // returning Pro user does not depend on the removed controlTarget flag,
         // and a foreground entitlement refresh repairs stale Bonjour state.
-        guard hasAccess else { return }
-        WatchPageTurnService.shared.enableIPadRelay()
-        WatchPageTurnService.shared.prepareIPadRelay()
+        if hasAccess {
+            WatchPageTurnService.shared.enableIPadRelay()
+            WatchPageTurnService.shared.prepareIPadRelay()
+        } else {
+            // The iPhone relay entry point already rejects non-Pro users, but an
+            // iPad that loses Pro should also stop advertising its HTTP server.
+            WatchPageTurnService.shared.disableIPadRelay()
+        }
     }
 }
 
