@@ -23,51 +23,79 @@ struct PagePilotReadingLiveActivityBundle: WidgetBundle {
 @available(iOSApplicationExtension 18.0, *)
 private struct ReadingLiveActivityWidget: Widget {
     var body: some WidgetConfiguration {
-        makeReadingLiveActivityConfiguration()
-            .supplementalActivityFamilies([.small])
+        ActivityConfiguration(for: ReadingLiveActivityAttributes.self) { context in
+            ReadingLiveActivityContent(context: context)
+        } dynamicIsland: { context in
+            DynamicIsland {
+                DynamicIslandExpandedRegion(.leading) {
+                    Label {
+                        Text(context.state.title)
+                            .lineLimit(1)
+                    } icon: {
+                        Image(systemName: "book.closed")
+                    }
+                }
+
+                DynamicIslandExpandedRegion(.trailing) {
+                    Text(percentText(context.state.progression))
+                        .monospacedDigit()
+                }
+
+                DynamicIslandExpandedRegion(.bottom) {
+                    VStack(spacing: 6) {
+                        ProgressView(value: clamped(context.state.progression))
+                        ReadingElapsedTime(startedAt: context.attributes.startedAt)
+                            .font(.caption)
+                    }
+                }
+            } compactLeading: {
+                Image(systemName: "book.closed")
+            } compactTrailing: {
+                Text(percentText(context.state.progression))
+                    .monospacedDigit()
+            } minimal: {
+                Image(systemName: "book.closed")
+            }
+        }
+        .supplementalActivityFamilies([.small])
     }
 }
 
 private struct LegacyReadingLiveActivityWidget: Widget {
     var body: some WidgetConfiguration {
-        makeReadingLiveActivityConfiguration()
-    }
-}
-
-@MainActor
-private func makeReadingLiveActivityConfiguration() -> ActivityConfiguration<ReadingLiveActivityAttributes> {
-    ActivityConfiguration(for: ReadingLiveActivityAttributes.self) { context in
-        ReadingLiveActivityContent(context: context)
-    } dynamicIsland: { context in
-        DynamicIsland {
-            DynamicIslandExpandedRegion(.leading) {
-                Label {
-                    Text(context.state.title)
-                        .lineLimit(1)
-                } icon: {
-                    Image(systemName: "book.closed")
+        ActivityConfiguration(for: ReadingLiveActivityAttributes.self) { context in
+            ReadingLiveActivityContent(context: context)
+        } dynamicIsland: { context in
+            DynamicIsland {
+                DynamicIslandExpandedRegion(.leading) {
+                    Label {
+                        Text(context.state.title)
+                            .lineLimit(1)
+                    } icon: {
+                        Image(systemName: "book.closed")
+                    }
                 }
-            }
 
-            DynamicIslandExpandedRegion(.trailing) {
+                DynamicIslandExpandedRegion(.trailing) {
+                    Text(percentText(context.state.progression))
+                        .monospacedDigit()
+                }
+
+                DynamicIslandExpandedRegion(.bottom) {
+                    VStack(spacing: 6) {
+                        ProgressView(value: clamped(context.state.progression))
+                        ReadingElapsedTime(startedAt: context.attributes.startedAt)
+                            .font(.caption)
+                    }
+                }
+            } compactLeading: {
+                Image(systemName: "book.closed")
+            } compactTrailing: {
                 Text(percentText(context.state.progression))
                     .monospacedDigit()
+            } minimal: {
+                Image(systemName: "book.closed")
             }
-
-            DynamicIslandExpandedRegion(.bottom) {
-                VStack(spacing: 6) {
-                    ProgressView(value: clamped(context.state.progression))
-                    ReadingElapsedTime(startedAt: context.attributes.startedAt)
-                        .font(.caption)
-                }
-            }
-        } compactLeading: {
-            Image(systemName: "book.closed")
-        } compactTrailing: {
-            Text(percentText(context.state.progression))
-                .monospacedDigit()
-        } minimal: {
-            Image(systemName: "book.closed")
         }
     }
 }
