@@ -50,8 +50,10 @@ targets:
       - path: Sources/Resources/Fonts
         type: folder
       - path: Shared
+      - path: LiveActivityShared
     dependencies:
       - target: PagePilotWatch
+      - target: PagePilotLiveActivity
       - package: Readium
         product: ReadiumShared
       - package: Readium
@@ -79,6 +81,9 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.panyang.PagePilot
         DEVELOPMENT_TEAM: ${RD_DEVELOPMENT_TEAM}
         CODE_SIGN_ENTITLEMENTS: iPhone/pagepilot.entitlements
+        INFOPLIST_FILE: iPhone/Info.plist
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_NSSupportsLiveActivities: YES
         MARKETING_VERSION: 1.0.19
         CURRENT_PROJECT_VERSION: 38
       configs:
@@ -99,6 +104,21 @@ targets:
       DEVELOPMENT_TEAM: ${RD_DEVELOPMENT_TEAM}
       MARKETING_VERSION: 1.0.19
       CURRENT_PROJECT_VERSION: 38
+
+  PagePilotLiveActivity:
+    type: app-extension
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: ReadingLiveActivity
+      - path: LiveActivityShared
+    settings:
+      INFOPLIST_FILE: ReadingLiveActivity/Info.plist
+      PRODUCT_BUNDLE_IDENTIFIER: com.panyang.PagePilot.ReadingLiveActivity
+      DEVELOPMENT_TEAM: ${RD_DEVELOPMENT_TEAM}
+      MARKETING_VERSION: 1.0.19
+      CURRENT_PROJECT_VERSION: 38
+      SKIP_INSTALL: YES
 
   PagePilotTests:
     type: bundle.unit-test

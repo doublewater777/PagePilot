@@ -33,6 +33,15 @@ enum WatchReadingSessionContext {
     static var contextValues: [String: Any] {
         let belongsToCurrentProcess = defaults.string(forKey: StorageKeys.processToken) == processToken
         let active = belongsToCurrentProcess && defaults.bool(forKey: StorageKeys.isActive)
+
+        if active {
+            let service = WatchPageTurnService.shared
+            refreshLiveActivity(
+                title: service.currentBookTitle,
+                progression: service.currentBookProgress
+            )
+        }
+
         return [
             Keys.isActive: active,
             Keys.startedAt: active ? defaults.double(forKey: StorageKeys.startedAt) : 0.0,
@@ -44,12 +53,18 @@ enum WatchReadingSessionContext {
     /// the same base ReaderViewController lifecycle but do not register a
     /// VisualNavigator with WatchPageTurnService, so they intentionally no-op.
     static func begin(at startDate: Date, progression: Double) {
-        guard WatchPageTurnService.shared.isReaderReady else { return }
+        let service = WatchPageTurnService.shared
+        guard service.isReaderReady else { return }
 
         defaults.set(true, forKey: StorageKeys.isActive)
         defaults.set(startDate.timeIntervalSince1970, forKey: StorageKeys.startedAt)
         defaults.set(clampProgress(progression), forKey: StorageKeys.startProgress)
         defaults.set(processToken, forKey: StorageKeys.processToken)
+
+        refreshLiveActivity(
+            title: service.currentBookTitle,
+            progression: progression
+        )
         publishCurrentReaderContext()
     }
 
@@ -57,11 +72,45 @@ enum WatchReadingSessionContext {
         guard defaults.string(forKey: StorageKeys.processToken) == processToken,
               defaults.bool(forKey: StorageKeys.isActive) else { return }
 
+        let startedAt = Date(
+            timeIntervalSince1970: defaults.double(forKey: StorageKeys.startedAt)
+        )
+
         defaults.set(false, forKey: StorageKeys.isActive)
         defaults.removeObject(forKey: StorageKeys.startedAt)
         defaults.removeObject(forKey: StorageKeys.startProgress)
         defaults.removeObject(forKey: StorageKeys.processToken)
+
+        Task { @MainActor in
+            await ReadingLiveActivityCoordinator.shared.end(startedAt: startedAt)
+        }
         publishCurrentReaderContext()
+    }
+
+    private static func refreshLiveActivity(title: String, progression: Double) {
+        guard defaults.string(forKey: StorageKeys.processToken) == processToken,
+              defaults.bool(forKey: StorageKeys.isActive)
+        else { return }
+
+        let startedAt = Date(
+            timeIntervalSince1970: defaults.double(forKey: StorageKeys.startedAt)
+        )
+        let progression = clampProgress(progression)
+
+        Task { @MainActor in
+            guard isCurrentSession(startedAt: startedAt) else { return }
+            await ReadingLiveActivityCoordinator.shared.sync(
+                title: title,
+                progression: progression,
+                startedAt: startedAt
+            )
+        }
+    }
+
+    private static func isCurrentSession(startedAt: Date) -> Bool {
+        defaults.string(forKey: StorageKeys.processToken) == processToken
+            && defaults.bool(forKey: StorageKeys.isActive)
+            && defaults.double(forKey: StorageKeys.startedAt) == startedAt.timeIntervalSince1970
     }
 
     private static func publishCurrentReaderContext() {
