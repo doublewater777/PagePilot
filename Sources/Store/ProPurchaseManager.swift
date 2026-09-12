@@ -239,11 +239,14 @@ final class ProPurchaseManager: ObservableObject {
         if previous != hasAccess {
             NotificationCenter.default.post(name: .proAccessDidChange, object: hasAccess)
         }
-        // Pro may land on iPad after purchase on iPhone; start LAN as soon as
-        // entitlement is known so Watch relay works without a diagnostics visit.
-        if hasAccess, !previous {
-            WatchPageTurnService.shared.enableIPadRelay()
-        }
+
+        // Automatic Watch routing no longer has a selected iPhone/iPad target.
+        // Re-assert relay readiness every time StoreKit confirms Pro so a
+        // returning Pro user does not depend on the removed controlTarget flag,
+        // and a foreground entitlement refresh repairs stale Bonjour state.
+        guard hasAccess else { return }
+        WatchPageTurnService.shared.enableIPadRelay()
+        WatchPageTurnService.shared.prepareIPadRelay()
     }
 }
 
