@@ -110,7 +110,7 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
 
         // The application context can be cached across a WCSession outage. Keep
         // its metadata, but never let it promote Reader readiness; a fresh
-        // status/command reply must establish that the Reader can respond now.
+        // status reply must establish that the Reader can respond now.
         if let title = context["currentBookTitle"] as? String {
             iPhoneBookTitle = title
         }
@@ -193,20 +193,19 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
 
         guard responseEpoch.accepts(token, transportReachable: true) else { return }
 
-        var state = routingState
-        state.invalidateForSendFailure(
-            to: destination,
-            transportReachable: true,
-            error: localized("watch.error.sendFailed")
-        )
-        routingState = state
-
-        if destination == .iPad {
+        // A reachable-transport command send failure is command feedback, not a
+        // fresh Reader observation. Keep readiness status-authoritative and
+        // immediately ask for a new status snapshot instead of demoting it here.
+        switch destination {
+        case .iPhone:
+            iPhoneErrorMessage = localized("watch.error.sendFailed")
+        case .iPad:
+            iPadErrorMessage = localized("watch.error.sendFailed")
             markRelayFailure()
         }
 
-        recomputeAggregateReaderState()
         refreshVisibleError()
+        pollStatus(for: destination)
     }
 
     private func startPolling() {
@@ -288,7 +287,10 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
                 return
             }
 
-            self.hasReceivedStatus = true
+            let carriesReaderState = token.kind.carriesAuthoritativeReaderState
+            if carriesReaderState {
+                self.hasReceivedStatus = true
+            }
 
             if let error = reply["error"] as? String {
                 let errorCode = reply["errorCode"] as? String
@@ -296,21 +298,31 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
                 if errorCode == "NAVIGATOR_NOT_READY" {
                     switch destination {
                     case .iPhone:
-                        self.iPhoneReaderReady = false
+                        if carriesReaderState {
+                            self.iPhoneReaderReady = false
+                        }
                         self.iPhoneErrorMessage = ""
                     case .iPad:
-                        self.iPadReaderReady = false
+                        if carriesReaderState {
+                            self.iPadReaderReady = false
+                        }
                         self.iPadErrorMessage = self.localized("watch.hint.openBookIPad")
                         self.markRelaySuccess(clearError: false)
                     }
-                    self.recomputeAggregateReaderState()
+                    if carriesReaderState {
+                        self.recomputeAggregateReaderState()
+                    } else {
+                        self.pollStatus(for: destination)
+                    }
                     self.refreshVisibleError()
                     return
                 }
 
                 switch destination {
                 case .iPad:
-                    self.iPadReaderReady = false
+                    if carriesReaderState {
+                        self.iPadReaderReady = false
+                    }
                     if errorCode == "PRO_REQUIRED" {
                         // A Free user should not be told that an optional iPad
                         // path failed; local iPhone page turning remains valid.
@@ -322,27 +334,43 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
                     } else {
                         self.iPadErrorMessage = self.errorMessage(code: errorCode, error: error)
                     }
-                    self.recomputeAggregateReaderState()
-                    self.refreshVisibleError()
-                    return
 
                 case .iPhone:
-                    self.iPhoneReaderReady = false
+                    if carriesReaderState {
+                        self.iPhoneReaderReady = false
+                    }
                     self.iPhoneErrorMessage = self.errorMessage(code: errorCode, error: error)
-                    self.recomputeAggregateReaderState()
-                    self.refreshVisibleError()
-                    return
                 }
+
+                if carriesReaderState {
+                    self.recomputeAggregateReaderState()
+                } else {
+                    self.pollStatus(for: destination)
+                }
+                self.refreshVisibleError()
+                return
             }
 
             switch destination {
             case .iPhone:
-                self.iPhoneErrorMessage = ""
-                self.applyStatusPayload(reply, from: destination)
+                if carriesReaderState {
+                    self.iPhoneErrorMessage = ""
+                    self.applyStatusPayload(reply, from: destination)
+                }
             case .iPad:
-                self.iPadErrorMessage = ""
-                self.markRelaySuccess()
-                self.applyStatusPayload(reply, from: destination)
+                if carriesReaderState {
+                    self.iPadErrorMessage = ""
+                    self.markRelaySuccess()
+                    self.applyStatusPayload(reply, from: destination)
+                } else {
+                    // A successful command proves the relay answered, but its
+                    // embedded status snapshot may be older than a later poll.
+                    self.markRelaySuccess(clearError: false)
+                }
+            }
+
+            if !carriesReaderState {
+                self.pollStatus(for: destination)
             }
             self.refreshVisibleError()
         }
