@@ -62,6 +62,18 @@ final class ProPurchaseManager: ObservableObject {
     private init() {
         updateListenerTask = listenForTransactions()
         setupForegroundObservation()
+
+        // A returning Pro user may launch before StoreKit finishes its network
+        // refresh (or while offline). Use the cached entitlement immediately so
+        // automatic iPad relay discovery/server startup is not delayed by the
+        // removed Page Turn Device setting.
+        if hasProAccess {
+            Task { @MainActor in
+                WatchPageTurnService.shared.enableIPadRelay()
+                WatchPageTurnService.shared.prepareIPadRelay()
+            }
+        }
+
         Task { await loadProducts() }
     }
 
@@ -239,10 +251,21 @@ final class ProPurchaseManager: ObservableObject {
         if previous != hasAccess {
             NotificationCenter.default.post(name: .proAccessDidChange, object: hasAccess)
         }
-        // Pro may land on iPad after purchase on iPhone; start LAN as soon as
-        // entitlement is known so Watch relay works without a diagnostics visit.
-        if hasAccess, !previous {
+
+        // Automatic Watch routing no longer has a selected iPhone/iPad target.
+        // Re-assert relay readiness every time StoreKit confirms Pro so a
+        // returning Pro user does not depend on the removed controlTarget flag,
+        // and a foreground entitlement refresh repairs stale Bonjour state.
+        if hasAccess {
             WatchPageTurnService.shared.enableIPadRelay()
+            WatchPageTurnService.shared.prepareIPadRelay()
+        } else {
+            // Revoke both halves of the automatic relay lifecycle. iPad stops
+            // advertising its server; iPhone stops Bonjour discovery and drops
+            // cached/pending endpoints so an in-flight discovery cannot send a
+            // request after entitlement has been revoked.
+            WatchPageTurnService.shared.disableIPadRelay()
+            WatchPageTurnService.shared.stopIPadRelayDiscovery()
         }
     }
 }

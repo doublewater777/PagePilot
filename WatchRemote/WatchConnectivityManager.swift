@@ -4,11 +4,6 @@ import WatchConnectivity
 final class WatchConnectivityManager: NSObject, ObservableObject {
     static let shared = WatchConnectivityManager()
 
-    private enum Destination: String {
-        case iPhone = "iphone"
-        case iPad = "ipad"
-    }
-
     @Published var isReachable = false
     @Published var relayReachable = false
     @Published var crownSensitivity: Double
@@ -21,9 +16,10 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
     @Published var readingSessionStartedAt: Date?
     @Published var readingSessionStartProgress: Double = 0.0
 
-    /// Last error message (visible on the watch UI for in-the-field debugging).
-    /// Optional iPad relay failures are intentionally not surfaced here because
-    /// the iPhone Reader remains independently usable.
+    /// Last actionable error visible on the Watch. Reader/status errors and the
+    /// outcome of the latest logical page-turn command have independent
+    /// lifecycles; a ready status must never swallow a command that failed on
+    /// every fan-out route.
     @Published var lastError: String = ""
     /// Timestamp of last successful iPad relay response.
     @Published var lastStatusOK: Date? = nil
@@ -34,6 +30,8 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
     private let relayGraceInterval: TimeInterval = 8.0
     private var statusPollTimer: Timer?
     private var hasAuthoritativeReadingSessionState = false
+    private var responseEpoch = WatchResponseEpoch()
+    private var commandOutcomeState = WatchCommandOutcomeState()
 
     private var iPhoneReaderReady = false
     private var iPadReaderReady = false
@@ -41,6 +39,25 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
     private var iPhoneBookProgress = 0.0
     private var iPadBookTitle = ""
     private var iPadBookProgress = 0.0
+    private var iPhoneErrorMessage = ""
+    private var iPadErrorMessage = ""
+
+    private var routingState: WatchReaderRoutingState {
+        get {
+            WatchReaderRoutingState(
+                iPhoneReady: iPhoneReaderReady,
+                iPadReady: iPadReaderReady,
+                iPhoneError: iPhoneErrorMessage,
+                iPadError: iPadErrorMessage
+            )
+        }
+        set {
+            iPhoneReaderReady = newValue.iPhoneReady
+            iPadReaderReady = newValue.iPadReady
+            iPhoneErrorMessage = newValue.iPhoneError
+            iPadErrorMessage = newValue.iPadError
+        }
+    }
 
     private lazy var commandQueue = ThrottledCommandQueue(interval: 0.1, queue: .main) { [weak self] command, completion in
         self?.performSend(command, completion: completion)
@@ -67,7 +84,9 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
         session.delegate = self
         session.activate()
 
-        // Sync immediate application context if already received previously.
+        // Application context is persisted metadata, not proof that a Reader is
+        // currently reachable. Real-time status polling is authoritative for
+        // iPhone/iPad readiness.
         updateSettings(from: session.receivedApplicationContext)
     }
 
@@ -91,25 +110,25 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
             UserDefaults.standard.set(doubleTap, forKey: "watch_double_tap_page_turn")
         }
 
-        // The application context is sourced from the paired iPhone, so it can
-        // immediately seed (or clear) the local Reader state while status
-        // polling also checks the nearby iPad relay independently.
+        // The application context can be cached across a WCSession outage. Keep
+        // its metadata, but never let it promote Reader readiness; a fresh
+        // status reply must establish that the Reader can respond now.
         if let title = context["currentBookTitle"] as? String {
             iPhoneBookTitle = title
-            iPhoneReaderReady = !title.isEmpty
         }
         if let progress = context["currentBookProgress"] as? Double {
             iPhoneBookProgress = progress
         }
         _ = applyReadingSessionContext(context)
         recomputeAggregateReaderState()
+        refreshVisibleError()
         refreshStatusPolling()
     }
 
     func sendCommand(_ command: PageCommand) {
         guard WCSession.default.isReachable else {
             DispatchQueue.main.async {
-                self.lastError = self.localized("watch.error.openIPhone")
+                self.invalidateTransportState(error: self.localized("watch.error.openIPhone"))
             }
             return
         }
@@ -118,6 +137,8 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
 
     private func performSend(_ command: PageCommand, completion: @escaping () -> Void) {
         let commandID = UUID().uuidString
+        commandOutcomeState.begin(commandID: commandID)
+        refreshVisibleError()
 
         // Always ask the paired iPhone first. The iPhone only turns when its
         // Reader is active, so an idle iPhone simply returns NAVIGATOR_NOT_READY.
@@ -133,28 +154,77 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
         completion()
     }
 
-    private func send(_ command: PageCommand, to destination: Destination, commandID: String) {
+    private func send(_ command: PageCommand, to destination: WatchReaderDestination, commandID: String) {
         var message = command.message
         message["target"] = destination.rawValue
         message["commandId"] = commandID
+        let token = responseEpoch.beginRequest(to: destination, kind: .command)
 
         WCSession.default.sendMessage(
             message,
             replyHandler: { [weak self] reply in
-                self?.handleWatchConnectivityReply(reply, from: destination)
+                self?.handleWatchConnectivityReply(
+                    reply,
+                    from: destination,
+                    token: token,
+                    commandID: commandID
+                )
             },
             errorHandler: { [weak self] _ in
                 DispatchQueue.main.async {
-                    guard let self else { return }
-                    switch destination {
-                    case .iPhone:
-                        self.lastError = self.localized("watch.error.sendFailed")
-                    case .iPad:
-                        self.markRelayFailure()
-                    }
+                    self?.applySendFailure(
+                        to: destination,
+                        token: token,
+                        commandID: commandID
+                    )
                 }
             }
         )
+    }
+
+    private func invalidateTransportState(error: String) {
+        responseEpoch.invalidateTransport()
+        commandOutcomeState.reset()
+
+        var state = routingState
+        state.invalidateForTransportFailure(error: error)
+        routingState = state
+
+        isReachable = false
+        relayReachable = false
+        lastStatusOK = nil
+        recomputeAggregateReaderState()
+        refreshVisibleError()
+    }
+
+    private func applySendFailure(
+        to destination: WatchReaderDestination,
+        token: WatchResponseToken,
+        commandID: String
+    ) {
+        let transportReachable = WCSession.default.isReachable
+        if !transportReachable {
+            guard responseEpoch.belongsToCurrentTransport(token) else { return }
+            invalidateTransportState(error: localized("watch.error.sendFailed"))
+            return
+        }
+
+        guard responseEpoch.accepts(token, transportReachable: true) else { return }
+
+        commandOutcomeState.recordFailure(
+            commandID: commandID,
+            destination: destination,
+            error: localized("watch.error.sendFailed")
+        )
+
+        if destination == .iPad {
+            markRelayFailure()
+        }
+
+        // Reader readiness remains status-authoritative. Polling can update the
+        // Reader snapshot, but it cannot clear this command-level outcome.
+        pollStatus(for: destination)
+        refreshVisibleError()
     }
 
     private func startPolling() {
@@ -182,22 +252,33 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
 
     private func pollStatus() {
         let reachable = WCSession.default.isReachable
-        isReachable = reachable
-        guard reachable else { return }
+        if !reachable {
+            invalidateTransportState(error: localized("watch.error.openIPhone"))
+            return
+        }
 
+        isReachable = true
         pollStatus(for: .iPhone)
         pollStatus(for: .iPad)
     }
 
-    private func pollStatus(for destination: Destination) {
+    private func pollStatus(for destination: WatchReaderDestination) {
+        let token = responseEpoch.beginRequest(to: destination, kind: .status)
         WCSession.default.sendMessage(
             ["action": "status", "target": destination.rawValue],
             replyHandler: { [weak self] reply in
-                self?.handleWatchConnectivityReply(reply, from: destination)
+                self?.handleWatchConnectivityReply(reply, from: destination, token: token)
             },
             errorHandler: { [weak self] _ in
                 DispatchQueue.main.async {
                     guard let self else { return }
+                    let transportReachable = WCSession.default.isReachable
+                    if !transportReachable {
+                        guard self.responseEpoch.belongsToCurrentTransport(token) else { return }
+                        self.invalidateTransportState(error: self.localized("watch.error.openIPhone"))
+                        return
+                    }
+                    guard self.responseEpoch.accepts(token, transportReachable: true) else { return }
                     switch destination {
                     case .iPhone:
                         self.iPhoneReaderReady = false
@@ -206,62 +287,145 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
                         self.iPadReaderReady = false
                     }
                     self.recomputeAggregateReaderState()
+                    self.refreshVisibleError()
                 }
             }
         )
     }
 
-    private func handleWatchConnectivityReply(_ reply: [String: Any], from destination: Destination) {
+    private func handleWatchConnectivityReply(
+        _ reply: [String: Any],
+        from destination: WatchReaderDestination,
+        token: WatchResponseToken,
+        commandID: String? = nil
+    ) {
         DispatchQueue.main.async {
-            self.hasReceivedStatus = true
+            guard self.responseEpoch.accepts(
+                token,
+                transportReachable: WCSession.default.isReachable
+            ) else {
+                return
+            }
 
-            if let error = reply["error"] as? String {
-                let errorCode = reply["errorCode"] as? String
+            if token.kind == .command {
+                guard let commandID else { return }
+                self.handleCommandReply(
+                    reply,
+                    from: destination,
+                    commandID: commandID
+                )
+                return
+            }
 
+            self.handleStatusReply(reply, from: destination)
+        }
+    }
+
+    private func handleCommandReply(
+        _ reply: [String: Any],
+        from destination: WatchReaderDestination,
+        commandID: String
+    ) {
+        if let error = reply["error"] as? String {
+            let errorCode = reply["errorCode"] as? String
+            commandOutcomeState.recordFailure(
+                commandID: commandID,
+                destination: destination,
+                error: commandFailureMessage(
+                    destination: destination,
+                    code: errorCode,
+                    error: error
+                )
+            )
+
+            if destination == .iPad {
                 if errorCode == "NAVIGATOR_NOT_READY" {
-                    switch destination {
-                    case .iPhone:
-                        self.iPhoneReaderReady = false
-                    case .iPad:
-                        self.iPadReaderReady = false
-                        self.markRelaySuccess(clearError: false)
-                    }
-                    self.recomputeAggregateReaderState()
-                    return
+                    // The relay answered; only the Reader was unavailable.
+                    markRelaySuccess(clearError: false)
+                } else if errorCode == "PRO_REQUIRED" || isRelayConnectivityError(errorCode) {
+                    markRelayFailure()
                 }
+            }
 
+            pollStatus(for: destination)
+            refreshVisibleError()
+            return
+        }
+
+        commandOutcomeState.recordSuccess(
+            commandID: commandID,
+            destination: destination
+        )
+
+        if destination == .iPad {
+            // A successful command proves the relay answered, but status polling
+            // remains the sole authority for cached Reader readiness/metadata.
+            markRelaySuccess(clearError: false)
+        }
+
+        pollStatus(for: destination)
+        refreshVisibleError()
+    }
+
+    private func handleStatusReply(
+        _ reply: [String: Any],
+        from destination: WatchReaderDestination
+    ) {
+        hasReceivedStatus = true
+
+        if let error = reply["error"] as? String {
+            let errorCode = reply["errorCode"] as? String
+
+            if errorCode == "NAVIGATOR_NOT_READY" {
                 switch destination {
-                case .iPad:
-                    // iPad is an optional Pro fan-out path. PRO_REQUIRED,
-                    // discovery misses and relay timeouts must stay silent on
-                    // the Watch because the local iPhone path still works.
-                    if errorCode == "PRO_REQUIRED" || self.isRelayConnectivityError(errorCode) {
-                        self.iPadReaderReady = false
-                        self.markRelayFailure()
-                        self.recomputeAggregateReaderState()
-                        return
-                    }
-                    self.iPadReaderReady = false
-                    self.recomputeAggregateReaderState()
-                    return
-
                 case .iPhone:
-                    self.iPhoneReaderReady = false
-                    self.recomputeAggregateReaderState()
-                    self.lastError = self.errorMessage(code: errorCode, error: error)
-                    return
+                    iPhoneReaderReady = false
+                    iPhoneErrorMessage = ""
+                case .iPad:
+                    iPadReaderReady = false
+                    iPadErrorMessage = localized("watch.hint.openBookIPad")
+                    markRelaySuccess(clearError: false)
                 }
+                recomputeAggregateReaderState()
+                refreshVisibleError()
+                return
             }
 
             switch destination {
-            case .iPhone:
-                self.lastError = ""
             case .iPad:
-                self.markRelaySuccess()
+                iPadReaderReady = false
+                if errorCode == "PRO_REQUIRED" {
+                    // A Free user should not be told that an optional iPad path
+                    // failed; local iPhone page turning remains valid.
+                    iPadErrorMessage = ""
+                    markRelayFailure()
+                } else if isRelayConnectivityError(errorCode) {
+                    iPadErrorMessage = errorMessage(code: errorCode, error: error)
+                    markRelayFailure()
+                } else {
+                    iPadErrorMessage = errorMessage(code: errorCode, error: error)
+                }
+
+            case .iPhone:
+                iPhoneReaderReady = false
+                iPhoneErrorMessage = errorMessage(code: errorCode, error: error)
             }
 
-            self.applyStatusPayload(reply, from: destination)
+            recomputeAggregateReaderState()
+            refreshVisibleError()
+            return
         }
+
+        switch destination {
+        case .iPhone:
+            iPhoneErrorMessage = ""
+            applyStatusPayload(reply, from: destination)
+        case .iPad:
+            iPadErrorMessage = ""
+            markRelaySuccess()
+            applyStatusPayload(reply, from: destination)
+        }
+        refreshVisibleError()
     }
 
     private var hasRecentRelaySuccess: Bool {
@@ -272,8 +436,8 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
     private func markRelaySuccess(clearError: Bool = true) {
         relayReachable = true
         lastStatusOK = Date()
-        if clearError, lastError == localized("watch.error.ipadTimeout") || lastError == localized("watch.error.ipadNotFound") {
-            lastError = ""
+        if clearError {
+            iPadErrorMessage = ""
         }
     }
 
@@ -286,11 +450,28 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
         errorCode == "IPAD_NOT_FOUND" || errorCode == "RELAY_TIMEOUT"
     }
 
+    private func commandFailureMessage(
+        destination: WatchReaderDestination,
+        code: String?,
+        error: String
+    ) -> String {
+        if code == "NAVIGATOR_NOT_READY" {
+            return destination == .iPad ? localized("watch.hint.openBookIPad") : ""
+        }
+        return errorMessage(code: code, error: error)
+    }
+
     private func errorMessage(code: String?, error: String) -> String {
         switch code {
+        case "IPAD_NOT_FOUND":
+            return localized("watch.error.ipadNotFound")
+        case "RELAY_TIMEOUT":
+            return localized("watch.error.ipadTimeout")
         case "INVALID_COMMAND":
             return localized("watch.error.generic")
         case "NAVIGATOR_NOT_READY":
+            return ""
+        case "PRO_REQUIRED":
             return ""
         default:
             if error.localizedCaseInsensitiveContains("reader") {
@@ -300,7 +481,7 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
         }
     }
 
-    private func applyStatusPayload(_ json: [String: Any], from destination: Destination) {
+    private func applyStatusPayload(_ json: [String: Any], from destination: WatchReaderDestination) {
         let wasReaderReady = readerReady
         let ready = (json["readerReady"] as? Bool) ?? ((json["bookTitle"] as? String)?.isEmpty == false)
 
@@ -352,6 +533,13 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
         updateFallbackReadingSession(wasReaderReady: previousReady)
     }
 
+    private func refreshVisibleError() {
+        lastError = commandOutcomeState.visibleError(
+            fallback: routingState.visibleError,
+            defaultCommandError: localized("watch.error.generic")
+        )
+    }
+
     @discardableResult
     private func applyReadingSessionContext(_ payload: [String: Any]) -> Bool {
         guard let active = payload[readingSessionActiveKey] as? Bool else {
@@ -401,22 +589,30 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
 // MARK: - WCSessionDelegate
 extension WatchConnectivityManager: WCSessionDelegate {
     func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: Error?) {
+        let reachable = session.isReachable
         DispatchQueue.main.async {
-            self.isReachable = session.isReachable
-            self.refreshConnectionStatus()
+            self.isReachable = reachable
+            if reachable {
+                self.refreshConnectionStatus()
+            } else {
+                self.invalidateTransportState(error: self.localized("watch.error.openIPhone"))
+            }
         }
     }
 
     func sessionReachabilityDidChange(_ session: WCSession) {
+        // Capture at delegate-entry time. Reading session.isReachable later on
+        // the main queue can miss a transient false event after a fast reconnect.
+        let reachable = session.isReachable
         DispatchQueue.main.async {
-            self.isReachable = session.isReachable
-            if !session.isReachable {
-                self.iPhoneReaderReady = false
-                self.iPadReaderReady = false
-                self.relayReachable = false
-                self.recomputeAggregateReaderState()
+            self.isReachable = reachable
+            if reachable {
+                self.refreshConnectionStatus()
+            } else {
+                // A false event always advances the transport epoch, even if the
+                // session has already reconnected by the time this block runs.
+                self.invalidateTransportState(error: self.localized("watch.error.openIPhone"))
             }
-            self.refreshConnectionStatus()
         }
     }
 
