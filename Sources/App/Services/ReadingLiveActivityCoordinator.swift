@@ -30,6 +30,10 @@ protocol ReadingLiveActivityClient: AnyObject {
 
 @MainActor
 final class ActivityKitReadingLiveActivityClient: ReadingLiveActivityClient {
+    enum ClientError: Error {
+        case activityNotFound
+    }
+
     var areActivitiesEnabled: Bool {
         ActivityAuthorizationInfo().areActivitiesEnabled
     }
@@ -54,7 +58,9 @@ final class ActivityKitReadingLiveActivityClient: ReadingLiveActivityClient {
         activityID: String,
         state: ReadingLiveActivityAttributes.ContentState
     ) async throws {
-        guard let activity = activity(withID: activityID) else { return }
+        guard let activity = activity(withID: activityID) else {
+            throw ClientError.activityNotFound
+        }
         await activity.update(ActivityContent(state: state, staleDate: nil))
     }
 
@@ -142,6 +148,10 @@ final class ReadingLiveActivityCoordinator {
                     markPublished(stateToPublish, forSessionID: current.id)
                 } catch {
                     print("ReadingLiveActivityCoordinator: update failed: \(error)")
+                    if !client.activeActivityIDs.contains(activityID) {
+                        self.activityID = nil
+                        await startActivityIfNeeded(for: current)
+                    }
                 }
             } else {
                 await startActivityIfNeeded(for: current)
