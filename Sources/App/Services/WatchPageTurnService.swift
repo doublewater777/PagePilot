@@ -144,13 +144,22 @@ struct PagePilotLANLookupCycleState: Equatable {
     }
 }
 
+enum PagePilotLANBrowserCallbackPolicy {
+    static func isCurrent(
+        callbackBrowser: NetServiceBrowser,
+        currentBrowser: NetServiceBrowser
+    ) -> Bool {
+        callbackBrowser === currentBrowser
+    }
+}
+
 private final class PagePilotLANBrowser: NSObject, NetServiceBrowserDelegate, NetServiceDelegate {
     static let shared = PagePilotLANBrowser()
 
     private let serviceType = "_pagepilot._tcp."
     private let serviceDomain = "local."
     private let fallbackEndpoint = URL(string: "http://iPad.local:61482")
-    private let browser = NetServiceBrowser()
+    private var browser: NetServiceBrowser
     private var services: [NetService] = []
     private var resolvingServices: Set<ObjectIdentifier> = []
     private var pendingReresolveServices: Set<ObjectIdentifier> = []
@@ -171,6 +180,7 @@ private final class PagePilotLANBrowser: NSObject, NetServiceBrowserDelegate, Ne
     }
 
     private override init() {
+        browser = NetServiceBrowser()
         super.init()
         browser.delegate = self
     }
@@ -185,10 +195,18 @@ private final class PagePilotLANBrowser: NSObject, NetServiceBrowserDelegate, Ne
         DispatchQueue.main.async {
             self.discoveryGeneration &+= 1
 
-            if self.isBrowsing {
-                self.browser.stop()
-            }
+            // Retire the browser object itself before stopping it. Any didStop,
+            // didNotSearch, didFind, or didRemove callback already queued by the
+            // previous search will carry the retired object and be ignored by
+            // the delegate identity guards below. Re-granting Pro can therefore
+            // start a new search immediately without sharing callback lifetime
+            // with the stopped generation.
+            let retiredBrowser = self.browser
+            let replacementBrowser = NetServiceBrowser()
+            replacementBrowser.delegate = self
+            self.browser = replacementBrowser
             self.isBrowsing = false
+            retiredBrowser.stop()
 
             let oldServices = self.services
             self.services.removeAll()
@@ -460,6 +478,10 @@ private final class PagePilotLANBrowser: NSObject, NetServiceBrowserDelegate, Ne
     }
 
     func netServiceBrowser(_ browser: NetServiceBrowser, didFind service: NetService, moreComing: Bool) {
+        guard PagePilotLANBrowserCallbackPolicy.isCurrent(
+            callbackBrowser: browser,
+            currentBrowser: self.browser
+        ) else { return }
         guard service.name.hasPrefix("PagePilot-iPad") else { return }
         print("PagePilotLANBrowser: found service \(service.name)")
 
@@ -554,6 +576,10 @@ private final class PagePilotLANBrowser: NSObject, NetServiceBrowserDelegate, Ne
     }
 
     func netServiceBrowser(_ browser: NetServiceBrowser, didNotSearch errorDict: [String : NSNumber]) {
+        guard PagePilotLANBrowserCallbackPolicy.isCurrent(
+            callbackBrowser: browser,
+            currentBrowser: self.browser
+        ) else { return }
         print("PagePilotLANBrowser: failed to browse: \(errorDict)")
         isBrowsing = false
 
@@ -578,10 +604,18 @@ private final class PagePilotLANBrowser: NSObject, NetServiceBrowserDelegate, Ne
     }
 
     func netServiceBrowserDidStopSearch(_ browser: NetServiceBrowser) {
+        guard PagePilotLANBrowserCallbackPolicy.isCurrent(
+            callbackBrowser: browser,
+            currentBrowser: self.browser
+        ) else { return }
         isBrowsing = false
     }
 
     func netServiceBrowser(_ browser: NetServiceBrowser, didRemove service: NetService, moreComing: Bool) {
+        guard PagePilotLANBrowserCallbackPolicy.isCurrent(
+            callbackBrowser: browser,
+            currentBrowser: self.browser
+        ) else { return }
         guard services.contains(where: { $0 === service }) else { return }
         let serviceID = ObjectIdentifier(service)
         services.removeAll { $0 === service }
