@@ -56,6 +56,31 @@ enum PagePilotLANResolveRetryPolicy {
     }
 }
 
+enum PagePilotLANResolveLifecycleAction: Equatable {
+    case start
+    case wait
+    case stopThenRestart
+}
+
+enum PagePilotLANResolveLifecyclePolicy {
+    static func action(
+        isResolving: Bool,
+        forceRestart: Bool
+    ) -> PagePilotLANResolveLifecycleAction {
+        guard isResolving else { return .start }
+        return forceRestart ? .stopThenRestart : .wait
+    }
+}
+
+enum PagePilotLANFallbackPolicy {
+    static func shouldUseFallback(
+        knownServiceCount: Int,
+        fallbackWasInvalidated: Bool
+    ) -> Bool {
+        knownServiceCount == 0 && !fallbackWasInvalidated
+    }
+}
+
 private final class PagePilotLANBrowser: NSObject, NetServiceBrowserDelegate, NetServiceDelegate {
     static let shared = PagePilotLANBrowser()
 
@@ -65,6 +90,7 @@ private final class PagePilotLANBrowser: NSObject, NetServiceBrowserDelegate, Ne
     private let browser = NetServiceBrowser()
     private var services: [NetService] = []
     private var resolvingServices: Set<ObjectIdentifier> = []
+    private var pendingReresolveServices: Set<ObjectIdentifier> = []
     private var resolveFailureCounts: [ObjectIdentifier: Int] = [:]
     private var pendingCompletions: [(URL?) -> Void] = []
     private var isBrowsing = false
@@ -101,21 +127,24 @@ private final class PagePilotLANBrowser: NSObject, NetServiceBrowserDelegate, Ne
             self.pendingCompletions.append(completion)
 
             // Prefer Bonjour (works for localized device names and dynamic
-            // ports). Only use the legacy iPad.local fallback when no PagePilot
-            // service is already known; a known service should be re-resolved
-            // instead of racing to a possibly wrong host/port.
+            // ports). The fixed fallback is valid only when there is no known
+            // Bonjour service to resolve.
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
                 guard let self else { return }
                 guard self.lastKnownEndpoint == nil else { return }
                 guard !self.pendingCompletions.isEmpty else { return }
-                guard self.services.isEmpty else { return }
-                if let fallbackEndpoint = self.fallbackEndpoint, !self.fallbackWasInvalidated {
-                    print("PagePilotLANBrowser: Bonjour slow, trying fallback \(fallbackEndpoint.absoluteString)")
-                    // Keep browsing; if Bonjour later resolves, lastKnownEndpoint updates.
-                    let pending = self.pendingCompletions
-                    self.pendingCompletions = []
-                    pending.forEach { $0(fallbackEndpoint) }
+                guard PagePilotLANFallbackPolicy.shouldUseFallback(
+                    knownServiceCount: self.services.count,
+                    fallbackWasInvalidated: self.fallbackWasInvalidated
+                ), let fallbackEndpoint = self.fallbackEndpoint else {
+                    return
                 }
+
+                print("PagePilotLANBrowser: Bonjour slow, trying fallback \(fallbackEndpoint.absoluteString)")
+                // Keep browsing; if Bonjour later resolves, lastKnownEndpoint updates.
+                let pending = self.pendingCompletions
+                self.pendingCompletions = []
+                pending.forEach { $0(fallbackEndpoint) }
             }
 
             DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) { [weak self] in
@@ -162,7 +191,7 @@ private final class PagePilotLANBrowser: NSObject, NetServiceBrowserDelegate, Ne
         ) {
         case .reresolveKnownServices:
             print("PagePilotLANBrowser: re-resolving \(services.count) known service(s)")
-            resolveKnownServices()
+            resolveKnownServices(forceRestart: true)
 
         case .startBrowsing:
             startBrowsingIfNeeded()
@@ -172,25 +201,44 @@ private final class PagePilotLANBrowser: NSObject, NetServiceBrowserDelegate, Ne
         }
     }
 
-    private func resolveKnownServices() {
+    private func resolveKnownServices(forceRestart: Bool = false) {
         for service in services {
-            resolve(service)
+            resolve(service, forceRestart: forceRestart)
         }
     }
 
-    private func resolve(_ service: NetService) {
+    private func resolve(_ service: NetService, forceRestart: Bool = false) {
         guard services.contains(where: { $0 === service }) else { return }
         let serviceID = ObjectIdentifier(service)
-        guard !resolvingServices.contains(serviceID) else { return }
 
-        resolvingServices.insert(serviceID)
-        service.delegate = self
-        service.resolve(withTimeout: 2.0)
+        switch PagePilotLANResolveLifecyclePolicy.action(
+            isResolving: resolvingServices.contains(serviceID),
+            forceRestart: forceRestart
+        ) {
+        case .wait:
+            return
+
+        case .stopThenRestart:
+            // NetService resolution continues after a resolved-address callback
+            // until it is explicitly stopped. Queue the restart and let
+            // netServiceDidStop mark the old lifecycle complete first.
+            pendingReresolveServices.insert(serviceID)
+            service.stop()
+            return
+
+        case .start:
+            resolvingServices.insert(serviceID)
+            service.delegate = self
+            service.resolve(withTimeout: 2.0)
+        }
     }
 
-    private func handleResolveFailure(for service: NetService, reason: String) {
+    private func handleResolveFailure(
+        for service: NetService,
+        reason: String,
+        resolutionIsActive: Bool
+    ) {
         let serviceID = ObjectIdentifier(service)
-        resolvingServices.remove(serviceID)
         guard services.contains(where: { $0 === service }) else { return }
 
         if lastResolvedServiceID == serviceID {
@@ -202,7 +250,24 @@ private final class PagePilotLANBrowser: NSObject, NetServiceBrowserDelegate, Ne
         resolveFailureCounts[serviceID] = failureCount
         print("PagePilotLANBrowser: resolve failure for \(service.name) #\(failureCount): \(reason)")
 
-        guard PagePilotLANResolveRetryPolicy.shouldRetry(afterFailureCount: failureCount) else {
+        let shouldRetry = PagePilotLANResolveRetryPolicy.shouldRetry(
+            afterFailureCount: failureCount
+        )
+
+        if resolutionIsActive {
+            if shouldRetry {
+                pendingReresolveServices.insert(serviceID)
+            } else {
+                pendingReresolveServices.remove(serviceID)
+            }
+            service.stop()
+            return
+        }
+
+        resolvingServices.remove(serviceID)
+        pendingReresolveServices.remove(serviceID)
+
+        guard shouldRetry else {
             // Keep the service in the known set. A future endpoint() call can
             // try resolving it again without waiting for another didFind event.
             return
@@ -244,6 +309,7 @@ private final class PagePilotLANBrowser: NSObject, NetServiceBrowserDelegate, Ne
         for oldService in replaced {
             let oldID = ObjectIdentifier(oldService)
             resolvingServices.remove(oldID)
+            pendingReresolveServices.remove(oldID)
             resolveFailureCounts.removeValue(forKey: oldID)
             if lastResolvedServiceID == oldID {
                 lastKnownEndpoint = nil
@@ -262,7 +328,6 @@ private final class PagePilotLANBrowser: NSObject, NetServiceBrowserDelegate, Ne
 
     func netServiceDidResolveAddress(_ sender: NetService) {
         let serviceID = ObjectIdentifier(sender)
-        resolvingServices.remove(serviceID)
 
         // didRemove (or a same-name replacement) can race a resolve callback.
         // Only a service object that is still in the browser's known set may
@@ -274,7 +339,11 @@ private final class PagePilotLANBrowser: NSObject, NetServiceBrowserDelegate, Ne
         }
 
         guard let endpoint = endpointURL(for: sender) else {
-            handleResolveFailure(for: sender, reason: "resolved without a usable endpoint")
+            handleResolveFailure(
+                for: sender,
+                reason: "resolved without a usable endpoint",
+                resolutionIsActive: true
+            )
             return
         }
 
@@ -283,16 +352,61 @@ private final class PagePilotLANBrowser: NSObject, NetServiceBrowserDelegate, Ne
         lastKnownEndpoint = endpoint
         lastResolvedServiceID = serviceID
         flushPendingIfNeeded(with: endpoint)
+
+        // We only need one usable endpoint. Explicitly stop resolution and wait
+        // for netServiceDidStop before considering this service idle again.
+        sender.stop()
     }
 
     func netService(_ sender: NetService, didNotResolve errorDict: [String : NSNumber]) {
-        handleResolveFailure(for: sender, reason: String(describing: errorDict))
+        handleResolveFailure(
+            for: sender,
+            reason: String(describing: errorDict),
+            resolutionIsActive: false
+        )
+    }
+
+    func netServiceDidStop(_ sender: NetService) {
+        let serviceID = ObjectIdentifier(sender)
+        resolvingServices.remove(serviceID)
+
+        guard services.contains(where: { $0 === sender }) else {
+            pendingReresolveServices.remove(serviceID)
+            return
+        }
+
+        guard pendingReresolveServices.remove(serviceID) != nil else { return }
+
+        // Restart on the next main-queue turn so the prior NetService resolve
+        // lifecycle has fully completed before calling resolve again.
+        DispatchQueue.main.async { [weak self] in
+            guard let self,
+                  self.services.contains(where: { $0 === sender })
+            else {
+                return
+            }
+            self.resolve(sender)
+        }
     }
 
     func netServiceBrowser(_ browser: NetServiceBrowser, didNotSearch errorDict: [String : NSNumber]) {
         print("PagePilotLANBrowser: failed to browse: \(errorDict)")
         isBrowsing = false
-        flushPendingIfNeeded(with: fallbackWasInvalidated ? nil : fallbackEndpoint)
+
+        if PagePilotLANFallbackPolicy.shouldUseFallback(
+            knownServiceCount: services.count,
+            fallbackWasInvalidated: fallbackWasInvalidated
+        ) {
+            flushPendingIfNeeded(with: fallbackEndpoint)
+        } else if services.isEmpty {
+            // No known service and the fallback was already proven stale.
+            flushPendingIfNeeded(with: nil)
+        } else {
+            // A known custom-named/dynamic-port service is still authoritative.
+            // Keep pending requests alive for its resolve callback or the common
+            // endpoint timeout instead of racing them to iPad.local:61482.
+            resolveKnownServices()
+        }
     }
 
     func netServiceBrowserDidStopSearch(_ browser: NetServiceBrowser) {
@@ -304,6 +418,7 @@ private final class PagePilotLANBrowser: NSObject, NetServiceBrowserDelegate, Ne
         let serviceID = ObjectIdentifier(service)
         services.removeAll { $0 === service }
         resolvingServices.remove(serviceID)
+        pendingReresolveServices.remove(serviceID)
         resolveFailureCounts.removeValue(forKey: serviceID)
         service.stop()
 
