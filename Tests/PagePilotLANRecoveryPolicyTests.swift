@@ -124,6 +124,29 @@ final class PagePilotLANRecoveryPolicyTests: XCTestCase {
         XCTAssertTrue(state.isActive(second.id))
     }
 
+    func testCurrentBonjourBrowserCallbackIsAccepted() {
+        let browser = NetServiceBrowser()
+
+        XCTAssertTrue(PagePilotLANBrowserCallbackPolicy.isCurrent(
+            callbackBrowser: browser,
+            currentBrowser: browser
+        ))
+    }
+
+    func testRetiredBonjourBrowserCallbackIsRejectedAfterReplacement() {
+        let retiredBrowser = NetServiceBrowser()
+        let replacementBrowser = NetServiceBrowser()
+
+        XCTAssertFalse(PagePilotLANBrowserCallbackPolicy.isCurrent(
+            callbackBrowser: retiredBrowser,
+            currentBrowser: replacementBrowser
+        ))
+        XCTAssertTrue(PagePilotLANBrowserCallbackPolicy.isCurrent(
+            callbackBrowser: replacementBrowser,
+            currentBrowser: replacementBrowser
+        ))
+    }
+
     func testBonjourCandidateIsRejectedAfterItsServiceIsRemoved() throws {
         let service = NSObject()
         let serviceID = ObjectIdentifier(service)
