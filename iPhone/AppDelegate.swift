@@ -47,6 +47,13 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // current, even before the reader is opened.
         WatchPageTurnService.shared.activate()
 
+        // ActivityKit can outlive the app process. A fresh process has no
+        // active Reader session yet, so dismiss any activity left by the
+        // previous process before a new session can publish one.
+        Task { @MainActor in
+            await ReadingLiveActivityCoordinator.shared.reconcileOnLaunch()
+        }
+
         // Verify Pro entitlements on launch.
         Task {
             await ProPurchaseManager.shared.verifyCurrentEntitlements()
