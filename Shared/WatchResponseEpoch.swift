@@ -3,6 +3,14 @@ import Foundation
 enum WatchResponseKind: Equatable, Sendable {
     case status
     case command
+
+    /// Real-time status polling is the single authority for cached Reader
+    /// readiness and metadata. Command callbacks remain independently ordered so
+    /// their outcome/error feedback is never swallowed by polling, but they must
+    /// not promote stale Reader state after a newer status observation.
+    var carriesAuthoritativeReaderState: Bool {
+        self == .status
+    }
 }
 
 struct WatchResponseToken: Equatable, Sendable {
