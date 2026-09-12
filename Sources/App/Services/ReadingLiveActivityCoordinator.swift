@@ -155,15 +155,18 @@ final class ReadingLiveActivityCoordinator {
     private func startActivityIfNeeded(for expectedSession: Session) async {
         guard client.areActivitiesEnabled else { return }
 
+        var cleanupFailed = false
         for id in client.activeActivityIDs {
             do {
                 try await client.end(activityID: id, state: nil)
             } catch {
+                cleanupFailed = true
                 print("ReadingLiveActivityCoordinator: stale activity cleanup failed: \(error)")
             }
         }
 
-        guard activityID == nil,
+        guard !cleanupFailed,
+              activityID == nil,
               let current = session,
               current.id == expectedSession.id
         else { return }
