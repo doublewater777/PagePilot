@@ -3,7 +3,6 @@
 # ==========================================
 
 # Generated project files (managed by XcodeGen)
-*.xcodeproj
 *.xcworkspace
 *.xctestplan
 
@@ -80,11 +79,6 @@ Integrations/Local/
 # App Store Connect export options for distribution (has signing identity)
 ExportOptionsExport.plist
 
-# Design demos (large binary assets, not source)
-design-demos/
-
-# Kiro AI workspace
-.kiro/
 
 # ==========================================
 # macOS

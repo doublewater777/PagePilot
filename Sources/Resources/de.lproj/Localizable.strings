@@ -111,7 +111,7 @@
 /* Error message used when trying to import a publication that is not valid */
 "library_error_publicationIsNotValid" = "Die Publikation ist ungültig";
 /* Error message used when trying to open a book whose file is not found */
-"library_error_bookNotFound" = "Die Buchdatei wurde nicht gefunden";
+"library_error_bookNotFound" = "Die Buchdatei fehlt. Importiere sie erneut oder versuche die iCloud-Synchronisierung, falls sie zuvor hochgeladen wurde.";
 /* Error message used when a low-level error occured while importing a publication */
 "library_error_importFailed" = "Die Publikation konnte nicht importiert werden";
 /* Error message used when a low-level error occured while opening a publication */

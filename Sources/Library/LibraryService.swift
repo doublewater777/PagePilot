@@ -39,6 +39,19 @@ final class LibraryService: Loggable {
 
     /// Opens the Readium 2 Publication for the given `book`.
     func openBook(_ book: Book, sender: UIViewController) async throws -> Publication? {
+        do {
+            try book.requireAvailablePublicationFile()
+        } catch LibraryError.bookNotFound {
+            let resolvedURL = try? book.absoluteFileURL()
+            print("""
+            Missing publication:
+              title: \(book.title)
+              dbURL: \(book.url)
+              resolvedURL: \(String(describing: resolvedURL))
+            """)
+            throw LibraryError.bookNotFound
+        }
+
         let (pub, _) = try await openPublication(at: book.absoluteURL(), allowUserInteraction: true, sender: sender)
         guard try checkIsReadable(publication: pub) else {
             return nil

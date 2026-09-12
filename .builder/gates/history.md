@@ -37,3 +37,23 @@ Weakest assumption: Safe Markdown-to-EPUB conversion preserves enough formatting
 Decision: Ship the review-hardened converter and close the reopened cycle.
 Next stage: 10-growth-channel
 Loop-back: Add narrowly scoped format support only when real imported files demonstrate a need.
+
+## 2026-09-13 - 01-hypothesis
+
+Cycle: 2026-09-13-missing-publication-recovery
+Verdict: pass
+Evidence: The supplied `fileNotFound` trace maps to a missing local Publication; focused tests cover missing, existing, and remote URLs; the regenerated app and extension contain Live Activity support metadata.
+Weakest assumption: Previously uploaded CKAssets remain available when users try iCloud recovery.
+Decision: Fail before Readium with `bookNotFound`, keep the Book record, and guide the user to re-import or iCloud Sync.
+Next stage: 10-growth-channel
+Loop-back: Add an explicit in-alert sync action only if observed recovery friction justifies the extra coupling.
+
+## 2026-09-13 - 01-hypothesis (Watch Live Activity launch)
+
+Cycle: 2026-09-13-watch-live-activity-launch
+Verdict: pass
+Evidence: Apple documents the Watch launch attribute key for forwarded Live Activities; the embedded Watch plist regression test fails for the prior empty declaration and passes for the explicit PagePilot attribute type.
+Weakest assumption: the updated companion Watch app will be installed alongside the iPhone build on the user's paired device.
+Decision: Launch the existing Watch app from the Smart Stack card and reuse its page-turn controls.
+Next stage: 10-growth-channel
+Loop-back: Consider direct interactive Live Activity buttons only if opening the Watch app remains too slow or unreliable in observed use.

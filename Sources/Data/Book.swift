@@ -87,6 +87,15 @@ struct Book: Codable {
         }
     }
 
+    func requireAvailablePublicationFile(
+        fileExistsAtPath: (String) -> Bool = { FileManager.default.fileExists(atPath: $0) }
+    ) throws {
+        guard let fileURL = try absoluteFileURL() else { return }
+        guard fileExistsAtPath(fileURL.path) else {
+            throw LibraryError.bookNotFound
+        }
+    }
+
     func preferences<P: Decodable>() throws -> P? {
         guard let data = preferencesJSON.flatMap({ $0.data(using: .utf8) }) else {
             return nil

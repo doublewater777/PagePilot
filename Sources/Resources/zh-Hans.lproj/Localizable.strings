@@ -111,7 +111,7 @@
 /* Error message used when trying to import a publication that is not valid */
 "library_error_publicationIsNotValid" = "出版物无效";
 /* Error message used when trying to open a book whose file is not found */
-"library_error_bookNotFound" = "书籍文件未找到";
+"library_error_bookNotFound" = "书籍文件已丢失。请重新导入；如果之前已上传，也可以尝试通过 iCloud 同步恢复。";
 /* Error message used when a low-level error occured while importing a publication */
 "library_error_importFailed" = "导入出版物失败";
 /* Error message used when a low-level error occured while opening a publication */
