@@ -50,5 +50,7 @@
 	<string>com.panyang.PagePilot</string>
 	<key>WKRunsIndependentlyOfCompanionApp</key>
 	<true/>
+	<key>WKSupportsLiveActivityLaunchAttributeTypes</key>
+	<array/>
 </dict>
 </plist>
