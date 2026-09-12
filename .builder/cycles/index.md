@@ -9,3 +9,4 @@
 | 2026-09-13-watch-live-activity-launch | Watch Live Activity launch | completed | 01-hypothesis | pass | open the existing Watch controls from the Smart Stack Live Activity | verify on a freshly installed paired Watch build |
 | 2026-09-13-watch-cold-start-control | Watch cold-start control | completed | 01-hypothesis | pass | clarify connection state and preserve one early page turn | verify immediate tap behavior on a paired Watch |
 | 2026-09-13-reading-live-activity-background | Reading Live Activity background retention | completed | 01-hypothesis | pass | keep the visual Reader activity visible while the app is backgrounded | verify lock-screen and Reader-exit behavior on device |
+| 2026-09-13-ipad-reader-watch-hint | iPad Reader Watch hint | completed | 01-hypothesis | pass | explain the current Watch Live Activity flow in the first Reader hint | observe whether first-reading confusion drops |

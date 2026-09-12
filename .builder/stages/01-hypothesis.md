@@ -26,6 +26,7 @@ PagePilot targets Apple ecosystem readers who lose reading flow when they must t
 - `2026-09-13-watch-live-activity-launch` — shortens the Watch control path by launching the Watch app from the reading Live Activity.
 - `2026-09-13-watch-cold-start-control` — tests whether a clear connection state and one buffered command remove cold-start control friction.
 - `2026-09-13-reading-live-activity-background` — tests whether preserving the visual Reader activity across backgrounding matches the expected Lock Screen flow.
+- `2026-09-13-ipad-reader-watch-hint` — tests whether outcome-first Watch copy makes the current Live Activity flow clearer than setup instructions.
 
 ## Decisions
 
@@ -71,6 +72,7 @@ Assumptions to test:
 
 ## Change Log
 
+- 2026-09-13: Linked the iPad Reader Watch hint copy cycle.
 - 2026-09-13: Linked the reading Live Activity background-retention cycle.
 - 2026-09-13: Linked the Watch cold-start control cycle.
 - 2026-09-13: Linked the missing Publication recovery cycle.

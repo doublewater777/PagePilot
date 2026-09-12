@@ -55,4 +55,10 @@ cycles:
     started_at: 2026-09-13
     completed_at: 2026-09-13
     linked_stage: 01-hypothesis
+  - id: 2026-09-13-ipad-reader-watch-hint
+    feature: iPad Reader Watch hint
+    status: completed
+    started_at: 2026-09-13
+    completed_at: 2026-09-13
+    linked_stage: 01-hypothesis
 updated_at: 2026-09-13

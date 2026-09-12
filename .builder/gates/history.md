@@ -77,3 +77,13 @@ Weakest assumption: ActivityKit retains the existing visual reading activity cor
 Decision: preserve the Watch reading session and Live Activity across backgrounding; end them only when the visual Reader disappears.
 Next stage: 10-growth-channel
 Loop-back: Reconsider if a retained activity ever survives an actual Reader dismissal on device.
+
+## 2026-09-13 - 01-hypothesis (iPad Reader Watch hint)
+
+Cycle: 2026-09-13-ipad-reader-watch-hint
+Verdict: pass
+Evidence: Localization test covers all five supported languages; full iPhone 17 simulator suite passes 242/242; iPad mini build succeeds.
+Weakest assumption: the outcome-first copy is enough to explain the Watch control path without setup steps.
+Decision: Lead with “Turn Pages with Apple Watch” and mention the Live Activity as the launch path.
+Next stage: 10-growth-channel
+Loop-back: Rewrite again only if real first-reading feedback shows the hint is still interpreted as setup work.

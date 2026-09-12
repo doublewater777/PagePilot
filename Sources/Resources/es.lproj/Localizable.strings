@@ -67,8 +67,8 @@
 "onboarding_watch_ready_title" = "Pasa una página desde tu muñeca";
 "onboarding_watch_ready_detail" = "Toque hacia adelante, hacia atrás o gire la corona y observe cómo cambia esta página.";
 "onboarding_watch_success" = "Conectado: listo para leer";
-"onboarding_ipad_reader_hint_title" = "¿Quieres controlar este iPad con Apple Watch?";
-"onboarding_ipad_reader_hint_detail" = "En el iPhone emparejado, configure el dispositivo de cambio de página en iPad. Mantenga ambos dispositivos en el mismo Wi‑Fi con un libro abierto aquí.";
+"onboarding_ipad_reader_hint_title" = "Pasa páginas con el Apple Watch";
+"onboarding_ipad_reader_hint_detail" = "Mientras lees, PagePilot muestra controles en tu Apple Watch emparejado. Toca la Actividad en Vivo para abrir la app del Watch.";
 
 /* Caption for the app version in About screen */
 "app_version_caption" = "Versión de la aplicación:";

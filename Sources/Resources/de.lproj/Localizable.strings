@@ -67,8 +67,8 @@
 "onboarding_watch_ready_title" = "Von Ihrem Handgelenk aus umblättern";
 "onboarding_watch_ready_detail" = "Tippen Sie auf vorwärts oder zurück oder drehen Sie die Krone und beobachten Sie, wie sich diese Seite ändert.";
 "onboarding_watch_success" = "Verbunden – bereit zum Lesen";
-"onboarding_ipad_reader_hint_title" = "Dieses iPad mit der Apple Watch steuern?";
-"onboarding_ipad_reader_hint_detail" = "Wählen Sie auf dem gekoppelten iPhone für „Seitengerät“ das iPad. Lassen Sie beide Geräte im selben WLAN und öffnen Sie hier ein Buch.";
+"onboarding_ipad_reader_hint_title" = "Mit der Apple Watch umblättern";
+"onboarding_ipad_reader_hint_detail" = "Beim Lesen zeigt PagePilot Steuerungen auf der gekoppelten Apple Watch. Tippe auf die Live-Aktivität, um die Watch-App zu öffnen.";
 
 /* Caption for the app version in About screen */
 "app_version_caption" = "App-Version:";
