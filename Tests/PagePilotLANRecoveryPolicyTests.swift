@@ -22,4 +22,10 @@ final class PagePilotLANRecoveryPolicyTests: XCTestCase {
             .continueBrowsing
         )
     }
+
+    func testResolveFailureGetsTwoImmediateRetries() {
+        XCTAssertTrue(PagePilotLANResolveRetryPolicy.shouldRetry(afterFailureCount: 1))
+        XCTAssertTrue(PagePilotLANResolveRetryPolicy.shouldRetry(afterFailureCount: 2))
+        XCTAssertFalse(PagePilotLANResolveRetryPolicy.shouldRetry(afterFailureCount: 3))
+    }
 }
