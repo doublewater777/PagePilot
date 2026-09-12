@@ -36,7 +36,19 @@ final class ReadingLiveActivityCoordinatorTests: XCTestCase {
         XCTAssertEqual(client.activeActivityIDs.count, 1)
     }
 
-    func testSwitchingSessionsEndsStaleActivityBeforeStartingNext() async {
+    func testInsignificantProgressRefreshDoesNotPublishUpdate() async {
+        let client = FakeReadingLiveActivityClient()
+        let coordinator = ReadingLiveActivityCoordinator(client: client)
+        let startedAt = Date(timeIntervalSince1970: 1_000)
+
+        await coordinator.sync(title: "Book", progression: 0.2, startedAt: startedAt)
+        await coordinator.sync(title: "Book", progression: 0.2005, startedAt: startedAt)
+
+        XCTAssertEqual(client.requests.count, 1)
+        XCTAssertTrue(client.updates.isEmpty)
+    }
+
+    func testSwitchingSessionsEndsStaleActivityBeforeStartingNext() async throws {
         let client = FakeReadingLiveActivityClient()
         let coordinator = ReadingLiveActivityCoordinator(client: client)
 
@@ -45,7 +57,7 @@ final class ReadingLiveActivityCoordinatorTests: XCTestCase {
             progression: 0.2,
             startedAt: Date(timeIntervalSince1970: 1_000)
         )
-        let firstActivityID = try! XCTUnwrap(client.activeActivityIDs.first)
+        let firstActivityID = try XCTUnwrap(client.activeActivityIDs.first)
 
         await coordinator.sync(
             title: "Second",
@@ -57,6 +69,23 @@ final class ReadingLiveActivityCoordinatorTests: XCTestCase {
         XCTAssertEqual(client.requests.count, 2)
         XCTAssertEqual(client.requests.last?.state.title, "Second")
         XCTAssertEqual(client.activeActivityIDs.count, 1)
+    }
+
+    func testReconcilesActivityLeftByPreviousProcessBeforeStarting() async {
+        let client = FakeReadingLiveActivityClient()
+        client.activeActivityIDs = ["stale"]
+        let coordinator = ReadingLiveActivityCoordinator(client: client)
+
+        await coordinator.sync(
+            title: "Book",
+            progression: 0.2,
+            startedAt: Date(timeIntervalSince1970: 1_000)
+        )
+
+        XCTAssertEqual(client.ends.map(\.activityID), ["stale"])
+        XCTAssertEqual(client.requests.count, 1)
+        XCTAssertEqual(client.activeActivityIDs.count, 1)
+        XCTAssertNotEqual(client.activeActivityIDs.first, "stale")
     }
 
     func testDisabledAuthorizationDoesNotRequestActivity() async {
@@ -90,6 +119,23 @@ final class ReadingLiveActivityCoordinatorTests: XCTestCase {
         XCTAssertEqual(client.activeActivityIDs.count, 1)
     }
 
+    func testUpdateFailureIsContainedAndSessionCanStillEnd() async throws {
+        let client = FakeReadingLiveActivityClient()
+        let coordinator = ReadingLiveActivityCoordinator(client: client)
+        let startedAt = Date(timeIntervalSince1970: 1_000)
+
+        await coordinator.sync(title: "Book", progression: 0.2, startedAt: startedAt)
+        let activityID = try XCTUnwrap(client.activeActivityIDs.first)
+        client.failUpdateIDs = [activityID]
+
+        await coordinator.sync(title: "Book", progression: 0.4, startedAt: startedAt)
+        await coordinator.end()
+
+        XCTAssertTrue(client.updates.isEmpty)
+        XCTAssertEqual(client.ends.last?.activityID, activityID)
+        XCTAssertTrue(client.activeActivityIDs.isEmpty)
+    }
+
     func testStaleCleanupFailureDoesNotCreateDuplicateActivity() async {
         let client = FakeReadingLiveActivityClient()
         client.activeActivityIDs = ["stale"]
@@ -104,6 +150,23 @@ final class ReadingLiveActivityCoordinatorTests: XCTestCase {
 
         XCTAssertTrue(client.requests.isEmpty)
         XCTAssertEqual(client.activeActivityIDs, ["stale"])
+    }
+
+    func testEndFailureIsContained() async throws {
+        let client = FakeReadingLiveActivityClient()
+        let coordinator = ReadingLiveActivityCoordinator(client: client)
+
+        await coordinator.sync(
+            title: "Book",
+            progression: 0.8,
+            startedAt: Date(timeIntervalSince1970: 1_000)
+        )
+        let activityID = try XCTUnwrap(client.activeActivityIDs.first)
+        client.failEndIDs = [activityID]
+
+        await coordinator.end()
+
+        XCTAssertEqual(client.activeActivityIDs, [activityID])
     }
 
     func testEndClearsActiveReadingActivity() async {
