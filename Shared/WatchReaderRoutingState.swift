@@ -7,10 +7,10 @@ enum WatchReaderDestination: String, Sendable {
 
 /// Pure routing state shared by the Watch target and iOS unit tests.
 ///
-/// A Reader being "ready" is only meaningful while the transport path that
-/// produced that status is still usable. In particular, every iPad command
-/// still travels Watch -> iPhone before the iPhone can relay it over LAN, so a
-/// lost WCSession invalidates both cached Reader-ready states.
+/// Reader readiness is owned by live status responses. A lost Watch -> iPhone
+/// transport invalidates both cached Reader-ready states because the iPad relay
+/// also depends on that transport. Per-command delivery failures are tracked
+/// separately in `WatchCommandOutcomeState` and must not mutate this state.
 struct WatchReaderRoutingState: Equatable, Sendable {
     var iPhoneReady: Bool
     var iPadReady: Bool
@@ -37,9 +37,9 @@ struct WatchReaderRoutingState: Equatable, Sendable {
         activeReaderCount > 0
     }
 
-    /// Optional destination errors stay hidden while another Reader remains
-    /// reachable. Once no Reader can respond, prefer the iPhone/transport error
-    /// because the iPad relay also depends on that transport.
+    /// Optional status-path errors stay hidden while another Reader remains
+    /// reachable. Command-level delivery errors are handled separately so a
+    /// ready status cannot swallow a page-turn failure.
     var visibleError: String {
         guard !readerReady else { return "" }
         if !iPhoneError.isEmpty { return iPhoneError }
@@ -51,25 +51,5 @@ struct WatchReaderRoutingState: Equatable, Sendable {
         iPadReady = false
         iPhoneError = error
         iPadError = ""
-    }
-
-    mutating func invalidateForSendFailure(
-        to destination: WatchReaderDestination,
-        transportReachable: Bool,
-        error: String
-    ) {
-        guard transportReachable else {
-            invalidateForTransportFailure(error: error)
-            return
-        }
-
-        switch destination {
-        case .iPhone:
-            iPhoneReady = false
-            iPhoneError = error
-        case .iPad:
-            iPadReady = false
-            iPadError = error
-        }
     }
 }
