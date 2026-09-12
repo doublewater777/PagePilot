@@ -80,10 +80,13 @@ struct WatchCommandOutcomeState: Equatable, Sendable {
 
     var commandError: String {
         guard allRoutesFailed else { return "" }
-        if !iPhoneOutcome.failureMessage.isEmpty {
-            return iPhoneOutcome.failureMessage
+        // Prefer the iPad message when present because relay-specific errors
+        // such as discovery timeout are usually more actionable than an empty
+        // or generic local-iPhone failure in iPad-only reading.
+        if !iPadOutcome.failureMessage.isEmpty {
+            return iPadOutcome.failureMessage
         }
-        return iPadOutcome.failureMessage
+        return iPhoneOutcome.failureMessage
     }
 
     func visibleError(
