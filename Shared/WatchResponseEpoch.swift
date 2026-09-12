@@ -1,6 +1,6 @@
 import Foundation
 
-enum WatchResponseKind: Sendable {
+enum WatchResponseKind: Equatable, Sendable {
     case status
     case command
 }
