@@ -33,6 +33,21 @@ enum WatchReaderAvailabilityPolicy {
     }
 }
 
+enum PagePilotLANRecoveryAction: Equatable {
+    case reresolveKnownServices
+    case startBrowsing
+    case continueBrowsing
+}
+
+enum PagePilotLANRecoveryPolicy {
+    static func action(knownServiceCount: Int, isBrowsing: Bool) -> PagePilotLANRecoveryAction {
+        if knownServiceCount > 0 {
+            return .reresolveKnownServices
+        }
+        return isBrowsing ? .continueBrowsing : .startBrowsing
+    }
+}
+
 private final class PagePilotLANBrowser: NSObject, NetServiceBrowserDelegate, NetServiceDelegate {
     static let shared = PagePilotLANBrowser()
 
@@ -44,6 +59,7 @@ private final class PagePilotLANBrowser: NSObject, NetServiceBrowserDelegate, Ne
     private var pendingCompletions: [(URL?) -> Void] = []
     private var isBrowsing = false
     private var fallbackWasInvalidated = false
+    private var lastResolvedServiceName: String?
 
     private(set) var lastKnownEndpoint: URL?
 
@@ -68,14 +84,15 @@ private final class PagePilotLANBrowser: NSObject, NetServiceBrowserDelegate, Ne
             self.startBrowsingIfNeeded()
             self.pendingCompletions.append(completion)
 
-            // Prefer Bonjour (works for localized device names). Only after a
-            // short wait, try the legacy hostname fallback — returning it
-            // immediately used to race ahead of real discovery and fail hard
-            // on devices not named "iPad".
+            // Prefer Bonjour (works for localized device names and dynamic
+            // ports). Only use the legacy iPad.local fallback when no PagePilot
+            // service is already known; a known service should be re-resolved
+            // instead of racing to a possibly wrong host/port.
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
                 guard let self else { return }
                 guard self.lastKnownEndpoint == nil else { return }
                 guard !self.pendingCompletions.isEmpty else { return }
+                guard self.services.isEmpty else { return }
                 if let fallbackEndpoint = self.fallbackEndpoint, !self.fallbackWasInvalidated {
                     print("PagePilotLANBrowser: Bonjour slow, trying fallback \(fallbackEndpoint.absoluteString)")
                     // Keep browsing; if Bonjour later resolves, lastKnownEndpoint updates.
@@ -106,7 +123,7 @@ private final class PagePilotLANBrowser: NSObject, NetServiceBrowserDelegate, Ne
         }
     }
 
-    func invalidate(_ endpoint: URL) {
+    func invalidate(_ endpoint: URL, completion: (() -> Void)? = nil) {
         DispatchQueue.main.async {
             if self.fallbackEndpoint == endpoint {
                 self.fallbackWasInvalidated = true
@@ -115,7 +132,29 @@ private final class PagePilotLANBrowser: NSObject, NetServiceBrowserDelegate, Ne
                 print("PagePilotLANBrowser: invalidating endpoint \(endpoint.absoluteString)")
                 self.lastKnownEndpoint = nil
             }
-            self.startBrowsingIfNeeded()
+
+            self.recoverAfterInvalidation()
+            completion?()
+        }
+    }
+
+    private func recoverAfterInvalidation() {
+        switch PagePilotLANRecoveryPolicy.action(
+            knownServiceCount: services.count,
+            isBrowsing: isBrowsing
+        ) {
+        case .reresolveKnownServices:
+            print("PagePilotLANBrowser: re-resolving \(services.count) known service(s)")
+            for service in services {
+                service.delegate = self
+                service.resolve(withTimeout: 2.0)
+            }
+
+        case .startBrowsing:
+            startBrowsingIfNeeded()
+
+        case .continueBrowsing:
+            break
         }
     }
 
@@ -146,11 +185,18 @@ private final class PagePilotLANBrowser: NSObject, NetServiceBrowserDelegate, Ne
         guard let endpoint = endpointURL(for: sender) else { return }
         print("PagePilotLANBrowser: resolved \(sender.name) -> \(endpoint.absoluteString)")
         lastKnownEndpoint = endpoint
+        lastResolvedServiceName = sender.name
         flushPendingIfNeeded(with: endpoint)
     }
 
     func netService(_ sender: NetService, didNotResolve errorDict: [String : NSNumber]) {
         print("PagePilotLANBrowser: failed to resolve \(sender.name): \(errorDict)")
+        services.removeAll { $0 === sender }
+        if lastResolvedServiceName == sender.name {
+            lastKnownEndpoint = nil
+            lastResolvedServiceName = nil
+        }
+        startBrowsingIfNeeded()
     }
 
     func netServiceBrowser(_ browser: NetServiceBrowser, didNotSearch errorDict: [String : NSNumber]) {
@@ -165,9 +211,9 @@ private final class PagePilotLANBrowser: NSObject, NetServiceBrowserDelegate, Ne
 
     func netServiceBrowser(_ browser: NetServiceBrowser, didRemove service: NetService, moreComing: Bool) {
         services.removeAll { $0 === service || $0.name == service.name }
-        if let host = lastKnownEndpoint?.host,
-           host == service.hostName || host.hasPrefix(service.name) {
+        if lastResolvedServiceName == service.name {
             lastKnownEndpoint = nil
+            lastResolvedServiceName = nil
         }
     }
 
@@ -542,17 +588,20 @@ final class WatchPageTurnService: NSObject, ObservableObject {
 
             URLSession.shared.dataTask(with: request) { data, response, error in
                 if let error {
-                    PagePilotLANBrowser.shared.invalidate(endpoint)
                     if retryAfterInvalidation {
-                        self.relayRequestToLAN(
-                            path: path,
-                            method: method,
-                            body: body,
-                            retryAfterInvalidation: false,
-                            replyHandler: replyHandler
-                        )
+                        PagePilotLANBrowser.shared.invalidate(endpoint) {
+                            self.relayRequestToLAN(
+                                path: path,
+                                method: method,
+                                body: body,
+                                retryAfterInvalidation: false,
+                                replyHandler: replyHandler
+                            )
+                        }
                         return
                     }
+
+                    PagePilotLANBrowser.shared.invalidate(endpoint)
                     replyHandler?(self.errorPayload(
                         route: WatchPageTurnRoute.iPhoneRelay,
                         code: WatchPageTurnErrorCode.relayTimeout,
