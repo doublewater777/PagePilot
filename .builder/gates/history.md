@@ -87,3 +87,13 @@ Weakest assumption: the outcome-first copy is enough to explain the Watch contro
 Decision: Lead with “Turn Pages with Apple Watch” and mention the Live Activity as the launch path.
 Next stage: 10-growth-channel
 Loop-back: Rewrite again only if real first-reading feedback shows the hint is still interpreted as setup work.
+
+## 2026-09-13 - 01-hypothesis (Watch app install guidance)
+
+Cycle: 2026-09-13-watch-app-install-guidance
+Verdict: pass
+Evidence: Focused tests pass 3/3 (URL constant, install-state action boundary, five-language localization); the full iPhone 17 simulator suite passes 245/245; the iPad mini build succeeds.
+Weakest assumption: the bridge:// scheme opens the iPhone Watch app on shipping iOS versions without a query-scheme declaration.
+Decision: offer a primary "Open Watch App" action in the install-state Reader tip and keep the existing skip path.
+Next stage: 10-growth-channel
+Loop-back: Revisit if device testing shows bridge:// is blocked or users still reach the Smart Stack fallback before installing.

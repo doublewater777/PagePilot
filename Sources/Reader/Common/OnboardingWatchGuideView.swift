@@ -9,6 +9,7 @@ import SwiftUI
 struct OnboardingWatchGuideView: View {
     @ObservedObject var service: WatchPageTurnService
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.openURL) private var openURL
     @State private var isCollapsed: Bool
     @State private var isPulsing = false
 
@@ -67,10 +68,21 @@ struct OnboardingWatchGuideView: View {
                 }
             }
 
-            Button("onboarding_watch_skip") {
-                collapse()
+            HStack(spacing: 16) {
+                if service.watchAvailability == .appNotInstalled {
+                    Button("onboarding_watch_install_action") {
+                        openURL(WatchPageTurnService.watchAppURL)
+                    }
+                    .font(.subheadline.weight(.semibold))
+                    .buttonStyle(.borderedProminent)
+                    .tint(AppColors.accentBlue)
+                }
+
+                Button("onboarding_watch_skip") {
+                    collapse()
+                }
+                .font(.subheadline.weight(.semibold))
             }
-            .font(.subheadline.weight(.semibold))
             .frame(maxWidth: .infinity, alignment: .trailing)
         }
         .padding(18)

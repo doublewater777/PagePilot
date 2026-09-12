@@ -10,3 +10,4 @@
 | 2026-09-13-watch-cold-start-control | Watch cold-start control | completed | 01-hypothesis | pass | clarify connection state and preserve one early page turn | verify immediate tap behavior on a paired Watch |
 | 2026-09-13-reading-live-activity-background | Reading Live Activity background retention | completed | 01-hypothesis | pass | keep the visual Reader activity visible while the app is backgrounded | verify lock-screen and Reader-exit behavior on device |
 | 2026-09-13-ipad-reader-watch-hint | iPad Reader Watch hint | completed | 01-hypothesis | pass | explain the current Watch Live Activity flow in the first Reader hint | observe whether first-reading confusion drops |
+| 2026-09-13-watch-app-install-guidance | Watch app install guidance | completed | 01-hypothesis | pass | open the iPhone Watch app from the install-state Reader tip | verify the bridge:// open path on a paired device |

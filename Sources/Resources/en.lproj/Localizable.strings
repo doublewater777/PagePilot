@@ -62,6 +62,7 @@
 "onboarding_watch_unpaired_detail" = "After pairing a Watch, continue anytime from Watch Settings.";
 "onboarding_watch_install_title" = "Install PagePilot on Apple Watch";
 "onboarding_watch_install_detail" = "Install it from the iPhone Watch app, then open PagePilot on your Watch.";
+"onboarding_watch_install_action" = "Open Watch App";
 "onboarding_watch_open_title" = "Open PagePilot on Your Watch";
 "onboarding_watch_open_detail" = "Keep the Reader open, then send one page turn from your Watch.";
 "onboarding_watch_ready_title" = "Turn a Page from Your Wrist";

@@ -62,6 +62,7 @@
 "onboarding_watch_unpaired_detail" = "Après avoir jumelé une Apple Watch, vous pourrez reprendre à tout moment depuis les réglages de l’Apple Watch.";
 "onboarding_watch_install_title" = "Installer PagePilot sur l’Apple Watch";
 "onboarding_watch_install_detail" = "Installez l’app depuis l’app Watch sur votre iPhone, puis ouvrez PagePilot sur votre montre.";
+"onboarding_watch_install_action" = "Ouvrir l’app Watch";
 "onboarding_watch_open_title" = "Ouvrir PagePilot sur votre Apple Watch";
 "onboarding_watch_open_detail" = "Gardez le lecteur ouvert, puis envoyez un changement de page depuis votre Apple Watch.";
 "onboarding_watch_ready_title" = "Tournez une page depuis votre poignet";

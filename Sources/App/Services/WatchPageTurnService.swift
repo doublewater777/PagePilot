@@ -709,6 +709,9 @@ private final class PagePilotLANBrowser: NSObject, NetServiceBrowserDelegate, Ne
 final class WatchPageTurnService: NSObject, ObservableObject {
     static let shared = WatchPageTurnService()
 
+    /// URL of the iPhone Watch app, used to guide users who need to install PagePilot on a paired Watch.
+    static let watchAppURL = URL(string: "bridge://")!
+
     @Published var isWatchConnected: Bool = false
     @Published var isLANWatchConnected: Bool = false
 

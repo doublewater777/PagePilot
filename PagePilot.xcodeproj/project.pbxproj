@@ -174,6 +174,7 @@
 		D1824AD20F0D35F1615005FF /* CloudSync.strings in Resources */ = {isa = PBXBuildFile; fileRef = 4A9EC3016F806A8A0F4C3403 /* CloudSync.strings */; };
 		D1D665D751732216E7B60DA1 /* WatchRemoteApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 459015DF4D10FB8B005B017F /* WatchRemoteApp.swift */; };
 		D4B87AA7CE2AACF6ECD59943 /* WatchLiveActivityLaunchConfigurationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CBEC392EAC41A91039163F9 /* WatchLiveActivityLaunchConfigurationTests.swift */; };
+		D6738C6EE4C411EA2F5B171D /* WatchInstallGuidanceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1E70C2C2D9EA67E7689EA78 /* WatchInstallGuidanceTests.swift */; };
 		D7715C1E3ADD822225719100 /* DeviceTransferView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93CF2A56FBD82A6F904200EF /* DeviceTransferView.swift */; };
 		D865BF6B7BACF7D438386FBB /* ReadingGoalPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0ED27CEBD2A15AD49DD4B827 /* ReadingGoalPolicy.swift */; };
 		DC01982A5EC812A5EF23999C /* PagePilotLANRecoveryPolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A0581B77EBA4D5D16B6338A /* PagePilotLANRecoveryPolicyTests.swift */; };
@@ -400,6 +401,7 @@
 		9D79558D4CE4EE845D69C666 /* es */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = es; path = es.lproj/Localizable.strings; sourceTree = "<group>"; };
 		9E185B7E3FF85537522C9B4D /* ReviewPromptManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewPromptManagerTests.swift; sourceTree = "<group>"; };
 		9F92F5C28724E791247D6C82 /* WatchReadingSessionContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchReadingSessionContext.swift; sourceTree = "<group>"; };
+		A1E70C2C2D9EA67E7689EA78 /* WatchInstallGuidanceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchInstallGuidanceTests.swift; sourceTree = "<group>"; };
 		A33D409DB99AC381A7EFD485 /* WatchReaderRoutingState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchReaderRoutingState.swift; sourceTree = "<group>"; };
 		A35075A58ACA6ECEA83B4DFB /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/CloudSync.strings"; sourceTree = "<group>"; };
 		A6AC248A9B9658B0C30B8B35 /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = de; path = de.lproj/Onboarding.strings; sourceTree = "<group>"; };
@@ -746,6 +748,7 @@
 				5A2B024C6E0C203340406810 /* VolumeKeyDecisionPolicyTests.swift */,
 				F013C86847FD1A4288DDB2F1 /* WatchColdStartCommandBufferTests.swift */,
 				41BC0A1B066A7E177AC73760 /* WatchCommandOutcomeStateTests.swift */,
+				A1E70C2C2D9EA67E7689EA78 /* WatchInstallGuidanceTests.swift */,
 				0CBEC392EAC41A91039163F9 /* WatchLiveActivityLaunchConfigurationTests.swift */,
 				A70B6F51A670FE56687BE434 /* WatchReaderRoutingStateTests.swift */,
 				3355B5CC315342AB40FD4482 /* WatchResponseEpochTests.swift */,
@@ -1337,6 +1340,7 @@
 				2A443037E6BEA9CF4960F1D4 /* VolumeKeyDecisionPolicyTests.swift in Sources */,
 				6AF5A68CF77B93BAC788BB61 /* WatchColdStartCommandBufferTests.swift in Sources */,
 				22840EACD39FC157B5217F99 /* WatchCommandOutcomeStateTests.swift in Sources */,
+				D6738C6EE4C411EA2F5B171D /* WatchInstallGuidanceTests.swift in Sources */,
 				D4B87AA7CE2AACF6ECD59943 /* WatchLiveActivityLaunchConfigurationTests.swift in Sources */,
 				6656F440537A4418DAB24336 /* WatchReaderRoutingStateTests.swift in Sources */,
 				7D29598F230D246DFF097971 /* WatchResponseEpochTests.swift in Sources */,
