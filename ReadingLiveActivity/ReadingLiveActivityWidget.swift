@@ -14,7 +14,8 @@ struct PagePilotReadingLiveActivityBundle: WidgetBundle {
     var body: some Widget {
         if #available(iOSApplicationExtension 18.0, *) {
             ReadingLiveActivityWidget()
-        } else {
+        }
+        if #unavailable(iOSApplicationExtension 18.0) {
             LegacyReadingLiveActivityWidget()
         }
     }
