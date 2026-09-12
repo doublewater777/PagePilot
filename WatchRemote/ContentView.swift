@@ -14,12 +14,7 @@ struct ContentView: View {
     private let speedWindow: TimeInterval = 0.3
 
     private var isConnected: Bool {
-        switch connectivityManager.controlTarget {
-        case .iPad:
-            return connectivityManager.isRelayConnected
-        case .iPhone:
-            return connectivityManager.isReachable
-        }
+        connectivityManager.isReachable
     }
 
     private var guidanceKey: String? {
@@ -27,21 +22,11 @@ struct ContentView: View {
             return nil
         }
         if !isConnected {
-            switch connectivityManager.controlTarget {
-            case .iPad:
-                return connectivityManager.isReachable ? "watch.hint.openIPad" : "watch.hint.openIPhone"
-            case .iPhone:
-                return "watch.hint.openIPhone"
-            }
+            return "watch.hint.openIPhone"
         }
-        if connectivityManager.hasReceivedStatus && !connectivityManager.readerReady {
-            switch connectivityManager.controlTarget {
-            case .iPad:
-                return "watch.hint.openBookIPad"
-            case .iPhone:
-                return "watch.hint.openBookIPhone"
-            }
-        }
+        // Reader routing is automatic now. Avoid telling the user to choose a
+        // specific device when neither Reader is active; the page-turn buttons
+        // remain available and the next status poll will pick up either device.
         return nil
     }
 
