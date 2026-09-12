@@ -74,16 +74,25 @@ struct WatchCommandOutcomeState: Equatable, Sendable {
         iPhoneOutcome.isFinished && iPadOutcome.isFinished
     }
 
+    var allRoutesFailed: Bool {
+        commandID != nil && allRoutesFinished && !hasSucceeded
+    }
+
     var commandError: String {
-        guard commandID != nil, allRoutesFinished, !hasSucceeded else { return "" }
+        guard allRoutesFailed else { return "" }
         if !iPhoneOutcome.failureMessage.isEmpty {
             return iPhoneOutcome.failureMessage
         }
         return iPadOutcome.failureMessage
     }
 
-    func visibleError(fallback routingError: String) -> String {
-        commandError.isEmpty ? routingError : commandError
+    func visibleError(
+        fallback routingError: String,
+        defaultCommandError: String = ""
+    ) -> String {
+        guard allRoutesFailed else { return routingError }
+        if !commandError.isEmpty { return commandError }
+        return defaultCommandError.isEmpty ? routingError : defaultCommandError
     }
 
     private mutating func set(
