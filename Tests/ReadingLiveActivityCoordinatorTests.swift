@@ -71,6 +71,23 @@ final class ReadingLiveActivityCoordinatorTests: XCTestCase {
         XCTAssertEqual(client.activeActivityIDs.count, 1)
     }
 
+    func testOldSessionEndDoesNotEndNewSession() async throws {
+        let client = FakeReadingLiveActivityClient()
+        let coordinator = ReadingLiveActivityCoordinator(client: client)
+        let firstStartedAt = Date(timeIntervalSince1970: 1_000)
+        let secondStartedAt = Date(timeIntervalSince1970: 2_000)
+
+        await coordinator.sync(title: "First", progression: 0.2, startedAt: firstStartedAt)
+        await coordinator.sync(title: "Second", progression: 0.6, startedAt: secondStartedAt)
+        let secondActivityID = try XCTUnwrap(client.activeActivityIDs.first)
+        let endCountAfterSwitch = client.ends.count
+
+        await coordinator.end(startedAt: firstStartedAt)
+
+        XCTAssertEqual(client.ends.count, endCountAfterSwitch)
+        XCTAssertEqual(client.activeActivityIDs, [secondActivityID])
+    }
+
     func testReconcilesActivityLeftByPreviousProcessBeforeStarting() async {
         let client = FakeReadingLiveActivityClient()
         client.activeActivityIDs = ["stale"]
@@ -129,7 +146,7 @@ final class ReadingLiveActivityCoordinatorTests: XCTestCase {
         client.failUpdateIDs = [activityID]
 
         await coordinator.sync(title: "Book", progression: 0.4, startedAt: startedAt)
-        await coordinator.end()
+        await coordinator.end(startedAt: startedAt)
 
         XCTAssertTrue(client.updates.isEmpty)
         XCTAssertEqual(client.ends.last?.activityID, activityID)
@@ -155,16 +172,17 @@ final class ReadingLiveActivityCoordinatorTests: XCTestCase {
     func testEndFailureIsContained() async throws {
         let client = FakeReadingLiveActivityClient()
         let coordinator = ReadingLiveActivityCoordinator(client: client)
+        let startedAt = Date(timeIntervalSince1970: 1_000)
 
         await coordinator.sync(
             title: "Book",
             progression: 0.8,
-            startedAt: Date(timeIntervalSince1970: 1_000)
+            startedAt: startedAt
         )
         let activityID = try XCTUnwrap(client.activeActivityIDs.first)
         client.failEndIDs = [activityID]
 
-        await coordinator.end()
+        await coordinator.end(startedAt: startedAt)
 
         XCTAssertEqual(client.activeActivityIDs, [activityID])
     }
@@ -175,7 +193,7 @@ final class ReadingLiveActivityCoordinatorTests: XCTestCase {
         let startedAt = Date(timeIntervalSince1970: 1_000)
 
         await coordinator.sync(title: "Book", progression: 0.8, startedAt: startedAt)
-        await coordinator.end()
+        await coordinator.end(startedAt: startedAt)
 
         XCTAssertEqual(client.ends.count, 1)
         XCTAssertEqual(client.ends[0].state?.title, "Book")
