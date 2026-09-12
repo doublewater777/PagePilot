@@ -76,6 +76,8 @@ final class ActivityKitReadingLiveActivityClient: ReadingLiveActivityClient {
 final class ReadingLiveActivityCoordinator {
     static let shared = ReadingLiveActivityCoordinator()
 
+    private static let progressionUpdateThreshold = 0.001
+
     private struct Session: Equatable {
         let id: String
         let startedAt: Date
@@ -106,11 +108,15 @@ final class ReadingLiveActivityCoordinator {
         let progression = min(max(progression, 0.0), 1.0)
 
         if var current = session, current.startedAt == startedAt {
+            let shouldPublishUpdate = current.title != title
+                || abs(current.progression - progression) >= Self.progressionUpdateThreshold
+
             current.title = title
             current.progression = progression
             session = current
 
             if let activityID {
+                guard shouldPublishUpdate else { return }
                 do {
                     try await client.update(activityID: activityID, state: current.state)
                 } catch {
