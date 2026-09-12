@@ -1,44 +1,65 @@
 import Foundation
 
+enum WatchResponseKind: Sendable {
+    case status
+    case command
+}
+
 struct WatchResponseToken: Equatable, Sendable {
     let transportEpoch: UInt64
     let requestSequence: UInt64
     let destination: WatchReaderDestination
+    let kind: WatchResponseKind
 }
 
 /// Tracks both the lifetime of the Watch -> iPhone transport and the newest
-/// real-time request for each Reader destination.
+/// real-time request for each Reader destination and request kind.
 ///
 /// Transport invalidation rejects every callback from the previous WCSession
-/// lifetime. Within one lifetime, only the newest request for a destination may
-/// update readiness, so an older slow reply cannot overwrite a newer status.
+/// lifetime. Within one lifetime, only the newest request of the same kind for
+/// a destination may update state. Status polling therefore cannot invalidate
+/// an in-flight page-turn command (or vice versa).
 struct WatchResponseEpoch: Equatable, Sendable {
     private(set) var value: UInt64 = 0
-    private var iPhoneSequence: UInt64 = 0
-    private var iPadSequence: UInt64 = 0
+    private var iPhoneStatusSequence: UInt64 = 0
+    private var iPhoneCommandSequence: UInt64 = 0
+    private var iPadStatusSequence: UInt64 = 0
+    private var iPadCommandSequence: UInt64 = 0
 
-    mutating func beginRequest(to destination: WatchReaderDestination) -> WatchResponseToken {
+    mutating func beginRequest(
+        to destination: WatchReaderDestination,
+        kind: WatchResponseKind
+    ) -> WatchResponseToken {
         let sequence: UInt64
-        switch destination {
-        case .iPhone:
-            iPhoneSequence &+= 1
-            sequence = iPhoneSequence
-        case .iPad:
-            iPadSequence &+= 1
-            sequence = iPadSequence
+        switch (destination, kind) {
+        case (.iPhone, .status):
+            iPhoneStatusSequence &+= 1
+            sequence = iPhoneStatusSequence
+        case (.iPhone, .command):
+            iPhoneCommandSequence &+= 1
+            sequence = iPhoneCommandSequence
+        case (.iPad, .status):
+            iPadStatusSequence &+= 1
+            sequence = iPadStatusSequence
+        case (.iPad, .command):
+            iPadCommandSequence &+= 1
+            sequence = iPadCommandSequence
         }
 
         return WatchResponseToken(
             transportEpoch: value,
             requestSequence: sequence,
-            destination: destination
+            destination: destination,
+            kind: kind
         )
     }
 
     mutating func invalidateTransport() {
         value &+= 1
-        iPhoneSequence = 0
-        iPadSequence = 0
+        iPhoneStatusSequence = 0
+        iPhoneCommandSequence = 0
+        iPadStatusSequence = 0
+        iPadCommandSequence = 0
     }
 
     func belongsToCurrentTransport(_ token: WatchResponseToken) -> Bool {
@@ -50,11 +71,25 @@ struct WatchResponseEpoch: Equatable, Sendable {
             return false
         }
 
-        switch token.destination {
-        case .iPhone:
-            return token.requestSequence == iPhoneSequence
-        case .iPad:
-            return token.requestSequence == iPadSequence
+        return token.requestSequence == currentSequence(
+            for: token.destination,
+            kind: token.kind
+        )
+    }
+
+    private func currentSequence(
+        for destination: WatchReaderDestination,
+        kind: WatchResponseKind
+    ) -> UInt64 {
+        switch (destination, kind) {
+        case (.iPhone, .status):
+            return iPhoneStatusSequence
+        case (.iPhone, .command):
+            return iPhoneCommandSequence
+        case (.iPad, .status):
+            return iPadStatusSequence
+        case (.iPad, .command):
+            return iPadCommandSequence
         }
     }
 }
