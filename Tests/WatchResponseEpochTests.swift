@@ -64,4 +64,28 @@ final class WatchResponseEpochTests: XCTestCase {
         XCTAssertFalse(epoch.accepts(olderCommand, transportReachable: true))
         XCTAssertTrue(epoch.accepts(newerCommand, transportReachable: true))
     }
+
+    func testOnlyStatusRepliesCarryAuthoritativeReaderState() {
+        XCTAssertTrue(WatchResponseKind.status.carriesAuthoritativeReaderState)
+        XCTAssertFalse(WatchResponseKind.command.carriesAuthoritativeReaderState)
+    }
+
+    func testLateCommandSuccessCannotPromoteReaderAfterNewerNotReadyStatus() {
+        var epoch = WatchResponseEpoch()
+        let command = epoch.beginRequest(to: .iPad, kind: .command)
+        let status = epoch.beginRequest(to: .iPad, kind: .status)
+        var readerReady = true
+
+        if epoch.accepts(status, transportReachable: true),
+           status.kind.carriesAuthoritativeReaderState {
+            readerReady = false
+        }
+
+        XCTAssertTrue(epoch.accepts(command, transportReachable: true))
+        if command.kind.carriesAuthoritativeReaderState {
+            readerReady = true
+        }
+
+        XCTAssertFalse(readerReady)
+    }
 }
