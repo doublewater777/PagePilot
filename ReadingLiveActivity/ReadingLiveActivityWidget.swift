@@ -177,11 +177,12 @@ private func percentText(_ value: Double) -> String {
 }
 
 private extension ActivityConfiguration {
+    @WidgetConfigurationBuilder
     func pagePilotSupplementalActivityFamilies() -> some WidgetConfiguration {
         if #available(iOSApplicationExtension 18.0, *) {
-            return supplementalActivityFamilies([.small])
+            supplementalActivityFamilies([.small])
         } else {
-            return self
+            self
         }
     }
 }
