@@ -8,6 +8,7 @@ final class WatchCommandOutcomeStateTests: XCTestCase {
         state.recordFailure(commandID: "cmd", destination: .iPad, error: "Send failed")
 
         XCTAssertFalse(state.allRoutesFinished)
+        XCTAssertFalse(state.allRoutesFailed)
         XCTAssertEqual(state.commandError, "")
     }
 
@@ -19,6 +20,7 @@ final class WatchCommandOutcomeStateTests: XCTestCase {
 
         XCTAssertTrue(state.allRoutesFinished)
         XCTAssertTrue(state.hasSucceeded)
+        XCTAssertFalse(state.allRoutesFailed)
         XCTAssertEqual(state.commandError, "")
     }
 
@@ -35,9 +37,16 @@ final class WatchCommandOutcomeStateTests: XCTestCase {
             iPadError: ""
         )
 
+        XCTAssertTrue(state.allRoutesFailed)
         XCTAssertEqual(routing.visibleError, "")
         XCTAssertEqual(state.commandError, "Send failed")
-        XCTAssertEqual(state.visibleError(fallback: routing.visibleError), "Send failed")
+        XCTAssertEqual(
+            state.visibleError(
+                fallback: routing.visibleError,
+                defaultCommandError: "Generic failure"
+            ),
+            "Send failed"
+        )
     }
 
     func testStatusFallbackCannotClearCompletedCommandFailure() {
@@ -46,8 +55,34 @@ final class WatchCommandOutcomeStateTests: XCTestCase {
         state.recordFailure(commandID: "cmd", destination: .iPhone, error: "Send failed")
         state.recordFailure(commandID: "cmd", destination: .iPad, error: "")
 
-        XCTAssertEqual(state.visibleError(fallback: ""), "Send failed")
-        XCTAssertEqual(state.visibleError(fallback: "status recovered"), "Send failed")
+        XCTAssertEqual(
+            state.visibleError(fallback: "", defaultCommandError: "Generic failure"),
+            "Send failed"
+        )
+        XCTAssertEqual(
+            state.visibleError(
+                fallback: "status recovered",
+                defaultCommandError: "Generic failure"
+            ),
+            "Send failed"
+        )
+    }
+
+    func testBothEmptyFailureMessagesUseDefaultCommandError() {
+        var state = WatchCommandOutcomeState()
+        state.begin(commandID: "cmd")
+        state.recordFailure(commandID: "cmd", destination: .iPhone, error: "")
+        state.recordFailure(commandID: "cmd", destination: .iPad, error: "")
+
+        XCTAssertTrue(state.allRoutesFailed)
+        XCTAssertEqual(state.commandError, "")
+        XCTAssertEqual(
+            state.visibleError(
+                fallback: "",
+                defaultCommandError: "Generic failure"
+            ),
+            "Generic failure"
+        )
     }
 
     func testBeginningNextCommandClearsPreviousCommandError() {
@@ -61,6 +96,7 @@ final class WatchCommandOutcomeStateTests: XCTestCase {
 
         XCTAssertEqual(state.commandError, "")
         XCTAssertFalse(state.allRoutesFinished)
+        XCTAssertFalse(state.allRoutesFailed)
     }
 
     func testLateOutcomeFromPreviousCommandIsIgnored() {
