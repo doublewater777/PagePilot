@@ -48,6 +48,14 @@ enum PagePilotLANRecoveryPolicy {
     }
 }
 
+enum PagePilotLANResolveRetryPolicy {
+    static let maxImmediateRetries = 2
+
+    static func shouldRetry(afterFailureCount failureCount: Int) -> Bool {
+        failureCount <= maxImmediateRetries
+    }
+}
+
 private final class PagePilotLANBrowser: NSObject, NetServiceBrowserDelegate, NetServiceDelegate {
     static let shared = PagePilotLANBrowser()
 
@@ -56,10 +64,12 @@ private final class PagePilotLANBrowser: NSObject, NetServiceBrowserDelegate, Ne
     private let fallbackEndpoint = URL(string: "http://iPad.local:61482")
     private let browser = NetServiceBrowser()
     private var services: [NetService] = []
+    private var resolvingServices: Set<ObjectIdentifier> = []
+    private var resolveFailureCounts: [ObjectIdentifier: Int] = [:]
     private var pendingCompletions: [(URL?) -> Void] = []
     private var isBrowsing = false
     private var fallbackWasInvalidated = false
-    private var lastResolvedServiceName: String?
+    private var lastResolvedServiceID: ObjectIdentifier?
 
     private(set) var lastKnownEndpoint: URL?
 
@@ -82,6 +92,12 @@ private final class PagePilotLANBrowser: NSObject, NetServiceBrowserDelegate, Ne
             }
 
             self.startBrowsingIfNeeded()
+            if !self.services.isEmpty {
+                // A previous resolve may have timed out while the browser still
+                // knows the service is present. Every fresh endpoint request is
+                // therefore another opportunity to resolve that same service.
+                self.resolveKnownServices()
+            }
             self.pendingCompletions.append(completion)
 
             // Prefer Bonjour (works for localized device names and dynamic
@@ -131,6 +147,7 @@ private final class PagePilotLANBrowser: NSObject, NetServiceBrowserDelegate, Ne
             if self.lastKnownEndpoint == endpoint {
                 print("PagePilotLANBrowser: invalidating endpoint \(endpoint.absoluteString)")
                 self.lastKnownEndpoint = nil
+                self.lastResolvedServiceID = nil
             }
 
             self.recoverAfterInvalidation()
@@ -145,16 +162,60 @@ private final class PagePilotLANBrowser: NSObject, NetServiceBrowserDelegate, Ne
         ) {
         case .reresolveKnownServices:
             print("PagePilotLANBrowser: re-resolving \(services.count) known service(s)")
-            for service in services {
-                service.delegate = self
-                service.resolve(withTimeout: 2.0)
-            }
+            resolveKnownServices()
 
         case .startBrowsing:
             startBrowsingIfNeeded()
 
         case .continueBrowsing:
             break
+        }
+    }
+
+    private func resolveKnownServices() {
+        for service in services {
+            resolve(service)
+        }
+    }
+
+    private func resolve(_ service: NetService) {
+        guard services.contains(where: { $0 === service }) else { return }
+        let serviceID = ObjectIdentifier(service)
+        guard !resolvingServices.contains(serviceID) else { return }
+
+        resolvingServices.insert(serviceID)
+        service.delegate = self
+        service.resolve(withTimeout: 2.0)
+    }
+
+    private func handleResolveFailure(for service: NetService, reason: String) {
+        let serviceID = ObjectIdentifier(service)
+        resolvingServices.remove(serviceID)
+        guard services.contains(where: { $0 === service }) else { return }
+
+        if lastResolvedServiceID == serviceID {
+            lastKnownEndpoint = nil
+            lastResolvedServiceID = nil
+        }
+
+        let failureCount = (resolveFailureCounts[serviceID] ?? 0) + 1
+        resolveFailureCounts[serviceID] = failureCount
+        print("PagePilotLANBrowser: resolve failure for \(service.name) #\(failureCount): \(reason)")
+
+        guard PagePilotLANResolveRetryPolicy.shouldRetry(afterFailureCount: failureCount) else {
+            // Keep the service in the known set. A future endpoint() call can
+            // try resolving it again without waiting for another didFind event.
+            return
+        }
+
+        let delay = 0.25 * Double(failureCount)
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
+            guard let self,
+                  self.services.contains(where: { $0 === service })
+            else {
+                return
+            }
+            self.resolve(service)
         }
     }
 
@@ -175,28 +236,58 @@ private final class PagePilotLANBrowser: NSObject, NetServiceBrowserDelegate, Ne
     func netServiceBrowser(_ browser: NetServiceBrowser, didFind service: NetService, moreComing: Bool) {
         guard service.name.hasPrefix("PagePilot-iPad") else { return }
         print("PagePilotLANBrowser: found service \(service.name)")
-        services.removeAll { $0 === service || $0.name == service.name }
-        services.append(service)
-        service.delegate = self
-        service.resolve(withTimeout: 2.0)
+
+        // Replace only older objects representing the same advertised service.
+        // Late callbacks from those objects must not be able to overwrite the
+        // newly discovered service's endpoint.
+        let replaced = services.filter { $0 !== service && $0.name == service.name }
+        for oldService in replaced {
+            let oldID = ObjectIdentifier(oldService)
+            resolvingServices.remove(oldID)
+            resolveFailureCounts.removeValue(forKey: oldID)
+            if lastResolvedServiceID == oldID {
+                lastKnownEndpoint = nil
+                lastResolvedServiceID = nil
+            }
+            oldService.stop()
+        }
+        services.removeAll { replaced.contains(where: { $0 === $0 }) }
+        services.removeAll { existing in
+            replaced.contains(where: { $0 === existing })
+        }
+        if !services.contains(where: { $0 === service }) {
+            services.append(service)
+        }
+        resolve(service)
     }
 
     func netServiceDidResolveAddress(_ sender: NetService) {
-        guard let endpoint = endpointURL(for: sender) else { return }
+        let serviceID = ObjectIdentifier(sender)
+        resolvingServices.remove(serviceID)
+
+        // didRemove (or a same-name replacement) can race a resolve callback.
+        // Only a service object that is still in the browser's known set may
+        // publish an endpoint.
+        guard services.contains(where: { $0 === sender }) else {
+            print("PagePilotLANBrowser: ignoring late resolve for removed service \(sender.name)")
+            sender.stop()
+            return
+        }
+
+        guard let endpoint = endpointURL(for: sender) else {
+            handleResolveFailure(for: sender, reason: "resolved without a usable endpoint")
+            return
+        }
+
+        resolveFailureCounts.removeValue(forKey: serviceID)
         print("PagePilotLANBrowser: resolved \(sender.name) -> \(endpoint.absoluteString)")
         lastKnownEndpoint = endpoint
-        lastResolvedServiceName = sender.name
+        lastResolvedServiceID = serviceID
         flushPendingIfNeeded(with: endpoint)
     }
 
     func netService(_ sender: NetService, didNotResolve errorDict: [String : NSNumber]) {
-        print("PagePilotLANBrowser: failed to resolve \(sender.name): \(errorDict)")
-        services.removeAll { $0 === sender }
-        if lastResolvedServiceName == sender.name {
-            lastKnownEndpoint = nil
-            lastResolvedServiceName = nil
-        }
-        startBrowsingIfNeeded()
+        handleResolveFailure(for: sender, reason: String(describing: errorDict))
     }
 
     func netServiceBrowser(_ browser: NetServiceBrowser, didNotSearch errorDict: [String : NSNumber]) {
@@ -210,10 +301,16 @@ private final class PagePilotLANBrowser: NSObject, NetServiceBrowserDelegate, Ne
     }
 
     func netServiceBrowser(_ browser: NetServiceBrowser, didRemove service: NetService, moreComing: Bool) {
-        services.removeAll { $0 === service || $0.name == service.name }
-        if lastResolvedServiceName == service.name {
+        guard services.contains(where: { $0 === service }) else { return }
+        let serviceID = ObjectIdentifier(service)
+        services.removeAll { $0 === service }
+        resolvingServices.remove(serviceID)
+        resolveFailureCounts.removeValue(forKey: serviceID)
+        service.stop()
+
+        if lastResolvedServiceID == serviceID {
             lastKnownEndpoint = nil
-            lastResolvedServiceName = nil
+            lastResolvedServiceID = nil
         }
     }
 
