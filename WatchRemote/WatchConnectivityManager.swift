@@ -4,11 +4,6 @@ import WatchConnectivity
 final class WatchConnectivityManager: NSObject, ObservableObject {
     static let shared = WatchConnectivityManager()
 
-    private enum Destination: String {
-        case iPhone = "iphone"
-        case iPad = "ipad"
-    }
-
     @Published var isReachable = false
     @Published var relayReachable = false
     @Published var crownSensitivity: Double
@@ -43,6 +38,23 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
     private var iPadBookProgress = 0.0
     private var iPhoneErrorMessage = ""
     private var iPadErrorMessage = ""
+
+    private var routingState: WatchReaderRoutingState {
+        get {
+            WatchReaderRoutingState(
+                iPhoneReady: iPhoneReaderReady,
+                iPadReady: iPadReaderReady,
+                iPhoneError: iPhoneErrorMessage,
+                iPadError: iPadErrorMessage
+            )
+        }
+        set {
+            iPhoneReaderReady = newValue.iPhoneReady
+            iPadReaderReady = newValue.iPadReady
+            iPhoneErrorMessage = newValue.iPhoneError
+            iPadErrorMessage = newValue.iPadError
+        }
+    }
 
     private lazy var commandQueue = ThrottledCommandQueue(interval: 0.1, queue: .main) { [weak self] command, completion in
         self?.performSend(command, completion: completion)
@@ -112,8 +124,7 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
     func sendCommand(_ command: PageCommand) {
         guard WCSession.default.isReachable else {
             DispatchQueue.main.async {
-                self.iPhoneErrorMessage = self.localized("watch.error.openIPhone")
-                self.refreshVisibleError()
+                self.invalidateTransportState(error: self.localized("watch.error.openIPhone"))
             }
             return
         }
@@ -137,7 +148,7 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
         completion()
     }
 
-    private func send(_ command: PageCommand, to destination: Destination, commandID: String) {
+    private func send(_ command: PageCommand, to destination: WatchReaderDestination, commandID: String) {
         var message = command.message
         message["target"] = destination.rawValue
         message["commandId"] = commandID
@@ -149,17 +160,44 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
             },
             errorHandler: { [weak self] _ in
                 DispatchQueue.main.async {
-                    guard let self else { return }
-                    switch destination {
-                    case .iPhone:
-                        self.iPhoneErrorMessage = self.localized("watch.error.sendFailed")
-                    case .iPad:
-                        self.markRelayFailure()
-                    }
-                    self.refreshVisibleError()
+                    self?.applySendFailure(to: destination)
                 }
             }
         )
+    }
+
+    private func invalidateTransportState(error: String) {
+        var state = routingState
+        state.invalidateForTransportFailure(error: error)
+        routingState = state
+
+        isReachable = false
+        relayReachable = false
+        lastStatusOK = nil
+        recomputeAggregateReaderState()
+        refreshVisibleError()
+    }
+
+    private func applySendFailure(to destination: WatchReaderDestination) {
+        let transportReachable = WCSession.default.isReachable
+        var state = routingState
+        state.invalidateForSendFailure(
+            to: destination,
+            transportReachable: transportReachable,
+            error: localized("watch.error.sendFailed")
+        )
+        routingState = state
+
+        if !transportReachable {
+            isReachable = false
+            relayReachable = false
+            lastStatusOK = nil
+        } else if destination == .iPad {
+            markRelayFailure()
+        }
+
+        recomputeAggregateReaderState()
+        refreshVisibleError()
     }
 
     private func startPolling() {
@@ -194,7 +232,7 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
         pollStatus(for: .iPad)
     }
 
-    private func pollStatus(for destination: Destination) {
+    private func pollStatus(for destination: WatchReaderDestination) {
         WCSession.default.sendMessage(
             ["action": "status", "target": destination.rawValue],
             replyHandler: { [weak self] reply in
@@ -203,6 +241,10 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
             errorHandler: { [weak self] _ in
                 DispatchQueue.main.async {
                     guard let self else { return }
+                    if !WCSession.default.isReachable {
+                        self.invalidateTransportState(error: self.localized("watch.error.openIPhone"))
+                        return
+                    }
                     switch destination {
                     case .iPhone:
                         self.iPhoneReaderReady = false
@@ -217,7 +259,7 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
         )
     }
 
-    private func handleWatchConnectivityReply(_ reply: [String: Any], from destination: Destination) {
+    private func handleWatchConnectivityReply(_ reply: [String: Any], from destination: WatchReaderDestination) {
         DispatchQueue.main.async {
             self.hasReceivedStatus = true
 
@@ -321,7 +363,7 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
         }
     }
 
-    private func applyStatusPayload(_ json: [String: Any], from destination: Destination) {
+    private func applyStatusPayload(_ json: [String: Any], from destination: WatchReaderDestination) {
         let wasReaderReady = readerReady
         let ready = (json["readerReady"] as? Bool) ?? ((json["bookTitle"] as? String)?.isEmpty == false)
 
@@ -374,15 +416,7 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
     }
 
     private func refreshVisibleError() {
-        if readerReady {
-            lastError = ""
-            return
-        }
-        if !iPhoneErrorMessage.isEmpty {
-            lastError = iPhoneErrorMessage
-            return
-        }
-        lastError = iPadErrorMessage
+        lastError = routingState.visibleError
     }
 
     @discardableResult
@@ -444,13 +478,7 @@ extension WatchConnectivityManager: WCSessionDelegate {
         DispatchQueue.main.async {
             self.isReachable = session.isReachable
             if !session.isReachable {
-                self.iPhoneReaderReady = false
-                self.iPadReaderReady = false
-                self.relayReachable = false
-                self.iPhoneErrorMessage = self.localized("watch.error.openIPhone")
-                self.iPadErrorMessage = ""
-                self.recomputeAggregateReaderState()
-                self.refreshVisibleError()
+                self.invalidateTransportState(error: self.localized("watch.error.openIPhone"))
             }
             self.refreshConnectionStatus()
         }
