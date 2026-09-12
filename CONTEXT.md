@@ -69,7 +69,7 @@ A new user's first Watch Setup Completion. Onboarding does not ask the user to c
 _Avoid_: Onboarding completion, onboarding dismissal, first open, target selection
 
 **iPad Watch Relay**:
-The Pro capability that lets the paired iPhone automatically relay Watch Page Turn commands to a nearby iPad over the local network. It is opportunistic: the iPad only turns when its Reader is active, and relay failure must not block an active iPhone Reader.
+The Pro capability that lets the paired iPhone automatically relay Watch Page Turn commands to a nearby iPad over the local network. The iPhone prewarms Bonjour discovery whenever Pro is available, retries once after a stale endpoint failure, and forwards a stable command identifier so the iPad can suppress duplicate delivery. The iPad advertises only while Pro Access is valid and only turns pages when its Reader is active in the foreground.
 _Avoid_: iPad pairing, iPad Watch connection, cross-device onboarding, iPad target
 
 **Volume Key Page Turn**:
