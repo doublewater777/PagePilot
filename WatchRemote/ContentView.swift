@@ -60,7 +60,13 @@ struct ContentView: View {
         VStack(spacing: 6) {
             statusMessage
 
-            if isConnected && connectivityManager.readerReady && !connectivityManager.bookTitle.isEmpty {
+            if isConnected && connectivityManager.activeReaderCount > 1 {
+                Image(systemName: "ipad.and.iphone")
+                    .font(.title2)
+                    .foregroundStyle(.secondary)
+                    .frame(maxHeight: .infinity)
+                    .accessibilityHidden(true)
+            } else if isConnected && connectivityManager.readerReady && !connectivityManager.bookTitle.isEmpty {
                 readingDashboard
             } else {
                 Spacer(minLength: 0)
