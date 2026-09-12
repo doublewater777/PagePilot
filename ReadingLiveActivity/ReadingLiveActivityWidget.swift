@@ -10,48 +10,65 @@ import WidgetKit
 
 @main
 struct PagePilotReadingLiveActivityBundle: WidgetBundle {
+    @WidgetBundleBuilder
     var body: some Widget {
-        ReadingLiveActivityWidget()
+        if #available(iOSApplicationExtension 18.0, *) {
+            ReadingLiveActivityWidget()
+        } else {
+            LegacyReadingLiveActivityWidget()
+        }
     }
 }
 
-struct ReadingLiveActivityWidget: Widget {
+@available(iOSApplicationExtension 18.0, *)
+private struct ReadingLiveActivityWidget: Widget {
     var body: some WidgetConfiguration {
-        ActivityConfiguration(for: ReadingLiveActivityAttributes.self) { context in
-            ReadingLiveActivityContent(context: context)
-        } dynamicIsland: { context in
-            DynamicIsland {
-                DynamicIslandExpandedRegion(.leading) {
-                    Label {
-                        Text(context.state.title)
-                            .lineLimit(1)
-                    } icon: {
-                        Image(systemName: "book.closed")
-                    }
-                }
+        makeReadingLiveActivityConfiguration()
+            .supplementalActivityFamilies([.small])
+    }
+}
 
-                DynamicIslandExpandedRegion(.trailing) {
-                    Text(percentText(context.state.progression))
-                        .monospacedDigit()
-                }
+private struct LegacyReadingLiveActivityWidget: Widget {
+    var body: some WidgetConfiguration {
+        makeReadingLiveActivityConfiguration()
+    }
+}
 
-                DynamicIslandExpandedRegion(.bottom) {
-                    VStack(spacing: 6) {
-                        ProgressView(value: clamped(context.state.progression))
-                        ReadingElapsedTime(startedAt: context.attributes.startedAt)
-                            .font(.caption)
-                    }
+@MainActor
+private func makeReadingLiveActivityConfiguration() -> ActivityConfiguration<ReadingLiveActivityAttributes> {
+    ActivityConfiguration(for: ReadingLiveActivityAttributes.self) { context in
+        ReadingLiveActivityContent(context: context)
+    } dynamicIsland: { context in
+        DynamicIsland {
+            DynamicIslandExpandedRegion(.leading) {
+                Label {
+                    Text(context.state.title)
+                        .lineLimit(1)
+                } icon: {
+                    Image(systemName: "book.closed")
                 }
-            } compactLeading: {
-                Image(systemName: "book.closed")
-            } compactTrailing: {
+            }
+
+            DynamicIslandExpandedRegion(.trailing) {
                 Text(percentText(context.state.progression))
                     .monospacedDigit()
-            } minimal: {
-                Image(systemName: "book.closed")
             }
+
+            DynamicIslandExpandedRegion(.bottom) {
+                VStack(spacing: 6) {
+                    ProgressView(value: clamped(context.state.progression))
+                    ReadingElapsedTime(startedAt: context.attributes.startedAt)
+                        .font(.caption)
+                }
+            }
+        } compactLeading: {
+            Image(systemName: "book.closed")
+        } compactTrailing: {
+            Text(percentText(context.state.progression))
+                .monospacedDigit()
+        } minimal: {
+            Image(systemName: "book.closed")
         }
-        .pagePilotSupplementalActivityFamilies()
     }
 }
 
@@ -174,15 +191,4 @@ private func clamped(_ value: Double) -> Double {
 
 private func percentText(_ value: Double) -> String {
     String(format: "%.0f%%", clamped(value) * 100)
-}
-
-private extension ActivityConfiguration {
-    @WidgetConfigurationBuilder
-    func pagePilotSupplementalActivityFamilies() -> some WidgetConfiguration {
-        if #available(iOSApplicationExtension 18.0, *) {
-            supplementalActivityFamilies([.small])
-        } else {
-            self
-        }
-    }
 }
