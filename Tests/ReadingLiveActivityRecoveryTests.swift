@@ -17,7 +17,8 @@ final class ReadingLiveActivityRecoveryTests: XCTestCase {
         await coordinator.sync(title: "Book", progression: 0.4, startedAt: startedAt)
 
         XCTAssertEqual(client.requests.count, 2)
-        XCTAssertEqual(client.requests.last?.progression, 0.4, accuracy: 0.0001)
+        let restartedRequest = try XCTUnwrap(client.requests.last)
+        XCTAssertEqual(restartedRequest.progression, 0.4, accuracy: 0.0001)
         XCTAssertEqual(client.activeActivityIDs.count, 1)
         XCTAssertNotEqual(client.activeActivityIDs.first, firstActivityID)
     }
