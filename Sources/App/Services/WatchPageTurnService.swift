@@ -81,6 +81,36 @@ enum PagePilotLANFallbackPolicy {
     }
 }
 
+enum PagePilotLANEndpointSource: Equatable {
+    case fallback
+    case bonjour(ObjectIdentifier)
+}
+
+struct PagePilotLANEndpointCandidate: Equatable {
+    let url: URL
+    let generation: UInt64
+    let source: PagePilotLANEndpointSource
+}
+
+enum PagePilotLANEndpointCandidatePolicy {
+    static func isCurrent(
+        _ candidate: PagePilotLANEndpointCandidate,
+        currentGeneration: UInt64,
+        knownServiceIDs: Set<ObjectIdentifier>,
+        knownServiceCount: Int,
+        fallbackWasInvalidated: Bool
+    ) -> Bool {
+        guard candidate.generation == currentGeneration else { return false }
+
+        switch candidate.source {
+        case .fallback:
+            return knownServiceCount == 0 && !fallbackWasInvalidated
+        case .bonjour(let serviceID):
+            return knownServiceIDs.contains(serviceID)
+        }
+    }
+}
+
 private final class PagePilotLANBrowser: NSObject, NetServiceBrowserDelegate, NetServiceDelegate {
     static let shared = PagePilotLANBrowser()
 
@@ -92,12 +122,19 @@ private final class PagePilotLANBrowser: NSObject, NetServiceBrowserDelegate, Ne
     private var resolvingServices: Set<ObjectIdentifier> = []
     private var pendingReresolveServices: Set<ObjectIdentifier> = []
     private var resolveFailureCounts: [ObjectIdentifier: Int] = [:]
-    private var pendingCompletions: [(URL?) -> Void] = []
+    private var pendingCompletions: [(PagePilotLANEndpointCandidate?) -> Void] = []
     private var isBrowsing = false
     private var fallbackWasInvalidated = false
-    private var lastResolvedServiceID: ObjectIdentifier?
+    private var discoveryGeneration: UInt64 = 0
+    private var lastKnownCandidate: PagePilotLANEndpointCandidate?
 
-    private(set) var lastKnownEndpoint: URL?
+    private var lastKnownEndpoint: URL? {
+        lastKnownCandidate?.url
+    }
+
+    private var knownServiceIDs: Set<ObjectIdentifier> {
+        Set(services.map(ObjectIdentifier.init))
+    }
 
     private override init() {
         super.init()
@@ -110,12 +147,39 @@ private final class PagePilotLANBrowser: NSObject, NetServiceBrowserDelegate, Ne
         }
     }
 
-    func endpoint(completion: @escaping (URL?) -> Void) {
+    func stopAndClear() {
         DispatchQueue.main.async {
-            if let endpoint = self.lastKnownEndpoint {
-                completion(endpoint)
+            self.discoveryGeneration &+= 1
+
+            if self.isBrowsing {
+                self.browser.stop()
+            }
+            self.isBrowsing = false
+
+            let oldServices = self.services
+            self.services.removeAll()
+            self.resolvingServices.removeAll()
+            self.pendingReresolveServices.removeAll()
+            self.resolveFailureCounts.removeAll()
+            self.lastKnownCandidate = nil
+            self.fallbackWasInvalidated = false
+            self.flushPendingIfNeeded(with: nil)
+
+            for service in oldServices {
+                service.delegate = nil
+                service.stop()
+            }
+        }
+    }
+
+    func endpoint(completion: @escaping (PagePilotLANEndpointCandidate?) -> Void) {
+        DispatchQueue.main.async {
+            if let candidate = self.lastKnownCandidate,
+               self.isCurrent(candidate) {
+                completion(candidate)
                 return
             }
+            self.lastKnownCandidate = nil
 
             self.startBrowsingIfNeeded()
             if !self.services.isEmpty {
@@ -140,17 +204,24 @@ private final class PagePilotLANBrowser: NSObject, NetServiceBrowserDelegate, Ne
                     return
                 }
 
+                let candidate = PagePilotLANEndpointCandidate(
+                    url: fallbackEndpoint,
+                    generation: self.discoveryGeneration,
+                    source: .fallback
+                )
                 print("PagePilotLANBrowser: Bonjour slow, trying fallback \(fallbackEndpoint.absoluteString)")
-                // Keep browsing; if Bonjour later resolves, lastKnownEndpoint updates.
+                // Keep browsing; if Bonjour later resolves, a newer Bonjour
+                // candidate supersedes this fixed fallback.
                 let pending = self.pendingCompletions
                 self.pendingCompletions = []
-                pending.forEach { $0(fallbackEndpoint) }
+                pending.forEach { $0(candidate) }
             }
 
             DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) { [weak self] in
                 guard let self else { return }
-                if let endpoint = self.lastKnownEndpoint {
-                    self.flushPendingIfNeeded(with: endpoint)
+                if let candidate = self.lastKnownCandidate,
+                   self.isCurrent(candidate) {
+                    self.flushPendingIfNeeded(with: candidate)
                 } else if self.pendingCompletions.isEmpty {
                     // Already answered via fallback.
                     return
@@ -162,26 +233,47 @@ private final class PagePilotLANBrowser: NSObject, NetServiceBrowserDelegate, Ne
         }
     }
 
-    func remember(_ endpoint: URL) {
+    func remember(_ candidate: PagePilotLANEndpointCandidate) {
         DispatchQueue.main.async {
-            self.lastKnownEndpoint = endpoint
+            guard self.isCurrent(candidate) else {
+                print("PagePilotLANBrowser: ignoring stale endpoint remember \(candidate.url.absoluteString)")
+                return
+            }
+            self.lastKnownCandidate = candidate
         }
     }
 
-    func invalidate(_ endpoint: URL, completion: (() -> Void)? = nil) {
+    func invalidate(
+        _ candidate: PagePilotLANEndpointCandidate,
+        completion: (() -> Void)? = nil
+    ) {
         DispatchQueue.main.async {
-            if self.fallbackEndpoint == endpoint {
+            guard candidate.generation == self.discoveryGeneration else {
+                completion?()
+                return
+            }
+
+            if candidate.source == .fallback {
                 self.fallbackWasInvalidated = true
             }
-            if self.lastKnownEndpoint == endpoint {
-                print("PagePilotLANBrowser: invalidating endpoint \(endpoint.absoluteString)")
-                self.lastKnownEndpoint = nil
-                self.lastResolvedServiceID = nil
+            if self.lastKnownCandidate == candidate {
+                print("PagePilotLANBrowser: invalidating endpoint \(candidate.url.absoluteString)")
+                self.lastKnownCandidate = nil
             }
 
             self.recoverAfterInvalidation()
             completion?()
         }
+    }
+
+    private func isCurrent(_ candidate: PagePilotLANEndpointCandidate) -> Bool {
+        PagePilotLANEndpointCandidatePolicy.isCurrent(
+            candidate,
+            currentGeneration: discoveryGeneration,
+            knownServiceIDs: knownServiceIDs,
+            knownServiceCount: services.count,
+            fallbackWasInvalidated: fallbackWasInvalidated
+        )
     }
 
     private func recoverAfterInvalidation() {
@@ -241,9 +333,8 @@ private final class PagePilotLANBrowser: NSObject, NetServiceBrowserDelegate, Ne
         let serviceID = ObjectIdentifier(service)
         guard services.contains(where: { $0 === service }) else { return }
 
-        if lastResolvedServiceID == serviceID {
-            lastKnownEndpoint = nil
-            lastResolvedServiceID = nil
+        if lastKnownCandidate?.source == .bonjour(serviceID) {
+            lastKnownCandidate = nil
         }
 
         let failureCount = (resolveFailureCounts[serviceID] ?? 0) + 1
@@ -291,11 +382,11 @@ private final class PagePilotLANBrowser: NSObject, NetServiceBrowserDelegate, Ne
         browser.searchForServices(ofType: serviceType, inDomain: serviceDomain)
     }
 
-    private func flushPendingIfNeeded(with endpoint: URL?) {
+    private func flushPendingIfNeeded(with candidate: PagePilotLANEndpointCandidate?) {
         guard !pendingCompletions.isEmpty else { return }
         let completions = pendingCompletions
         pendingCompletions = []
-        completions.forEach { $0(endpoint) }
+        completions.forEach { $0(candidate) }
     }
 
     func netServiceBrowser(_ browser: NetServiceBrowser, didFind service: NetService, moreComing: Bool) {
@@ -311,9 +402,8 @@ private final class PagePilotLANBrowser: NSObject, NetServiceBrowserDelegate, Ne
             resolvingServices.remove(oldID)
             pendingReresolveServices.remove(oldID)
             resolveFailureCounts.removeValue(forKey: oldID)
-            if lastResolvedServiceID == oldID {
-                lastKnownEndpoint = nil
-                lastResolvedServiceID = nil
+            if lastKnownCandidate?.source == .bonjour(oldID) {
+                lastKnownCandidate = nil
             }
             oldService.stop()
         }
@@ -348,10 +438,14 @@ private final class PagePilotLANBrowser: NSObject, NetServiceBrowserDelegate, Ne
         }
 
         resolveFailureCounts.removeValue(forKey: serviceID)
+        let candidate = PagePilotLANEndpointCandidate(
+            url: endpoint,
+            generation: discoveryGeneration,
+            source: .bonjour(serviceID)
+        )
         print("PagePilotLANBrowser: resolved \(sender.name) -> \(endpoint.absoluteString)")
-        lastKnownEndpoint = endpoint
-        lastResolvedServiceID = serviceID
-        flushPendingIfNeeded(with: endpoint)
+        lastKnownCandidate = candidate
+        flushPendingIfNeeded(with: candidate)
 
         // We only need one usable endpoint. Explicitly stop resolution and wait
         // for netServiceDidStop before considering this service idle again.
@@ -396,8 +490,12 @@ private final class PagePilotLANBrowser: NSObject, NetServiceBrowserDelegate, Ne
         if PagePilotLANFallbackPolicy.shouldUseFallback(
             knownServiceCount: services.count,
             fallbackWasInvalidated: fallbackWasInvalidated
-        ) {
-            flushPendingIfNeeded(with: fallbackEndpoint)
+        ), let fallbackEndpoint {
+            flushPendingIfNeeded(with: PagePilotLANEndpointCandidate(
+                url: fallbackEndpoint,
+                generation: discoveryGeneration,
+                source: .fallback
+            ))
         } else if services.isEmpty {
             // No known service and the fallback was already proven stale.
             flushPendingIfNeeded(with: nil)
@@ -422,9 +520,8 @@ private final class PagePilotLANBrowser: NSObject, NetServiceBrowserDelegate, Ne
         resolveFailureCounts.removeValue(forKey: serviceID)
         service.stop()
 
-        if lastResolvedServiceID == serviceID {
-            lastKnownEndpoint = nil
-            lastResolvedServiceID = nil
+        if lastKnownCandidate?.source == .bonjour(serviceID) {
+            lastKnownCandidate = nil
         }
     }
 
@@ -592,6 +689,13 @@ final class WatchPageTurnService: NSObject, ObservableObject {
         stopLANServer()
     }
 
+    /// Stops iPhone-side nearby-iPad discovery and invalidates all outstanding
+    /// endpoint candidates. Safe to call on entitlement revoke.
+    func stopIPadRelayDiscovery() {
+        guard UIDevice.current.userInterfaceIdiom == .phone else { return }
+        PagePilotLANBrowser.shared.stopAndClear()
+    }
+
     /// Keeps automatic nearby-iPad discovery warm on a Pro iPhone.
     func prepareIPadRelay() {
         guard UIDevice.current.userInterfaceIdiom == .phone,
@@ -629,7 +733,8 @@ final class WatchPageTurnService: NSObject, ObservableObject {
 
     /// iPhone: actively try to reach an iPad page-turn server once (for diagnostics).
     func probeIPadRelayNow(completion: ((Bool) -> Void)? = nil) {
-        guard UIDevice.current.userInterfaceIdiom == .phone else {
+        guard UIDevice.current.userInterfaceIdiom == .phone,
+              ProPurchaseManager.shared.hasProAccess else {
             completion?(false)
             return
         }
@@ -778,8 +883,28 @@ final class WatchPageTurnService: NSObject, ObservableObject {
         retryAfterInvalidation: Bool = true,
         replyHandler: (([String: Any]) -> Void)? = nil
     ) {
-        PagePilotLANBrowser.shared.endpoint { endpoint in
-            guard let endpoint else {
+        guard ProPurchaseManager.shared.hasProAccess else {
+            replyHandler?(errorPayload(
+                route: WatchPageTurnRoute.iPhoneRelay,
+                code: WatchPageTurnErrorCode.proRequired,
+                message: "pro is required for iPad page turn"
+            ))
+            return
+        }
+
+        PagePilotLANBrowser.shared.endpoint { candidate in
+            // Entitlement may have changed while Bonjour discovery was pending.
+            // Re-check immediately before creating/sending any HTTP request.
+            guard ProPurchaseManager.shared.hasProAccess else {
+                replyHandler?(self.errorPayload(
+                    route: WatchPageTurnRoute.iPhoneRelay,
+                    code: WatchPageTurnErrorCode.proRequired,
+                    message: "pro is required for iPad page turn"
+                ))
+                return
+            }
+
+            guard let candidate else {
                 replyHandler?(self.errorPayload(
                     route: WatchPageTurnRoute.iPhoneRelay,
                     code: WatchPageTurnErrorCode.iPadNotFound,
@@ -788,6 +913,7 @@ final class WatchPageTurnService: NSObject, ObservableObject {
                 return
             }
 
+            let endpoint = candidate.url
             let url = endpoint.appendingPathComponent(path)
             var request = URLRequest(url: url)
             request.httpMethod = method
@@ -800,7 +926,9 @@ final class WatchPageTurnService: NSObject, ObservableObject {
             URLSession.shared.dataTask(with: request) { data, response, error in
                 if let error {
                     if retryAfterInvalidation {
-                        PagePilotLANBrowser.shared.invalidate(endpoint) {
+                        PagePilotLANBrowser.shared.invalidate(candidate) {
+                            // relayRequestToLAN re-checks entitlement before the
+                            // retry performs any new discovery or HTTP request.
                             self.relayRequestToLAN(
                                 path: path,
                                 method: method,
@@ -812,7 +940,7 @@ final class WatchPageTurnService: NSObject, ObservableObject {
                         return
                     }
 
-                    PagePilotLANBrowser.shared.invalidate(endpoint)
+                    PagePilotLANBrowser.shared.invalidate(candidate)
                     replyHandler?(self.errorPayload(
                         route: WatchPageTurnRoute.iPhoneRelay,
                         code: WatchPageTurnErrorCode.relayTimeout,
@@ -834,11 +962,11 @@ final class WatchPageTurnService: NSObject, ObservableObject {
                 }
 
                 if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
-                    // 409 = reader not ready still means the iPad was found.
+                    // 409 = reader not ready still means the candidate answered.
                     if http.statusCode != 409 {
-                        PagePilotLANBrowser.shared.invalidate(endpoint)
+                        PagePilotLANBrowser.shared.invalidate(candidate)
                     } else {
-                        PagePilotLANBrowser.shared.remember(endpoint)
+                        PagePilotLANBrowser.shared.remember(candidate)
                     }
                     if payload["error"] == nil {
                         payload = self.errorPayload(
@@ -853,7 +981,7 @@ final class WatchPageTurnService: NSObject, ObservableObject {
                         payload["ok"] = false
                     }
                 } else {
-                    PagePilotLANBrowser.shared.remember(endpoint)
+                    PagePilotLANBrowser.shared.remember(candidate)
                 }
                 replyHandler?(payload)
             }.resume()
