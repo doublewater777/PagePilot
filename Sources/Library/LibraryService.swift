@@ -47,11 +47,18 @@ final class LibraryService: Loggable {
     /// Opens the Readium 2 Publication for the given `book`.
     /// Cloud-only books are downloaded only after this explicit user action.
     func openBook(_ book: Book, sender: UIViewController) async throws -> Publication? {
+        let originalURL = try book.absoluteURL()
         let url: AbsoluteURL
-        if book.hasLocalFile {
-            url = try book.absoluteURL()
+
+        // Remote/streamed publications keep their original behavior. Only a
+        // missing local file is interpreted as a cloud-only library item.
+        if originalURL.fileURL == nil || book.hasLocalFile {
+            url = originalURL
         } else {
-            let downloadedURL = try await cloudContent.download(book)
+            let downloadedURL = try await cloudContent.download(
+                syncID: book.syncID,
+                title: book.title
+            )
             guard let absoluteURL = downloadedURL.absoluteURL else {
                 throw LibraryError.bookNotFound
             }
@@ -76,11 +83,15 @@ final class LibraryService: Loggable {
             hasProAccess: ProPurchaseManager.shared.hasProAccess
         ),
         let fileURL = try book.absoluteFileURL(),
-        FileManager.default.fileExists(atPath: fileURL.path),
-        Paths.documents.isParent(of: FileURL(fileURL))
+        FileManager.default.fileExists(atPath: fileURL.path)
         else {
             return
         }
+
+        let documentsPath = Paths.documents.url.standardizedFileURL.path
+        let candidatePath = fileURL.standardizedFileURL.path
+        guard candidatePath.hasPrefix(documentsPath + "/") else { return }
+
         try FileManager.default.removeItem(at: fileURL)
     }
 
