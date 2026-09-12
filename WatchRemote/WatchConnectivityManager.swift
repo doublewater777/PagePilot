@@ -29,6 +29,7 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
     private let relayGraceInterval: TimeInterval = 8.0
     private var statusPollTimer: Timer?
     private var hasAuthoritativeReadingSessionState = false
+    private var responseEpoch = WatchResponseEpoch()
 
     private var iPhoneReaderReady = false
     private var iPadReaderReady = false
@@ -81,7 +82,9 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
         session.delegate = self
         session.activate()
 
-        // Sync immediate application context if already received previously.
+        // Application context is persisted metadata, not proof that a Reader is
+        // currently reachable. Real-time status polling is authoritative for
+        // iPhone/iPad readiness.
         updateSettings(from: session.receivedApplicationContext)
     }
 
@@ -105,12 +108,11 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
             UserDefaults.standard.set(doubleTap, forKey: "watch_double_tap_page_turn")
         }
 
-        // The application context is sourced from the paired iPhone, so it can
-        // immediately seed (or clear) the local Reader state while status
-        // polling also checks the nearby iPad relay independently.
+        // The application context can be cached across a WCSession outage. Keep
+        // its metadata, but never let it promote Reader readiness; a fresh
+        // status/command reply must establish that the Reader can respond now.
         if let title = context["currentBookTitle"] as? String {
             iPhoneBookTitle = title
-            iPhoneReaderReady = !title.isEmpty
         }
         if let progress = context["currentBookProgress"] as? Double {
             iPhoneBookProgress = progress
@@ -152,21 +154,24 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
         var message = command.message
         message["target"] = destination.rawValue
         message["commandId"] = commandID
+        let token = responseEpoch.token
 
         WCSession.default.sendMessage(
             message,
             replyHandler: { [weak self] reply in
-                self?.handleWatchConnectivityReply(reply, from: destination)
+                self?.handleWatchConnectivityReply(reply, from: destination, token: token)
             },
             errorHandler: { [weak self] _ in
                 DispatchQueue.main.async {
-                    self?.applySendFailure(to: destination)
+                    self?.applySendFailure(to: destination, token: token)
                 }
             }
         )
     }
 
     private func invalidateTransportState(error: String) {
+        responseEpoch.invalidateTransport()
+
         var state = routingState
         state.invalidateForTransportFailure(error: error)
         routingState = state
@@ -178,21 +183,24 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
         refreshVisibleError()
     }
 
-    private func applySendFailure(to destination: WatchReaderDestination) {
+    private func applySendFailure(to destination: WatchReaderDestination, token: UInt64) {
+        guard token == responseEpoch.token else { return }
+
         let transportReachable = WCSession.default.isReachable
+        if !transportReachable {
+            invalidateTransportState(error: localized("watch.error.sendFailed"))
+            return
+        }
+
         var state = routingState
         state.invalidateForSendFailure(
             to: destination,
-            transportReachable: transportReachable,
+            transportReachable: true,
             error: localized("watch.error.sendFailed")
         )
         routingState = state
 
-        if !transportReachable {
-            isReachable = false
-            relayReachable = false
-            lastStatusOK = nil
-        } else if destination == .iPad {
+        if destination == .iPad {
             markRelayFailure()
         }
 
@@ -225,22 +233,26 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
 
     private func pollStatus() {
         let reachable = WCSession.default.isReachable
-        isReachable = reachable
-        guard reachable else { return }
+        if !reachable {
+            invalidateTransportState(error: localized("watch.error.openIPhone"))
+            return
+        }
 
+        isReachable = true
         pollStatus(for: .iPhone)
         pollStatus(for: .iPad)
     }
 
     private func pollStatus(for destination: WatchReaderDestination) {
+        let token = responseEpoch.token
         WCSession.default.sendMessage(
             ["action": "status", "target": destination.rawValue],
             replyHandler: { [weak self] reply in
-                self?.handleWatchConnectivityReply(reply, from: destination)
+                self?.handleWatchConnectivityReply(reply, from: destination, token: token)
             },
             errorHandler: { [weak self] _ in
                 DispatchQueue.main.async {
-                    guard let self else { return }
+                    guard let self, token == self.responseEpoch.token else { return }
                     if !WCSession.default.isReachable {
                         self.invalidateTransportState(error: self.localized("watch.error.openIPhone"))
                         return
@@ -259,8 +271,19 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
         )
     }
 
-    private func handleWatchConnectivityReply(_ reply: [String: Any], from destination: WatchReaderDestination) {
+    private func handleWatchConnectivityReply(
+        _ reply: [String: Any],
+        from destination: WatchReaderDestination,
+        token: UInt64
+    ) {
         DispatchQueue.main.async {
+            guard self.responseEpoch.accepts(
+                token,
+                transportReachable: WCSession.default.isReachable
+            ) else {
+                return
+            }
+
             self.hasReceivedStatus = true
 
             if let error = reply["error"] as? String {
@@ -470,6 +493,9 @@ extension WatchConnectivityManager: WCSessionDelegate {
     func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: Error?) {
         DispatchQueue.main.async {
             self.isReachable = session.isReachable
+            if !session.isReachable {
+                self.invalidateTransportState(error: self.localized("watch.error.openIPhone"))
+            }
             self.refreshConnectionStatus()
         }
     }
