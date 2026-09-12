@@ -7,3 +7,4 @@
 | 2026-07-29-markdown-import | Markdown publication import | completed | 01-hypothesis | pass | ship review-hardened Library-boundary conversion and reuse the EPUB Reader | watch real imports for narrowly scoped media or HTML needs |
 | 2026-09-13-missing-publication-recovery | Missing publication recovery guidance | completed | 01-hypothesis | pass | fail at the Library boundary with explicit recovery guidance | verify re-import/iCloud recovery and Live Activity on a reinstalled device build |
 | 2026-09-13-watch-live-activity-launch | Watch Live Activity launch | completed | 01-hypothesis | pass | open the existing Watch controls from the Smart Stack Live Activity | verify on a freshly installed paired Watch build |
+| 2026-09-13-watch-cold-start-control | Watch cold-start control | completed | 01-hypothesis | pass | clarify connection state and preserve one early page turn | verify immediate tap behavior on a paired Watch |

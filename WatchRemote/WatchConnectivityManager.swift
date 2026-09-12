@@ -5,6 +5,7 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
     static let shared = WatchConnectivityManager()
 
     @Published var isReachable = false
+    @Published private(set) var isConnecting = true
     @Published var relayReachable = false
     @Published var crownSensitivity: Double
     @Published var bookTitle: String = ""
@@ -28,7 +29,11 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
     private let readingSessionStartedAtKey = "readingSessionStartedAt"
     private let readingSessionStartProgressKey = "readingSessionStartProgress"
     private let relayGraceInterval: TimeInterval = 8.0
+    private let initialConnectionGraceInterval: TimeInterval = 5.0
     private var statusPollTimer: Timer?
+    private var connectionGraceWorkItem: DispatchWorkItem?
+    private var hasFinishedInitialConnectionAttempt = false
+    private var coldStartCommandBuffer = WatchColdStartCommandBuffer()
     private var hasAuthoritativeReadingSessionState = false
     private var responseEpoch = WatchResponseEpoch()
     private var commandOutcomeState = WatchCommandOutcomeState()
@@ -84,6 +89,12 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
         session.delegate = self
         session.activate()
 
+        if session.isReachable {
+            completeInitialConnection()
+        } else {
+            startInitialConnectionGracePeriod()
+        }
+
         // Application context is persisted metadata, not proof that a Reader is
         // currently reachable. Real-time status polling is authoritative for
         // iPhone/iPad readiness.
@@ -127,12 +138,57 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
 
     func sendCommand(_ command: PageCommand) {
         guard WCSession.default.isReachable else {
+            if isConnecting {
+                coldStartCommandBuffer.storeIfEmpty(command)
+                lastError = ""
+                return
+            }
             DispatchQueue.main.async {
                 self.invalidateTransportState(error: self.localized("watch.error.openIPhone"))
             }
             return
         }
         commandQueue.enqueue(command)
+    }
+
+    private func startInitialConnectionGracePeriod() {
+        guard !hasFinishedInitialConnectionAttempt,
+              connectionGraceWorkItem == nil
+        else {
+            return
+        }
+        isConnecting = true
+        lastError = ""
+
+        let workItem = DispatchWorkItem { [weak self] in
+            guard let self else { return }
+            if WCSession.default.isReachable {
+                self.completeInitialConnection()
+                self.refreshConnectionStatus()
+                return
+            }
+            self.connectionGraceWorkItem = nil
+            self.hasFinishedInitialConnectionAttempt = true
+            self.isConnecting = false
+            self.coldStartCommandBuffer.clear()
+            self.invalidateTransportState(error: self.localized("watch.error.openIPhone"))
+        }
+        connectionGraceWorkItem = workItem
+        DispatchQueue.main.asyncAfter(
+            deadline: .now() + initialConnectionGraceInterval,
+            execute: workItem
+        )
+    }
+
+    private func completeInitialConnection() {
+        hasFinishedInitialConnectionAttempt = true
+        isConnecting = false
+        connectionGraceWorkItem?.cancel()
+        connectionGraceWorkItem = nil
+
+        if let command = coldStartCommandBuffer.takeIfReachable(true) {
+            commandQueue.enqueue(command)
+        }
     }
 
     private func performSend(_ command: PageCommand, completion: @escaping () -> Void) {
@@ -253,6 +309,7 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
     private func pollStatus() {
         let reachable = WCSession.default.isReachable
         if !reachable {
+            if isConnecting { return }
             invalidateTransportState(error: localized("watch.error.openIPhone"))
             return
         }
@@ -593,7 +650,10 @@ extension WatchConnectivityManager: WCSessionDelegate {
         DispatchQueue.main.async {
             self.isReachable = reachable
             if reachable {
+                self.completeInitialConnection()
                 self.refreshConnectionStatus()
+            } else if !self.hasFinishedInitialConnectionAttempt {
+                self.startInitialConnectionGracePeriod()
             } else {
                 self.invalidateTransportState(error: self.localized("watch.error.openIPhone"))
             }
@@ -607,7 +667,10 @@ extension WatchConnectivityManager: WCSessionDelegate {
         DispatchQueue.main.async {
             self.isReachable = reachable
             if reachable {
+                self.completeInitialConnection()
                 self.refreshConnectionStatus()
+            } else if !self.hasFinishedInitialConnectionAttempt {
+                self.startInitialConnectionGracePeriod()
             } else {
                 // A false event always advances the transport epoch, even if the
                 // session has already reconnected by the time this block runs.

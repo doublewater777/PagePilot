@@ -24,6 +24,7 @@ PagePilot targets Apple ecosystem readers who lose reading flow when they must t
 - `2026-07-29-markdown-import` — tests whether Markdown can join the core import → open → read action through safe local conversion.
 - `2026-09-13-missing-publication-recovery` — protects the core open → read action when a stored Book has lost its local Publication.
 - `2026-09-13-watch-live-activity-launch` — shortens the Watch control path by launching the Watch app from the reading Live Activity.
+- `2026-09-13-watch-cold-start-control` — tests whether a clear connection state and one buffered command remove cold-start control friction.
 
 ## Decisions
 
@@ -69,6 +70,7 @@ Assumptions to test:
 
 ## Change Log
 
+- 2026-09-13: Linked the Watch cold-start control cycle.
 - 2026-09-13: Linked the missing Publication recovery cycle.
 - 2026-09-13: Linked the Watch Live Activity launch cycle.
 - 2026-07-29: Markdown import cycle passed again after PR review hardening; 40/40 targeted and 151/151 full simulator tests passed.

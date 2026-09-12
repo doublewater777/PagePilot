@@ -57,3 +57,13 @@ Weakest assumption: the updated companion Watch app will be installed alongside 
 Decision: Launch the existing Watch app from the Smart Stack card and reuse its page-turn controls.
 Next stage: 10-growth-channel
 Loop-back: Consider direct interactive Live Activity buttons only if opening the Watch app remains too slow or unreliable in observed use.
+
+## 2026-09-13 - 01-hypothesis (Watch cold-start control)
+
+Cycle: 2026-09-13-watch-cold-start-control
+Verdict: pass
+Evidence: The first-command buffer is covered by focused tests; the full iPhone 17 simulator suite passes 238/238; the iPad mini build includes the rebuilt Watch app.
+Weakest assumption: five seconds covers normal paired-device WCSession activation after a Live Activity launch.
+Decision: show an explicit connecting state and replay at most one early page-turn command when transport becomes reachable.
+Next stage: 10-growth-channel
+Loop-back: Revisit the grace period or delayed-command behavior if paired-device testing shows longer activation or surprising turns.

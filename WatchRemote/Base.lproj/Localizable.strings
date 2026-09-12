@@ -4,6 +4,7 @@
 "watch.ipadConnected" = "iPad Connected";
 "watch.iphoneConnected" = "iPhone Connected";
 "watch.notConnected" = "Not Connected";
+"watch.status.connecting" = "Connecting to iPhone…";
 "watch.crownHint" = "Crown to turn pages";
 "watch.hint.openIPhone" = "Open PagePilot on iPhone";
 "watch.hint.openIPad" = "Open PagePilot on iPad";

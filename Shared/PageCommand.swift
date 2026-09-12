@@ -1,7 +1,7 @@
 import Foundation
 
 /// Watch 和 iPhone 共用的翻页命令
-enum PageCommand: String, Codable {
+enum PageCommand: String, Codable, Equatable, Sendable {
     case next
     case prev
 

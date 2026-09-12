@@ -21,6 +21,9 @@ struct ContentView: View {
         if !connectivityManager.lastError.isEmpty {
             return nil
         }
+        if connectivityManager.isConnecting {
+            return "watch.status.connecting"
+        }
         if !isConnected {
             return "watch.hint.openIPhone"
         }
