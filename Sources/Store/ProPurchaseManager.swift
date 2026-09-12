@@ -260,9 +260,12 @@ final class ProPurchaseManager: ObservableObject {
             WatchPageTurnService.shared.enableIPadRelay()
             WatchPageTurnService.shared.prepareIPadRelay()
         } else {
-            // The iPhone relay entry point already rejects non-Pro users, but an
-            // iPad that loses Pro should also stop advertising its HTTP server.
+            // Revoke both halves of the automatic relay lifecycle. iPad stops
+            // advertising its server; iPhone stops Bonjour discovery and drops
+            // cached/pending endpoints so an in-flight discovery cannot send a
+            // request after entitlement has been revoked.
             WatchPageTurnService.shared.disableIPadRelay()
+            WatchPageTurnService.shared.stopIPadRelayDiscovery()
         }
     }
 }
