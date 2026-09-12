@@ -136,6 +136,7 @@ private final class PagePilotLANBrowser: NSObject, NetServiceBrowserDelegate, Ne
     func netServiceBrowser(_ browser: NetServiceBrowser, didFind service: NetService, moreComing: Bool) {
         guard service.name.hasPrefix("PagePilot-iPad") else { return }
         print("PagePilotLANBrowser: found service \(service.name)")
+        services.removeAll { $0 === service || $0.name == service.name }
         services.append(service)
         service.delegate = self
         service.resolve(withTimeout: 2.0)
@@ -154,12 +155,18 @@ private final class PagePilotLANBrowser: NSObject, NetServiceBrowserDelegate, Ne
 
     func netServiceBrowser(_ browser: NetServiceBrowser, didNotSearch errorDict: [String : NSNumber]) {
         print("PagePilotLANBrowser: failed to browse: \(errorDict)")
-        flushPendingIfNeeded(with: fallbackEndpoint)
+        isBrowsing = false
+        flushPendingIfNeeded(with: fallbackWasInvalidated ? nil : fallbackEndpoint)
+    }
+
+    func netServiceBrowserDidStopSearch(_ browser: NetServiceBrowser) {
+        isBrowsing = false
     }
 
     func netServiceBrowser(_ browser: NetServiceBrowser, didRemove service: NetService, moreComing: Bool) {
         services.removeAll { $0 === service || $0.name == service.name }
-        if lastKnownEndpoint?.host?.hasPrefix(service.name) == true {
+        if let host = lastKnownEndpoint?.host,
+           host == service.hostName || host.hasPrefix(service.name) {
             lastKnownEndpoint = nil
         }
     }
@@ -264,13 +271,20 @@ final class WatchPageTurnService: NSObject, ObservableObject {
     @Published var currentBookTitle: String = ""
     @Published var currentBookProgress: Double = 0.0
 
-    var isReaderReady: Bool { activeNavigator != nil }
+    var isReaderReady: Bool {
+        WatchReaderAvailabilityPolicy.isReady(
+            hasNavigator: activeNavigator != nil,
+            applicationIsActive: UIApplication.shared.applicationState == .active
+        )
+    }
 
     private var session: WCSession?
     private var lanServer: ReadiumGCDWebServer?
     private var lanResetTimer: Timer?
     private let preferredLANPort: UInt = 61482
     private let ipadRelayEnabledKey = "ipad_watch_relay_enabled"
+    private let commandDedupWindow: TimeInterval = 8.0
+    private var recentLANCommandIDs: [String: Date] = [:]
 
     var watchAvailability: WatchAvailability {
         guard WCSession.isSupported() else { return .unsupported }
@@ -291,13 +305,11 @@ final class WatchPageTurnService: NSObject, ObservableObject {
             session?.delegate = self
             session?.activate()
         }
-        // Start the LAN server eagerly on Pro iPads so the Watch (via iPhone
-        // relay) can discover the reader without requiring a visit to Me →
-        // Watch connection diagnostics. Free iPads never advertise.
+        // Automatic routing has no selected target. Pro iPads advertise the LAN
+        // service, while Pro iPhones prewarm Bonjour discovery immediately.
         if UIDevice.current.userInterfaceIdiom == .pad {
             enableIPadRelay()
         } else if UIDevice.current.userInterfaceIdiom == .phone,
-                  WatchPageTurnSettings().controlTarget == .iPad,
                   ProPurchaseManager.shared.hasProAccess {
             PagePilotLANBrowser.shared.warmUp()
         }
@@ -306,16 +318,24 @@ final class WatchPageTurnService: NSObject, ObservableObject {
     /// Starts the iPad LAN page-turn server when this device is an iPad with Pro.
     /// Safe to call repeatedly; no-ops on iPhone or without Pro Access.
     func enableIPadRelay() {
-        guard UIDevice.current.userInterfaceIdiom == .pad,
-              ProPurchaseManager.shared.hasProAccess
-        else {
+        guard UIDevice.current.userInterfaceIdiom == .pad else { return }
+        guard ProPurchaseManager.shared.hasProAccess else {
+            disableIPadRelay()
             return
         }
         UserDefaults.standard.set(true, forKey: ipadRelayEnabledKey)
         startLANServer()
     }
 
-    /// Call when the user selects iPad as the Watch control target.
+    /// Stops iPad LAN advertising when Pro access is no longer valid.
+    func disableIPadRelay() {
+        guard UIDevice.current.userInterfaceIdiom == .pad else { return }
+        UserDefaults.standard.set(false, forKey: ipadRelayEnabledKey)
+        recentLANCommandIDs.removeAll()
+        stopLANServer()
+    }
+
+    /// Keeps automatic nearby-iPad discovery warm on a Pro iPhone.
     func prepareIPadRelay() {
         guard UIDevice.current.userInterfaceIdiom == .phone,
               ProPurchaseManager.shared.hasProAccess
@@ -387,8 +407,8 @@ final class WatchPageTurnService: NSObject, ObservableObject {
         context["currentBookTitle"] = ""
         context["currentBookProgress"] = 0.0
         updateApplicationContextSafely(context)
-        // Keep the LAN server running so the Watch keeps showing connected.
-        // The /command handler will simply early-return when no navigator is active.
+        // Keep the LAN server running so discovery stays warm. The /command
+        // handler will return NAVIGATOR_NOT_READY until another Reader opens.
     }
 
     func beginPageTurnSuppression() -> UUID {
@@ -440,7 +460,11 @@ final class WatchPageTurnService: NSObject, ObservableObject {
                 completion?(payload)
                 return
             }
-            guard let navigator = self.activeNavigator else {
+            guard let navigator = self.activeNavigator,
+                  WatchReaderAvailabilityPolicy.isReady(
+                      hasNavigator: true,
+                      applicationIsActive: UIApplication.shared.applicationState == .active
+                  ) else {
                 completion?(self.errorPayload(
                     route: WatchPageTurnRoute.direct,
                     code: WatchPageTurnErrorCode.navigatorNotReady,
@@ -468,14 +492,18 @@ final class WatchPageTurnService: NSObject, ObservableObject {
         }
     }
 
-    private func relayCommandToLAN(_ command: PageCommand, replyHandler: (([String: Any]) -> Void)? = nil) {
+    private func relayCommandToLAN(
+        _ command: PageCommand,
+        requestID: String?,
+        replyHandler: (([String: Any]) -> Void)? = nil
+    ) {
         relayRequestToLAN(
             path: "command",
             method: "POST",
             body: [
                 "action": command.rawValue,
                 "source": "watch",
-                "requestId": UUID().uuidString,
+                "requestId": requestID ?? UUID().uuidString,
                 "timestamp": Date().timeIntervalSince1970
             ],
             replyHandler: replyHandler
@@ -490,6 +518,7 @@ final class WatchPageTurnService: NSObject, ObservableObject {
         path: String,
         method: String,
         body: [String: Any]?,
+        retryAfterInvalidation: Bool = true,
         replyHandler: (([String: Any]) -> Void)? = nil
     ) {
         PagePilotLANBrowser.shared.endpoint { endpoint in
@@ -514,6 +543,16 @@ final class WatchPageTurnService: NSObject, ObservableObject {
             URLSession.shared.dataTask(with: request) { data, response, error in
                 if let error {
                     PagePilotLANBrowser.shared.invalidate(endpoint)
+                    if retryAfterInvalidation {
+                        self.relayRequestToLAN(
+                            path: path,
+                            method: method,
+                            body: body,
+                            retryAfterInvalidation: false,
+                            replyHandler: replyHandler
+                        )
+                        return
+                    }
                     replyHandler?(self.errorPayload(
                         route: WatchPageTurnRoute.iPhoneRelay,
                         code: WatchPageTurnErrorCode.relayTimeout,
@@ -566,8 +605,8 @@ final class WatchPageTurnService: NSObject, ObservableObject {
             "status": "ok",
             "ok": true,
             "route": route,
-            "target": route == WatchPageTurnRoute.iPhoneRelay ? "ipad" : WatchPageTurnSettings().controlTarget.rawValue,
-            "readerReady": activeNavigator != nil,
+            "target": UIDevice.current.userInterfaceIdiom == .pad ? "ipad" : "iphone",
+            "readerReady": isReaderReady,
             "bookTitle": currentBookTitle,
             "bookProgress": currentBookProgress,
             "crownSensitivity": WatchPageTurnSettings().crownSensitivity
@@ -588,6 +627,19 @@ final class WatchPageTurnService: NSObject, ObservableObject {
         guard let response = ReadiumGCDWebServerDataResponse(jsonObject: object) else { return nil }
         response.statusCode = statusCode
         return response
+    }
+
+    private func shouldProcessLANCommand(requestID: String?) -> Bool {
+        guard let requestID, !requestID.isEmpty else { return true }
+        let now = Date()
+        recentLANCommandIDs = recentLANCommandIDs.filter {
+            now.timeIntervalSince($0.value) < commandDedupWindow
+        }
+        if recentLANCommandIDs[requestID] != nil {
+            return false
+        }
+        recentLANCommandIDs[requestID] = now
+        return true
     }
 
     // MARK: - LAN Server
@@ -620,11 +672,11 @@ final class WatchPageTurnService: NSObject, ObservableObject {
 
     private func startLANServer() {
         guard lanServer == nil else { return }
-        
+
         let webServer = ReadiumGCDWebServer()
         let deviceName = UIDevice.current.name.replacingOccurrences(of: " ", with: "-")
         let bonjourName = "PagePilot-iPad-\(deviceName)"
-        
+
         // GET /status
         webServer.addHandler(
             forMethod: "GET",
@@ -637,7 +689,7 @@ final class WatchPageTurnService: NSObject, ObservableObject {
                     let progress = WatchPageTurnService.shared.currentBookProgress
                     let sensitivity = WatchPageTurnSettings().crownSensitivity
                     WatchPageTurnService.shared.markLANWatchConnected(remoteAddress: remote)
-                    
+
                     let responseDict: [String: Any] = [
                         "status": "ok",
                         "ok": true,
@@ -650,12 +702,12 @@ final class WatchPageTurnService: NSObject, ObservableObject {
                         "bookProgress": progress,
                         "crownSensitivity": sensitivity
                     ]
-                    
+
                     completionBlock(WatchPageTurnService.shared.jsonResponse(responseDict))
                 }
             }
         )
-        
+
         // POST /command
         webServer.addHandler(
             forMethod: "POST",
@@ -664,8 +716,9 @@ final class WatchPageTurnService: NSObject, ObservableObject {
             asyncProcessBlock: { request, completionBlock in
                 let json = (request as? ReadiumGCDWebServerDataRequest)?.jsonObject as? [String: Any]
                 let action = json?["action"] as? String
+                let requestID = json?["requestId"] as? String
                 let remote = request.remoteAddressString
-                
+
                 Task { @MainActor in
                     WatchPageTurnService.shared.markLANWatchConnected(remoteAddress: remote)
 
@@ -684,7 +737,7 @@ final class WatchPageTurnService: NSObject, ObservableObject {
                         ))
                         return
                     }
-                    
+
                     guard let command = action.flatMap(PageCommand.init(rawValue:)) else {
                         completionBlock(WatchPageTurnService.shared.jsonResponse(
                             WatchPageTurnService.shared.errorPayload(
@@ -694,6 +747,20 @@ final class WatchPageTurnService: NSObject, ObservableObject {
                             ),
                             statusCode: 409
                         ))
+                        return
+                    }
+
+                    guard WatchPageTurnService.shared.shouldProcessLANCommand(requestID: requestID) else {
+                        completionBlock(WatchPageTurnService.shared.jsonResponse([
+                            "status": "ok",
+                            "ok": true,
+                            "target": "ipad",
+                            "route": WatchPageTurnRoute.direct,
+                            "readerReady": true,
+                            "pageDirection": command.rawValue,
+                            "didTurnPage": false,
+                            "duplicate": true
+                        ]))
                         return
                     }
 
@@ -709,9 +776,9 @@ final class WatchPageTurnService: NSObject, ObservableObject {
                         ]))
                         return
                     }
-                    
+
                     let settings = WatchPageTurnSettings()
-                    
+
                     let succeeded: Bool
                     switch command {
                     case .next:
@@ -740,7 +807,7 @@ final class WatchPageTurnService: NSObject, ObservableObject {
                 }
             }
         )
-        
+
         do {
             try webServer.start(options: [
                 ReadiumGCDWebServerOption_Port: preferredLANPort,
@@ -775,13 +842,16 @@ final class WatchPageTurnService: NSObject, ObservableObject {
         lanServerPort = webServer.port
         lanBonjourName = bonjourName
     }
-    
+
     private func stopLANServer() {
         lanServer?.stop()
         lanServer = nil
         lanServerRunning = false
         lanServerPort = 0
         lanBonjourName = ""
+        isLANWatchConnected = false
+        lanResetTimer?.invalidate()
+        lanResetTimer = nil
         print("WatchPageTurnService: LAN Server stopped")
     }
 }
@@ -799,8 +869,7 @@ extension WatchPageTurnService: WCSessionDelegate {
         }
         if activationState == .activated, UIDevice.current.userInterfaceIdiom == .phone {
             WatchPageTurnSettings().syncToWatch()
-            if WatchPageTurnSettings().controlTarget == .iPad,
-               ProPurchaseManager.shared.hasProAccess {
+            if ProPurchaseManager.shared.hasProAccess {
                 PagePilotLANBrowser.shared.warmUp()
             }
         }
@@ -848,7 +917,7 @@ extension WatchPageTurnService: WCSessionDelegate {
 
         let targetRawValue = message["target"] as? String
         let target = targetRawValue.flatMap(WatchPageTurnSettings.ControlTarget.init(rawValue:))
-            ?? WatchPageTurnSettings().controlTarget
+            ?? .iPhone
 
         switch action {
         case "status":
@@ -880,6 +949,7 @@ extension WatchPageTurnService: WCSessionDelegate {
                 replyHandler?(["status": "ignored", "reason": "invalid page command"])
                 return
             }
+            let commandID = message["commandId"] as? String
 
             switch target {
             case .iPad where UIDevice.current.userInterfaceIdiom == .phone:
@@ -892,9 +962,9 @@ extension WatchPageTurnService: WCSessionDelegate {
                     return
                 }
                 PagePilotLANBrowser.shared.warmUp()
-                relayCommandToLAN(command, replyHandler: replyHandler)
+                relayCommandToLAN(command, requestID: commandID, replyHandler: replyHandler)
             case .iPhone where UIDevice.current.userInterfaceIdiom == .phone:
-                guard activeNavigator != nil else {
+                guard isReaderReady else {
                     replyHandler?(errorPayload(
                         route: WatchPageTurnRoute.direct,
                         code: WatchPageTurnErrorCode.navigatorNotReady,
@@ -906,7 +976,7 @@ extension WatchPageTurnService: WCSessionDelegate {
             case .iPad where UIDevice.current.userInterfaceIdiom == .pad:
                 // LAN path is primary; WCSession on iPad is rare. Do not require Pro here —
                 // Pro is enforced on the iPhone relay entry point.
-                guard activeNavigator != nil else {
+                guard isReaderReady else {
                     replyHandler?(errorPayload(
                         route: WatchPageTurnRoute.direct,
                         code: WatchPageTurnErrorCode.navigatorNotReady,
