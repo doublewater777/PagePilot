@@ -57,24 +57,20 @@ A remote catalog feed used to browse and download publications from external sou
 _Avoid_: Online library, feed URL
 
 **Watch Page Turn**:
-The Apple Watch capability that sends next-page or previous-page commands to the Reader on the selected Watch Control Target.
-_Avoid_: Watch remote, remote control
-
-**Watch Control Target**:
-The Apple device whose active Reader receives Watch Page Turn commands. The available targets are the paired iPhone and, with Pro Access, an iPad reached through the iPhone relay.
-_Avoid_: Control device, reading device, target device
+The Apple Watch capability that sends next-page or previous-page commands through the paired iPhone. The iPhone Reader responds when active. With Pro Access, the same logical command is also relayed over the local network to a nearby iPad, whose Reader responds only when active. If both Readers are active, both turn; if only one is active, only that device turns.
+_Avoid_: Watch remote, remote control, selected target, Page Turn Device
 
 **Watch Setup Completion**:
-The first confirmed Watch Page Turn in which a command sent from Apple Watch visibly changes the open Publication on the selected Watch Control Target. Pairing or Watch app installation alone does not count as completion.
+The first confirmed Watch Page Turn in which at least one active Reader visibly changes the open Publication. Pairing, Watch app installation, LAN discovery, or device selection alone does not count as completion.
 _Avoid_: Watch connected, Watch detected, pairing complete
 
 **Onboarding Activation**:
-A new user's first Watch Setup Completion. It is the primary onboarding conversion outcome; purchasing Pro Access from the iPad control-target branch is a secondary outcome.
-_Avoid_: Onboarding completion, onboarding dismissal, first open
+A new user's first Watch Setup Completion. Onboarding does not ask the user to choose an iPhone/iPad page-turn target; Reader routing is automatic.
+_Avoid_: Onboarding completion, onboarding dismissal, first open, target selection
 
-**iPad Watch Relay Setup**:
-The guided Pro setup that prepares an iPhone to relay Watch Page Turn commands to an active Reader on a nearby iPad. Onboarding may lead into this setup, but completing it is not required to begin reading.
-_Avoid_: iPad pairing, iPad Watch connection, cross-device onboarding
+**iPad Watch Relay**:
+The Pro capability that lets the paired iPhone automatically relay Watch Page Turn commands to a nearby iPad over the local network. It is opportunistic: the iPad only turns when its Reader is active, and relay failure must not block an active iPhone Reader.
+_Avoid_: iPad pairing, iPad Watch connection, cross-device onboarding, iPad target
 
 **Volume Key Page Turn**:
 An optional mode that maps iPhone hardware volume buttons to page-forward and page-backward actions during reading. Implemented via a hidden `MPVolumeView` + KVO on `outputVolume` with immediate reset. Runtime interception is gated by a decision chain: external audio playing → reader declares intent via `VolumeKeyBehaviorProvider` protocol → user preference for TTS mode. The active provider is registered in `viewWillAppear` and unregistered in `viewDidDisappear` of `VisualReaderViewController`; a `isKeyWindow` guard prevents interception when the reader is not the frontmost window.
@@ -85,7 +81,7 @@ An optional mode that uses the Apple Watch system Double Tap gesture (index fing
 _Avoid_: Double tap, two-finger tap, double-click, DoubleTap
 
 **Pro Access**:
-The paid entitlement that unlocks limits such as the free bookshelf book count and deeper historical reading review.
+The paid entitlement that unlocks limits such as the free bookshelf book count, deeper historical reading review, and automatic nearby-iPad Watch Page Turn relay.
 _Avoid_: Subscription, premium mode, purchase state
 
 **Me Tab**:
