@@ -110,12 +110,21 @@ class ReaderViewController<N: Navigator>: UIViewController,
         )
     }
 
+    private func startReadingStatsSessionIfNeeded() {
+        guard readingSessionStartDate == nil else { return }
+        readingSessionStartDate = Date()
+    }
+
     private func finishReadingSessionIfNeeded(celebrateGoal: Bool = true) {
+        finishReadingStatsSessionIfNeeded(celebrateGoal: celebrateGoal)
+        WatchReadingSessionContext.end()
+    }
+
+    private func finishReadingStatsSessionIfNeeded(celebrateGoal: Bool = true) {
         guard let startDate = readingSessionStartDate else { return }
 
         let endDate = Date()
         readingSessionStartDate = nil
-        WatchReadingSessionContext.end()
 
         ReadingStatsStore.shared.recordReadingSession(startDate: startDate, endDate: endDate, bookId: bookId)
 
@@ -134,12 +143,17 @@ class ReaderViewController<N: Navigator>: UIViewController,
     }
 
     @objc private func appDidEnterBackground() {
-        finishReadingSessionIfNeeded(celebrateGoal: false)
+        // Stop foreground reading-time accounting, but keep the Reader's Watch
+        // session and Live Activity alive so they remain visible on the Lock
+        // Screen and Dynamic Island while the app is backgrounded.
+        finishReadingStatsSessionIfNeeded(celebrateGoal: false)
     }
 
     @objc private func appWillEnterForeground() {
         if view.window != nil {
-            startReadingSessionIfNeeded()
+            // Resume only reading-time accounting. The Watch/Live Activity
+            // session intentionally spans background and foreground transitions.
+            startReadingStatsSessionIfNeeded()
         }
     }
 
