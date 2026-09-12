@@ -23,29 +23,20 @@ final actor CloudBookContentService {
         database = container.privateCloudDatabase
     }
 
-    func uploadIfNeeded(_ book: Book) async throws {
-        guard let fileURL = try book.absoluteFileURL(),
+    func uploadIfNeeded(from bookRecord: CKRecord) async throws {
+        guard bookRecord.recordType == CloudSyncRecordType.book.rawValue,
+              let asset = bookRecord["publication"] as? CKAsset,
+              let fileURL = asset.fileURL,
               FileManager.default.fileExists(atPath: fileURL.path)
         else {
             return
         }
 
-        try await prepareZoneIfNeeded()
-
-        let recordID = contentRecordID(for: book.syncID)
-        let record: CKRecord
-        do {
-            record = try await database.record(for: recordID)
-        } catch let error as CKError where error.code == .unknownItem {
-            record = CKRecord(recordType: Self.recordType, recordID: recordID)
-        }
-
-        record["schemaVersion"] = Int64(1)
-        record["bookSyncID"] = book.syncID
-        record["fileName"] = fileURL.lastPathComponent
-        record["publication"] = CKAsset(fileURL: fileURL)
-        record["updatedAt"] = Date()
-        _ = try await database.save(record)
+        try await saveContent(
+            syncID: bookRecord.recordID.recordName,
+            fileURL: fileURL,
+            fileName: (bookRecord["fileName"] as? String) ?? fileURL.lastPathComponent
+        )
     }
 
     /// Downloads a publication only after an explicit user action.
@@ -95,6 +86,25 @@ final actor CloudBookContentService {
         } catch let error as CKError where error.code == .unknownItem {
             return
         }
+    }
+
+    private func saveContent(syncID: String, fileURL: URL, fileName: String) async throws {
+        try await prepareZoneIfNeeded()
+
+        let recordID = contentRecordID(for: syncID)
+        let record: CKRecord
+        do {
+            record = try await database.record(for: recordID)
+        } catch let error as CKError where error.code == .unknownItem {
+            record = CKRecord(recordType: Self.recordType, recordID: recordID)
+        }
+
+        record["schemaVersion"] = Int64(1)
+        record["bookSyncID"] = syncID
+        record["fileName"] = fileName
+        record["publication"] = CKAsset(fileURL: fileURL)
+        record["updatedAt"] = Date()
+        _ = try await database.save(record)
     }
 
     private func prepareZoneIfNeeded() async throws {
