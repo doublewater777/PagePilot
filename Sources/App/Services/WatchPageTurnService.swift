@@ -111,6 +111,39 @@ enum PagePilotLANEndpointCandidatePolicy {
     }
 }
 
+struct PagePilotLANLookupCycleState: Equatable {
+    private(set) var activeID: UInt64?
+    private var nextID: UInt64 = 0
+
+    mutating func beginOrJoin() -> (id: UInt64, isNew: Bool) {
+        if let activeID {
+            return (activeID, false)
+        }
+
+        nextID &+= 1
+        activeID = nextID
+        return (nextID, true)
+    }
+
+    func isActive(_ id: UInt64) -> Bool {
+        activeID == id
+    }
+
+    @discardableResult
+    mutating func finish(_ id: UInt64? = nil) -> Bool {
+        guard let activeID else { return false }
+        if let id, activeID != id {
+            return false
+        }
+        self.activeID = nil
+        return true
+    }
+
+    mutating func cancel() {
+        activeID = nil
+    }
+}
+
 private final class PagePilotLANBrowser: NSObject, NetServiceBrowserDelegate, NetServiceDelegate {
     static let shared = PagePilotLANBrowser()
 
@@ -123,6 +156,7 @@ private final class PagePilotLANBrowser: NSObject, NetServiceBrowserDelegate, Ne
     private var pendingReresolveServices: Set<ObjectIdentifier> = []
     private var resolveFailureCounts: [ObjectIdentifier: Int] = [:]
     private var pendingCompletions: [(PagePilotLANEndpointCandidate?) -> Void] = []
+    private var lookupCycleState = PagePilotLANLookupCycleState()
     private var isBrowsing = false
     private var fallbackWasInvalidated = false
     private var discoveryGeneration: UInt64 = 0
@@ -163,7 +197,7 @@ private final class PagePilotLANBrowser: NSObject, NetServiceBrowserDelegate, Ne
             self.resolveFailureCounts.removeAll()
             self.lastKnownCandidate = nil
             self.fallbackWasInvalidated = false
-            self.flushPendingIfNeeded(with: nil)
+            self.cancelPendingLookups()
 
             for service in oldServices {
                 service.delegate = nil
@@ -181,6 +215,9 @@ private final class PagePilotLANBrowser: NSObject, NetServiceBrowserDelegate, Ne
             }
             self.lastKnownCandidate = nil
 
+            let lookup = self.lookupCycleState.beginOrJoin()
+            self.pendingCompletions.append(completion)
+
             self.startBrowsingIfNeeded()
             if !self.services.isEmpty {
                 // A previous resolve may have timed out while the browser still
@@ -188,15 +225,29 @@ private final class PagePilotLANBrowser: NSObject, NetServiceBrowserDelegate, Ne
                 // therefore another opportunity to resolve that same service.
                 self.resolveKnownServices()
             }
-            self.pendingCompletions.append(completion)
+
+            // Concurrent endpoint callers share one lookup cycle and therefore
+            // one set of fallback/timeout timers.
+            guard lookup.isNew else { return }
+
+            let cycleID = lookup.id
+            let cycleGeneration = self.discoveryGeneration
 
             // Prefer Bonjour (works for localized device names and dynamic
             // ports). The fixed fallback is valid only when there is no known
             // Bonjour service to resolve.
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
-                guard let self else { return }
+                guard let self,
+                      self.lookupCycleState.isActive(cycleID),
+                      self.discoveryGeneration == cycleGeneration
+                else {
+                    return
+                }
                 guard self.lastKnownEndpoint == nil else { return }
-                guard !self.pendingCompletions.isEmpty else { return }
+                guard !self.pendingCompletions.isEmpty else {
+                    _ = self.lookupCycleState.finish(cycleID)
+                    return
+                }
                 guard PagePilotLANFallbackPolicy.shouldUseFallback(
                     knownServiceCount: self.services.count,
                     fallbackWasInvalidated: self.fallbackWasInvalidated
@@ -206,28 +257,33 @@ private final class PagePilotLANBrowser: NSObject, NetServiceBrowserDelegate, Ne
 
                 let candidate = PagePilotLANEndpointCandidate(
                     url: fallbackEndpoint,
-                    generation: self.discoveryGeneration,
+                    generation: cycleGeneration,
                     source: .fallback
                 )
                 print("PagePilotLANBrowser: Bonjour slow, trying fallback \(fallbackEndpoint.absoluteString)")
-                // Keep browsing; if Bonjour later resolves, a newer Bonjour
-                // candidate supersedes this fixed fallback.
-                let pending = self.pendingCompletions
-                self.pendingCompletions = []
-                pending.forEach { $0(candidate) }
+                // Finish only the cycle that scheduled this timer. A later
+                // lookup cannot be flushed by an older cycle's callback.
+                self.flushPendingIfNeeded(with: candidate, cycleID: cycleID)
             }
 
             DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) { [weak self] in
-                guard let self else { return }
+                guard let self,
+                      self.lookupCycleState.isActive(cycleID),
+                      self.discoveryGeneration == cycleGeneration
+                else {
+                    return
+                }
+                guard !self.pendingCompletions.isEmpty else {
+                    _ = self.lookupCycleState.finish(cycleID)
+                    return
+                }
+
                 if let candidate = self.lastKnownCandidate,
                    self.isCurrent(candidate) {
-                    self.flushPendingIfNeeded(with: candidate)
-                } else if self.pendingCompletions.isEmpty {
-                    // Already answered via fallback.
-                    return
+                    self.flushPendingIfNeeded(with: candidate, cycleID: cycleID)
                 } else {
                     print("PagePilotLANBrowser: Bonjour timed out")
-                    self.flushPendingIfNeeded(with: nil)
+                    self.flushPendingIfNeeded(with: nil, cycleID: cycleID)
                 }
             }
         }
@@ -382,11 +438,25 @@ private final class PagePilotLANBrowser: NSObject, NetServiceBrowserDelegate, Ne
         browser.searchForServices(ofType: serviceType, inDomain: serviceDomain)
     }
 
-    private func flushPendingIfNeeded(with candidate: PagePilotLANEndpointCandidate?) {
+    private func flushPendingIfNeeded(
+        with candidate: PagePilotLANEndpointCandidate?,
+        cycleID: UInt64? = nil
+    ) {
         guard !pendingCompletions.isEmpty else { return }
+        guard lookupCycleState.finish(cycleID) else { return }
+
         let completions = pendingCompletions
         pendingCompletions = []
         completions.forEach { $0(candidate) }
+    }
+
+    private func cancelPendingLookups() {
+        lookupCycleState.cancel()
+        guard !pendingCompletions.isEmpty else { return }
+
+        let completions = pendingCompletions
+        pendingCompletions = []
+        completions.forEach { $0(nil) }
     }
 
     func netServiceBrowser(_ browser: NetServiceBrowser, didFind service: NetService, moreComing: Bool) {
