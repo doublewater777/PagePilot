@@ -154,7 +154,7 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
         var message = command.message
         message["target"] = destination.rawValue
         message["commandId"] = commandID
-        let token = responseEpoch.token
+        let token = responseEpoch.beginRequest(to: destination)
 
         WCSession.default.sendMessage(
             message,
@@ -183,14 +183,15 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
         refreshVisibleError()
     }
 
-    private func applySendFailure(to destination: WatchReaderDestination, token: UInt64) {
-        guard token == responseEpoch.token else { return }
-
+    private func applySendFailure(to destination: WatchReaderDestination, token: WatchResponseToken) {
         let transportReachable = WCSession.default.isReachable
         if !transportReachable {
+            guard responseEpoch.belongsToCurrentTransport(token) else { return }
             invalidateTransportState(error: localized("watch.error.sendFailed"))
             return
         }
+
+        guard responseEpoch.accepts(token, transportReachable: true) else { return }
 
         var state = routingState
         state.invalidateForSendFailure(
@@ -244,7 +245,7 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
     }
 
     private func pollStatus(for destination: WatchReaderDestination) {
-        let token = responseEpoch.token
+        let token = responseEpoch.beginRequest(to: destination)
         WCSession.default.sendMessage(
             ["action": "status", "target": destination.rawValue],
             replyHandler: { [weak self] reply in
@@ -252,11 +253,14 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
             },
             errorHandler: { [weak self] _ in
                 DispatchQueue.main.async {
-                    guard let self, token == self.responseEpoch.token else { return }
-                    if !WCSession.default.isReachable {
+                    guard let self else { return }
+                    let transportReachable = WCSession.default.isReachable
+                    if !transportReachable {
+                        guard self.responseEpoch.belongsToCurrentTransport(token) else { return }
                         self.invalidateTransportState(error: self.localized("watch.error.openIPhone"))
                         return
                     }
+                    guard self.responseEpoch.accepts(token, transportReachable: true) else { return }
                     switch destination {
                     case .iPhone:
                         self.iPhoneReaderReady = false
@@ -274,7 +278,7 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
     private func handleWatchConnectivityReply(
         _ reply: [String: Any],
         from destination: WatchReaderDestination,
-        token: UInt64
+        token: WatchResponseToken
     ) {
         DispatchQueue.main.async {
             guard self.responseEpoch.accepts(
@@ -491,22 +495,30 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
 // MARK: - WCSessionDelegate
 extension WatchConnectivityManager: WCSessionDelegate {
     func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: Error?) {
+        let reachable = session.isReachable
         DispatchQueue.main.async {
-            self.isReachable = session.isReachable
-            if !session.isReachable {
+            self.isReachable = reachable
+            if reachable {
+                self.refreshConnectionStatus()
+            } else {
                 self.invalidateTransportState(error: self.localized("watch.error.openIPhone"))
             }
-            self.refreshConnectionStatus()
         }
     }
 
     func sessionReachabilityDidChange(_ session: WCSession) {
+        // Capture at delegate-entry time. Reading session.isReachable later on
+        // the main queue can miss a transient false event after a fast reconnect.
+        let reachable = session.isReachable
         DispatchQueue.main.async {
-            self.isReachable = session.isReachable
-            if !session.isReachable {
+            self.isReachable = reachable
+            if reachable {
+                self.refreshConnectionStatus()
+            } else {
+                // A false event always advances the transport epoch, even if the
+                // session has already reconnected by the time this block runs.
                 self.invalidateTransportState(error: self.localized("watch.error.openIPhone"))
             }
-            self.refreshConnectionStatus()
         }
     }
 
