@@ -87,6 +87,11 @@ struct Book: Codable {
         }
     }
 
+    var hasLocalFile: Bool {
+        guard let fileURL = try? absoluteFileURL() else { return false }
+        return FileManager.default.fileExists(atPath: fileURL.path)
+    }
+
     func preferences<P: Decodable>() throws -> P? {
         guard let data = preferencesJSON.flatMap({ $0.data(using: .utf8) }) else {
             return nil
@@ -177,6 +182,14 @@ final class BookRepository {
         }
         notifyCloudSync()
         return id
+    }
+
+    func updateLocalFileURL(_ url: AnyURL, for id: Book.Id) async throws {
+        try await db.write { db in
+            try Book
+                .filter(Book.Columns.id == id)
+                .updateAll(db, Book.Columns.url.set(to: url.string))
+        }
     }
 
     func remove(_ id: Book.Id) async throws {

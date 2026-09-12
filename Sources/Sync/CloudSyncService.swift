@@ -6,6 +6,7 @@
 
 import CloudKit
 import Foundation
+import GRDB
 
 /// Bidirectional iCloud sync for the user's private PagePilot library.
 ///
@@ -17,7 +18,9 @@ final actor CloudSyncService: CKSyncEngineDelegate {
     static let containerIdentifier = "iCloud.com.panyang.PagePilot"
     static let zoneName = "PagePilotSync"
 
+    private let db: Database
     private let store: CloudSyncStore
+    private let contentService: CloudBookContentService
     private let defaults: UserDefaults
     private let zone = CKRecordZone(zoneName: CloudSyncService.zoneName)
 
@@ -31,7 +34,9 @@ final actor CloudSyncService: CKSyncEngineDelegate {
     private var accountAvailable = true
 
     init(db: Database, defaults: UserDefaults = .standard) {
+        self.db = db
         store = CloudSyncStore(db: db)
+        contentService = CloudBookContentService()
         self.defaults = defaults
     }
 
@@ -89,6 +94,7 @@ final actor CloudSyncService: CKSyncEngineDelegate {
         accountAvailable = true
         do {
             try await store.prepareStableIDs()
+            try await prepareContentV2MigrationIfNeeded()
 
             let container = CKContainer(identifier: Self.containerIdentifier)
             let state = loadStateSerialization()
@@ -168,6 +174,9 @@ final actor CloudSyncService: CKSyncEngineDelegate {
             case .save:
                 pending.append(.saveRecord(recordID))
             case .delete:
+                if change.recordType == .book {
+                    try await contentService.delete(syncID: change.syncID)
+                }
                 pending.append(.deleteRecord(recordID))
             }
         }
@@ -184,10 +193,22 @@ final actor CloudSyncService: CKSyncEngineDelegate {
         let scope = context.options.scope
         let changes = syncEngine.state.pendingRecordZoneChanges.filter { scope.contains($0) }
         let store = self.store
+        let contentService = self.contentService
 
         return await CKSyncEngine.RecordZoneChangeBatch(pendingChanges: changes) { recordID in
             do {
                 if let record = try await store.record(for: recordID) {
+                    if record.recordType == CloudSyncRecordType.book.rawValue {
+                        let asset = record["publication"] as? CKAsset
+                        try await contentService.uploadIfNeeded(
+                            syncID: record.recordID.recordName,
+                            fileURL: asset?.fileURL,
+                            fileName: record["fileName"] as? String
+                        )
+                        // Publication assets are intentionally not part of the
+                        // automatically-synced library zone anymore.
+                        record["publication"] = nil
+                    }
                     return record
                 }
                 syncEngine.state.remove(pendingRecordZoneChanges: [.saveRecord(recordID)])
@@ -398,6 +419,19 @@ final actor CloudSyncService: CKSyncEngineDelegate {
             isEnabled: CloudSyncPreferences.isEnabled(in: defaults),
             hasProAccess: ProPurchaseManager.shared.hasProAccess
         )
+    }
+
+    private func prepareContentV2MigrationIfNeeded() async throws {
+        guard !defaults.bool(forKey: CloudSyncPreferences.contentV2MigrationKey) else { return }
+
+        try await db.write { db in
+            var books = try Book.fetchAll(db)
+            for index in books.indices where books[index].hasLocalFile {
+                books[index].contentNeedsSync = true
+                try books[index].save(db)
+            }
+        }
+        defaults.set(true, forKey: CloudSyncPreferences.contentV2MigrationKey)
     }
 
     private func loadStateSerialization() -> CKSyncEngine.State.Serialization? {

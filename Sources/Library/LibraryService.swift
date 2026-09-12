@@ -20,15 +20,22 @@ final class LibraryService: Loggable {
     private let books: BookRepository
     private let readium: Readium
     private let lcp: LCPModuleAPI
+    private let cloudContent: CloudBookContentService
 
     /// Tracks in-flight imports so orphaned-file cleanup never runs
     /// concurrently with an import.
     private let importActivity = ImportActivity()
 
-    init(books: BookRepository, readium: Readium, lcp: LCPModuleAPI) {
+    init(
+        books: BookRepository,
+        readium: Readium,
+        lcp: LCPModuleAPI,
+        cloudContent: CloudBookContentService = CloudBookContentService()
+    ) {
         self.books = books
         self.readium = readium
         self.lcp = lcp
+        self.cloudContent = cloudContent
     }
 
     func allBooks() -> AnyPublisher<[Book], Error> {
@@ -38,12 +45,54 @@ final class LibraryService: Loggable {
     // MARK: Opening
 
     /// Opens the Readium 2 Publication for the given `book`.
+    /// Cloud-only books are downloaded only after this explicit user action.
     func openBook(_ book: Book, sender: UIViewController) async throws -> Publication? {
-        let (pub, _) = try await openPublication(at: book.absoluteURL(), allowUserInteraction: true, sender: sender)
+        let originalURL = try book.absoluteURL()
+        let url: AbsoluteURL
+
+        // Remote/streamed publications keep their original behavior. Only a
+        // missing local file is interpreted as a cloud-only library item.
+        if originalURL.fileURL == nil || book.hasLocalFile {
+            url = originalURL
+        } else {
+            let downloadedURL = try await cloudContent.download(
+                syncID: book.syncID,
+                title: book.title
+            )
+            guard let absoluteURL = downloadedURL.absoluteURL else {
+                throw LibraryError.bookNotFound
+            }
+            if let id = book.id {
+                try await books.updateLocalFileURL(downloadedURL, for: id)
+            }
+            url = absoluteURL
+        }
+
+        let (pub, _) = try await openPublication(at: url, allowUserInteraction: true, sender: sender)
         guard try checkIsReadable(publication: pub) else {
             return nil
         }
         return pub
+    }
+
+    /// Removes only the local publication file. The Book row and its cloud
+    /// content remain available, so the next open downloads it again.
+    func removeDownload(_ book: Book) throws {
+        guard CloudSyncAccessPolicy.canSync(
+            isEnabled: CloudSyncPreferences.isEnabled,
+            hasProAccess: ProPurchaseManager.shared.hasProAccess
+        ),
+        let fileURL = try book.absoluteFileURL(),
+        FileManager.default.fileExists(atPath: fileURL.path)
+        else {
+            return
+        }
+
+        let documentsPath = Paths.documents.url.standardizedFileURL.path
+        let candidatePath = fileURL.standardizedFileURL.path
+        guard candidatePath.hasPrefix(documentsPath + "/") else { return }
+
+        try FileManager.default.removeItem(at: fileURL)
     }
 
     /// Opens the Readium 2 Publication at the given `url`.

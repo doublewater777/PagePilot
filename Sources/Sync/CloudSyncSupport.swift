@@ -92,6 +92,7 @@ enum CloudSyncPreferences {
     static let enabledKey = "cloud_sync_enabled"
     static let lastSuccessfulSyncKey = "cloud_sync_last_success"
     static let stateSerializationKey = "cloud_sync_engine_state"
+    static let contentV2MigrationKey = "cloud_sync_content_v2_migrated"
 
     static var isEnabled: Bool {
         get { isEnabled(in: .standard) }
