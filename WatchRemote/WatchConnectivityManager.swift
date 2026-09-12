@@ -4,36 +4,44 @@ import WatchConnectivity
 final class WatchConnectivityManager: NSObject, ObservableObject {
     static let shared = WatchConnectivityManager()
 
-    enum ControlTarget: String {
-        case iPad = "ipad"
+    private enum Destination: String {
         case iPhone = "iphone"
+        case iPad = "ipad"
     }
 
     @Published var isReachable = false
     @Published var relayReachable = false
-    @Published var controlTarget: ControlTarget = .iPhone
     @Published var crownSensitivity: Double
     @Published var bookTitle: String = ""
     @Published var bookProgress: Double = 0.0
     @Published var readerReady = false
+    @Published var activeReaderCount = 0
     @Published var hasReceivedStatus = false
     @Published var doubleTapPageTurn = true
     @Published var readingSessionStartedAt: Date?
     @Published var readingSessionStartProgress: Double = 0.0
 
     /// Last error message (visible on the watch UI for in-the-field debugging).
+    /// Optional iPad relay failures are intentionally not surfaced here because
+    /// the iPhone Reader remains independently usable.
     @Published var lastError: String = ""
-    /// Timestamp of last successful /status response.
+    /// Timestamp of last successful iPad relay response.
     @Published var lastStatusOK: Date? = nil
 
-    private let controlTargetKey = "watch_control_target"
-    private let defaultTargetMigrationKey = "watch_default_target_iphone_migrated"
     private let readingSessionActiveKey = "readingSessionActive"
     private let readingSessionStartedAtKey = "readingSessionStartedAt"
     private let readingSessionStartProgressKey = "readingSessionStartProgress"
     private let relayGraceInterval: TimeInterval = 8.0
     private var statusPollTimer: Timer?
     private var hasAuthoritativeReadingSessionState = false
+
+    private var iPhoneReaderReady = false
+    private var iPadReaderReady = false
+    private var iPhoneBookTitle = ""
+    private var iPhoneBookProgress = 0.0
+    private var iPadBookTitle = ""
+    private var iPadBookProgress = 0.0
+
     private lazy var commandQueue = ThrottledCommandQueue(interval: 0.1, queue: .main) { [weak self] command, completion in
         self?.performSend(command, completion: completion)
     }
@@ -43,16 +51,8 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
     }
 
     private override init() {
-        Self.migrateDefaultTargetIfNeeded(
-            targetKey: controlTargetKey,
-            migrationKey: defaultTargetMigrationKey
-        )
         let sensitivity = UserDefaults.standard.double(forKey: "watch_crown_sensitivity")
         self.crownSensitivity = sensitivity > 0 ? sensitivity : 2.0
-        if let rawTarget = UserDefaults.standard.string(forKey: "watch_control_target"),
-           let target = ControlTarget(rawValue: rawTarget) {
-            self.controlTarget = target
-        }
         if let dt = UserDefaults.standard.object(forKey: "watch_double_tap_page_turn") as? Bool {
             self.doubleTapPageTurn = dt
         }
@@ -67,7 +67,7 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
         session.delegate = self
         session.activate()
 
-        // Sync immediate application context if already received previously
+        // Sync immediate application context if already received previously.
         updateSettings(from: session.receivedApplicationContext)
     }
 
@@ -82,42 +82,29 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
     }
 
     private func updateSettings(from context: [String: Any]) {
-        let previousTarget = controlTarget
-        if let rawTarget = context[controlTargetKey] as? String,
-           let target = ControlTarget(rawValue: rawTarget) {
-            controlTarget = target
-            UserDefaults.standard.set(rawTarget, forKey: controlTargetKey)
-        }
-
-        if previousTarget != controlTarget {
-            relayReachable = false
-            bookTitle = ""
-            bookProgress = 0.0
-            readerReady = false
-            hasReceivedStatus = false
-            lastStatusOK = nil
-            lastError = ""
-            resetReadingSessionState()
-        }
-
         if let sensitivity = context["watch_crown_sensitivity"] as? Double {
-            self.crownSensitivity = sensitivity
+            crownSensitivity = sensitivity
             UserDefaults.standard.set(sensitivity, forKey: "watch_crown_sensitivity")
         }
         if let doubleTap = context["watch_double_tap_page_turn"] as? Bool {
-            self.doubleTapPageTurn = doubleTap
+            doubleTapPageTurn = doubleTap
             UserDefaults.standard.set(doubleTap, forKey: "watch_double_tap_page_turn")
         }
-        if controlTarget == .iPhone {
-            if let title = context["currentBookTitle"] as? String {
-                self.bookTitle = title
-            }
-            if let progress = context["currentBookProgress"] as? Double {
-                self.bookProgress = progress
-            }
-            _ = applyReadingSessionContext(context)
-        }
 
+        // The application context is sourced from the paired iPhone, so it can
+        // immediately seed the local Reader state while status polling also
+        // checks the nearby iPad relay independently.
+        if let title = context["currentBookTitle"] as? String {
+            iPhoneBookTitle = title
+        }
+        if let progress = context["currentBookProgress"] as? Double {
+            iPhoneBookProgress = progress
+        }
+        if !iPhoneBookTitle.isEmpty {
+            iPhoneReaderReady = true
+        }
+        _ = applyReadingSessionContext(context)
+        recomputeAggregateReaderState()
         refreshStatusPolling()
     }
 
@@ -132,27 +119,44 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
     }
 
     private func performSend(_ command: PageCommand, completion: @escaping () -> Void) {
+        let commandID = UUID().uuidString
+
+        // Always ask the paired iPhone first. The iPhone only turns when its
+        // Reader is active, so an idle iPhone simply returns NAVIGATOR_NOT_READY.
+        send(command, to: .iPhone, commandID: commandID)
+
+        // Fan the same logical command out to the iPad route. The iPhone app
+        // enforces Pro before it touches the LAN, so Free users incur no LAN
+        // discovery or remote page turn. Relay failures never block local use.
+        send(command, to: .iPad, commandID: commandID)
+
+        // Immediately unblock the queue. Success/failure replies only refresh
+        // status and must not gate the next crown/button event.
+        completion()
+    }
+
+    private func send(_ command: PageCommand, to destination: Destination, commandID: String) {
         var message = command.message
-        message["target"] = controlTarget.rawValue
+        message["target"] = destination.rawValue
+        message["commandId"] = commandID
 
         WCSession.default.sendMessage(
             message,
             replyHandler: { [weak self] reply in
-                self?.handleWatchConnectivityReply(reply)
-                // Reply is processed for status/UI updates, but we do not gate
-                // the local command queue on the remote roundtrip.
+                self?.handleWatchConnectivityReply(reply, from: destination)
             },
             errorHandler: { [weak self] _ in
                 DispatchQueue.main.async {
-                    self?.lastError = self?.localized("watch.error.sendFailed") ?? ""
+                    guard let self else { return }
+                    switch destination {
+                    case .iPhone:
+                        self.lastError = self.localized("watch.error.sendFailed")
+                    case .iPad:
+                        self.markRelayFailure()
+                    }
                 }
             }
         )
-
-        // Immediately unblock the queue. This makes successive triggers
-        // (double tap, buttons, crown) feel much snappier — the throttle
-        // interval now gates from dispatch time, not full reader RTT + processing.
-        completion()
     }
 
     private func startPolling() {
@@ -182,66 +186,83 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
         let reachable = WCSession.default.isReachable
         isReachable = reachable
         guard reachable else { return }
+
+        pollStatus(for: .iPhone)
+        pollStatus(for: .iPad)
+    }
+
+    private func pollStatus(for destination: Destination) {
         WCSession.default.sendMessage(
-            ["action": "status", "target": controlTarget.rawValue],
+            ["action": "status", "target": destination.rawValue],
             replyHandler: { [weak self] reply in
-                self?.handleWatchConnectivityReply(reply)
+                self?.handleWatchConnectivityReply(reply, from: destination)
             },
-            errorHandler: { [weak self] error in
+            errorHandler: { [weak self] _ in
                 DispatchQueue.main.async {
-                    guard let self = self else { return }
-                    if self.controlTarget == .iPad {
-                        self.markRelayFailure(self.localized("watch.error.ipadTimeout"))
-                    } else {
-                        self.lastError = self.localized("watch.error.openIPhone")
+                    guard let self else { return }
+                    switch destination {
+                    case .iPhone:
+                        self.iPhoneReaderReady = false
+                    case .iPad:
+                        self.markRelayFailure()
+                        self.iPadReaderReady = false
                     }
+                    self.recomputeAggregateReaderState()
                 }
             }
         )
     }
 
-    private func handleWatchConnectivityReply(_ reply: [String: Any]) {
+    private func handleWatchConnectivityReply(_ reply: [String: Any], from destination: Destination) {
         DispatchQueue.main.async {
-            let route = reply["route"] as? String
             self.hasReceivedStatus = true
 
             if let error = reply["error"] as? String {
                 let errorCode = reply["errorCode"] as? String
+
                 if errorCode == "NAVIGATOR_NOT_READY" {
-                    self.readerReady = false
-                    if !self.hasAuthoritativeReadingSessionState {
-                        self.readingSessionStartedAt = nil
-                        self.readingSessionStartProgress = self.bookProgress
-                    }
-                }
-                if self.controlTarget == .iPad, route == "iPhoneRelay" {
-                    if self.isRelayConnectivityError(errorCode) {
-                        self.markRelayFailure(self.errorMessage(code: errorCode, error: error))
-                    } else {
+                    switch destination {
+                    case .iPhone:
+                        self.iPhoneReaderReady = false
+                    case .iPad:
+                        self.iPadReaderReady = false
                         self.markRelaySuccess(clearError: false)
-                        self.lastError = self.errorMessage(code: errorCode, error: error)
                     }
+                    self.recomputeAggregateReaderState()
                     return
                 }
 
-                self.lastError = self.errorMessage(code: errorCode, error: error)
-                return
-            }
+                switch destination {
+                case .iPad:
+                    // iPad is an optional Pro fan-out path. PRO_REQUIRED,
+                    // discovery misses and relay timeouts must stay silent on
+                    // the Watch because the local iPhone path still works.
+                    if errorCode == "PRO_REQUIRED" || self.isRelayConnectivityError(errorCode) {
+                        self.iPadReaderReady = false
+                        self.markRelayFailure()
+                        self.recomputeAggregateReaderState()
+                        return
+                    }
+                    self.iPadReaderReady = false
+                    self.recomputeAggregateReaderState()
+                    return
 
-            if let route {
-                if route == "iPhoneRelay" {
-                    if self.controlTarget == .iPad {
-                        self.markRelaySuccess()
-                    }
-                } else if route == "direct" {
-                    if self.controlTarget == .iPhone {
-                        self.lastStatusOK = Date()
-                        self.lastError = ""
-                    }
+                case .iPhone:
+                    self.iPhoneReaderReady = false
+                    self.recomputeAggregateReaderState()
+                    self.lastError = self.errorMessage(code: errorCode, error: error)
+                    return
                 }
             }
 
-            self.applyStatusPayload(reply)
+            switch destination {
+            case .iPhone:
+                self.lastError = ""
+            case .iPad:
+                self.markRelaySuccess()
+            }
+
+            self.applyStatusPayload(reply, from: destination)
         }
     }
 
@@ -253,15 +274,14 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
     private func markRelaySuccess(clearError: Bool = true) {
         relayReachable = true
         lastStatusOK = Date()
-        if clearError {
+        if clearError, lastError == localized("watch.error.ipadTimeout") || lastError == localized("watch.error.ipadNotFound") {
             lastError = ""
         }
     }
 
-    private func markRelayFailure(_ message: String) {
+    private func markRelayFailure() {
         guard !hasRecentRelaySuccess else { return }
         relayReachable = false
-        lastError = message
     }
 
     private func isRelayConnectivityError(_ errorCode: String?) -> Bool {
@@ -270,52 +290,68 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
 
     private func errorMessage(code: String?, error: String) -> String {
         switch code {
-        case "IPAD_NOT_FOUND":
-            return localized("watch.error.ipadNotFound")
-        case "RELAY_TIMEOUT":
-            return localized("watch.error.ipadTimeout")
-        case "NAVIGATOR_NOT_READY":
-            return controlTarget == .iPad
-                ? localized("watch.hint.openBookIPad")
-                : localized("watch.hint.openBookIPhone")
-        case "PRO_REQUIRED":
-            return localized("watch.error.proRequired")
         case "INVALID_COMMAND":
             return localized("watch.error.generic")
+        case "NAVIGATOR_NOT_READY":
+            return ""
         default:
             if error.localizedCaseInsensitiveContains("reader") {
-                return controlTarget == .iPad
-                    ? localized("watch.hint.openBookIPad")
-                    : localized("watch.hint.openBookIPhone")
+                return ""
             }
             return localized("watch.error.generic")
         }
     }
 
-    private func applyStatusPayload(_ json: [String: Any]) {
-        DispatchQueue.main.async {
-            let wasReaderReady = self.readerReady
-            self.hasReceivedStatus = true
+    private func applyStatusPayload(_ json: [String: Any], from destination: Destination) {
+        let wasReaderReady = readerReady
+        let ready = (json["readerReady"] as? Bool) ?? ((json["bookTitle"] as? String)?.isEmpty == false)
+
+        switch destination {
+        case .iPhone:
+            iPhoneReaderReady = ready
             if let title = json["bookTitle"] as? String {
-                self.bookTitle = title
+                iPhoneBookTitle = title
             }
             if let progress = json["bookProgress"] as? Double {
-                self.bookProgress = progress
+                iPhoneBookProgress = progress
             }
-            if let ready = json["readerReady"] as? Bool {
-                self.readerReady = ready
-            } else if !self.bookTitle.isEmpty {
-                self.readerReady = true
+            _ = applyReadingSessionContext(json)
+
+        case .iPad:
+            iPadReaderReady = ready
+            if let title = json["bookTitle"] as? String {
+                iPadBookTitle = title
             }
-            if self.controlTarget == .iPhone {
-                _ = self.applyReadingSessionContext(json)
-            }
-            self.updateFallbackReadingSession(wasReaderReady: wasReaderReady)
-            if let sensitivity = json["crownSensitivity"] as? Double {
-                self.crownSensitivity = sensitivity
-                UserDefaults.standard.set(sensitivity, forKey: "watch_crown_sensitivity")
+            if let progress = json["bookProgress"] as? Double {
+                iPadBookProgress = progress
             }
         }
+
+        if let sensitivity = json["crownSensitivity"] as? Double {
+            crownSensitivity = sensitivity
+            UserDefaults.standard.set(sensitivity, forKey: "watch_crown_sensitivity")
+        }
+
+        recomputeAggregateReaderState(wasReaderReady: wasReaderReady)
+    }
+
+    private func recomputeAggregateReaderState(wasReaderReady: Bool? = nil) {
+        let previousReady = wasReaderReady ?? readerReady
+        activeReaderCount = (iPhoneReaderReady ? 1 : 0) + (iPadReaderReady ? 1 : 0)
+        readerReady = activeReaderCount > 0
+
+        if iPhoneReaderReady {
+            bookTitle = iPhoneBookTitle
+            bookProgress = iPhoneBookProgress
+        } else if iPadReaderReady {
+            bookTitle = iPadBookTitle
+            bookProgress = iPadBookProgress
+        } else {
+            bookTitle = ""
+            bookProgress = 0.0
+        }
+
+        updateFallbackReadingSession(wasReaderReady: previousReady)
     }
 
     @discardableResult
@@ -355,29 +391,12 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
         }
     }
 
-    private func resetReadingSessionState() {
-        hasAuthoritativeReadingSessionState = false
-        readingSessionStartedAt = nil
-        readingSessionStartProgress = 0.0
-    }
-
     private func clampProgress(_ value: Double) -> Double {
         min(max(value, 0.0), 1.0)
     }
 
     private func localized(_ key: String) -> String {
         NSLocalizedString(key, comment: "")
-    }
-
-    private static func migrateDefaultTargetIfNeeded(targetKey: String, migrationKey: String) {
-        let defaults = UserDefaults.standard
-        guard !defaults.bool(forKey: migrationKey) else { return }
-
-        let rawTarget = defaults.string(forKey: targetKey)
-        if rawTarget == nil || rawTarget == ControlTarget.iPad.rawValue {
-            defaults.set(ControlTarget.iPhone.rawValue, forKey: targetKey)
-        }
-        defaults.set(true, forKey: migrationKey)
     }
 }
 
@@ -393,6 +412,12 @@ extension WatchConnectivityManager: WCSessionDelegate {
     func sessionReachabilityDidChange(_ session: WCSession) {
         DispatchQueue.main.async {
             self.isReachable = session.isReachable
+            if !session.isReachable {
+                self.iPhoneReaderReady = false
+                self.iPadReaderReady = false
+                self.relayReachable = false
+                self.recomputeAggregateReaderState()
+            }
             self.refreshConnectionStatus()
         }
     }
