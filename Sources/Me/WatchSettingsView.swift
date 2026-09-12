@@ -10,23 +10,19 @@ import UIKit
 // MARK: - Watch Settings View
 
 struct WatchSettingsView: View {
-    @State private var controlTarget: WatchPageTurnSettings.ControlTarget
     @State private var doubleTapPageTurn: Bool
     @ObservedObject private var proPurchase = ProPurchaseManager.shared
-    @State private var showsPaywall = false
     @State private var showSetupGuide = false
 
     init() {
         let settings = WatchPageTurnSettings()
-        _controlTarget = State(initialValue: settings.controlTarget)
         _doubleTapPageTurn = State(initialValue: settings.doubleTapPageTurn)
     }
 
     var body: some View {
         List {
             guideSection
-            targetSection
-            guidanceSection
+            automaticRoutingSection
             doubleTapSection
         }
         .listStyle(.insetGrouped)
@@ -34,9 +30,6 @@ struct WatchSettingsView: View {
         .background(Color(.systemGroupedBackground))
         .navigationTitle(NSLocalizedString("watch_settings_title", comment: ""))
         .navigationBarTitleDisplayMode(.inline)
-        .sheet(isPresented: $showsPaywall) {
-            PaywallView()
-        }
         .sheet(isPresented: $showSetupGuide) {
             WatchSetupGuideView {
                 showSetupGuide = false
@@ -44,7 +37,10 @@ struct WatchSettingsView: View {
             }
         }
         .onAppear {
-            if controlTarget == .iPad {
+            // There is no longer a user-selected target. Pro users always keep
+            // nearby iPad discovery warm so Watch commands can fan out to any
+            // active Reader automatically.
+            if proPurchase.hasProAccess {
                 WatchPageTurnService.shared.prepareIPadRelay()
                 WatchPageTurnService.shared.probeIPadRelayNow()
             }
@@ -66,84 +62,31 @@ struct WatchSettingsView: View {
         }
     }
 
-    // MARK: - Target
+    // MARK: - Automatic routing
 
-    private var targetSection: some View {
-        Section(
-            header: Text(NSLocalizedString("watch_target_section", comment: "")),
-            footer: Text(NSLocalizedString("watch_target_footer", comment: ""))
-        ) {
-            Picker(
-                NSLocalizedString("watch_target_picker", comment: ""),
-                selection: Binding(
-                    get: { controlTarget },
-                    set: { newValue in
-                        guard newValue != .iPad || proPurchase.hasProAccess else {
-                            showsPaywall = true
-                            return
-                        }
+    private var automaticRoutingSection: some View {
+        Section {
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: "ipad.and.iphone")
+                    .font(.title3)
+                    .foregroundStyle(Color.accentColor)
+                    .frame(width: 28)
 
-                        controlTarget = newValue
-                        var settings = WatchPageTurnSettings()
-                        settings.controlTarget = newValue
-                        settings.syncToWatch()
-                        if newValue == .iPad {
-                            WatchPageTurnService.shared.prepareIPadRelay()
-                            // Kick an immediate status probe so an open iPad diagnostics page can pass “iPhone test”.
-                            WatchPageTurnService.shared.probeIPadRelayNow()
-                        }
-                    }
-                )
-            ) {
-                ForEach(WatchPageTurnSettings.ControlTarget.allCases) { target in
-                    Text(targetName(for: target))
-                        .tag(target)
-                }
-            }
-            .pickerStyle(.segmented)
-        }
-    }
-
-    private func targetName(for target: WatchPageTurnSettings.ControlTarget) -> String {
-        target.localizedName
-    }
-
-    // MARK: - Guidance
-
-    private var guidanceSection: some View {
-        let footerKey = controlTarget == .iPad ? "watch_guidance_ipad_footer" : "watch_guidance_iphone_footer"
-
-        return Section(
-            header: Text(NSLocalizedString("watch_guidance_header", comment: "")),
-            footer: Text(NSLocalizedString(footerKey, comment: ""))
-        ) {
-            VStack(alignment: .leading, spacing: 12) {
-                if controlTarget == .iPad {
-                    stepRow(number: 1, textKey: "watch_guidance_ipad_step1")
-                    stepRow(number: 2, textKey: "watch_guidance_ipad_step2")
-                    stepRow(number: 3, textKey: "watch_guidance_ipad_step3")
-                } else {
-                    stepRow(number: 1, textKey: "watch_guidance_iphone_step1")
-                    stepRow(number: 2, textKey: "watch_guidance_iphone_step2")
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(NSLocalizedString("watch_auto_routing_title", comment: ""))
+                        .font(.subheadline.weight(.semibold))
+                    Text(NSLocalizedString(
+                        proPurchase.hasProAccess
+                            ? "watch_auto_routing_pro_body"
+                            : "watch_auto_routing_free_body",
+                        comment: ""
+                    ))
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
                 }
             }
             .padding(.vertical, 4)
-        }
-    }
-
-    private func stepRow(number: Int, textKey: String) -> some View {
-        HStack(spacing: 12) {
-            ZStack {
-                Circle()
-                    .fill(Color.accentColor.opacity(0.12))
-                    .frame(width: 24, height: 24)
-                Text("\(number)")
-                    .font(.caption2.bold())
-                    .foregroundColor(.accentColor)
-            }
-            Text(NSLocalizedString(textKey, comment: ""))
-                .font(.subheadline)
-            Spacer()
         }
     }
 
