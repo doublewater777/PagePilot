@@ -28,4 +28,55 @@ final class PagePilotLANRecoveryPolicyTests: XCTestCase {
         XCTAssertTrue(PagePilotLANResolveRetryPolicy.shouldRetry(afterFailureCount: 2))
         XCTAssertFalse(PagePilotLANResolveRetryPolicy.shouldRetry(afterFailureCount: 3))
     }
+
+    func testNormalResolveWaitsWhileSameServiceIsAlreadyResolving() {
+        XCTAssertEqual(
+            PagePilotLANResolveLifecyclePolicy.action(
+                isResolving: true,
+                forceRestart: false
+            ),
+            .wait
+        )
+    }
+
+    func testStaleEndpointRecoveryStopsThenRestartsActiveResolve() {
+        XCTAssertEqual(
+            PagePilotLANResolveLifecyclePolicy.action(
+                isResolving: true,
+                forceRestart: true
+            ),
+            .stopThenRestart
+        )
+    }
+
+    func testResolveStartsImmediatelyWhenServiceIsIdle() {
+        XCTAssertEqual(
+            PagePilotLANResolveLifecyclePolicy.action(
+                isResolving: false,
+                forceRestart: true
+            ),
+            .start
+        )
+    }
+
+    func testFixedFallbackIsAllowedOnlyWithoutKnownBonjourServices() {
+        XCTAssertTrue(
+            PagePilotLANFallbackPolicy.shouldUseFallback(
+                knownServiceCount: 0,
+                fallbackWasInvalidated: false
+            )
+        )
+        XCTAssertFalse(
+            PagePilotLANFallbackPolicy.shouldUseFallback(
+                knownServiceCount: 1,
+                fallbackWasInvalidated: false
+            )
+        )
+        XCTAssertFalse(
+            PagePilotLANFallbackPolicy.shouldUseFallback(
+                knownServiceCount: 0,
+                fallbackWasInvalidated: true
+            )
+        )
+    }
 }
