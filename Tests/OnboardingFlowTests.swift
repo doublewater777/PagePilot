@@ -8,22 +8,24 @@ import XCTest
 @testable import PagePilot
 
 final class OnboardingFlowTests: XCTestCase {
-    func testImportedPublicationAdvancesToTargetSelectionOnIPhone() {
+    func testImportedPublicationAdvancesDirectlyToReaderOnIPhone() {
         var flow = OnboardingFlow(platform: .iPhone)
 
         flow.didChoosePublication(bookID: 42, source: .user)
 
-        XCTAssertEqual(flow.step, .chooseControlTarget)
+        XCTAssertEqual(flow.step, .reader)
         XCTAssertEqual(flow.publication, .init(bookID: 42, source: .user))
+        XCTAssertNil(flow.controlTarget)
     }
 
-    func testSamplePublicationUsesSameIPhoneFlow() {
+    func testSamplePublicationUsesSameAutomaticRoutingFlow() {
         var flow = OnboardingFlow(platform: .iPhone)
 
         flow.didChoosePublication(bookID: 7, source: .sample)
 
-        XCTAssertEqual(flow.step, .chooseControlTarget)
+        XCTAssertEqual(flow.step, .reader)
         XCTAssertEqual(flow.publication, .init(bookID: 7, source: .sample))
+        XCTAssertNil(flow.controlTarget)
     }
 
     func testImportedPublicationAdvancesToReaderOnIPad() {
@@ -34,39 +36,29 @@ final class OnboardingFlowTests: XCTestCase {
         XCTAssertEqual(flow.step, .reader)
     }
 
-    func testIPhoneTargetAdvancesToReader() {
+    func testLegacyIPhoneTargetSelectionNoLongerChangesRouting() {
         var flow = OnboardingFlow(platform: .iPhone)
         flow.didChoosePublication(bookID: 42, source: .user)
 
-        flow.didChooseControlTarget(.iPhone, hasProAccess: false)
+        let effect = flow.didChooseControlTarget(.iPhone, hasProAccess: false)
 
+        XCTAssertEqual(effect, .none)
         XCTAssertEqual(flow.step, .reader)
-        XCTAssertEqual(flow.controlTarget, .iPhone)
+        XCTAssertNil(flow.controlTarget)
     }
 
-    func testLockedIPadTargetRequestsPaywallWithoutChangingSelection() {
+    func testLegacyIPadTargetSelectionNoLongerShowsPaywall() {
         var flow = OnboardingFlow(platform: .iPhone)
         flow.didChoosePublication(bookID: 42, source: .user)
 
         let effect = flow.didChooseControlTarget(.iPad, hasProAccess: false)
 
-        XCTAssertEqual(effect, .showIPadPaywall)
-        XCTAssertEqual(flow.step, .chooseControlTarget)
+        XCTAssertEqual(effect, .none)
+        XCTAssertEqual(flow.step, .reader)
         XCTAssertNil(flow.controlTarget)
     }
 
-    func testUnlockedIPadTargetAdvancesToHandoff() {
-        var flow = OnboardingFlow(platform: .iPhone)
-        flow.didChoosePublication(bookID: 42, source: .user)
-
-        let effect = flow.didChooseControlTarget(.iPad, hasProAccess: true)
-
-        XCTAssertEqual(effect, .none)
-        XCTAssertEqual(flow.step, .iPadHandoff)
-        XCTAssertEqual(flow.controlTarget, .iPad)
-    }
-
-    func testSkippingControlTargetKeepsCollapsedWatchGuideEntry() {
+    func testSkippingLegacyControlTargetKeepsCollapsedWatchGuideEntry() {
         var flow = OnboardingFlow(platform: .iPhone)
         flow.didChoosePublication(bookID: 42, source: .user)
 
@@ -89,7 +81,6 @@ final class OnboardingFlowTests: XCTestCase {
     func testSuccessfulWatchPageTurnCompletesActivation() {
         var flow = OnboardingFlow(platform: .iPhone)
         flow.didChoosePublication(bookID: 42, source: .user)
-        flow.didChooseControlTarget(.iPhone, hasProAccess: false)
 
         flow.didCompleteWatchPageTurn()
 
@@ -101,7 +92,6 @@ final class OnboardingFlowTests: XCTestCase {
     func testCollapsingWatchGuidePersistsLightweightState() {
         var flow = OnboardingFlow(platform: .iPhone)
         flow.didChoosePublication(bookID: 42, source: .user)
-        flow.didChooseControlTarget(.iPhone, hasProAccess: false)
 
         flow.collapseWatchGuide()
 
@@ -109,14 +99,13 @@ final class OnboardingFlowTests: XCTestCase {
         XCTAssertTrue(flow.isWatchGuideCollapsed)
     }
 
-    func testProgressStoreRestoresInterruptedFlow() {
+    func testProgressStoreRestoresAutomaticReaderFlow() {
         let suiteName = "OnboardingFlowTests.\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: suiteName)!
         defer { defaults.removePersistentDomain(forName: suiteName) }
         let store = OnboardingProgressStore(defaults: defaults)
         var flow = OnboardingFlow(platform: .iPhone)
         flow.didChoosePublication(bookID: 42, source: .user)
-        flow.didChooseControlTarget(.iPhone, hasProAccess: false)
 
         store.save(flow)
 

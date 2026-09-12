@@ -14,6 +14,7 @@ struct OnboardingFlow: Codable, Equatable {
 
     enum Step: Codable, Equatable {
         case choosePublication
+        // Retained for decoding onboarding progress saved by older builds.
         case chooseControlTarget
         case reader
         case iPadHandoff
@@ -25,6 +26,8 @@ struct OnboardingFlow: Codable, Equatable {
         case sample
     }
 
+    // Retained for source and saved-state compatibility. New onboarding never
+    // asks the user to choose a page-turn device.
     enum ControlTarget: Codable, Equatable {
         case iPhone
         case iPad
@@ -48,8 +51,6 @@ struct OnboardingFlow: Codable, Equatable {
     private(set) var isWatchGuideCollapsed = false
 
     var shouldShowWatchGuide: Bool {
-        // iPhone path only. iPad target goes to handoff (not reader). Skip still
-        // keeps a recoverable lightweight entry in the Reader.
         platform == .iPhone && step == .reader
     }
 
@@ -59,16 +60,18 @@ struct OnboardingFlow: Codable, Equatable {
 
     mutating func didChoosePublication(bookID: Int64, source: PublicationSource) {
         publication = PublicationSelection(bookID: bookID, source: source)
-        step = platform == .iPhone ? .chooseControlTarget : .reader
+        controlTarget = nil
+        // Reader routing is automatic. iPhone users no longer stop at a target
+        // picker before opening the selected Publication.
+        step = .reader
     }
 
+    /// Compatibility entry point for older UI/saved flows. Choosing a device is
+    /// no longer meaningful, so any call simply continues to the Reader.
     @discardableResult
     mutating func didChooseControlTarget(_ target: ControlTarget, hasProAccess: Bool) -> Effect {
-        if target == .iPad, !hasProAccess {
-            return .showIPadPaywall
-        }
-        controlTarget = target
-        step = target == .iPad ? .iPadHandoff : .reader
+        controlTarget = nil
+        step = .reader
         return .none
     }
 
@@ -91,6 +94,17 @@ struct OnboardingFlow: Codable, Equatable {
     mutating func finish() {
         step = .completed
     }
+
+    /// Migrates interrupted onboarding from target-selection builds without
+    /// making the user understand or re-select iPhone/iPad routing.
+    func normalizedForAutomaticRouting() -> OnboardingFlow {
+        var copy = self
+        if copy.step == .chooseControlTarget || copy.step == .iPadHandoff {
+            copy.step = .reader
+            copy.controlTarget = nil
+        }
+        return copy
+    }
 }
 
 struct OnboardingProgressStore {
@@ -107,7 +121,7 @@ struct OnboardingProgressStore {
         else {
             return OnboardingFlow(platform: platform)
         }
-        return flow
+        return flow.normalizedForAutomaticRouting()
     }
 
     func save(_ flow: OnboardingFlow) {
