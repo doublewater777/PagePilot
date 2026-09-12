@@ -92,16 +92,14 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
         }
 
         // The application context is sourced from the paired iPhone, so it can
-        // immediately seed the local Reader state while status polling also
-        // checks the nearby iPad relay independently.
+        // immediately seed (or clear) the local Reader state while status
+        // polling also checks the nearby iPad relay independently.
         if let title = context["currentBookTitle"] as? String {
             iPhoneBookTitle = title
+            iPhoneReaderReady = !title.isEmpty
         }
         if let progress = context["currentBookProgress"] as? Double {
             iPhoneBookProgress = progress
-        }
-        if !iPhoneBookTitle.isEmpty {
-            iPhoneReaderReady = true
         }
         _ = applyReadingSessionContext(context)
         recomputeAggregateReaderState()
