@@ -5,12 +5,14 @@
 //
 
 import SwiftUI
+import UIKit
 
 // MARK: - Watch Settings View
 
 struct WatchSettingsView: View {
     @State private var doubleTapPageTurn: Bool
     @ObservedObject private var proPurchase = ProPurchaseManager.shared
+    @ObservedObject private var watchService = WatchPageTurnService.shared
 
     init() {
         let settings = WatchPageTurnSettings()
@@ -19,6 +21,7 @@ struct WatchSettingsView: View {
 
     var body: some View {
         List {
+            installSection
             doubleTapSection
         }
         .listStyle(.insetGrouped)
@@ -38,6 +41,27 @@ struct WatchSettingsView: View {
     }
 
     // MARK: - Double Tap
+
+    // MARK: - Install
+
+    @ViewBuilder
+    private var installSection: some View {
+        if watchService.watchAvailability == .appNotInstalled {
+            Section(
+                header: Text("onboarding_watch_install_title"),
+                footer: Text("onboarding_watch_install_detail")
+            ) {
+                Button {
+                    UIApplication.shared.open(WatchPageTurnService.watchAppURL)
+                } label: {
+                    Label(
+                        NSLocalizedString("onboarding_watch_install_action", comment: ""),
+                        systemImage: "square.and.arrow.down"
+                    )
+                }
+            }
+        }
+    }
 
     private var doubleTapSection: some View {
         Section(

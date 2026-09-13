@@ -52,7 +52,16 @@ final class LibraryService: Loggable {
             throw LibraryError.bookNotFound
         }
 
-        let (pub, _) = try await openPublication(at: book.absoluteURL(), allowUserInteraction: true, sender: sender)
+        let publicationURL = try book.absoluteURL()
+        if book.url.hasPrefix("file://"),
+           let relativeURL = Paths.documents.relativize(publicationURL)?.string,
+           let id = book.id {
+            Task { [books] in
+                try? await books.updateURL(id: id, url: relativeURL)
+            }
+        }
+
+        let (pub, _) = try await openPublication(at: publicationURL, allowUserInteraction: true, sender: sender)
         guard try checkIsReadable(publication: pub) else {
             return nil
         }
@@ -461,26 +470,6 @@ final class LibraryService: Loggable {
             // Bail out if an import started between the snapshot and now.
             guard importActivity.isIdle else { return }
             try? FileManager.default.removeItem(at: file)
-        }
-    }
-}
-
-private extension Book {
-    func absoluteURL() throws -> AbsoluteURL {
-        guard let url = AnyURL(string: url) else {
-            throw LibraryError.bookNotFound
-        }
-
-        switch url {
-        case let .absolute(url):
-            return url
-
-        case let .relative(relativeURL):
-            // Path relative to Documents/.
-            guard let url = Paths.documents.resolve(relativeURL) else {
-                throw LibraryError.bookNotFound
-            }
-            return url
         }
     }
 }

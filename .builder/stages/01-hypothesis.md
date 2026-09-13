@@ -28,6 +28,7 @@ PagePilot targets Apple ecosystem readers who lose reading flow when they must t
 - `2026-09-13-reading-live-activity-background` — tests whether ending the Reader activity on backgrounding matches the Watch page-turn purpose better than retaining it.
 - `2026-09-13-ipad-reader-watch-hint` — tests whether outcome-first Watch copy makes the current Live Activity flow clearer than setup instructions.
 - `2026-09-13-watch-app-install-guidance` — tests whether a direct "open Watch app" action removes the install dead-end before users meet the Smart Stack fallback.
+- `2026-09-13-watch-install-reminder-decoupling` — tests whether device-state-driven install guidance reaches readers who finished onboarding.
 
 ## Decisions
 
@@ -75,6 +76,7 @@ Assumptions to test:
 
 - 2026-09-13: Linked the iPad Reader Watch hint copy cycle.
 - 2026-09-13: Linked the Watch app install-guidance cycle.
+- 2026-09-13: Linked the Watch install reminder-decoupling cycle.
 - 2026-09-13: Linked the reading Live Activity background-retention cycle.
 - 2026-09-13: Linked the Watch cold-start control cycle.
 - 2026-09-13: Linked the missing Publication recovery cycle.

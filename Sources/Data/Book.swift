@@ -77,14 +77,38 @@ struct Book: Codable {
         coverPath.map { Paths.covers.appendingPath($0, isDirectory: false) }
     }
 
-    func absoluteFileURL() throws -> URL? {
-        guard let anyURL = AnyURL(string: url) else { return nil }
+    func absoluteURL() throws -> AbsoluteURL {
+        guard let anyURL = AnyURL(string: url) else {
+            throw LibraryError.bookNotFound
+        }
+
         switch anyURL {
         case let .absolute(absURL):
-            return absURL.fileURL?.url
-        case let .relative(relURL):
-            return Paths.documents.resolve(relURL)?.url
+            // If the absolute file URL exists on disk, use it directly.
+            if let fileURL = absURL.fileURL, FileManager.default.fileExists(atPath: fileURL.path) {
+                return absURL
+            }
+
+            // If it is a file URL pointing to a former container Documents/ folder,
+            // remap it to the current app container Documents/ directory.
+            if let fileURL = absURL.fileURL,
+               let remapped = Self.remapToDocuments(fileURL: fileURL.url)
+            {
+                return remapped
+            }
+
+            return absURL
+
+        case let .relative(relativeURL):
+            guard let url = Paths.documents.resolve(relativeURL) else {
+                throw LibraryError.bookNotFound
+            }
+            return url
         }
+    }
+
+    func absoluteFileURL() throws -> URL? {
+        try? absoluteURL().fileURL?.url
     }
 
     func requireAvailablePublicationFile(
@@ -94,6 +118,23 @@ struct Book: Codable {
         guard fileExistsAtPath(fileURL.path) else {
             throw LibraryError.bookNotFound
         }
+    }
+
+    static func remapToDocuments(fileURL: URL) -> AbsoluteURL? {
+        let path = fileURL.path
+        if let range = path.range(of: "/Documents/", options: .backwards) {
+            let subpath = String(path[range.upperBound...])
+            if !subpath.isEmpty {
+                return Paths.documents.appendingPath(subpath, isDirectory: false)
+            }
+        }
+
+        let filename = fileURL.lastPathComponent
+        if !filename.isEmpty && filename != "/" {
+            return Paths.documents.appendingPath(filename, isDirectory: false)
+        }
+
+        return nil
     }
 
     func preferences<P: Decodable>() throws -> P? {
@@ -186,6 +227,15 @@ final class BookRepository {
         }
         notifyCloudSync()
         return id
+    }
+
+    func updateURL(id: Book.Id, url: String) async throws {
+        try await db.write { db in
+            try db.execute(
+                sql: "UPDATE book SET url = ? WHERE id = ?",
+                arguments: [url, id.rawValue]
+            )
+        }
     }
 
     func remove(_ id: Book.Id) async throws {

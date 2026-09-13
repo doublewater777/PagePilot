@@ -79,4 +79,28 @@ final class CloudSyncSupportTests: XCTestCase {
 
         XCTAssertEqual(decoded, locator)
     }
+
+    func testPortableSourceURLConvertsLocalSandboxPathToRelative() {
+        let staleLocalURL = "file:///var/mobile/Containers/Data/Application/E18C15C4-3C91-4495-BDF0-C2B1840A55B5/Documents/Statement_202607%201.pdf"
+        let portable = CloudSyncStore.portableSourceURL(from: staleLocalURL)
+        XCTAssertEqual(portable, "Statement_202607%201.pdf")
+    }
+
+    func testPortableSourceURLPreservesRelativeURL() {
+        let relative = "MyBook.epub"
+        let portable = CloudSyncStore.portableSourceURL(from: relative)
+        XCTAssertEqual(portable, "MyBook.epub")
+    }
+
+    func testPortableSourceURLPreservesRemoteURL() {
+        let remote = "https://example.com/books/sample.epub"
+        let portable = CloudSyncStore.portableSourceURL(from: remote)
+        XCTAssertEqual(portable, remote)
+    }
+
+    func testPortableSourceURLRejectsArbitraryLocalFileOutsideDocuments() {
+        let nonDocLocal = "file:///private/var/tmp/temp_book.epub"
+        let portable = CloudSyncStore.portableSourceURL(from: nonDocLocal)
+        XCTAssertNil(portable)
+    }
 }

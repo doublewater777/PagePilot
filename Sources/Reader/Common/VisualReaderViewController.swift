@@ -30,6 +30,7 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
     private var quickPositionJumpSuppressionToken: UUID?
     private var onboardingWatchGuideViewController: UIHostingController<OnboardingWatchGuideView>?
     private var onboardingIPadHintViewController: UIHostingController<OnboardingIPadReaderHintView>?
+    private var didDismissWatchGuideThisSession = false
 
     init(
         navigator: N,
@@ -239,10 +240,18 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
     }
 
     private func showOnboardingWatchGuideIfNeeded() {
-        guard UIDevice.current.userInterfaceIdiom == .phone else { return }
-        let store = OnboardingProgressStore()
-        let flow = store.load(platform: .iPhone)
-        guard flow.shouldShowWatchGuide else { return }
+        guard WatchGuideEligibility.shouldShow(
+            isPhone: UIDevice.current.userInterfaceIdiom == .phone
+        ) else { return }
+
+        let flow = OnboardingProgressStore().load(platform: .iPhone)
+
+        // The guide reacts to live Watch state; it only disappears when the
+        // hardware genuinely cannot host the app.
+        let availability = WatchPageTurnService.shared.watchAvailability
+        guard availability != .unsupported,
+              !didDismissWatchGuideThisSession
+        else { return }
 
         let guide = OnboardingWatchGuideView(
             service: WatchPageTurnService.shared,
@@ -254,7 +263,7 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
                 store.save(flow)
             },
             onDismiss: { [weak self] in
-                self?.dismissOnboardingWatchGuide(permanently: true)
+                self?.dismissOnboardingWatchGuide()
             }
         )
         let hostingController = UIHostingController(rootView: guide)
@@ -314,7 +323,6 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
     private func completeOnboardingWatchGuide() {
         let store = OnboardingProgressStore()
         var flow = store.load(platform: .iPhone)
-        guard flow.shouldShowWatchGuide else { return }
         flow.didCompleteWatchPageTurn()
         store.save(flow)
 
@@ -344,13 +352,8 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
         }
     }
 
-    private func dismissOnboardingWatchGuide(permanently: Bool) {
-        if permanently {
-            let store = OnboardingProgressStore()
-            var flow = store.load(platform: .iPhone)
-            flow.finish()
-            store.save(flow)
-        }
+    private func dismissOnboardingWatchGuide() {
+        didDismissWatchGuideThisSession = true
         removeOnboardingWatchGuide()
     }
 

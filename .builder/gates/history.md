@@ -97,3 +97,13 @@ Weakest assumption: the bridge:// scheme opens the iPhone Watch app on shipping 
 Decision: offer a primary "Open Watch App" action in the install-state Reader tip and keep the existing skip path.
 Next stage: 10-growth-channel
 Loop-back: Revisit if device testing shows bridge:// is blocked or users still reach the Smart Stack fallback before installing.
+
+## 2026-09-13 - 01-hypothesis (Watch install reminder decoupling)
+
+Cycle: 2026-09-13-watch-install-reminder-decoupling
+Verdict: pass
+Evidence: The onboarding-gate regression test failed before decoupling and passes after; focused suites pass 21/21; the full iPhone 17 simulator suite passes 257/257; the iPad mini build succeeds.
+Weakest assumption: readers without the Watch app tolerate a per-session recurring tip until they install it.
+Decision: drive the Reader tip and the Watch Settings install action from live WCSession state, not onboarding progress.
+Next stage: 10-growth-channel
+Loop-back: Revisit only if the recurring tip reads as nagging for deliberate non-installers.

@@ -86,7 +86,10 @@ final class OnboardingFlowTests: XCTestCase {
 
         XCTAssertTrue(flow.isWatchSetupComplete)
         XCTAssertEqual(flow.step, .completed)
-        XCTAssertFalse(flow.shouldShowWatchGuide)
+        XCTAssertTrue(
+            flow.shouldShowWatchGuide,
+            "Completing onboarding does not silence device-state Watch guidance."
+        )
     }
 
     func testCollapsingWatchGuidePersistsLightweightState() {

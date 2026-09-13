@@ -37,11 +37,6 @@ struct OnboardingWatchGuideView: View {
             }
         }
         .animation(reduceMotion ? nil : .spring(response: 0.35, dampingFraction: 0.82), value: isCollapsed)
-        .task {
-            guard !ProcessInfo.processInfo.arguments.contains("-KeepOnboardingWatchGuideExpanded") else { return }
-            try? await Task.sleep(for: .seconds(10))
-            collapse()
-        }
     }
 
     private var expandedGuide: some View {

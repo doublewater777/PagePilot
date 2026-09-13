@@ -51,7 +51,10 @@ struct OnboardingFlow: Codable, Equatable {
     private(set) var isWatchGuideCollapsed = false
 
     var shouldShowWatchGuide: Bool {
-        platform == .iPhone && step == .reader
+        // Watch guidance follows the paired-device state, not onboarding
+        // progress: readers who finished onboarding long ago still need the
+        // install hint when the Watch app is missing.
+        platform == .iPhone
     }
 
     init(platform: Platform) {

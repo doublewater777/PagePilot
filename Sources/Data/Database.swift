@@ -125,6 +125,33 @@ final class Database {
             }
         }
 
+        migrator.registerMigration("relativizeBookURLs") { db in
+            let rows = try Row.fetchAll(db, sql: "SELECT id, url FROM book WHERE url LIKE '%/Documents/%' OR url LIKE 'file://%'")
+            for row in rows {
+                guard let id: Int64 = row["id"],
+                      let urlString: String = row["url"] else { continue }
+                if let anyURL = AnyURL(string: urlString) {
+                    switch anyURL {
+                    case .relative:
+                        break
+                    case let .absolute(absURL):
+                        if absURL.scheme == .file {
+                            let path = absURL.string
+                            if let range = path.range(of: "/Documents/", options: .backwards) {
+                                let relativePath = String(path[range.upperBound...])
+                                if !relativePath.isEmpty {
+                                    try db.execute(
+                                        sql: "UPDATE book SET url = ? WHERE id = ?",
+                                        arguments: [relativePath, id]
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         try migrator.migrate(writer)
     }
 

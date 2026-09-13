@@ -27,6 +27,14 @@ enum WatchAvailability {
     case ready
 }
 
+enum WatchGuideEligibility {
+    /// The Reader guide reacts to live Watch state, so any iPhone Reader may
+    /// show it regardless of onboarding progress.
+    static func shouldShow(isPhone: Bool) -> Bool {
+        isPhone
+    }
+}
+
 enum WatchReaderAvailabilityPolicy {
     static func isReady(hasNavigator: Bool, applicationIsActive: Bool) -> Bool {
         hasNavigator && applicationIsActive

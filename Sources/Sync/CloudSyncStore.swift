@@ -200,7 +200,7 @@ final class CloudSyncStore {
         record["title"] = book.title
         record["authors"] = book.authors
         record["mediaType"] = book.type
-        record["sourceURL"] = book.url
+        record["sourceURL"] = Self.portableSourceURL(from: book.url)
         record["created"] = book.created
 
         if let fileURL = try book.absoluteFileURL(), FileManager.default.fileExists(atPath: fileURL.path) {
@@ -353,20 +353,28 @@ final class CloudSyncStore {
             return try Book.filter(Book.Columns.identifier == identifier).fetchOne(db)
         }
 
-        var resolvedURL = existing?.url
+        var resolvedURL: String?
         var newPublicationURL: URL?
-        if !hasReachableFile(existing),
-           let asset = record["publication"] as? CKAsset,
-           let assetURL = asset.fileURL
+
+        if hasReachableFile(existing) {
+            if let existingURL = existing?.url {
+                resolvedURL = Self.portableSourceURL(from: existingURL) ?? existingURL
+            }
+        } else if let asset = record["publication"] as? CKAsset,
+                  let assetURL = asset.fileURL
         {
             let name = safeFilename((record["fileName"] as? String) ?? UUID().uuidString)
             let destination = Paths.documents.appendingUniquePathComponent(name)
             try FileManager.default.copyItem(at: assetURL, to: destination.url)
-            resolvedURL = destination.anyURL.string
+            let portableURL: AnyURL = Paths.documents.relativize(destination)?.anyURL ?? destination.anyURL
+            resolvedURL = portableURL.string
             newPublicationURL = destination.url
-        }
-        if resolvedURL == nil {
-            resolvedURL = record["sourceURL"] as? String
+        } else if let sourceURLString = record["sourceURL"] as? String,
+                  let portable = Self.portableSourceURL(from: sourceURLString)
+        {
+            resolvedURL = portable
+        } else if let existingURL = existing?.url {
+            resolvedURL = Self.portableSourceURL(from: existingURL) ?? existingURL
         }
         guard let resolvedURL, let anyURL = AnyURL(string: resolvedURL) else {
             if let newPublicationURL { try? FileManager.default.removeItem(at: newPublicationURL) }
@@ -847,6 +855,27 @@ final class CloudSyncStore {
     static func decodeLocator(_ json: String?) throws -> Locator? {
         guard let json else { return nil }
         return try Locator(jsonString: json)
+    }
+
+    static func portableSourceURL(from urlString: String) -> String? {
+        guard let anyURL = AnyURL(string: urlString) else { return nil }
+        switch anyURL {
+        case .relative:
+            return urlString
+        case let .absolute(absURL):
+            if absURL.scheme != .file {
+                return urlString
+            }
+            if let rel = Paths.documents.relativize(absURL) {
+                return rel.string
+            }
+            let raw = absURL.string
+            if let range = raw.range(of: "/Documents/", options: .backwards) {
+                let subpath = String(raw[range.upperBound...])
+                return subpath.isEmpty ? nil : subpath
+            }
+            return nil
+        }
     }
 
     private func hasReachableFile(_ book: Book?) -> Bool {
