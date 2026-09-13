@@ -67,7 +67,6 @@ final class OnboardingFlowTests: XCTestCase {
         XCTAssertEqual(flow.step, .reader)
         XCTAssertNil(flow.controlTarget)
         XCTAssertTrue(flow.shouldShowWatchGuide)
-        XCTAssertTrue(flow.isWatchGuideCollapsed)
     }
 
     func testIPadPlatformReaderDoesNotShowWatchGuide() {
@@ -90,16 +89,6 @@ final class OnboardingFlowTests: XCTestCase {
             flow.shouldShowWatchGuide,
             "Completing onboarding does not silence device-state Watch guidance."
         )
-    }
-
-    func testCollapsingWatchGuidePersistsLightweightState() {
-        var flow = OnboardingFlow(platform: .iPhone)
-        flow.didChoosePublication(bookID: 42, source: .user)
-
-        flow.collapseWatchGuide()
-
-        XCTAssertTrue(flow.shouldShowWatchGuide)
-        XCTAssertTrue(flow.isWatchGuideCollapsed)
     }
 
     func testProgressStoreRestoresAutomaticReaderFlow() {

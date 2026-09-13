@@ -56,8 +56,6 @@
 "paywall_ipad_watch_title" = "在 iPad 上阅读，用 Apple Watch 翻页";
 "paywall_ipad_watch_subtitle" = "解锁 iPhone 中继，让 Watch 指令抵达附近的 iPad Reader。";
 "onboarding_watch_skip" = "暂时跳过";
-"onboarding_watch_try" = "试试 Watch 翻页";
-"onboarding_watch_dismiss_accessibility" = "不再显示 Watch 翻页提示";
 "onboarding_watch_unpaired_title" = "暂未发现 Apple Watch";
 "onboarding_watch_unpaired_detail" = "配对手表后，可随时从 Watch 设置继续。";
 "onboarding_watch_install_title" = "安装 PagePilot Watch App";

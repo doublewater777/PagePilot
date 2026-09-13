@@ -244,8 +244,6 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
             isPhone: UIDevice.current.userInterfaceIdiom == .phone
         ) else { return }
 
-        let flow = OnboardingProgressStore().load(platform: .iPhone)
-
         // Only surface the guide when there is an actionable Watch state:
         // paired-but-not-installed, or not paired at all. Once ready or merely
         // unreachable, the reader does not need a reminder.
@@ -256,13 +254,6 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
 
         let guide = OnboardingWatchGuideView(
             service: WatchPageTurnService.shared,
-            initiallyCollapsed: flow.isWatchGuideCollapsed,
-            onCollapse: {
-                let store = OnboardingProgressStore()
-                var flow = store.load(platform: .iPhone)
-                flow.collapseWatchGuide()
-                store.save(flow)
-            },
             onDismiss: { [weak self] in
                 self?.dismissOnboardingWatchGuide()
             }

@@ -48,7 +48,6 @@ struct OnboardingFlow: Codable, Equatable {
     private(set) var publication: PublicationSelection?
     private(set) var controlTarget: ControlTarget?
     private(set) var isWatchSetupComplete = false
-    private(set) var isWatchGuideCollapsed = false
 
     var shouldShowWatchGuide: Bool {
         // Watch guidance follows the paired-device state, not onboarding
@@ -80,18 +79,12 @@ struct OnboardingFlow: Codable, Equatable {
 
     mutating func skipControlTarget() {
         controlTarget = nil
-        isWatchGuideCollapsed = true
         step = .reader
     }
 
     mutating func didCompleteWatchPageTurn() {
         isWatchSetupComplete = true
         step = .completed
-    }
-
-    mutating func collapseWatchGuide() {
-        guard shouldShowWatchGuide else { return }
-        isWatchGuideCollapsed = true
     }
 
     mutating func finish() {

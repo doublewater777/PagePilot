@@ -9,33 +9,20 @@ import SwiftUI
 struct OnboardingWatchGuideView: View {
     @ObservedObject var service: WatchPageTurnService
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var isCollapsed: Bool
     @State private var isPulsing = false
 
-    let onCollapse: () -> Void
     let onDismiss: () -> Void
 
     init(
         service: WatchPageTurnService,
-        initiallyCollapsed: Bool,
-        onCollapse: @escaping () -> Void,
         onDismiss: @escaping () -> Void
     ) {
         self.service = service
-        _isCollapsed = State(initialValue: initiallyCollapsed)
-        self.onCollapse = onCollapse
         self.onDismiss = onDismiss
     }
 
     var body: some View {
-        Group {
-            if isCollapsed {
-                collapsedGuide
-            } else {
-                expandedGuide
-            }
-        }
-        .animation(reduceMotion ? nil : .spring(response: 0.35, dampingFraction: 0.82), value: isCollapsed)
+        expandedGuide
     }
 
     private var expandedGuide: some View {
@@ -62,9 +49,7 @@ struct OnboardingWatchGuideView: View {
                 }
             }
 
-            Button("onboarding_watch_skip") {
-                collapse()
-            }
+            Button("onboarding_watch_skip", action: onDismiss)
             .font(.subheadline.weight(.semibold))
             .frame(maxWidth: .infinity, alignment: .trailing)
         }
@@ -76,37 +61,6 @@ struct OnboardingWatchGuideView: View {
         }
         .shadow(color: Color.black.opacity(0.1), radius: 18, y: 8)
         .accessibilityElement(children: .contain)
-    }
-
-    private func collapse() {
-        isCollapsed = true
-        onCollapse()
-    }
-
-    private var collapsedGuide: some View {
-        HStack(spacing: 4) {
-            Button {
-                isCollapsed = false
-            } label: {
-                Label("onboarding_watch_try", systemImage: "applewatch")
-                    .font(.subheadline.weight(.semibold))
-                    .padding(.leading, 14)
-                    .padding(.vertical, 11)
-            }
-
-            Button(action: onDismiss) {
-                Image(systemName: "xmark")
-                    .font(.caption.bold())
-                    .frame(width: 36, height: 36)
-            }
-            .accessibilityLabel(Text("onboarding_watch_dismiss_accessibility"))
-        }
-        .foregroundStyle(AppColors.accentBlue)
-        .background(.regularMaterial, in: Capsule())
-        .overlay {
-            Capsule().stroke(AppColors.accentBlue.opacity(0.16), lineWidth: 1)
-        }
-        .shadow(color: Color.black.opacity(0.08), radius: 12, y: 6)
     }
 
     private var statusIcon: String {

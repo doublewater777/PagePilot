@@ -56,8 +56,6 @@
 "paywall_ipad_watch_title" = "Auf dem iPad lesen. Mit der Apple Watch umblättern.";
 "paywall_ipad_watch_subtitle" = "Schalten Sie die iPhone-Weiterleitung frei, damit Watch-Befehle einen iPad-Reader in der Nähe erreichen.";
 "onboarding_watch_skip" = "Nicht jetzt";
-"onboarding_watch_try" = "Umblättern mit der Watch testen";
-"onboarding_watch_dismiss_accessibility" = "Hinweis zum Umblättern mit der Watch nicht mehr anzeigen";
 "onboarding_watch_unpaired_title" = "Apple Watch nicht gefunden";
 "onboarding_watch_unpaired_detail" = "Nach dem Koppeln einer Watch können Sie jederzeit über die Watch-Einstellungen fortfahren.";
 "onboarding_watch_install_title" = "PagePilot auf der Apple Watch installieren";

@@ -56,8 +56,6 @@
 "paywall_ipad_watch_title" = "Read on iPad. Turn Pages with Apple Watch.";
 "paywall_ipad_watch_subtitle" = "Unlock iPhone relay so Watch commands reach a nearby iPad Reader.";
 "onboarding_watch_skip" = "Not Now";
-"onboarding_watch_try" = "Try Watch Page Turn";
-"onboarding_watch_dismiss_accessibility" = "Stop showing the Watch page-turn tip";
 "onboarding_watch_unpaired_title" = "Apple Watch Not Found";
 "onboarding_watch_unpaired_detail" = "After pairing a Watch, continue anytime from Watch Settings.";
 "onboarding_watch_install_title" = "Install PagePilot on Apple Watch";
