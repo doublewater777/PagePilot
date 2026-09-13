@@ -246,10 +246,11 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
 
         let flow = OnboardingProgressStore().load(platform: .iPhone)
 
-        // The guide reacts to live Watch state; it only disappears when the
-        // hardware genuinely cannot host the app.
+        // Only surface the guide when there is an actionable Watch state:
+        // paired-but-not-installed, or not paired at all. Once ready or merely
+        // unreachable, the reader does not need a reminder.
         let availability = WatchPageTurnService.shared.watchAvailability
-        guard availability != .unsupported,
+        guard availability == .appNotInstalled || availability == .unpaired,
               !didDismissWatchGuideThisSession
         else { return }
 

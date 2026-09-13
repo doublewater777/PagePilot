@@ -61,8 +61,7 @@
 "onboarding_watch_unpaired_title" = "暂未发现 Apple Watch";
 "onboarding_watch_unpaired_detail" = "配对手表后，可随时从 Watch 设置继续。";
 "onboarding_watch_install_title" = "安装 PagePilot Watch App";
-"onboarding_watch_install_detail" = "在 iPhone 的 Watch App 中安装，然后打开手表上的 PagePilot。";
-"onboarding_watch_install_action" = "打开 Watch App";
+"onboarding_watch_install_detail" = "打开 iPhone 上的 Watch App，在「可用 App」中找到 PagePilot 并安装。";
 "onboarding_watch_open_title" = "打开手表上的 PagePilot";
 "onboarding_watch_open_detail" = "保持 Reader 打开，再从手表发送一次翻页。";
 "onboarding_watch_ready_title" = "从手腕翻一页";

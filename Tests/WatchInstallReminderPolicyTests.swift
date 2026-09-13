@@ -37,25 +37,57 @@ final class WatchInstallReminderPolicyTests: XCTestCase {
             Self.range(of: "flow.shouldShowWatchGuide", in: source, startingAfter: guideEntry),
             "Reader guide visibility must follow Watch device state, not onboarding progress."
         )
+
+        // Only actionable states surface the guide.
+        let actionableCheck = try Self.requiredLine(
+            "availability == .appNotInstalled || availability == .unpaired",
+            in: source,
+            startingAfter: availabilityRead
+        )
+        XCTAssertGreaterThan(actionableCheck, availabilityRead)
     }
 
-    func testWatchSettingsOfferInstallActionWhenAppIsMissing() throws {
+    func testWatchSettingsSurfaceInstallGuidanceWhenAppIsMissing() throws {
         let source = try Self.watchSettingsSource()
 
         let availabilityCheck = try Self.requiredLine("watchAvailability == .appNotInstalled", in: source)
-        let openCall = try Self.requiredLine(
-            "WatchPageTurnService.watchAppURL",
-            in: source,
-            startingAfter: availabilityCheck
-        )
-        let installAction = try Self.requiredLine(
-            "onboarding_watch_install_action",
+        let installCopy = try Self.requiredLine(
+            "onboarding_watch_install_detail",
             in: source,
             startingAfter: availabilityCheck
         )
 
-        XCTAssertGreaterThan(openCall, availabilityCheck)
-        XCTAssertGreaterThan(installAction, availabilityCheck)
+        XCTAssertGreaterThan(installCopy, availabilityCheck)
+
+        // No fake open action: the bridge:// scheme is private and silently fails.
+        XCTAssertNil(
+            Self.range(of: "watchAppURL", in: source),
+            "Watch Settings must not offer a dead open-Watch-app action."
+        )
+    }
+
+    func testInstallGuidanceCopyIsLocalizedForSupportedLanguages() throws {
+        let expected: [String: String] = [
+            "en": "Open the Watch app on your iPhone, find PagePilot under Available Apps, and install it.",
+            "zh-Hans": "打开 iPhone 上的 Watch App，在「可用 App」中找到 PagePilot 并安装。",
+            "de": "Öffnen Sie die Watch-App auf Ihrem iPhone und installieren Sie PagePilot unter „Verfügbare Apps“.",
+            "es": "Abre la app Watch en tu iPhone e instala PagePilot desde «Apps disponibles».",
+            "fr": "Ouvrez l’app Watch sur votre iPhone et installez PagePilot depuis « Apps disponibles ».",
+        ]
+
+        for (language, detail) in expected {
+            let bundleURL = try XCTUnwrap(
+                Bundle.main.url(forResource: language, withExtension: "lproj"),
+                "Missing localization bundle for \(language)"
+            )
+            let bundle = try XCTUnwrap(Bundle(url: bundleURL))
+
+            XCTAssertEqual(
+                bundle.localizedString(forKey: "onboarding_watch_install_detail", value: nil, table: nil),
+                detail,
+                "\(language) install detail"
+            )
+        }
     }
 
     private static func visualReaderSource() throws -> String {

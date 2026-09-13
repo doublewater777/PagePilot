@@ -102,8 +102,8 @@ Loop-back: Revisit if device testing shows bridge:// is blocked or users still r
 
 Cycle: 2026-09-13-watch-install-reminder-decoupling
 Verdict: pass
-Evidence: The onboarding-gate regression test failed before decoupling and passes after; focused suites pass 21/21; the full iPhone 17 simulator suite passes 257/257; the iPad mini build succeeds.
+Evidence: The onboarding-gate regression test failed before decoupling and passes after; focused suites pass 19/19; the full iPhone 17 simulator suite passes 255/255; the iPad mini build succeeds.
 Weakest assumption: readers without the Watch app tolerate a per-session recurring tip until they install it.
-Decision: drive the Reader tip and the Watch Settings install action from live WCSession state, not onboarding progress.
+Decision: drive the Reader tip and the Watch Settings install guidance from live WCSession state, not onboarding progress; replace the dead bridge:// action with honest copy.
 Next stage: 10-growth-channel
 Loop-back: Revisit only if the recurring tip reads as nagging for deliberate non-installers.

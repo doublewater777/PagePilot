@@ -5,7 +5,6 @@
 //
 
 import SwiftUI
-import UIKit
 
 // MARK: - Watch Settings View
 
@@ -21,7 +20,17 @@ struct WatchSettingsView: View {
 
     var body: some View {
         List {
-            installSection
+            if watchService.watchAvailability == .appNotInstalled {
+                Section {
+                    Label(
+                        NSLocalizedString("onboarding_watch_install_title", comment: ""),
+                        systemImage: "square.and.arrow.down"
+                    )
+                    Text("onboarding_watch_install_detail")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+            }
             doubleTapSection
         }
         .listStyle(.insetGrouped)
@@ -41,27 +50,6 @@ struct WatchSettingsView: View {
     }
 
     // MARK: - Double Tap
-
-    // MARK: - Install
-
-    @ViewBuilder
-    private var installSection: some View {
-        if watchService.watchAvailability == .appNotInstalled {
-            Section(
-                header: Text("onboarding_watch_install_title"),
-                footer: Text("onboarding_watch_install_detail")
-            ) {
-                Button {
-                    UIApplication.shared.open(WatchPageTurnService.watchAppURL)
-                } label: {
-                    Label(
-                        NSLocalizedString("onboarding_watch_install_action", comment: ""),
-                        systemImage: "square.and.arrow.down"
-                    )
-                }
-            }
-        }
-    }
 
     private var doubleTapSection: some View {
         Section(
