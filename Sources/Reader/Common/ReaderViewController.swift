@@ -61,7 +61,7 @@ class ReaderViewController<N: Navigator>: UIViewController,
 
         navigationItem.rightBarButtonItems = makeNavigationBarButtons()
         NotificationCenter.default.addObserver(self, selector: #selector(appDidEnterBackground), name: UIApplication.didEnterBackgroundNotification, object: nil)
-        NotificationCenter.default.addObserver(self, selector: #selector(appWillEnterForeground), name: UIApplication.willEnterForegroundNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(appDidBecomeActive), name: UIApplication.didBecomeActiveNotification, object: nil)
 
         LastReadBooks.record(id: bookId.rawValue)
     }
@@ -146,7 +146,10 @@ class ReaderViewController<N: Navigator>: UIViewController,
         finishReadingSessionIfNeeded(celebrateGoal: false)
     }
 
-    @objc private func appWillEnterForeground() {
+    /// The Watch Live Activity requires applicationState == .active;
+    /// willEnterForeground fires while the app is still .inactive, so the
+    /// restart must wait for didBecomeActive.
+    @objc private func appDidBecomeActive() {
         startReadingSessionIfNeeded()
     }
 

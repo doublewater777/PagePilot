@@ -47,6 +47,32 @@ final class WatchInstallReminderPolicyTests: XCTestCase {
         XCTAssertGreaterThan(actionableCheck, availabilityRead)
     }
 
+    func testVisualReaderReconcilesGuideWhenWatchStateChanges() throws {
+        let source = try Self.visualReaderSource()
+
+        let guideEntry = try Self.requiredLine("showOnboardingWatchGuideIfNeeded()", in: source)
+        let subscription = try Self.requiredLine(
+            "WatchPageTurnService.shared.objectWillChange",
+            in: source,
+            startingAfter: guideEntry
+        )
+        let reconcileCall = try Self.requiredLine(
+            "reconcileOnboardingWatchGuide()",
+            in: source,
+            startingAfter: subscription
+        )
+
+        XCTAssertGreaterThan(reconcileCall, guideEntry)
+
+        // Removal path exists for non-actionable states.
+        let removePath = try Self.requiredLine(
+            "removeOnboardingWatchGuide()",
+            in: source,
+            startingAfter: reconcileCall
+        )
+        XCTAssertGreaterThan(removePath, reconcileCall)
+    }
+
     func testWatchSettingsSurfaceInstallGuidanceWhenAppIsMissing() throws {
         let source = try Self.watchSettingsSource()
 

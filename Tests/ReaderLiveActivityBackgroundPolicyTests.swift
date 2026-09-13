@@ -20,7 +20,7 @@ final class ReaderLiveActivityBackgroundPolicyTests: XCTestCase {
             startingAfter: backgroundHandler
         )
         let nextBoundary = try Self.requiredLine(
-            "@objc private func appWillEnterForeground()",
+            "@objc private func appDidBecomeActive()",
             in: source,
             startingAfter: finishCall
         )
@@ -42,7 +42,7 @@ final class ReaderLiveActivityBackgroundPolicyTests: XCTestCase {
         )
 
         let foregroundHandler = try Self.requiredLine(
-            "@objc private func appWillEnterForeground()",
+            "@objc private func appDidBecomeActive()",
             in: source
         )
         let startCall = try Self.requiredLine(

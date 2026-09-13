@@ -240,18 +240,35 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
     }
 
     private func showOnboardingWatchGuideIfNeeded() {
+        reconcileOnboardingWatchGuide()
+
+        WatchPageTurnService.shared.objectWillChange
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                self?.reconcileOnboardingWatchGuide()
+            }
+            .store(in: &subscriptions)
+    }
+
+    private func reconcileOnboardingWatchGuide() {
         guard WatchGuideEligibility.shouldShow(
             isPhone: UIDevice.current.userInterfaceIdiom == .phone
         ) else { return }
 
-        // Only surface the guide when there is an actionable Watch state:
-        // paired-but-not-installed, or not paired at all. Once ready or merely
-        // unreachable, the reader does not need a reminder.
         let availability = WatchPageTurnService.shared.watchAvailability
-        guard availability == .appNotInstalled || availability == .unpaired,
-              !didDismissWatchGuideThisSession
-        else { return }
+        let isActionable = availability == .appNotInstalled || availability == .unpaired
 
+        if isActionable,
+           !didDismissWatchGuideThisSession,
+           onboardingWatchGuideViewController == nil {
+            presentOnboardingWatchGuide()
+        } else if !isActionable,
+                  onboardingWatchGuideViewController != nil {
+            removeOnboardingWatchGuide()
+        }
+    }
+
+    private func presentOnboardingWatchGuide() {
         let guide = OnboardingWatchGuideView(
             service: WatchPageTurnService.shared,
             onDismiss: { [weak self] in
