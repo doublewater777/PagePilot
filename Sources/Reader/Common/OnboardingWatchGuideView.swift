@@ -11,13 +11,16 @@ struct OnboardingWatchGuideView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var isPulsing = false
 
+    let dismissTitle: LocalizedStringKey
     let onDismiss: () -> Void
 
     init(
         service: WatchPageTurnService,
+        dismissTitle: LocalizedStringKey = "onboarding_watch_skip",
         onDismiss: @escaping () -> Void
     ) {
         self.service = service
+        self.dismissTitle = dismissTitle
         self.onDismiss = onDismiss
     }
 
@@ -49,9 +52,9 @@ struct OnboardingWatchGuideView: View {
                 }
             }
 
-            Button("onboarding_watch_skip", action: onDismiss)
-            .font(.subheadline.weight(.semibold))
-            .frame(maxWidth: .infinity, alignment: .trailing)
+            Button(dismissTitle, action: onDismiss)
+                .font(.subheadline.weight(.semibold))
+                .frame(maxWidth: .infinity, alignment: .trailing)
         }
         .padding(18)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
