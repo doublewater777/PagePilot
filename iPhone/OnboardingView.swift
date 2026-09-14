@@ -87,11 +87,8 @@ struct OnboardingView: View {
 
             Button(action: handleSkip) {
                 Text("onboarding_tour_skip")
-                    .font(.subheadline.weight(.semibold))
+                    .font(.body)
                     .foregroundStyle(.secondary)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 7)
-                    .background(.thinMaterial, in: Capsule())
             }
             .accessibilityLabel(Text("onboarding_tour_skip"))
             .padding(20)
@@ -244,7 +241,7 @@ struct OnboardingView: View {
                 .padding(.bottom, 2)
 
                 if tourPage < 3 {
-                    primaryButton("onboarding_tour_next", systemImage: "arrow.right") {
+                    primaryButton("onboarding_tour_next") {
                         withAnimation(.spring(response: 0.35, dampingFraction: 0.82)) {
                             tourPage += 1
                         }
@@ -616,12 +613,18 @@ struct OnboardingView: View {
             .accessibilityHidden(true)
     }
 
-    private func primaryButton(_ titleKey: LocalizedStringKey, systemImage: String, action: @escaping () -> Void) -> some View {
+    private func primaryButton(_ titleKey: LocalizedStringKey, systemImage: String? = nil, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Label(titleKey, systemImage: systemImage)
-                .font(.headline)
-                .frame(maxWidth: .infinity)
-                .frame(minHeight: 52)
+            Group {
+                if let systemImage {
+                    Label(titleKey, systemImage: systemImage)
+                } else {
+                    Text(titleKey)
+                }
+            }
+            .font(.headline)
+            .frame(maxWidth: .infinity)
+            .frame(minHeight: 52)
         }
         .buttonStyle(.borderedProminent)
         .tint(AppColors.accentBlue)
