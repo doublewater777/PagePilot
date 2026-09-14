@@ -195,7 +195,7 @@ final class WatchInstallReminderPolicyTests: XCTestCase {
         let expected: [String: String] = [
             "en": "Open the Watch app on your iPhone, find PagePilot under Available Apps, and install it.",
             "zh-Hans": "打开 iPhone 上的 Watch App，在「可用 App」中找到 PagePilot 并安装。",
-            "de": "Öffnen Sie die Watch-App auf Ihrem iPhone und installieren Sie PagePilot unter „Verfügbaren Apps“.",
+            "de": "Öffnen Sie die Watch-App auf Ihrem iPhone und installieren Sie PagePilot unter „Verfügbare Apps“.",
             "es": "Abre la app Watch en tu iPhone e instala PagePilot desde «Apps disponibles».",
             "fr": "Ouvrez l’app Watch sur votre iPhone et installez PagePilot depuis « Apps disponibles ».",
         ]
