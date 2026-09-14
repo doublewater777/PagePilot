@@ -924,3 +924,25 @@
 "reader_quick_position_format" = "‹  %1$d / %2$d  ·  %3$d%%  ›";
 "reader_quick_position_cancel" = "Release to Cancel";
 "reader_quick_position_failure" = "Unable to jump to this position";
+
+"onboarding_tour_skip" = "Skip";
+"onboarding_tour_next" = "Next";
+"onboarding_tour_start_books" = "Choose a Book";
+"onboarding_tour_page1_title" = "Turn pages, with the Digital Crown";
+"onboarding_tour_page1_tagline" = "PagePilot · Turn pages with Apple Watch";
+"onboarding_tour_page1_desc" = "Read in bed with your phone on a stand, at the gym, or on a train — turn pages effortlessly with a turn of the Digital Crown or a tap on your watch.";
+"onboarding_tour_page1_chip1" = "Digital Crown";
+"onboarding_tour_page1_chip2" = "Watch Tap";
+"onboarding_tour_page1_chip3" = "Haptic Touch";
+"onboarding_tour_page2_title" = "All Formats, Your Personal Library";
+"onboarding_tour_page2_tagline" = "BYO Content · Lightning Wi-Fi Transfer";
+"onboarding_tour_page2_desc" = "Full support for EPUB, PDF, CBZ comics, TXT, Markdown, and audiobooks. Drag and drop files from your computer over local Wi-Fi — no cables needed.";
+"onboarding_tour_page2_chip1" = "EPUB · PDF · CBZ";
+"onboarding_tour_page2_chip2" = "Wi-Fi Transfer";
+"onboarding_tour_page2_chip3" = "Device Share";
+"onboarding_tour_page3_title" = "iCloud Sync, Read Across Devices";
+"onboarding_tour_page3_tagline" = "Progress & Notes Synced · Safe & Private";
+"onboarding_tour_page3_desc" = "Books, reading progress, bookmarks, and notes sync seamlessly via your private iCloud. Start on iPhone, pick up on iPad — zero third-party accounts required.";
+"onboarding_tour_page3_chip1" = "Auto Sync";
+"onboarding_tour_page3_chip2" = "iPhone & iPad";
+"onboarding_tour_page3_chip3" = "Private CloudKit";

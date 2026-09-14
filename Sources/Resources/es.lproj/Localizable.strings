@@ -924,3 +924,25 @@
 "reader_quick_position_format" = "‹ %1$d / %2$d · %3$d%% ›";
 "reader_quick_position_cancel" = "Liberar para cancelar";
 "reader_quick_position_failure" = "No se puede saltar a esta posición";
+
+"onboarding_tour_skip" = "Saltar";
+"onboarding_tour_next" = "Siguiente";
+"onboarding_tour_start_books" = "Elegir un libro";
+"onboarding_tour_page1_title" = "Pasa páginas con la Digital Crown";
+"onboarding_tour_page1_tagline" = "PagePilot · Pasa páginas con Apple Watch";
+"onboarding_tour_page1_desc" = "Lee en la cama, en el gimnasio o en el tren: gira la Digital Crown o toca la pantalla del reloj para pasar páginas con total libertad.";
+"onboarding_tour_page1_chip1" = "Digital Crown";
+"onboarding_tour_page1_chip2" = "Toque en pantalla";
+"onboarding_tour_page1_chip3" = "Respuesta háptica";
+"onboarding_tour_page2_title" = "Todos los formatos, tu propia biblioteca";
+"onboarding_tour_page2_tagline" = "Tus archivos · Transferencia Wi-Fi rápida";
+"onboarding_tour_page2_desc" = "Compatible con EPUB, PDF, cómics CBZ, TXT, Markdown y audiolibros. Arrastra archivos desde el navegador de tu PC por Wi-Fi local sin cables.";
+"onboarding_tour_page2_chip1" = "EPUB · PDF · CBZ";
+"onboarding_tour_page2_chip2" = "Wi-Fi rápido";
+"onboarding_tour_page2_chip3" = "Entre dispositivos";
+"onboarding_tour_page3_title" = "Sincronización iCloud entre dispositivos";
+"onboarding_tour_page3_tagline" = "Progreso y notas al día · Máxima privacidad";
+"onboarding_tour_page3_desc" = "Libros, progreso, marcadores y notas se sincronizan mediante tu iCloud privado. Empieza en iPhone y continúa en iPad sin cuentas de terceros.";
+"onboarding_tour_page3_chip1" = "Sincronización";
+"onboarding_tour_page3_chip2" = "iPhone e iPad";
+"onboarding_tour_page3_chip3" = "CloudKit privado";

@@ -924,3 +924,25 @@
 "reader_quick_position_format" = "‹  %1$d / %2$d  ·  %3$d%%  ›";
 "reader_quick_position_cancel" = "Relâchez pour annuler";
 "reader_quick_position_failure" = "Impossible d’accéder à cette position";
+
+"onboarding_tour_skip" = "Passer";
+"onboarding_tour_next" = "Suivant";
+"onboarding_tour_start_books" = "Choisir un livre";
+"onboarding_tour_page1_title" = "Tournez les pages avec la Digital Crown";
+"onboarding_tour_page1_tagline" = "PagePilot · Tournez les pages avec l’Apple Watch";
+"onboarding_tour_page1_desc" = "Lisez au lit, au sport ou en voyage : tournez la Digital Crown ou touchez votre Apple Watch pour tourner les pages sans toucher l’écran.";
+"onboarding_tour_page1_chip1" = "Digital Crown";
+"onboarding_tour_page1_chip2" = "Toucher l’écran";
+"onboarding_tour_page1_chip3" = "Retour haptique";
+"onboarding_tour_page2_title" = "Tous les formats, votre propre bibliothèque";
+"onboarding_tour_page2_tagline" = "Vos fichiers · Transfert Wi-Fi ultra-rapide";
+"onboarding_tour_page2_desc" = "Prise en charge complète des formats EPUB, PDF, BD CBZ, TXT, Markdown et livres audio. Glissez-déposez vos fichiers par Wi-Fi local depuis un navigateur.";
+"onboarding_tour_page2_chip1" = "EPUB · PDF · CBZ";
+"onboarding_tour_page2_chip2" = "Wi-Fi rapide";
+"onboarding_tour_page2_chip3" = "Entre appareils";
+"onboarding_tour_page3_title" = "Synchronisation iCloud sur tous vos appareils";
+"onboarding_tour_page3_tagline" = "Progression et notes synchronisées · Confidentiel";
+"onboarding_tour_page3_desc" = "Livres, progression, signets et notes sont synchronisés via votre iCloud privé. Commencez sur iPhone et poursuivez sur iPad, sans compte tiers.";
+"onboarding_tour_page3_chip1" = "Synchronisation";
+"onboarding_tour_page3_chip2" = "iPhone & iPad";
+"onboarding_tour_page3_chip3" = "CloudKit privé";

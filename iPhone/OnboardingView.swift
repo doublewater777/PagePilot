@@ -22,6 +22,7 @@ struct OnboardingView: View {
     @State private var isWorking = false
     @State private var errorMessage: String?
     @State private var showsIPadPaywall = false
+    @State private var tourPage = 0
     @State private var hasHandledInitialURL = false
     @State private var selectedPublication: OnboardingPublicationPresentation?
     @State private var isOpeningReader = false
@@ -84,14 +85,15 @@ struct OnboardingView: View {
             .frame(maxWidth: 520)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-            Button(action: finish) {
-                Image(systemName: "xmark")
-                    .font(.system(size: 14, weight: .semibold))
+            Button(action: handleSkip) {
+                Text("onboarding_tour_skip")
+                    .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.secondary)
-                    .frame(width: 36, height: 36)
-                    .background(.thinMaterial, in: Circle())
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 7)
+                    .background(.thinMaterial, in: Capsule())
             }
-            .accessibilityLabel(Text("onboarding_close_accessibility"))
+            .accessibilityLabel(Text("onboarding_tour_skip"))
             .padding(20)
         }
         .fileImporter(
@@ -219,100 +221,290 @@ struct OnboardingView: View {
     }
 
     private var watchIntroScreen: some View {
-        scrollingScreen {
-            VStack(spacing: 28) {
-            Spacer(minLength: 36)
+        VStack(spacing: 0) {
+            Spacer(minLength: 44)
+
+            TabView(selection: $tourPage) {
+                tourPage1.tag(0)
+                tourPage2.tag(1)
+                tourPage3.tag(2)
+                tourPage4.tag(3)
+            }
+            .tabViewStyle(.page(indexDisplayMode: .never))
+
+            VStack(spacing: 16) {
+                HStack(spacing: 8) {
+                    ForEach(0..<4) { idx in
+                        Capsule()
+                            .fill(tourPage == idx ? AppColors.accentBlue : Color.primary.opacity(0.18))
+                            .frame(width: tourPage == idx ? 22 : 7, height: 7)
+                            .animation(.spring(response: 0.35, dampingFraction: 0.8), value: tourPage)
+                    }
+                }
+                .padding(.bottom, 2)
+
+                if tourPage < 3 {
+                    primaryButton("onboarding_tour_next", systemImage: "arrow.right") {
+                        withAnimation(.spring(response: 0.35, dampingFraction: 0.82)) {
+                            tourPage += 1
+                        }
+                    }
+                } else {
+                    VStack(spacing: 12) {
+                        primaryButton("onboarding_import_one_book", systemImage: "square.and.arrow.down") {
+                            showsImportSources = true
+                        }
+
+                        Button(action: importSample) {
+                            Label(
+                                NSLocalizedString(
+                                    "onboarding_use_sample_book",
+                                    tableName: "Onboarding",
+                                    comment: "Onboarding sample book button"
+                                ),
+                                systemImage: "book.closed"
+                            )
+                            .font(.headline)
+                            .frame(maxWidth: .infinity)
+                            .frame(minHeight: 48)
+                        }
+                        .buttonStyle(.bordered)
+                        .tint(AppColors.accentBlue)
+                        .disabled(isWorking)
+
+                        Text("onboarding_supported_formats")
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
+                    }
+                }
+            }
+            .padding(.horizontal, 24)
+            .padding(.bottom, 36)
+        }
+        .overlay {
+            if isWorking {
+                ProgressView()
+                    .controlSize(.large)
+                    .padding(24)
+                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 18))
+            }
+        }
+    }
+
+    private var tourPage1: some View {
+        VStack(spacing: 22) {
+            Spacer(minLength: 20)
 
             ZStack {
-                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                Circle()
+                    .fill(AppColors.accentBlue.opacity(0.1))
+                    .frame(width: 140, height: 140)
+
+                RoundedRectangle(cornerRadius: 28, style: .continuous)
                     .fill(AppColors.accentGradient)
-                    .frame(width: 88, height: 88)
-                    .shadow(color: AppColors.accentBlue.opacity(0.28), radius: 20, y: 10)
+                    .frame(width: 104, height: 104)
+                    .shadow(color: AppColors.accentBlue.opacity(0.35), radius: 24, y: 12)
 
                 Image(systemName: "applewatch.radiowaves.left.and.right")
-                    .font(.system(size: 40, weight: .medium))
+                    .font(.system(size: 48, weight: .medium))
                     .foregroundStyle(.white)
             }
             .accessibilityHidden(true)
 
             VStack(spacing: 8) {
-                Text("onboarding_watch_intro_title")
-                    .font(.title2.bold())
+                Text("onboarding_tour_page1_title")
+                    .font(.system(size: 24, weight: .bold))
                     .multilineTextAlignment(.center)
-                Text("onboarding_watch_intro_subtitle")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-                    .lineSpacing(3)
-                    .padding(.horizontal, 4)
+
+                Text("onboarding_tour_page1_tagline")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(AppColors.accentTeal)
             }
 
-            VStack(alignment: .leading, spacing: 20) {
-                watchIntroFeatureRow(
-                    systemImage: "applewatch.side.right",
-                    iconColor: AppColors.accentBlue,
-                    title: "onboarding_watch_intro_point1_title",
-                    detail: "onboarding_watch_intro_point1_detail"
-                )
-                watchIntroFeatureRow(
-                    systemImage: "books.vertical.fill",
-                    iconColor: AppColors.accentTeal,
-                    title: "onboarding_watch_intro_point2_title",
-                    detail: "onboarding_watch_intro_point2_detail"
-                )
-                watchIntroFeatureRow(
-                    systemImage: "icloud.fill",
-                    iconColor: AppColors.accentBlue,
-                    title: "onboarding_watch_intro_point3_title",
-                    detail: "onboarding_watch_intro_point3_detail"
-                )
-            }
-            .padding(.horizontal, 4)
+            Text("onboarding_tour_page1_desc")
+                .font(.body)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .lineSpacing(4)
+                .padding(.horizontal, 12)
 
-            Spacer(minLength: 16)
+            HStack(spacing: 8) {
+                tourPill(icon: "digitalcrown.horizontal.press.fill", text: "onboarding_tour_page1_chip1")
+                tourPill(icon: "hand.tap.fill", text: "onboarding_tour_page1_chip2")
+                tourPill(icon: "waveform", text: "onboarding_tour_page1_chip3")
+            }
 
-            primaryButton("onboarding_watch_intro_cta", systemImage: "arrow.right") {
-                continueFromWatchIntro()
-            }
-            }
-            .padding(.horizontal, 24)
-            .padding(.bottom, 36)
+            Spacer(minLength: 20)
         }
+        .padding(.horizontal, 20)
     }
 
-    private func watchIntroFeatureRow(
-        systemImage: String,
-        iconColor: Color,
-        title: LocalizedStringKey,
-        detail: LocalizedStringKey
-    ) -> some View {
-        HStack(alignment: .top, spacing: 16) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(iconColor.opacity(0.12))
-                    .frame(width: 44, height: 44)
+    private var tourPage2: some View {
+        VStack(spacing: 22) {
+            Spacer(minLength: 20)
 
-                Image(systemName: systemImage)
-                    .font(.system(size: 22, weight: .semibold))
-                    .foregroundStyle(iconColor)
+            ZStack {
+                Circle()
+                    .fill(AppColors.accentTeal.opacity(0.1))
+                    .frame(width: 140, height: 140)
+
+                RoundedRectangle(cornerRadius: 28, style: .continuous)
+                    .fill(LinearGradient(
+                        colors: [AppColors.accentTeal, AppColors.accentBlue],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ))
+                    .frame(width: 104, height: 104)
+                    .shadow(color: AppColors.accentTeal.opacity(0.35), radius: 24, y: 12)
+
+                Image(systemName: "books.vertical.fill")
+                    .font(.system(size: 46, weight: .medium))
+                    .foregroundStyle(.white)
             }
             .accessibilityHidden(true)
 
-            VStack(alignment: .leading, spacing: 3) {
-                Text(title)
-                    .font(.headline)
-                    .foregroundStyle(.primary)
+            VStack(spacing: 8) {
+                Text("onboarding_tour_page2_title")
+                    .font(.system(size: 24, weight: .bold))
+                    .multilineTextAlignment(.center)
 
-                Text(detail)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .lineSpacing(2)
-                    .fixedSize(horizontal: false, vertical: true)
+                Text("onboarding_tour_page2_tagline")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(AppColors.accentTeal)
             }
 
-            Spacer(minLength: 0)
+            Text("onboarding_tour_page2_desc")
+                .font(.body)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .lineSpacing(4)
+                .padding(.horizontal, 12)
+
+            HStack(spacing: 8) {
+                tourPill(icon: "doc.text.fill", text: "onboarding_tour_page2_chip1")
+                tourPill(icon: "wifi", text: "onboarding_tour_page2_chip2")
+                tourPill(icon: "ipad.and.iphone", text: "onboarding_tour_page2_chip3")
+            }
+
+            Spacer(minLength: 20)
         }
-        .accessibilityElement(children: .combine)
+        .padding(.horizontal, 20)
+    }
+
+    private var tourPage3: some View {
+        VStack(spacing: 22) {
+            Spacer(minLength: 20)
+
+            ZStack {
+                Circle()
+                    .fill(AppColors.accentBlue.opacity(0.1))
+                    .frame(width: 140, height: 140)
+
+                RoundedRectangle(cornerRadius: 28, style: .continuous)
+                    .fill(LinearGradient(
+                        colors: [Color(red: 46 / 255, green: 130 / 255, blue: 245 / 255), AppColors.accentTeal],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ))
+                    .frame(width: 104, height: 104)
+                    .shadow(color: AppColors.accentBlue.opacity(0.35), radius: 24, y: 12)
+
+                Image(systemName: "icloud.fill")
+                    .font(.system(size: 50, weight: .medium))
+                    .foregroundStyle(.white)
+            }
+            .accessibilityHidden(true)
+
+            VStack(spacing: 8) {
+                Text("onboarding_tour_page3_title")
+                    .font(.system(size: 24, weight: .bold))
+                    .multilineTextAlignment(.center)
+
+                Text("onboarding_tour_page3_tagline")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(AppColors.accentTeal)
+            }
+
+            Text("onboarding_tour_page3_desc")
+                .font(.body)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .lineSpacing(4)
+                .padding(.horizontal, 12)
+
+            HStack(spacing: 8) {
+                tourPill(icon: "arrow.triangle.2.circlepath", text: "onboarding_tour_page3_chip1")
+                tourPill(icon: "ipad.and.iphone", text: "onboarding_tour_page3_chip2")
+                tourPill(icon: "lock.shield.fill", text: "onboarding_tour_page3_chip3")
+            }
+
+            Spacer(minLength: 20)
+        }
+        .padding(.horizontal, 20)
+    }
+
+    private var tourPage4: some View {
+        VStack(spacing: 22) {
+            Spacer(minLength: 20)
+
+            ZStack {
+                Circle()
+                    .fill(AppColors.accentBlue.opacity(0.1))
+                    .frame(width: 140, height: 140)
+
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .fill(AppColors.accentGradient)
+                    .frame(width: 96, height: 124)
+                    .shadow(color: AppColors.accentBlue.opacity(0.32), radius: 24, y: 12)
+
+                Image(systemName: "applewatch.radiowaves.left.and.right")
+                    .font(.system(size: 38, weight: .medium))
+                    .foregroundStyle(.white)
+            }
+            .accessibilityHidden(true)
+
+            VStack(spacing: 8) {
+                Text("onboarding_activation_title")
+                    .font(.system(size: 24, weight: .bold))
+                    .multilineTextAlignment(.center)
+
+                Text("onboarding_activation_subtitle")
+                    .font(.body)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .lineSpacing(3)
+                    .padding(.horizontal, 12)
+            }
+
+            if let errorMessage {
+                Text(errorMessage)
+                    .font(.footnote)
+                    .foregroundStyle(.red)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 8)
+            }
+
+            Spacer(minLength: 20)
+        }
+        .padding(.horizontal, 20)
+    }
+
+    private func tourPill(icon: String, text: LocalizedStringKey) -> some View {
+        HStack(spacing: 5) {
+            Image(systemName: icon)
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(AppColors.accentBlue)
+            Text(text)
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(AppColors.cardBackground, in: Capsule())
+        .overlay {
+            Capsule().stroke(Color.primary.opacity(0.08), lineWidth: 1)
+        }
     }
 
     private var controlTargetScreen: some View {
@@ -578,6 +770,16 @@ struct OnboardingView: View {
         onFlowChange(flow)
         if flow.step == .reader {
             persistAndOpenReader()
+        }
+    }
+
+    private func handleSkip() {
+        if flow.platform == .iPhone, flow.step == .watchIntro, tourPage < 3 {
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
+                tourPage = 3
+            }
+        } else {
+            finish()
         }
     }
 

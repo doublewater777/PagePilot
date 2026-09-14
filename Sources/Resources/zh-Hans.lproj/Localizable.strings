@@ -924,3 +924,25 @@
 "reader_quick_position_format" = "‹  %1$d / %2$d  ·  %3$d%%  ›";
 "reader_quick_position_cancel" = "松开取消";
 "reader_quick_position_failure" = "无法跳转到该位置";
+
+"onboarding_tour_skip" = "跳过";
+"onboarding_tour_next" = "下一步";
+"onboarding_tour_start_books" = "开始选书";
+"onboarding_tour_page1_title" = "旋转表冠，让阅读自由翻篇";
+"onboarding_tour_page1_tagline" = "PagePilot · 用手表翻页的阅读器";
+"onboarding_tour_page1_desc" = "躺在床头架边、在健身房跑步，或在高铁小桌板前，无需伸手碰屏幕，转动 Apple Watch 数码表冠或轻点表盘即可遥控翻页。";
+"onboarding_tour_page1_chip1" = "数码表冠";
+"onboarding_tour_page1_chip2" = "表盘轻点";
+"onboarding_tour_page1_chip3" = "触感反馈";
+"onboarding_tour_page2_title" = "全格式兼容，你的专属书库";
+"onboarding_tour_page2_tagline" = "自带内容 · 支持 Wi-Fi 极速传书";
+"onboarding_tour_page2_desc" = "全面支持 EPUB、PDF、CBZ 漫画、TXT、Markdown 与有声书。同一 Wi-Fi 下，电脑浏览器拖拽文件即可秒速导入书架。";
+"onboarding_tour_page2_chip1" = "EPUB · PDF · CBZ";
+"onboarding_tour_page2_chip2" = "Wi-Fi 极速传书";
+"onboarding_tour_page2_chip3" = "多设备互传";
+"onboarding_tour_page3_title" = "iCloud 私密同步，换设备接续";
+"onboarding_tour_page3_tagline" = "进度与笔记实时同步 · 隐私无忧";
+"onboarding_tour_page3_desc" = "书籍、阅读进度、高亮书签与笔记，全部通过个人私密 iCloud 安全同步。在 iPhone 上读完一章，拿起 iPad 随时接力。";
+"onboarding_tour_page3_chip1" = "实时云同步";
+"onboarding_tour_page3_chip2" = "iPhone · iPad";
+"onboarding_tour_page3_chip3" = "私人 CloudKit";

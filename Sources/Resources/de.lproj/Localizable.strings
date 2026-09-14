@@ -924,3 +924,25 @@
 "reader_quick_position_format" = "‹  %1$d / %2$d  ·  %3$d%%  ›";
 "reader_quick_position_cancel" = "Zum Abbrechen loslassen";
 "reader_quick_position_failure" = "Zu dieser Position konnte nicht gesprungen werden";
+
+"onboarding_tour_skip" = "Überspringen";
+"onboarding_tour_next" = "Weiter";
+"onboarding_tour_start_books" = "Buch auswählen";
+"onboarding_tour_page1_title" = "Seiten mit der Digital Crown umblättern";
+"onboarding_tour_page1_tagline" = "PagePilot · Umblättern mit der Apple Watch";
+"onboarding_tour_page1_desc" = "Lesen Sie im Bett, beim Training oder auf Reisen: Drehen Sie die Digital Crown oder tippen Sie auf die Apple Watch, um freihändig umzublättern.";
+"onboarding_tour_page1_chip1" = "Digital Crown";
+"onboarding_tour_page1_chip2" = "Watch-Tippen";
+"onboarding_tour_page1_chip3" = "Haptik-Feedback";
+"onboarding_tour_page2_title" = "Alle Formate, Ihre eigene Bibliothek";
+"onboarding_tour_page2_tagline" = "Eigene Inhalte · Schnelles WLAN-Übertragen";
+"onboarding_tour_page2_desc" = "Unterstützt EPUB, PDF, CBZ-Comics, TXT, Markdown und Hörbücher. Ziehen Sie Bücher im selben WLAN per Browser direkt auf Ihr Gerät.";
+"onboarding_tour_page2_chip1" = "EPUB · PDF · CBZ";
+"onboarding_tour_page2_chip2" = "WLAN-Transfer";
+"onboarding_tour_page2_chip3" = "Geräte-Transfer";
+"onboarding_tour_page3_title" = "iCloud-Sync, nahtlos weiterlesen";
+"onboarding_tour_page3_tagline" = "Fortschritt & Notizen synchron · Privat";
+"onboarding_tour_page3_desc" = "Bücher, Fortschritt, Lesezeichen und Notizen synchronisieren sich sicher über Ihr privates iCloud. Vom iPhone aufs iPad wechseln, ohne extra Konto.";
+"onboarding_tour_page3_chip1" = "Auto-Sync";
+"onboarding_tour_page3_chip2" = "iPhone & iPad";
+"onboarding_tour_page3_chip3" = "Privates CloudKit";
