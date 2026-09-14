@@ -12,30 +12,22 @@ final class WatchInstallReminderPolicyTests: XCTestCase {
         XCTAssertFalse(shouldShow(step: step, availability: .unsupported))
     }
 
-    func testCompletedOnboardingOnlyShowsActionableLongTermReminder() {
+    func testCompletedOnboardingOnlyShowsMissingWatchAppReminder() {
         let step = OnboardingFlow.Step.completed
 
-        XCTAssertTrue(shouldShow(step: step, availability: .unpaired))
+        XCTAssertFalse(shouldShow(step: step, availability: .unpaired))
         XCTAssertTrue(shouldShow(step: step, availability: .appNotInstalled))
         XCTAssertFalse(shouldShow(step: step, availability: .unreachable))
         XCTAssertFalse(shouldShow(step: step, availability: .ready))
         XCTAssertFalse(shouldShow(step: step, availability: .unsupported))
     }
 
-    func testDismissedLongTermReminderStaysHidden() {
+    func testDismissedMissingAppReminderStaysHidden() {
         XCTAssertFalse(
             WatchGuidePresentationPolicy.shouldShow(
                 isPhone: true,
                 onboardingStep: .completed,
                 availability: .appNotInstalled,
-                installReminderDismissed: true
-            )
-        )
-        XCTAssertFalse(
-            WatchGuidePresentationPolicy.shouldShow(
-                isPhone: true,
-                onboardingStep: .completed,
-                availability: .unpaired,
                 installReminderDismissed: true
             )
         )
@@ -103,48 +95,95 @@ final class WatchInstallReminderPolicyTests: XCTestCase {
         XCTAssertGreaterThan(reminderState, policyCall)
     }
 
-    func testSkippingWatchGuideCompletesOnboardingAndPersistsReminderDismissal() throws {
+    func testSkippingWatchGuideCompletesOnboardingAndOnlyDismissesMissingAppReminder() throws {
         let source = try Self.visualReaderSource()
 
         let dismissEntry = try Self.requiredLine("private func dismissOnboardingWatchGuide()", in: source)
         let finish = try Self.requiredLine("flow.finish()", in: source, startingAfter: dismissEntry)
         let save = try Self.requiredLine("progressStore.save(flow)", in: source, startingAfter: finish)
+        let missingAppCheck = try Self.requiredLine(
+            "if availability == .appNotInstalled",
+            in: source,
+            startingAfter: save
+        )
         let persistDismissal = try Self.requiredLine(
             "watchInstallReminderStore.dismiss()",
             in: source,
-            startingAfter: save
+            startingAfter: missingAppCheck
         )
 
         XCTAssertGreaterThan(finish, dismissEntry)
         XCTAssertGreaterThan(save, finish)
-        XCTAssertGreaterThan(persistDismissal, save)
+        XCTAssertGreaterThan(missingAppCheck, save)
+        XCTAssertGreaterThan(persistDismissal, missingAppCheck)
+        XCTAssertNil(
+            Self.range(of: "availability == .appNotInstalled || availability == .unpaired", in: source),
+            "An unpaired Watch must not poison a future missing-app reminder."
+        )
     }
 
-    func testReadyWatchResetsLongTermReminderDismissal() throws {
+    func testLeavingMissingAppStateResetsLongTermReminderDismissal() throws {
         let source = try Self.visualReaderSource()
 
         let guideEntry = try Self.requiredLine("private func reconcileOnboardingWatchGuide()", in: source)
-        let readyCheck = try Self.requiredLine("if availability == .ready", in: source, startingAfter: guideEntry)
+        let stateChangeCheck = try Self.requiredLine(
+            "if availability != .appNotInstalled",
+            in: source,
+            startingAfter: guideEntry
+        )
         let reset = try Self.requiredLine(
             "watchInstallReminderStore.reset()",
             in: source,
-            startingAfter: readyCheck
+            startingAfter: stateChangeCheck
         )
 
-        XCTAssertGreaterThan(reset, readyCheck)
+        XCTAssertGreaterThan(reset, stateChangeCheck)
     }
 
-    func testWatchSettingsSurfaceInstallGuidanceWhenAppIsMissing() throws {
-        let source = try Self.watchSettingsSource()
+    func testReaderUsesDifferentDismissCopyForOnboardingAndLongTermReminder() throws {
+        let source = try Self.visualReaderSource()
 
-        let availabilityCheck = try Self.requiredLine("watchAvailability == .appNotInstalled", in: source)
-        let installCopy = try Self.requiredLine(
-            "onboarding_watch_install_detail",
+        let presentEntry = try Self.requiredLine("private func presentOnboardingWatchGuide()", in: source)
+        let dismissTitle = try Self.requiredLine(
+            "let dismissTitle: LocalizedStringKey = flow.step == .reader",
             in: source,
-            startingAfter: availabilityCheck
+            startingAfter: presentEntry
+        )
+        let onboardingCopy = try Self.requiredLine(
+            "\"onboarding_watch_skip\"",
+            in: source,
+            startingAfter: dismissTitle
+        )
+        let longTermCopy = try Self.requiredLine(
+            "\"close_button\"",
+            in: source,
+            startingAfter: onboardingCopy
         )
 
-        XCTAssertGreaterThan(installCopy, availabilityCheck)
+        XCTAssertGreaterThan(onboardingCopy, dismissTitle)
+        XCTAssertGreaterThan(longTermCopy, onboardingCopy)
+    }
+
+    func testWatchSettingsIsStableRecoverySurfaceForAllWatchStates() throws {
+        let source = try Self.watchSettingsSource()
+
+        let statusSection = try Self.requiredLine("private var watchStatusSection", in: source)
+        let availabilitySwitch = try Self.requiredLine(
+            "switch watchService.watchAvailability",
+            in: source,
+            startingAfter: statusSection
+        )
+
+        XCTAssertGreaterThan(availabilitySwitch, statusSection)
+        for key in [
+            "onboarding_watch_unpaired_title",
+            "onboarding_watch_install_title",
+            "onboarding_watch_open_title",
+            "onboarding_watch_ready_title",
+        ] {
+            XCTAssertNotNil(Self.range(of: key, in: source))
+        }
+        XCTAssertNotNil(Self.range(of: "watchService.activate()", in: source))
 
         XCTAssertNil(
             Self.range(of: "watchAppURL", in: source),
@@ -156,7 +195,7 @@ final class WatchInstallReminderPolicyTests: XCTestCase {
         let expected: [String: String] = [
             "en": "Open the Watch app on your iPhone, find PagePilot under Available Apps, and install it.",
             "zh-Hans": "打开 iPhone 上的 Watch App，在「可用 App」中找到 PagePilot 并安装。",
-            "de": "Öffnen Sie die Watch-App auf Ihrem iPhone und installieren Sie PagePilot unter „Verfügbare Apps“.",
+            "de": "Öffnen Sie die Watch-App auf Ihrem iPhone und installieren Sie PagePilot unter „Verfügbaren Apps“.",
             "es": "Abre la app Watch en tu iPhone e instala PagePilot desde «Apps disponibles».",
             "fr": "Ouvrez l’app Watch sur votre iPhone et installez PagePilot depuis « Apps disponibles ».",
         ]
