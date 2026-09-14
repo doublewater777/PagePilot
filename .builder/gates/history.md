@@ -112,8 +112,8 @@ Loop-back: Revisit only if the recurring tip reads as nagging for deliberate non
 
 Cycle: 2026-09-14-onboarding-watch-intro
 Verdict: pass
-Evidence: Focused suite passes 17/17; localization validation passes across all 5 locales; full iPhone 17 simulator suite passes 265/265; iPad mini build succeeds.
+Evidence: Focused suite passes 20/20; localization validation passes across all 5 locales; full iPhone 17 simulator suite passes 268/268; iPad mini build succeeds.
 Weakest assumption: a dedicated value page raises Watch activation more than it costs in onboarding drop-off.
-Decision: show one focused Watch value page between publication selection and Reader on iPhone; keep iPad direct to Reader.
+Decision: show one focused Watch value page before publication selection on iPhone; book selection is the final onboarding step directly into Reader; keep iPad direct to Reader.
 Next stage: 10-growth-channel
 Loop-back: Revisit if TestFlight cohort shows onboarding abandonment or users report friction before reaching the Reader.

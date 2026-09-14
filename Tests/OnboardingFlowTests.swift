@@ -8,45 +8,60 @@ import XCTest
 @testable import PagePilot
 
 final class OnboardingFlowTests: XCTestCase {
-    func testImportedPublicationShowsWatchIntroBeforeReaderOnIPhone() {
-        var flow = OnboardingFlow(platform: .iPhone)
-
-        flow.didChoosePublication(bookID: 42, source: .user)
-
+    func testInitialStepIsWatchIntroOnIPhone() {
+        let flow = OnboardingFlow(platform: .iPhone)
         XCTAssertEqual(flow.step, .watchIntro)
-        XCTAssertEqual(flow.publication, .init(bookID: 42, source: .user))
-        XCTAssertNil(flow.controlTarget)
     }
 
-    func testWatchIntroAdvancesToReaderOnContinue() {
-        var flow = OnboardingFlow(platform: .iPhone)
-        flow.didChoosePublication(bookID: 42, source: .user)
-
-        flow.didFinishWatchIntro()
-
-        XCTAssertEqual(flow.step, .reader)
+    func testInitialStepIsChoosePublicationOnIPad() {
+        let flow = OnboardingFlow(platform: .iPad)
+        XCTAssertEqual(flow.step, .choosePublication)
     }
 
-    func testWatchIntroContinueIsIgnoredOutsideWatchIntroStep() {
+    func testWatchIntroAdvancesToChoosePublicationOnIPhone() {
         var flow = OnboardingFlow(platform: .iPhone)
+        XCTAssertEqual(flow.step, .watchIntro)
 
         flow.didFinishWatchIntro()
 
         XCTAssertEqual(flow.step, .choosePublication)
     }
 
-    func testSamplePublicationUsesSameWatchIntroFlow() {
+    func testWatchIntroContinueIsIgnoredOutsideWatchIntroStep() {
+        var flow = OnboardingFlow(platform: .iPad)
+        XCTAssertEqual(flow.step, .choosePublication)
+
+        flow.didFinishWatchIntro()
+
+        XCTAssertEqual(flow.step, .choosePublication)
+    }
+
+    func testChoosingPublicationAdvancesDirectlyToReaderOnIPhone() {
         var flow = OnboardingFlow(platform: .iPhone)
+        flow.didFinishWatchIntro()
+        XCTAssertEqual(flow.step, .choosePublication)
+
+        flow.didChoosePublication(bookID: 42, source: .user)
+
+        XCTAssertEqual(flow.step, .reader)
+        XCTAssertEqual(flow.publication, .init(bookID: 42, source: .user))
+        XCTAssertNil(flow.controlTarget)
+    }
+
+    func testSamplePublicationUsesSameAutomaticRoutingFlow() {
+        var flow = OnboardingFlow(platform: .iPhone)
+        flow.didFinishWatchIntro()
 
         flow.didChoosePublication(bookID: 7, source: .sample)
 
-        XCTAssertEqual(flow.step, .watchIntro)
+        XCTAssertEqual(flow.step, .reader)
         XCTAssertEqual(flow.publication, .init(bookID: 7, source: .sample))
         XCTAssertNil(flow.controlTarget)
     }
 
     func testImportedPublicationAdvancesToReaderOnIPad() {
         var flow = OnboardingFlow(platform: .iPad)
+        XCTAssertEqual(flow.step, .choosePublication)
 
         flow.didChoosePublication(bookID: 42, source: .user)
 
@@ -55,6 +70,7 @@ final class OnboardingFlowTests: XCTestCase {
 
     func testLegacyIPhoneTargetSelectionNoLongerChangesRouting() {
         var flow = OnboardingFlow(platform: .iPhone)
+        flow.didFinishWatchIntro()
         flow.didChoosePublication(bookID: 42, source: .user)
 
         let effect = flow.didChooseControlTarget(.iPhone, hasProAccess: false)
@@ -66,6 +82,7 @@ final class OnboardingFlowTests: XCTestCase {
 
     func testLegacyIPadTargetSelectionNoLongerShowsPaywall() {
         var flow = OnboardingFlow(platform: .iPhone)
+        flow.didFinishWatchIntro()
         flow.didChoosePublication(bookID: 42, source: .user)
 
         let effect = flow.didChooseControlTarget(.iPad, hasProAccess: false)
@@ -77,6 +94,7 @@ final class OnboardingFlowTests: XCTestCase {
 
     func testSkippingLegacyControlTargetKeepsCollapsedWatchGuideEntry() {
         var flow = OnboardingFlow(platform: .iPhone)
+        flow.didFinishWatchIntro()
         flow.didChoosePublication(bookID: 42, source: .user)
 
         flow.skipControlTarget()
@@ -96,6 +114,7 @@ final class OnboardingFlowTests: XCTestCase {
 
     func testSuccessfulWatchPageTurnCompletesActivation() {
         var flow = OnboardingFlow(platform: .iPhone)
+        flow.didFinishWatchIntro()
         flow.didChoosePublication(bookID: 42, source: .user)
 
         flow.didCompleteWatchPageTurn()
@@ -114,6 +133,7 @@ final class OnboardingFlowTests: XCTestCase {
         defer { defaults.removePersistentDomain(forName: suiteName) }
         let store = OnboardingProgressStore(defaults: defaults)
         var flow = OnboardingFlow(platform: .iPhone)
+        flow.didFinishWatchIntro()
         flow.didChoosePublication(bookID: 42, source: .user)
 
         store.save(flow)
@@ -122,8 +142,7 @@ final class OnboardingFlowTests: XCTestCase {
     }
 
     func testNormalizedForAutomaticRoutingPreservesWatchIntro() {
-        var flow = OnboardingFlow(platform: .iPhone)
-        flow.didChoosePublication(bookID: 42, source: .user)
+        let flow = OnboardingFlow(platform: .iPhone)
         XCTAssertEqual(flow.step, .watchIntro)
 
         let normalized = flow.normalizedForAutomaticRouting()
@@ -135,15 +154,28 @@ final class OnboardingFlowTests: XCTestCase {
         let defaults = UserDefaults(suiteName: suiteName)!
         defer { defaults.removePersistentDomain(forName: suiteName) }
         let store = OnboardingProgressStore(defaults: defaults)
-        var flow = OnboardingFlow(platform: .iPhone)
-        flow.didChoosePublication(bookID: 42, source: .user)
+        let flow = OnboardingFlow(platform: .iPhone)
         XCTAssertEqual(flow.step, .watchIntro)
 
         store.save(flow)
 
         let restored = store.load(platform: .iPhone)
         XCTAssertEqual(restored.step, .watchIntro)
-        XCTAssertEqual(restored.publication, .init(bookID: 42, source: .user))
+    }
+
+    func testProgressStoreRestoresChoosePublicationStepOnRelaunch() {
+        let suiteName = "OnboardingFlowTests.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let store = OnboardingProgressStore(defaults: defaults)
+        var flow = OnboardingFlow(platform: .iPhone)
+        flow.didFinishWatchIntro()
+        XCTAssertEqual(flow.step, .choosePublication)
+
+        store.save(flow)
+
+        let restored = store.load(platform: .iPhone)
+        XCTAssertEqual(restored.step, .choosePublication)
     }
 
     func testWatchIntroCopyIsLocalizedForSupportedLanguages() throws {
@@ -184,12 +216,14 @@ final class OnboardingFlowTests: XCTestCase {
         defer { defaults.removePersistentDomain(forName: suiteName) }
         let store = OnboardingProgressStore(defaults: defaults)
         var flow = OnboardingFlow(platform: .iPhone)
+        flow.didFinishWatchIntro()
         flow.didChoosePublication(bookID: 42, source: .user)
         store.save(flow)
 
         store.reset()
 
-        XCTAssertEqual(store.load(platform: .iPhone).step, .choosePublication)
+        XCTAssertEqual(store.load(platform: .iPhone).step, .watchIntro)
+        XCTAssertEqual(store.load(platform: .iPad).step, .choosePublication)
     }
 
     func testSamplePublicationCreatesMultiChapterEPUB() async throws {

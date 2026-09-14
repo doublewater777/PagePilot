@@ -1,9 +1,10 @@
 # Implementation
 
-- Add `OnboardingFlow.Step.watchIntro` (iPhone path only): `didChoosePublication` routes iPhone to `.watchIntro`, iPad keeps going straight to `.reader`.
-- Add `OnboardingFlow.didFinishWatchIntro()` advancing `.watchIntro` → `.reader`.
-- Add `watchIntroScreen` in `OnboardingView`: hero, title, subtitle, three benefit rows, single CTA that advances and opens the Reader via the existing transition.
-- Localize new `onboarding_watch_intro_*` keys in all 5 locales (de/en/es/fr/zh-Hans).
-- Update `OnboardingFlowTests` for the new routing; keep legacy-step migration tests intact.
+- `OnboardingFlow`: iPhone initial step is `.watchIntro`; iPad initial step is `.choosePublication`.
+- `OnboardingFlow.didFinishWatchIntro()` advances `.watchIntro` → `.choosePublication`.
+- `OnboardingFlow.didChoosePublication()` advances `.choosePublication` → `.reader` directly on both platforms.
+- `OnboardingView`: `watchIntroScreen` displays hero, title, subtitle, 3 value props, and Continue CTA that advances to `publicationScreen`. Book selection in `publicationScreen` directly opens the Reader via `persistAndOpenReader()`.
+- Localize `onboarding_watch_intro_*` keys in all 5 locales (de/en/es/fr/zh-Hans).
+- Update `OnboardingFlowTests` for the new sequence; verify step normalization, persistence on relaunch, and localization parity.
 - Not built: reading goal, reminders, Pro pages, any change to the Reader activation card or `WatchGuidePresentationPolicy`.
 - Dependencies: none beyond existing onboarding helpers (`scrollingScreen`, `primaryButton`, `AppColors`).

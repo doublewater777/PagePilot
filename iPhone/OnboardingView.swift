@@ -260,7 +260,7 @@ struct OnboardingView: View {
 
             Spacer()
 
-            primaryButton("onboarding_watch_intro_cta", systemImage: "book") {
+            primaryButton("onboarding_watch_intro_cta", systemImage: "arrow.right") {
                 continueFromWatchIntro()
             }
             }
@@ -569,9 +569,10 @@ struct OnboardingView: View {
 
     private func continueFromWatchIntro() {
         guard !hasFinished else { return }
-        flow.didFinishWatchIntro()
+        withAnimation(reduceMotion ? nil : .spring(response: 0.35, dampingFraction: 0.8)) {
+            flow.didFinishWatchIntro()
+        }
         onFlowChange(flow)
-        persistAndOpenReader()
     }
 
     private func didImportFromAlternativeSource(_ publication: OnboardingPublicationPresentation) {

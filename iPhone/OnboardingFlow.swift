@@ -59,18 +59,18 @@ struct OnboardingFlow: Codable, Equatable {
 
     init(platform: Platform) {
         self.platform = platform
+        self.step = platform == .iPhone ? .watchIntro : .choosePublication
+    }
+
+    mutating func didFinishWatchIntro() {
+        guard step == .watchIntro else { return }
+        step = .choosePublication
     }
 
     mutating func didChoosePublication(bookID: Int64, source: PublicationSource) {
         publication = PublicationSelection(bookID: bookID, source: source)
         controlTarget = nil
-        // Reader routing is automatic. iPhone users first get one Watch value
-        // page so the Reader activation card does not arrive without context.
-        step = platform == .iPhone ? .watchIntro : .reader
-    }
-
-    mutating func didFinishWatchIntro() {
-        guard step == .watchIntro else { return }
+        // Choosing a publication is the final onboarding step, advancing directly to Reader.
         step = .reader
     }
 

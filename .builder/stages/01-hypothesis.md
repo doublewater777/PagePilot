@@ -77,7 +77,7 @@ Assumptions to test:
 
 - 2026-09-13: Linked the iPad Reader Watch hint copy cycle.
 - 2026-09-13: Linked the Watch app install-guidance cycle.
-- 2026-09-14: Completed the onboarding Watch intro page cycle; 17/17 focused and 265/265 full simulator tests passed, iPad mini build succeeded.
+- 2026-09-14: Completed the onboarding Watch intro page cycle; 20/20 focused and 268/268 full simulator tests passed, iPad mini build succeeded.
 - 2026-09-13: Linked the Watch install reminder-decoupling cycle.
 - 2026-09-13: Linked the reading Live Activity background-retention cycle.
 - 2026-09-13: Linked the Watch cold-start control cycle.

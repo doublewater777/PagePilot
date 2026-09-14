@@ -64,7 +64,7 @@
 "onboarding_watch_intro_point2_detail" = "手上有水、有油，或手机架在远处，也能继续读";
 "onboarding_watch_intro_point3_title" = "没有手表也能用";
 "onboarding_watch_intro_point3_detail" = "不影响正常阅读，之后随时可在设置中开启 Watch 翻页";
-"onboarding_watch_intro_cta" = "开始阅读";
+"onboarding_watch_intro_cta" = "继续";
 "onboarding_watch_unpaired_title" = "暂未发现 Apple Watch";
 "onboarding_watch_unpaired_detail" = "配对手表后，可随时从 Watch 设置继续。";
 "onboarding_watch_install_title" = "安装 PagePilot Watch App";
