@@ -12,6 +12,50 @@ import SwiftUI
 import UIKit
 import WatchConnectivity
 
+enum WatchGuidePresentationPolicy {
+    static func shouldShow(
+        isPhone: Bool,
+        onboardingStep: OnboardingFlow.Step,
+        availability: WatchAvailability,
+        installReminderDismissed: Bool
+    ) -> Bool {
+        guard isPhone else { return false }
+
+        if onboardingStep == .reader {
+            switch availability {
+            case .unsupported:
+                return false
+            case .unpaired, .appNotInstalled, .unreachable, .ready:
+                return true
+            }
+        }
+
+        guard availability == .appNotInstalled else { return false }
+        return !installReminderDismissed
+    }
+}
+
+struct WatchInstallReminderStore {
+    private let defaults: UserDefaults
+    private let key = "watchInstallReminder.dismissed.v1"
+
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
+    }
+
+    var isDismissed: Bool {
+        defaults.bool(forKey: key)
+    }
+
+    func dismiss() {
+        defaults.set(true, forKey: key)
+    }
+
+    func reset() {
+        defaults.removeObject(forKey: key)
+    }
+}
+
 /// Base class for the reader view controller of a `VisualNavigator`.
 class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewController<N>, VisualNavigatorDelegate, ReaderPositionIndicatorProviding {
     private lazy var positionLabel = UILabel()
@@ -31,6 +75,7 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
     private var onboardingWatchGuideViewController: UIHostingController<OnboardingWatchGuideView>?
     private var onboardingIPadHintViewController: UIHostingController<OnboardingIPadReaderHintView>?
     private var didDismissWatchGuideThisSession = false
+    private let watchInstallReminderStore = WatchInstallReminderStore()
 
     init(
         navigator: N,
@@ -251,26 +296,39 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
     }
 
     private func reconcileOnboardingWatchGuide() {
-        guard WatchGuideEligibility.shouldShow(
-            isPhone: UIDevice.current.userInterfaceIdiom == .phone
-        ) else { return }
-
+        let isPhone = UIDevice.current.userInterfaceIdiom == .phone
         let availability = WatchPageTurnService.shared.watchAvailability
-        let isActionable = availability == .appNotInstalled || availability == .unpaired
+        let flow = OnboardingProgressStore().load(platform: .iPhone)
 
-        if isActionable,
+        if availability != .appNotInstalled {
+            watchInstallReminderStore.reset()
+        }
+
+        let shouldShow = WatchGuidePresentationPolicy.shouldShow(
+            isPhone: isPhone,
+            onboardingStep: flow.step,
+            availability: availability,
+            installReminderDismissed: watchInstallReminderStore.isDismissed
+        )
+
+        if shouldShow,
            !didDismissWatchGuideThisSession,
            onboardingWatchGuideViewController == nil {
             presentOnboardingWatchGuide()
-        } else if !isActionable,
+        } else if !shouldShow,
                   onboardingWatchGuideViewController != nil {
             removeOnboardingWatchGuide()
         }
     }
 
     private func presentOnboardingWatchGuide() {
+        let flow = OnboardingProgressStore().load(platform: .iPhone)
+        let dismissTitle: LocalizedStringKey = flow.step == .reader
+            ? "onboarding_watch_skip"
+            : "close_button"
         let guide = OnboardingWatchGuideView(
             service: WatchPageTurnService.shared,
+            dismissTitle: dismissTitle,
             onDismiss: { [weak self] in
                 self?.dismissOnboardingWatchGuide()
             }
@@ -334,6 +392,7 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
         var flow = store.load(platform: .iPhone)
         flow.didCompleteWatchPageTurn()
         store.save(flow)
+        watchInstallReminderStore.reset()
 
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
         toast(
@@ -362,6 +421,18 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
     }
 
     private func dismissOnboardingWatchGuide() {
+        let progressStore = OnboardingProgressStore()
+        var flow = progressStore.load(platform: .iPhone)
+        if flow.step == .reader {
+            flow.finish()
+            progressStore.save(flow)
+        }
+
+        let availability = WatchPageTurnService.shared.watchAvailability
+        if availability == .appNotInstalled {
+            watchInstallReminderStore.dismiss()
+        }
+
         didDismissWatchGuideThisSession = true
         removeOnboardingWatchGuide()
     }
@@ -497,7 +568,6 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
 
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
-
         wasTTSPlayingBeforeQuickPositionJump = false
         quickPositionJumpController?.cancel()
         ttsViewModel?.stop()
