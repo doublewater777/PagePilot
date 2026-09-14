@@ -11,7 +11,7 @@
   - Normalization preserving `.watchIntro` across legacy migrations
   - Progress store persisting and restoring both `.watchIntro` and `.choosePublication` across relaunches
   - Progress store reset restoring `.watchIntro` for iPhone and `.choosePublication` for iPad
-  - Complete 5-locale copy localization for all intro titles, subtitles, bullets, and CTA
+  - Complete 5-locale copy localization for all intro titles, subtitles, bullets (including iCloud sync), and CTA
 - The full iPhone 17 simulator test suite passes 268/268.
 - The iPad mini simulator build succeeds.
 - App and ASC localization validation passes across all 5 supported languages.

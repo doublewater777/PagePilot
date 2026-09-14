@@ -220,45 +220,56 @@ struct OnboardingView: View {
 
     private var watchIntroScreen: some View {
         scrollingScreen {
-            VStack(spacing: 24) {
-            Spacer(minLength: 64)
+            VStack(spacing: 28) {
+            Spacer(minLength: 36)
 
-            Image(systemName: "applewatch.radiowaves.left.and.right")
-                .font(.system(size: 64, weight: .medium))
-                .symbolRenderingMode(.hierarchical)
-                .foregroundStyle(AppColors.accentBlue)
-                .accessibilityHidden(true)
+            ZStack {
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .fill(AppColors.accentGradient)
+                    .frame(width: 88, height: 88)
+                    .shadow(color: AppColors.accentBlue.opacity(0.28), radius: 20, y: 10)
 
-            VStack(spacing: 10) {
+                Image(systemName: "applewatch.radiowaves.left.and.right")
+                    .font(.system(size: 40, weight: .medium))
+                    .foregroundStyle(.white)
+            }
+            .accessibilityHidden(true)
+
+            VStack(spacing: 8) {
                 Text("onboarding_watch_intro_title")
-                    .font(.title.bold())
+                    .font(.title2.bold())
                     .multilineTextAlignment(.center)
                 Text("onboarding_watch_intro_subtitle")
-                    .font(.body)
+                    .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
                     .lineSpacing(3)
+                    .padding(.horizontal, 4)
             }
 
-            VStack(spacing: 14) {
-                watchIntroRow(
-                    systemImage: "hand.tap",
+            VStack(alignment: .leading, spacing: 20) {
+                watchIntroFeatureRow(
+                    systemImage: "applewatch.side.right",
+                    iconColor: AppColors.accentBlue,
                     title: "onboarding_watch_intro_point1_title",
                     detail: "onboarding_watch_intro_point1_detail"
                 )
-                watchIntroRow(
-                    systemImage: "bed.double",
+                watchIntroFeatureRow(
+                    systemImage: "books.vertical.fill",
+                    iconColor: AppColors.accentTeal,
                     title: "onboarding_watch_intro_point2_title",
                     detail: "onboarding_watch_intro_point2_detail"
                 )
-                watchIntroRow(
-                    systemImage: "checkmark.circle",
+                watchIntroFeatureRow(
+                    systemImage: "icloud.fill",
+                    iconColor: AppColors.accentBlue,
                     title: "onboarding_watch_intro_point3_title",
                     detail: "onboarding_watch_intro_point3_detail"
                 )
             }
+            .padding(.horizontal, 4)
 
-            Spacer()
+            Spacer(minLength: 16)
 
             primaryButton("onboarding_watch_intro_cta", systemImage: "arrow.right") {
                 continueFromWatchIntro()
@@ -269,34 +280,37 @@ struct OnboardingView: View {
         }
     }
 
-    private func watchIntroRow(
+    private func watchIntroFeatureRow(
         systemImage: String,
+        iconColor: Color,
         title: LocalizedStringKey,
         detail: LocalizedStringKey
     ) -> some View {
-        HStack(spacing: 16) {
-            Image(systemName: systemImage)
-                .font(.system(size: 22, weight: .medium))
-                .foregroundStyle(AppColors.accentBlue)
-                .frame(width: 48, height: 48)
-                .background(AppColors.accentBlue.opacity(0.1), in: RoundedRectangle(cornerRadius: 14))
+        HStack(alignment: .top, spacing: 16) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(iconColor.opacity(0.12))
+                    .frame(width: 44, height: 44)
 
-            VStack(alignment: .leading, spacing: 4) {
-                Text(title).font(.headline)
+                Image(systemName: systemImage)
+                    .font(.system(size: 22, weight: .semibold))
+                    .foregroundStyle(iconColor)
+            }
+            .accessibilityHidden(true)
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title)
+                    .font(.headline)
+                    .foregroundStyle(.primary)
+
                 Text(detail)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.leading)
+                    .lineSpacing(2)
                     .fixedSize(horizontal: false, vertical: true)
             }
 
             Spacer(minLength: 0)
-        }
-        .padding(18)
-        .background(AppColors.cardBackground, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .stroke(Color.primary.opacity(0.06), lineWidth: 1)
         }
         .accessibilityElement(children: .combine)
     }
