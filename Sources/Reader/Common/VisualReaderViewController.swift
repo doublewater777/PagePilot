@@ -30,13 +30,8 @@ enum WatchGuidePresentationPolicy {
             }
         }
 
-        guard !installReminderDismissed else { return false }
-        switch availability {
-        case .unpaired, .appNotInstalled:
-            return true
-        case .unsupported, .unreachable, .ready:
-            return false
-        }
+        guard availability == .appNotInstalled else { return false }
+        return !installReminderDismissed
     }
 }
 
@@ -305,7 +300,7 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
         let availability = WatchPageTurnService.shared.watchAvailability
         let flow = OnboardingProgressStore().load(platform: .iPhone)
 
-        if availability == .ready {
+        if availability != .appNotInstalled {
             watchInstallReminderStore.reset()
         }
 
@@ -327,8 +322,13 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
     }
 
     private func presentOnboardingWatchGuide() {
+        let flow = OnboardingProgressStore().load(platform: .iPhone)
+        let dismissTitle: LocalizedStringKey = flow.step == .reader
+            ? "onboarding_watch_skip"
+            : "close_button"
         let guide = OnboardingWatchGuideView(
             service: WatchPageTurnService.shared,
+            dismissTitle: dismissTitle,
             onDismiss: { [weak self] in
                 self?.dismissOnboardingWatchGuide()
             }
@@ -429,7 +429,7 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
         }
 
         let availability = WatchPageTurnService.shared.watchAvailability
-        if availability == .appNotInstalled || availability == .unpaired {
+        if availability == .appNotInstalled {
             watchInstallReminderStore.dismiss()
         }
 
