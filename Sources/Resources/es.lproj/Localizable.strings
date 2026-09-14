@@ -56,6 +56,15 @@
 "paywall_ipad_watch_title" = "Leer en iPad. Pasa páginas con Apple Watch.";
 "paywall_ipad_watch_subtitle" = "Desbloquee el relé del iPhone para que los comandos del reloj lleguen a un lector de iPad cercano.";
 "onboarding_watch_skip" = "Ahora no";
+"onboarding_watch_intro_title" = "Toca dos veces y pasa de página";
+"onboarding_watch_intro_subtitle" = "Con tu Apple Watch puesto, junta dos veces el pulgar y el índice para pasar de página: cocinando, entrenando o tumbado, sin tocar el teléfono.";
+"onboarding_watch_intro_point1_title" = "Pasa página con dos toques";
+"onboarding_watch_intro_point1_detail" = "Junta el pulgar y el índice dos veces para ir a la página siguiente";
+"onboarding_watch_intro_point2_title" = "Manos libres de verdad";
+"onboarding_watch_intro_point2_detail" = "Manos mojadas u ocupadas, o el teléfono al otro lado de la habitación: sigue leyendo";
+"onboarding_watch_intro_point3_title" = "¿Sin Watch? Sin problema";
+"onboarding_watch_intro_point3_detail" = "Puedes leer con total normalidad; activa el paso de página con Watch cuando quieras en Ajustes";
+"onboarding_watch_intro_cta" = "Empezar a leer";
 "onboarding_watch_unpaired_title" = "Apple Watch no encontrado";
 "onboarding_watch_unpaired_detail" = "Después de emparejar un reloj, continúa en cualquier momento desde Configuración del reloj.";
 "onboarding_watch_install_title" = "Instalar PagePilot en Apple Watch";

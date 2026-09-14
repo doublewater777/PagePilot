@@ -73,4 +73,10 @@ cycles:
     started_at: 2026-09-13
     completed_at: 2026-09-13
     linked_stage: 01-hypothesis
-updated_at: 2026-09-13
+  - id: 2026-09-14-onboarding-watch-intro
+    feature: Onboarding Watch value intro page
+    status: completed
+    started_at: 2026-09-14
+    completed_at: 2026-09-14
+    linked_stage: 01-hypothesis
+updated_at: 2026-09-14

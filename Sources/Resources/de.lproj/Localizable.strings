@@ -56,6 +56,15 @@
 "paywall_ipad_watch_title" = "Auf dem iPad lesen. Mit der Apple Watch umblättern.";
 "paywall_ipad_watch_subtitle" = "Schalten Sie die iPhone-Weiterleitung frei, damit Watch-Befehle einen iPad-Reader in der Nähe erreichen.";
 "onboarding_watch_skip" = "Nicht jetzt";
+"onboarding_watch_intro_title" = "Doppeltippen und umblättern";
+"onboarding_watch_intro_subtitle" = "Tippe mit deiner Apple Watch Daumen und Zeigefinger zweimal zusammen, um umzublättern – beim Kochen, Training oder im Bett bleibt dein iPhone unberührt.";
+"onboarding_watch_intro_point1_title" = "Doppeltippen zum Blättern";
+"onboarding_watch_intro_point1_detail" = "Tippe Daumen und Zeigefinger zweimal aneinander, um zur nächsten Seite zu wechseln";
+"onboarding_watch_intro_point2_title" = "Wirklich freihändig";
+"onboarding_watch_intro_point2_detail" = "Nasse oder schmutzige Hände oder ein iPhone in der anderen Ecke – lies einfach weiter";
+"onboarding_watch_intro_point3_title" = "Keine Watch? Kein Problem";
+"onboarding_watch_intro_point3_detail" = "Lesen funktioniert auch ohne; das Watch-Blättern lässt sich jederzeit in den Einstellungen aktivieren";
+"onboarding_watch_intro_cta" = "Jetzt lesen";
 "onboarding_watch_unpaired_title" = "Apple Watch nicht gefunden";
 "onboarding_watch_unpaired_detail" = "Nach dem Koppeln einer Watch können Sie jederzeit über die Watch-Einstellungen fortfahren.";
 "onboarding_watch_install_title" = "PagePilot auf der Apple Watch installieren";

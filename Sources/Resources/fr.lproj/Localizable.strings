@@ -56,6 +56,15 @@
 "paywall_ipad_watch_title" = "Lisez sur iPad. Tournez les pages avec l’Apple Watch.";
 "paywall_ipad_watch_subtitle" = "Déverrouillez le relais iPhone pour transmettre les commandes de l’Apple Watch au lecteur iPad à proximité.";
 "onboarding_watch_skip" = "Pas maintenant";
+"onboarding_watch_intro_title" = "Touchez deux fois pour tourner la page";
+"onboarding_watch_intro_subtitle" = "Avec votre Apple Watch, touchez deux fois pouce et index pour tourner la page : en cuisinant, au sport ou allongé, sans toucher votre téléphone.";
+"onboarding_watch_intro_point1_title" = "Double toucher pour tourner";
+"onboarding_watch_intro_point1_detail" = "Touchez deux fois votre pouce et votre index pour passer à la page suivante";
+"onboarding_watch_intro_point2_title" = "Vraiment mains libres";
+"onboarding_watch_intro_point2_detail" = "Mains mouillées ou occupées, ou téléphone posé au loin : continuez à lire";
+"onboarding_watch_intro_point3_title" = "Pas de Watch ? Aucun souci";
+"onboarding_watch_intro_point3_detail" = "La lecture fonctionne normalement ; activez le tour de page Watch à tout moment dans Réglages";
+"onboarding_watch_intro_cta" = "Commencer la lecture";
 "onboarding_watch_unpaired_title" = "Apple Watch introuvable";
 "onboarding_watch_unpaired_detail" = "Après avoir jumelé une Apple Watch, vous pourrez reprendre à tout moment depuis les réglages de l’Apple Watch.";
 "onboarding_watch_install_title" = "Installer PagePilot sur l’Apple Watch";

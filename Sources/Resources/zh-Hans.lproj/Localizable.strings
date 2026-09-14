@@ -56,6 +56,15 @@
 "paywall_ipad_watch_title" = "在 iPad 上阅读，用 Apple Watch 翻页";
 "paywall_ipad_watch_subtitle" = "解锁 iPhone 中继，让 Watch 指令抵达附近的 iPad Reader。";
 "onboarding_watch_skip" = "暂时跳过";
+"onboarding_watch_intro_title" = "双指互点，翻下一页";
+"onboarding_watch_intro_subtitle" = "戴着 Apple Watch 阅读时，拇指和食指互点两下即可翻页。做饭、健身、躺平，都不用再碰手机。";
+"onboarding_watch_intro_point1_title" = "双指互点翻页";
+"onboarding_watch_intro_point1_detail" = "拇指和食指互点两下，即刻翻到下一页";
+"onboarding_watch_intro_point2_title" = "彻底解放双手";
+"onboarding_watch_intro_point2_detail" = "手上有水、有油，或手机架在远处，也能继续读";
+"onboarding_watch_intro_point3_title" = "没有手表也能用";
+"onboarding_watch_intro_point3_detail" = "不影响正常阅读，之后随时可在设置中开启 Watch 翻页";
+"onboarding_watch_intro_cta" = "开始阅读";
 "onboarding_watch_unpaired_title" = "暂未发现 Apple Watch";
 "onboarding_watch_unpaired_detail" = "配对手表后，可随时从 Watch 设置继续。";
 "onboarding_watch_install_title" = "安装 PagePilot Watch App";

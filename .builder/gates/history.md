@@ -107,3 +107,13 @@ Weakest assumption: readers without the Watch app tolerate a per-session recurri
 Decision: drive the Reader tip and the Watch Settings install guidance from live WCSession state, not onboarding progress; replace the dead bridge:// action with honest copy.
 Next stage: 10-growth-channel
 Loop-back: Revisit only if the recurring tip reads as nagging for deliberate non-installers.
+
+## 2026-09-14 - 01-hypothesis (Onboarding Watch value intro page)
+
+Cycle: 2026-09-14-onboarding-watch-intro
+Verdict: pass
+Evidence: Focused suite passes 17/17; localization validation passes across all 5 locales; full iPhone 17 simulator suite passes 265/265; iPad mini build succeeds.
+Weakest assumption: a dedicated value page raises Watch activation more than it costs in onboarding drop-off.
+Decision: show one focused Watch value page between publication selection and Reader on iPhone; keep iPad direct to Reader.
+Next stage: 10-growth-channel
+Loop-back: Revisit if TestFlight cohort shows onboarding abandonment or users report friction before reaching the Reader.

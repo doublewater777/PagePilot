@@ -56,6 +56,15 @@
 "paywall_ipad_watch_title" = "Read on iPad. Turn Pages with Apple Watch.";
 "paywall_ipad_watch_subtitle" = "Unlock iPhone relay so Watch commands reach a nearby iPad Reader.";
 "onboarding_watch_skip" = "Not Now";
+"onboarding_watch_intro_title" = "Double-tap to turn the page";
+"onboarding_watch_intro_subtitle" = "With your Apple Watch on, tap your thumb and index finger together twice to turn the page — cooking, working out, or lying down, your phone stays untouched.";
+"onboarding_watch_intro_point1_title" = "Double-tap page turn";
+"onboarding_watch_intro_point1_detail" = "Tap your thumb and index finger together twice to flip to the next page";
+"onboarding_watch_intro_point2_title" = "Truly hands-free";
+"onboarding_watch_intro_point2_detail" = "Wet or messy hands, or a phone docked across the room — keep reading";
+"onboarding_watch_intro_point3_title" = "No Watch? No problem";
+"onboarding_watch_intro_point3_detail" = "Reading works fine without one; enable Watch page turns anytime in Settings";
+"onboarding_watch_intro_cta" = "Start Reading";
 "onboarding_watch_unpaired_title" = "Apple Watch Not Found";
 "onboarding_watch_unpaired_detail" = "After pairing a Watch, continue anytime from Watch Settings.";
 "onboarding_watch_install_title" = "Install PagePilot on Apple Watch";

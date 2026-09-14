@@ -16,6 +16,7 @@ struct OnboardingFlow: Codable, Equatable {
         case choosePublication
         // Retained for decoding onboarding progress saved by older builds.
         case chooseControlTarget
+        case watchIntro
         case reader
         case iPadHandoff
         case completed
@@ -63,8 +64,13 @@ struct OnboardingFlow: Codable, Equatable {
     mutating func didChoosePublication(bookID: Int64, source: PublicationSource) {
         publication = PublicationSelection(bookID: bookID, source: source)
         controlTarget = nil
-        // Reader routing is automatic. iPhone users no longer stop at a target
-        // picker before opening the selected Publication.
+        // Reader routing is automatic. iPhone users first get one Watch value
+        // page so the Reader activation card does not arrive without context.
+        step = platform == .iPhone ? .watchIntro : .reader
+    }
+
+    mutating func didFinishWatchIntro() {
+        guard step == .watchIntro else { return }
         step = .reader
     }
 

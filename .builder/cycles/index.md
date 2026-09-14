@@ -12,3 +12,4 @@
 | 2026-09-13-ipad-reader-watch-hint | iPad Reader Watch hint | completed | 01-hypothesis | pass | explain the current Watch Live Activity flow in the first Reader hint | observe whether first-reading confusion drops |
 | 2026-09-13-watch-app-install-guidance | Watch app install guidance | completed | 01-hypothesis | pass | open the iPhone Watch app from the install-state Reader tip | verify the bridge:// open path on a paired device |
 | 2026-09-13-watch-install-reminder-decoupling | Watch install reminder decoupling | completed | 01-hypothesis | pass | drive Reader tip and Watch Settings from live device state instead of onboarding progress | verify the tip appears for completed-onboarding users on device |
+| 2026-09-14-onboarding-watch-intro | Onboarding Watch value intro page | completed | 01-hypothesis | pass | show a dedicated Watch value intro page before opening Reader on iPhone | observe TestFlight Watch activation rate and onboarding completion |

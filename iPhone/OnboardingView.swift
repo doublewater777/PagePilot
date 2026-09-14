@@ -71,6 +71,8 @@ struct OnboardingView: View {
                     publicationScreen
                 case .chooseControlTarget:
                     controlTargetScreen
+                case .watchIntro:
+                    watchIntroScreen
                 case .iPadHandoff:
                     iPadHandoffScreen
                 case .reader:
@@ -214,6 +216,89 @@ struct OnboardingView: View {
                 }
             }
         }
+    }
+
+    private var watchIntroScreen: some View {
+        scrollingScreen {
+            VStack(spacing: 24) {
+            Spacer(minLength: 64)
+
+            Image(systemName: "applewatch.radiowaves.left.and.right")
+                .font(.system(size: 64, weight: .medium))
+                .symbolRenderingMode(.hierarchical)
+                .foregroundStyle(AppColors.accentBlue)
+                .accessibilityHidden(true)
+
+            VStack(spacing: 10) {
+                Text("onboarding_watch_intro_title")
+                    .font(.title.bold())
+                    .multilineTextAlignment(.center)
+                Text("onboarding_watch_intro_subtitle")
+                    .font(.body)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .lineSpacing(3)
+            }
+
+            VStack(spacing: 14) {
+                watchIntroRow(
+                    systemImage: "hand.tap",
+                    title: "onboarding_watch_intro_point1_title",
+                    detail: "onboarding_watch_intro_point1_detail"
+                )
+                watchIntroRow(
+                    systemImage: "bed.double",
+                    title: "onboarding_watch_intro_point2_title",
+                    detail: "onboarding_watch_intro_point2_detail"
+                )
+                watchIntroRow(
+                    systemImage: "checkmark.circle",
+                    title: "onboarding_watch_intro_point3_title",
+                    detail: "onboarding_watch_intro_point3_detail"
+                )
+            }
+
+            Spacer()
+
+            primaryButton("onboarding_watch_intro_cta", systemImage: "book") {
+                continueFromWatchIntro()
+            }
+            }
+            .padding(.horizontal, 24)
+            .padding(.bottom, 36)
+        }
+    }
+
+    private func watchIntroRow(
+        systemImage: String,
+        title: LocalizedStringKey,
+        detail: LocalizedStringKey
+    ) -> some View {
+        HStack(spacing: 16) {
+            Image(systemName: systemImage)
+                .font(.system(size: 22, weight: .medium))
+                .foregroundStyle(AppColors.accentBlue)
+                .frame(width: 48, height: 48)
+                .background(AppColors.accentBlue.opacity(0.1), in: RoundedRectangle(cornerRadius: 14))
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title).font(.headline)
+                Text(detail)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.leading)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Spacer(minLength: 0)
+        }
+        .padding(18)
+        .background(AppColors.cardBackground, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(Color.primary.opacity(0.06), lineWidth: 1)
+        }
+        .accessibilityElement(children: .combine)
     }
 
     private var controlTargetScreen: some View {
@@ -480,6 +565,13 @@ struct OnboardingView: View {
         if flow.step == .reader {
             persistAndOpenReader()
         }
+    }
+
+    private func continueFromWatchIntro() {
+        guard !hasFinished else { return }
+        flow.didFinishWatchIntro()
+        onFlowChange(flow)
+        persistAndOpenReader()
     }
 
     private func didImportFromAlternativeSource(_ publication: OnboardingPublicationPresentation) {
