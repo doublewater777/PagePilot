@@ -1081,16 +1081,16 @@
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
 					320F55E134D9FEBE35DAF208 = {
-						DevelopmentTeam = "${RD_DEVELOPMENT_TEAM}";
+						DevelopmentTeam = 29C8MS76CZ;
 					};
 					76A5899AC0394DE9CD301C46 = {
-						DevelopmentTeam = "${RD_DEVELOPMENT_TEAM}";
+						DevelopmentTeam = 29C8MS76CZ;
 					};
 					A9D7F6E593F49E495DA90E96 = {
-						DevelopmentTeam = "${RD_DEVELOPMENT_TEAM}";
+						DevelopmentTeam = 29C8MS76CZ;
 					};
 					BD5410D9566E7DFEBEBE9BC5 = {
-						DevelopmentTeam = "${RD_DEVELOPMENT_TEAM}";
+						DevelopmentTeam = 29C8MS76CZ;
 					};
 				};
 			};
@@ -1492,7 +1492,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
-				DEVELOPMENT_TEAM = "${RD_DEVELOPMENT_TEAM}";
+				DEVELOPMENT_TEAM = 29C8MS76CZ;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -1516,7 +1516,7 @@
 				CODE_SIGN_ENTITLEMENTS = iPhone/pagepilot.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 41;
-				DEVELOPMENT_TEAM = "${RD_DEVELOPMENT_TEAM}";
+				DEVELOPMENT_TEAM = 29C8MS76CZ;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = iPhone/Info.plist;
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
@@ -1602,7 +1602,7 @@
 				CODE_SIGN_ENTITLEMENTS = iPhone/pagepilot.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 41;
-				DEVELOPMENT_TEAM = "${RD_DEVELOPMENT_TEAM}";
+				DEVELOPMENT_TEAM = 29C8MS76CZ;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = iPhone/Info.plist;
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
@@ -1622,7 +1622,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CURRENT_PROJECT_VERSION = 41;
-				DEVELOPMENT_TEAM = "${RD_DEVELOPMENT_TEAM}";
+				DEVELOPMENT_TEAM = 29C8MS76CZ;
 				INFOPLIST_FILE = ReadingLiveActivity/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -1642,7 +1642,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CURRENT_PROJECT_VERSION = 41;
-				DEVELOPMENT_TEAM = "${RD_DEVELOPMENT_TEAM}";
+				DEVELOPMENT_TEAM = 29C8MS76CZ;
 				INFOPLIST_FILE = ReadingLiveActivity/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -1663,7 +1663,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CURRENT_PROJECT_VERSION = 41;
-				DEVELOPMENT_TEAM = "${RD_DEVELOPMENT_TEAM}";
+				DEVELOPMENT_TEAM = 29C8MS76CZ;
 				INFOPLIST_FILE = WatchRemote/Info.plist;
 				MARKETING_VERSION = 1.0.21;
 				PRODUCT_BUNDLE_IDENTIFIER = com.panyang.PagePilot.WatchRemote;
@@ -1678,7 +1678,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
-				DEVELOPMENT_TEAM = "${RD_DEVELOPMENT_TEAM}";
+				DEVELOPMENT_TEAM = 29C8MS76CZ;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -1698,7 +1698,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CURRENT_PROJECT_VERSION = 41;
-				DEVELOPMENT_TEAM = "${RD_DEVELOPMENT_TEAM}";
+				DEVELOPMENT_TEAM = 29C8MS76CZ;
 				INFOPLIST_FILE = WatchRemote/Info.plist;
 				MARKETING_VERSION = 1.0.21;
 				PRODUCT_BUNDLE_IDENTIFIER = com.panyang.PagePilot.WatchRemote;
