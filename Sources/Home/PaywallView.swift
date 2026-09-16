@@ -49,7 +49,9 @@ struct PaywallView: View {
         return PaywallSubscriptionCopy.purchaseDisclosure(
             kind: PaywallPlanKind(productID: selectedProduct.id),
             displayPrice: selectedProduct.displayPrice,
-            isTrialEligible: isTrialEligible(selectedProduct)
+            isTrialEligible: isTrialEligible(selectedProduct),
+            trialPeriod: trialPeriod(for: selectedProduct),
+            billingPeriod: billingPeriod(for: selectedProduct)
         )
     }
 
@@ -311,6 +313,8 @@ struct PaywallView: View {
             kind: PaywallPlanKind(productID: product.id),
             displayPrice: product.displayPrice,
             isTrialEligible: isTrialEligible(product),
+            trialPeriod: trialPeriod(for: product),
+            billingPeriod: billingPeriod(for: product),
             fallback: fallbackSubtext
         )
         
@@ -423,14 +427,11 @@ struct PaywallView: View {
         guard let selectedProduct else {
             return NSLocalizedString("paywall_buy_button_ineligible", comment: "")
         }
-        
-        if selectedProduct.id.contains("lifetime") {
-            return NSLocalizedString("paywall_buy_button_lifetime", comment: "")
-        } else if canStartFreeTrial {
-            return NSLocalizedString("paywall_buy_button_eligible", comment: "")
-        } else {
-            return NSLocalizedString("paywall_buy_button_ineligible", comment: "")
-        }
+        return PaywallSubscriptionCopy.buyButtonText(
+            kind: PaywallPlanKind(productID: selectedProduct.id),
+            isTrialEligible: isTrialEligible(selectedProduct),
+            trialPeriod: trialPeriod(for: selectedProduct)
+        )
     }
 
     private var purchasePanel: some View {
@@ -668,6 +669,27 @@ struct PaywallView: View {
             return nil
         }
         return offer
+    }
+
+    private func trialPeriod(for product: Product) -> PaywallTrialPeriod? {
+        guard let offer = freeTrialOffer(for: product),
+              let unit = storeKitPeriodUnit(offer.period.unit) else { return nil }
+        return PaywallTrialPeriod(value: offer.period.value, unit: unit, periodCount: offer.periodCount)
+    }
+
+    private func billingPeriod(for product: Product) -> PaywallTrialPeriod.Unit? {
+        guard let period = product.subscription?.subscriptionPeriod else { return nil }
+        return storeKitPeriodUnit(period.unit)
+    }
+
+    private func storeKitPeriodUnit(_ unit: Product.SubscriptionPeriod.Unit) -> PaywallTrialPeriod.Unit? {
+        switch unit {
+        case .day: return .day
+        case .week: return .week
+        case .month: return .month
+        case .year: return .year
+        @unknown default: return nil
+        }
     }
 
     @MainActor

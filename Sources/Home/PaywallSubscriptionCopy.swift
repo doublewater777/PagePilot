@@ -22,26 +22,72 @@ enum PaywallPlanKind: Equatable {
     }
 }
 
+struct PaywallTrialPeriod: Equatable {
+    enum Unit: Equatable {
+        case day
+        case week
+        case month
+        case year
+    }
+
+    let value: Int
+    let unit: Unit
+    let periodCount: Int
+
+    var totalValue: Int {
+        value * periodCount
+    }
+}
+
 enum PaywallSubscriptionCopy {
     static func purchaseDisclosure(
         kind: PaywallPlanKind,
         displayPrice: String,
         isTrialEligible: Bool,
+        trialPeriod: PaywallTrialPeriod?,
+        billingPeriod: PaywallTrialPeriod.Unit?,
         bundle: Bundle = .main
     ) -> String {
         switch kind {
         case .lifetime:
             return localized("paywall_purchase_disclosure_lifetime", bundle: bundle)
-        case .monthly:
-            let key = isTrialEligible
-                ? "paywall_purchase_disclosure_trial_monthly"
-                : "paywall_purchase_disclosure_paid_monthly"
-            return String(format: localized(key, bundle: bundle), displayPrice)
-        case .yearly:
-            let key = isTrialEligible
-                ? "paywall_purchase_disclosure_trial_yearly"
-                : "paywall_purchase_disclosure_paid_yearly"
-            return String(format: localized(key, bundle: bundle), displayPrice)
+        case .monthly, .yearly:
+            if isTrialEligible, let trialPeriod, let billingPeriod {
+                return String(
+                    format: localized("paywall_purchase_disclosure_trial", bundle: bundle),
+                    durationPhrase(trialPeriod, forCTA: false, bundle: bundle),
+                    displayPrice,
+                    billingPeriodPhrase(billingPeriod, bundle: bundle)
+                )
+            }
+            if let billingPeriod {
+                return String(
+                    format: localized("paywall_purchase_disclosure_paid", bundle: bundle),
+                    displayPrice,
+                    billingPeriodPhrase(billingPeriod, bundle: bundle)
+                )
+            }
+            return displayPrice
+        }
+    }
+
+    static func buyButtonText(
+        kind: PaywallPlanKind,
+        isTrialEligible: Bool,
+        trialPeriod: PaywallTrialPeriod?,
+        bundle: Bundle = .main
+    ) -> String {
+        switch kind {
+        case .lifetime:
+            return localized("paywall_buy_button_lifetime", bundle: bundle)
+        case .monthly, .yearly:
+            if isTrialEligible, let trialPeriod {
+                return String(
+                    format: localized("paywall_buy_button_eligible", bundle: bundle),
+                    durationPhrase(trialPeriod, forCTA: true, bundle: bundle)
+                )
+            }
+            return localized("paywall_buy_button_ineligible", bundle: bundle)
         }
     }
 
@@ -49,19 +95,56 @@ enum PaywallSubscriptionCopy {
         kind: PaywallPlanKind,
         displayPrice: String,
         isTrialEligible: Bool,
+        trialPeriod: PaywallTrialPeriod?,
+        billingPeriod: PaywallTrialPeriod.Unit?,
         fallback: String,
         bundle: Bundle = .main
     ) -> String {
         // Yearly keeps the savings comparison on the card; trial terms sit under the CTA.
         switch kind {
         case .monthly where isTrialEligible:
+            guard let trialPeriod, let billingPeriod else { return fallback }
             return String(
                 format: localized("paywall_trial_duration_eligible_monthly", bundle: bundle),
-                displayPrice
+                durationPhrase(trialPeriod, forCTA: false, bundle: bundle),
+                displayPrice,
+                billingPeriodPhrase(billingPeriod, bundle: bundle)
             )
         default:
             return fallback
         }
+    }
+
+    private static func durationPhrase(
+        _ period: PaywallTrialPeriod,
+        forCTA: Bool,
+        bundle: Bundle
+    ) -> String {
+        let unit: String
+        switch period.unit {
+        case .day: unit = period.totalValue == 1 ? "day" : "days"
+        case .week: unit = period.totalValue == 1 ? "week" : "weeks"
+        case .month: unit = period.totalValue == 1 ? "month" : "months"
+        case .year: unit = period.totalValue == 1 ? "year" : "years"
+        }
+        let key = forCTA
+            ? "paywall_trial_duration_\(unit)_title"
+            : "paywall_trial_duration_\(unit)"
+        return String(format: localized(key, bundle: bundle), period.totalValue)
+    }
+
+    private static func billingPeriodPhrase(
+        _ unit: PaywallTrialPeriod.Unit,
+        bundle: Bundle
+    ) -> String {
+        let key: String
+        switch unit {
+        case .day: key = "paywall_billing_period_day"
+        case .week: key = "paywall_billing_period_week"
+        case .month: key = "paywall_billing_period_month"
+        case .year: key = "paywall_billing_period_year"
+        }
+        return localized(key, bundle: bundle)
     }
 
     private static func localized(_ key: String, bundle: Bundle) -> String {
