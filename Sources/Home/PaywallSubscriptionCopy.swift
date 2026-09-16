@@ -52,17 +52,11 @@ enum PaywallSubscriptionCopy {
         fallback: String,
         bundle: Bundle = .main
     ) -> String {
+        // Yearly keeps the savings comparison on the card; trial terms sit under the CTA.
         switch kind {
-        case .lifetime:
-            return fallback
         case .monthly where isTrialEligible:
             return String(
                 format: localized("paywall_trial_duration_eligible_monthly", bundle: bundle),
-                displayPrice
-            )
-        case .yearly where isTrialEligible:
-            return String(
-                format: localized("paywall_trial_duration_eligible_yearly", bundle: bundle),
                 displayPrice
             )
         default:

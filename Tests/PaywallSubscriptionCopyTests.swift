@@ -54,16 +54,54 @@ final class PaywallSubscriptionCopyTests: XCTestCase {
         XCTAssertFalse(lifetime.lowercased().contains("automatically renews"))
     }
 
-    func testYearlyPlanSubtitleUsesTrialThenPriceWhenEligible() throws {
+    func testYearlyPlanSubtitleKeepsDiscountComparisonWhenTrialEligible() throws {
         let english = try localizedBundle("en")
         let subtitle = PaywallSubscriptionCopy.planSubtitle(
             kind: .yearly,
             displayPrice: "$4.99",
             isTrialEligible: true,
-            fallback: "Only $0.42/month",
+            fallback: "Only $0.42/month, save 16%",
             bundle: english
         )
-        XCTAssertEqual(subtitle, "7 days free, then $4.99/year")
+        XCTAssertEqual(subtitle, "Only $0.42/month, save 16%")
+    }
+
+    func testTrialDisclosureDoesNotRepeatPlanSubtitle() throws {
+        let english = try localizedBundle("en")
+        let chinese = try localizedBundle("zh-Hans")
+
+        let enSubtitle = PaywallSubscriptionCopy.planSubtitle(
+            kind: .yearly,
+            displayPrice: "$4.99",
+            isTrialEligible: true,
+            fallback: "Only $0.42/month, save 16%",
+            bundle: english
+        )
+        let enDisclosure = PaywallSubscriptionCopy.purchaseDisclosure(
+            kind: .yearly,
+            displayPrice: "$4.99",
+            isTrialEligible: true,
+            bundle: english
+        )
+        XCTAssertEqual(enSubtitle, "Only $0.42/month, save 16%")
+        XCTAssertFalse(enDisclosure.hasPrefix(enSubtitle), enDisclosure)
+
+        let zhSubtitle = PaywallSubscriptionCopy.planSubtitle(
+            kind: .yearly,
+            displayPrice: "¥28",
+            isTrialEligible: true,
+            fallback: "仅 ¥2.3/月，省 16%",
+            bundle: chinese
+        )
+        let zhDisclosure = PaywallSubscriptionCopy.purchaseDisclosure(
+            kind: .yearly,
+            displayPrice: "¥28",
+            isTrialEligible: true,
+            bundle: chinese
+        )
+        XCTAssertEqual(zhSubtitle, "仅 ¥2.3/月，省 16%")
+        XCTAssertFalse(zhDisclosure.hasPrefix(zhSubtitle), zhDisclosure)
+        XCTAssertNotEqual(zhSubtitle, zhDisclosure)
     }
 
     func testSupportedLanguagesKeepTrialPriceAndRenewalTogether() throws {
