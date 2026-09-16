@@ -45,7 +45,7 @@ enum PaywallSubscriptionCopy {
         displayPrice: String,
         isTrialEligible: Bool,
         trialPeriod: PaywallTrialPeriod?,
-        billingPeriod: PaywallTrialPeriod.Unit?,
+        billingPeriod: String?,
         bundle: Bundle = .main
     ) -> String {
         switch kind {
@@ -57,14 +57,14 @@ enum PaywallSubscriptionCopy {
                     format: localized("paywall_purchase_disclosure_trial", bundle: bundle),
                     durationPhrase(trialPeriod, forCTA: false, bundle: bundle),
                     displayPrice,
-                    billingPeriodPhrase(billingPeriod, bundle: bundle)
+                    billingPeriod
                 )
             }
             if let billingPeriod {
                 return String(
                     format: localized("paywall_purchase_disclosure_paid", bundle: bundle),
                     displayPrice,
-                    billingPeriodPhrase(billingPeriod, bundle: bundle)
+                    billingPeriod
                 )
             }
             return displayPrice
@@ -96,7 +96,7 @@ enum PaywallSubscriptionCopy {
         displayPrice: String,
         isTrialEligible: Bool,
         trialPeriod: PaywallTrialPeriod?,
-        billingPeriod: PaywallTrialPeriod.Unit?,
+        billingPeriod: String?,
         fallback: String,
         bundle: Bundle = .main
     ) -> String {
@@ -108,7 +108,7 @@ enum PaywallSubscriptionCopy {
                 format: localized("paywall_trial_duration_eligible_monthly", bundle: bundle),
                 durationPhrase(trialPeriod, forCTA: false, bundle: bundle),
                 displayPrice,
-                billingPeriodPhrase(billingPeriod, bundle: bundle)
+                billingPeriod
             )
         default:
             return fallback
@@ -131,20 +131,6 @@ enum PaywallSubscriptionCopy {
             ? "paywall_trial_duration_\(unit)_title"
             : "paywall_trial_duration_\(unit)"
         return String(format: localized(key, bundle: bundle), period.totalValue)
-    }
-
-    private static func billingPeriodPhrase(
-        _ unit: PaywallTrialPeriod.Unit,
-        bundle: Bundle
-    ) -> String {
-        let key: String
-        switch unit {
-        case .day: key = "paywall_billing_period_day"
-        case .week: key = "paywall_billing_period_week"
-        case .month: key = "paywall_billing_period_month"
-        case .year: key = "paywall_billing_period_year"
-        }
-        return localized(key, bundle: bundle)
     }
 
     private static func localized(_ key: String, bundle: Bundle) -> String {

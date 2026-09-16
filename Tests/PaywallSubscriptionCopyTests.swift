@@ -16,7 +16,7 @@ final class PaywallSubscriptionCopyTests: XCTestCase {
             displayPrice: "$4.99",
             isTrialEligible: true,
             trialPeriod: sevenDays,
-            billingPeriod: .year,
+            billingPeriod: "year",
             bundle: english
         )
         XCTAssertEqual(
@@ -29,7 +29,7 @@ final class PaywallSubscriptionCopyTests: XCTestCase {
             displayPrice: "¥28",
             isTrialEligible: true,
             trialPeriod: sevenDays,
-            billingPeriod: .year,
+            billingPeriod: "年",
             bundle: chinese
         )
         XCTAssertEqual(
@@ -45,7 +45,7 @@ final class PaywallSubscriptionCopyTests: XCTestCase {
             displayPrice: "$4.99",
             isTrialEligible: true,
             trialPeriod: oneMonth,
-            billingPeriod: .year,
+            billingPeriod: "year",
             bundle: english
         )
         XCTAssertEqual(
@@ -67,7 +67,7 @@ final class PaywallSubscriptionCopyTests: XCTestCase {
                 displayPrice: "$4.99",
                 isTrialEligible: true,
                 trialPeriod: oneWeek,
-                billingPeriod: .year,
+                billingPeriod: "year",
                 bundle: english
             ),
             "1-week free trial, then $4.99/year. Automatically renews unless canceled in App Store subscription settings."
@@ -78,7 +78,7 @@ final class PaywallSubscriptionCopyTests: XCTestCase {
                 displayPrice: "¥28",
                 isTrialEligible: true,
                 trialPeriod: oneWeek,
-                billingPeriod: .year,
+                billingPeriod: "Jahr",
                 bundle: german
             ).contains("1 Woche kostenlos, danach ¥28/Jahr")
         )
@@ -88,7 +88,7 @@ final class PaywallSubscriptionCopyTests: XCTestCase {
                 displayPrice: "¥28",
                 isTrialEligible: true,
                 trialPeriod: oneWeek,
-                billingPeriod: .year,
+                billingPeriod: "año",
                 bundle: spanish
             ).contains("Prueba gratuita de 1 semana, luego ¥28/año")
         )
@@ -98,25 +98,41 @@ final class PaywallSubscriptionCopyTests: XCTestCase {
                 displayPrice: "¥28",
                 isTrialEligible: true,
                 trialPeriod: oneWeek,
-                billingPeriod: .year,
+                billingPeriod: "an",
                 bundle: french
             ).contains("Essai gratuit de 1 semaine, puis ¥28/an")
         )
     }
 
-    func testTrialPeriodCountMultipliesStoreKitValue() throws {
+    func testTwoWeekFreeTrialUsesStoreKitValueWithSinglePeriod() throws {
         let english = try localizedBundle("en")
-        let twoWeeks = PaywallTrialPeriod(value: 1, unit: .week, periodCount: 2)
+        let twoWeeks = PaywallTrialPeriod(value: 2, unit: .week, periodCount: 1)
         let text = PaywallSubscriptionCopy.purchaseDisclosure(
             kind: .yearly,
             displayPrice: "$4.99",
             isTrialEligible: true,
             trialPeriod: twoWeeks,
-            billingPeriod: .year,
+            billingPeriod: "year",
             bundle: english
         )
         XCTAssertTrue(text.contains("2-week free trial"), text)
         XCTAssertFalse(text.contains("1-week free trial"))
+    }
+
+    func testBillingDisclosurePreservesMultiUnitStoreKitPeriod() throws {
+        let english = try localizedBundle("en")
+        let text = PaywallSubscriptionCopy.purchaseDisclosure(
+            kind: .monthly,
+            displayPrice: "$9.99",
+            isTrialEligible: false,
+            trialPeriod: nil,
+            billingPeriod: "3 months",
+            bundle: english
+        )
+        XCTAssertEqual(
+            text,
+            "$9.99/3 months. Automatically renews unless canceled in App Store subscription settings."
+        )
     }
 
     func testEligibleWithoutTrialPeriodDoesNotInventSevenDays() throws {
@@ -126,7 +142,7 @@ final class PaywallSubscriptionCopyTests: XCTestCase {
             displayPrice: "$4.99",
             isTrialEligible: true,
             trialPeriod: nil,
-            billingPeriod: .year,
+            billingPeriod: "year",
             bundle: english
         )
         XCTAssertEqual(
@@ -144,7 +160,7 @@ final class PaywallSubscriptionCopyTests: XCTestCase {
             displayPrice: "$0.99",
             isTrialEligible: false,
             trialPeriod: sevenDays,
-            billingPeriod: .month,
+            billingPeriod: "month",
             bundle: english
         )
         XCTAssertEqual(
@@ -222,7 +238,7 @@ final class PaywallSubscriptionCopyTests: XCTestCase {
             displayPrice: "$0.99",
             isTrialEligible: true,
             trialPeriod: oneMonth,
-            billingPeriod: .month,
+            billingPeriod: "month",
             bundle: english
         )
         XCTAssertEqual(
@@ -247,7 +263,7 @@ final class PaywallSubscriptionCopyTests: XCTestCase {
             displayPrice: "$0.99",
             isTrialEligible: true,
             trialPeriod: oneMonth,
-            billingPeriod: .month,
+            billingPeriod: "month",
             fallback: "$0.99/month",
             bundle: english
         )
@@ -261,7 +277,7 @@ final class PaywallSubscriptionCopyTests: XCTestCase {
             displayPrice: "$4.99",
             isTrialEligible: true,
             trialPeriod: sevenDays,
-            billingPeriod: .year,
+            billingPeriod: "year",
             fallback: "Only $0.42/month, save 16%",
             bundle: english
         )
@@ -277,7 +293,7 @@ final class PaywallSubscriptionCopyTests: XCTestCase {
             displayPrice: "$4.99",
             isTrialEligible: true,
             trialPeriod: sevenDays,
-            billingPeriod: .year,
+            billingPeriod: "year",
             fallback: "Only $0.42/month, save 16%",
             bundle: english
         )
@@ -286,7 +302,7 @@ final class PaywallSubscriptionCopyTests: XCTestCase {
             displayPrice: "$4.99",
             isTrialEligible: true,
             trialPeriod: sevenDays,
-            billingPeriod: .year,
+            billingPeriod: "year",
             bundle: english
         )
         XCTAssertEqual(enSubtitle, "Only $0.42/month, save 16%")
@@ -297,7 +313,7 @@ final class PaywallSubscriptionCopyTests: XCTestCase {
             displayPrice: "¥28",
             isTrialEligible: true,
             trialPeriod: sevenDays,
-            billingPeriod: .year,
+            billingPeriod: "年",
             fallback: "仅 ¥2.3/月，省 16%",
             bundle: chinese
         )
@@ -306,7 +322,7 @@ final class PaywallSubscriptionCopyTests: XCTestCase {
             displayPrice: "¥28",
             isTrialEligible: true,
             trialPeriod: sevenDays,
-            billingPeriod: .year,
+            billingPeriod: "年",
             bundle: chinese
         )
         XCTAssertEqual(zhSubtitle, "仅 ¥2.3/月，省 16%")
@@ -315,12 +331,12 @@ final class PaywallSubscriptionCopyTests: XCTestCase {
     }
 
     func testSupportedLanguagesKeepTrialPriceAndRenewalTogether() throws {
-        let expected: [String: (trial: String, renew: String)] = [
-            "en": ("7-day free trial, then ¥28/year", "Automatically renews"),
-            "zh-Hans": ("7 天免费试用，之后 ¥28/年", "自动续订"),
-            "de": ("7 Tage kostenlos, danach ¥28/Jahr", "Verlängert sich automatisch"),
-            "es": ("Prueba gratuita de 7 días, luego ¥28/año", "Se renueva automáticamente"),
-            "fr": ("Essai gratuit de 7 jours, puis ¥28/an", "Renouvellement automatique"),
+        let expected: [String: (trial: String, renew: String, billing: String)] = [
+            "en": ("7-day free trial, then ¥28/year", "Automatically renews", "year"),
+            "zh-Hans": ("7 天免费试用，之后 ¥28/年", "自动续订", "年"),
+            "de": ("7 Tage kostenlos, danach ¥28/Jahr", "Verlängert sich automatisch", "Jahr"),
+            "es": ("Prueba gratuita de 7 días, luego ¥28/año", "Se renueva automáticamente", "año"),
+            "fr": ("Essai gratuit de 7 jours, puis ¥28/an", "Renouvellement automatique", "an"),
         ]
 
         for (language, strings) in expected {
@@ -330,7 +346,7 @@ final class PaywallSubscriptionCopyTests: XCTestCase {
                 displayPrice: "¥28",
                 isTrialEligible: true,
                 trialPeriod: sevenDays,
-                billingPeriod: .year,
+                billingPeriod: strings.billing,
                 bundle: bundle
             )
             XCTAssertTrue(text.contains(strings.trial), "\(language) missing trial+price: \(text)")

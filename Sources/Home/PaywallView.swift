@@ -677,9 +677,9 @@ struct PaywallView: View {
         return PaywallTrialPeriod(value: offer.period.value, unit: unit, periodCount: offer.periodCount)
     }
 
-    private func billingPeriod(for product: Product) -> PaywallTrialPeriod.Unit? {
-        guard let period = product.subscription?.subscriptionPeriod else { return nil }
-        return storeKitPeriodUnit(period.unit)
+    private func billingPeriod(for product: Product) -> String? {
+        guard let subscription = product.subscription else { return nil }
+        return subscription.subscriptionPeriod.formatted(product.subscriptionPeriodFormatStyle)
     }
 
     private func storeKitPeriodUnit(_ unit: Product.SubscriptionPeriod.Unit) -> PaywallTrialPeriod.Unit? {
