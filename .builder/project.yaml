@@ -5,7 +5,7 @@ target_wedge: iPhone/iPad readers who want hands-free page turning with Apple Wa
 core_user: Apple ecosystem readers who read in bed, at the gym, during commutes, or with their device on a stand.
 core_pain: Touching the screen to turn pages breaks posture, comfort, and reading flow.
 core_action: Import a local book, open it in PagePilot, and turn pages from Apple Watch.
-active_cycle: 2026-06-06-app-store-approval-launch
+active_cycle: 2026-09-16-paywall-trial-disclosure
 latest_gate:
   stage: 01-hypothesis
   cycle: 2026-07-29-markdown-import
@@ -13,6 +13,12 @@ latest_gate:
   date: 2026-07-29
   loop_back_to:
 cycles:
+  - id: 2026-09-16-paywall-trial-disclosure
+    feature: Paywall trial price auto-renew disclosure
+    status: active
+    started_at: 2026-09-16
+    completed_at:
+    linked_stage: 10-growth-channel
   - id: 2026-06-06-app-store-approval-launch
     feature: App Store approval launch distribution
     status: active

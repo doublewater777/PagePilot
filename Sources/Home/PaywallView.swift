@@ -26,7 +26,7 @@ struct PaywallView: View {
     @State private var selectedProductID: String = ""
     @State private var isLoadingProducts = false
     @State private var productsLoadFailed = false
-    @State private var isEligibleForTrial = false
+    @State private var trialEligibilityByProductID: [String: Bool] = [:]
     @State private var safariURL: IdentifiableURL?
 
     let context: PaywallContext
@@ -41,7 +41,16 @@ struct PaywallView: View {
 
     private var canStartFreeTrial: Bool {
         guard let selectedProduct else { return false }
-        return freeTrialOffer(for: selectedProduct) != nil && isEligibleForTrial
+        return isTrialEligible(selectedProduct)
+    }
+
+    private var purchaseDisclosureText: String? {
+        guard let selectedProduct else { return nil }
+        return PaywallSubscriptionCopy.purchaseDisclosure(
+            kind: PaywallPlanKind(productID: selectedProduct.id),
+            displayPrice: selectedProduct.displayPrice,
+            isTrialEligible: isTrialEligible(selectedProduct)
+        )
     }
 
     private var isPad: Bool {
@@ -103,7 +112,7 @@ struct PaywallView: View {
         }
         .background(AppColors.background.ignoresSafeArea())
         // iPhone: compact sheet; iPad: large form so layout / close aren't cramped.
-        .presentationDetents(isPad ? [.large] : [.height(640)])
+        .presentationDetents(isPad ? [.large] : [.height(680)])
         .presentationDragIndicator(.hidden)
         .onAppear {
             Analytics.shared.log(.paywallViewed(source: "paywall_sheet"))
@@ -124,9 +133,6 @@ struct PaywallView: View {
             if showSuccess {
                 successOverlay
             }
-        }
-        .onChange(of: selectedProductID) { oldValue, newValue in
-            updateEligibility(for: newValue)
         }
         .sheet(item: $safariURL) { identifiableURL in
             SafariView(url: identifiableURL.url)
@@ -292,7 +298,7 @@ struct PaywallView: View {
             return "paywall_option_lifetime"
         }()
         
-        let priceSubtext: String = {
+        let fallbackSubtext: String = {
             if isMonthly {
                 return NSLocalizedString("paywall_price_monthly_sub", comment: "")
             } else if isYearly {
@@ -301,6 +307,12 @@ struct PaywallView: View {
                 return NSLocalizedString("paywall_price_lifetime_sub", comment: "")
             }
         }()
+        let priceSubtext = PaywallSubscriptionCopy.planSubtitle(
+            kind: PaywallPlanKind(productID: product.id),
+            displayPrice: product.displayPrice,
+            isTrialEligible: isTrialEligible(product),
+            fallback: fallbackSubtext
+        )
         
         let badgeText: String? = {
             if isYearly {
@@ -359,8 +371,9 @@ struct PaywallView: View {
                     Text(priceSubtext)
                         .font(.system(size: 11.5, weight: isYearly ? .semibold : .regular))
                         .foregroundColor(isYearly ? AppColors.accentTeal : AppColors.secondaryText)
-                        .lineLimit(1)
+                        .lineLimit(2)
                         .minimumScaleFactor(0.85)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
                 
                 Spacer()
@@ -421,21 +434,7 @@ struct PaywallView: View {
     }
 
     private var purchasePanel: some View {
-        VStack(spacing: 9) {
-            HStack(spacing: 14) {
-                if canStartFreeTrial {
-                    assuranceItem(icon: "checkmark.seal.fill", text: NSLocalizedString("paywall_assurance_trial", comment: ""))
-                }
-                assuranceItem(icon: "xmark.seal.fill", text: NSLocalizedString("paywall_assurance_cancel", comment: ""))
-            }
-
-            Text(NSLocalizedString(canStartFreeTrial ? "paywall_trial_note" : "paywall_subscription_billing_note", comment: ""))
-                .font(.system(size: 10.5))
-                .foregroundColor(AppColors.secondaryText)
-                .multilineTextAlignment(.center)
-                .lineLimit(2)
-                .minimumScaleFactor(0.9)
-
+        VStack(spacing: 10) {
             Button(action: purchase) {
                 HStack(spacing: 8) {
                     if isPurchasing {
@@ -460,6 +459,14 @@ struct PaywallView: View {
             }
             .buttonStyle(ScaleButtonStyle())
             .disabled(isPurchasing || selectedProductID.isEmpty)
+
+            if let purchaseDisclosureText {
+                Text(purchaseDisclosureText)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(AppColors.primaryText)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
 
             Button(NSLocalizedString("paywall_restore_button", comment: "")) {
                 Task { await restore() }
@@ -496,6 +503,7 @@ struct PaywallView: View {
         if !ProPurchaseManager.shared.products.isEmpty {
             products = ProPurchaseManager.shared.products
             selectDefaultProduct()
+            await refreshTrialEligibility()
             return
         }
 
@@ -510,6 +518,7 @@ struct PaywallView: View {
         } else {
             products = loaded
             selectDefaultProduct()
+            await refreshTrialEligibility()
         }
     }
 
@@ -548,21 +557,6 @@ struct PaywallView: View {
         }
         .frame(maxWidth: .infinity)
         .frame(minHeight: 70, alignment: .top)
-    }
-
-    private func assuranceItem(icon: String, text: String) -> some View {
-        HStack(spacing: 5) {
-            Image(systemName: icon)
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundColor(AppColors.accentTeal)
-
-            Text(text)
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundColor(AppColors.primaryText)
-                .lineLimit(1)
-                .minimumScaleFactor(0.85)
-        }
-        .frame(maxWidth: .infinity)
     }
 
     private var linksView: some View {
@@ -652,26 +646,21 @@ struct PaywallView: View {
         }
     }
 
+    private func isTrialEligible(_ product: Product) -> Bool {
+        freeTrialOffer(for: product) != nil && (trialEligibilityByProductID[product.id] ?? false)
+    }
+
     @MainActor
-    private func updateEligibility(for productID: String) {
-        guard let selectedProduct = products.first(where: { $0.id == productID }) else {
-            isEligibleForTrial = false
-            return
-        }
-        
-        if selectedProduct.id.contains("lifetime") {
-            isEligibleForTrial = false
-            return
-        }
-        
-        Task {
-            if let subscription = selectedProduct.subscription, freeTrialOffer(for: selectedProduct) != nil {
-                let eligible = await subscription.isEligibleForIntroOffer
-                isEligibleForTrial = eligible
+    private func refreshTrialEligibility() async {
+        var eligibility: [String: Bool] = [:]
+        for product in products {
+            if let subscription = product.subscription, freeTrialOffer(for: product) != nil {
+                eligibility[product.id] = await subscription.isEligibleForIntroOffer
             } else {
-                isEligibleForTrial = false
+                eligibility[product.id] = false
             }
         }
+        trialEligibilityByProductID = eligibility
     }
 
     private func freeTrialOffer(for product: Product) -> Product.SubscriptionOffer? {

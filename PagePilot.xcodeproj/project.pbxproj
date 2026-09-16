@@ -121,6 +121,7 @@
 		8B829D2A9A112BCFF248E32F /* VisualReaderViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADD0CD684D4BAB10B6ECAC03 /* VisualReaderViewController.swift */; };
 		8E2DD7D95A03DF3B73E2D2D3 /* Future.swift in Sources */ = {isa = PBXBuildFile; fileRef = 240397045C9D990C64393598 /* Future.swift */; };
 		8EFAB7D91CF2081BE63FB5FF /* QuickPositionJumpSessionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00B5FAB4697C0E879381F2BF /* QuickPositionJumpSessionTests.swift */; };
+		8F82458161412F42DFC03785 /* PaywallSubscriptionCopyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 564A1C630A9418621236167B /* PaywallSubscriptionCopyTests.swift */; };
 		91F61B3F4491E378B2D5C086 /* OnboardingWatchGuideView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84F485183395CC735F6891B3 /* OnboardingWatchGuideView.swift */; };
 		92005252C16D8F66A660C749 /* LibraryModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82D663407FE728242FF837A9 /* LibraryModule.swift */; };
 		92AC4F8E3718F5D2E825F155 /* LibraryViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE56BD15CF1C12FD76DB0C02 /* LibraryViewController.swift */; };
@@ -180,6 +181,7 @@
 		DCDB6FBAC53F9F4B0C302759 /* PublicationCollectionViewCell.xib in Resources */ = {isa = PBXBuildFile; fileRef = 369A1A786DC34B84BB19DC78 /* PublicationCollectionViewCell.xib */; };
 		DD96F1B62B8316E72F0CA57E /* ReadingReminderPolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8762D8E9C5C305A508B899AE /* ReadingReminderPolicyTests.swift */; };
 		E1F538DCE620199B19EBD58D /* HighlightRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 096A54519E8222A9B204D786 /* HighlightRepositoryTests.swift */; };
+		E3DB191DE6F9BFAE0ED6F7A2 /* PaywallSubscriptionCopy.swift in Sources */ = {isa = PBXBuildFile; fileRef = B77BE225B50F2586C12AFF0F /* PaywallSubscriptionCopy.swift */; };
 		E77575F2F911944528C256B7 /* ReadingLiveActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2726E4AFC0F2CA0481ACB736 /* ReadingLiveActivityAttributes.swift */; };
 		E7A2C316C908B1E9F01C65B9 /* MBProgressHUD in Frameworks */ = {isa = PBXBuildFile; productRef = 3C3D34DFF9245C495B9DF145 /* MBProgressHUD */; };
 		E9B8886B571D721CC5AE9BCE /* TXTToEPUBConverter.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBB201BC5603B0A25588D1FA /* TXTToEPUBConverter.swift */; };
@@ -336,6 +338,7 @@
 		55041F5A18B8D1FF4E2E1100 /* fr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = fr; path = fr.lproj/Localizable.strings; sourceTree = "<group>"; };
 		5558B74DD2891D2133578053 /* ReaderError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReaderError.swift; sourceTree = "<group>"; };
 		55656F197D116DD19B7653E3 /* ReadingLiveActivityWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadingLiveActivityWidget.swift; sourceTree = "<group>"; };
+		564A1C630A9418621236167B /* PaywallSubscriptionCopyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaywallSubscriptionCopyTests.swift; sourceTree = "<group>"; };
 		59635CD5805663FF13835E49 /* VolumeKeyService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VolumeKeyService.swift; sourceTree = "<group>"; };
 		5A2B024C6E0C203340406810 /* VolumeKeyDecisionPolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VolumeKeyDecisionPolicyTests.swift; sourceTree = "<group>"; };
 		5A60E50BAA359799EAA57CB6 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
@@ -419,6 +422,7 @@
 		B56D5235C94D03DA72E2072F /* ReadingGoalPolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadingGoalPolicyTests.swift; sourceTree = "<group>"; };
 		B711BA17A194A7D41D66A582 /* OPDSBrowseViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OPDSBrowseViewController.swift; sourceTree = "<group>"; };
 		B72655FEA927069604E38D0D /* OPDSRelativeURLTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OPDSRelativeURLTests.swift; sourceTree = "<group>"; };
+		B77BE225B50F2586C12AFF0F /* PaywallSubscriptionCopy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaywallSubscriptionCopy.swift; sourceTree = "<group>"; };
 		B9BE090D11709317E8544B91 /* HighlightNoteEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HighlightNoteEditor.swift; sourceTree = "<group>"; };
 		B9FE2CFDD497EC12093FB1D7 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		BCAC8F71F518B1AFEE314B4D /* Analytics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Analytics.swift; sourceTree = "<group>"; };
@@ -733,6 +737,7 @@
 				B72655FEA927069604E38D0D /* OPDSRelativeURLTests.swift */,
 				2EB123D9C6B0F4750155D106 /* OrphanedFilePolicyTests.swift */,
 				1A0581B77EBA4D5D16B6338A /* PagePilotLANRecoveryPolicyTests.swift */,
+				564A1C630A9418621236167B /* PaywallSubscriptionCopyTests.swift */,
 				ABEA8FC1756AAC1A0B4FA793 /* QuickPositionJumpPolicyTests.swift */,
 				00B5FAB4697C0E879381F2BF /* QuickPositionJumpSessionTests.swift */,
 				F8CB48566A6E5BE799D3C80A /* ReaderEditingActionsTests.swift */,
@@ -819,6 +824,7 @@
 				887713861EF2F9418AC144A2 /* HomeModule.swift */,
 				795AD86D5831C7B50A473757 /* HomeRootView.swift */,
 				5A60E50BAA359799EAA57CB6 /* HomeView.swift */,
+				B77BE225B50F2586C12AFF0F /* PaywallSubscriptionCopy.swift */,
 				C2189AA0D7B2F199F1F6EB27 /* PaywallView.swift */,
 				44E06145737CE6AEE1EE44E3 /* ReadingShareCardView.swift */,
 				023D4D02D0CF64A9CD096FA1 /* ReadingStatsStore.swift */,
@@ -1081,16 +1087,16 @@
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
 					320F55E134D9FEBE35DAF208 = {
-						DevelopmentTeam = 29C8MS76CZ;
+						DevelopmentTeam = "${RD_DEVELOPMENT_TEAM}";
 					};
 					76A5899AC0394DE9CD301C46 = {
-						DevelopmentTeam = 29C8MS76CZ;
+						DevelopmentTeam = "${RD_DEVELOPMENT_TEAM}";
 					};
 					A9D7F6E593F49E495DA90E96 = {
-						DevelopmentTeam = 29C8MS76CZ;
+						DevelopmentTeam = "${RD_DEVELOPMENT_TEAM}";
 					};
 					BD5410D9566E7DFEBEBE9BC5 = {
-						DevelopmentTeam = 29C8MS76CZ;
+						DevelopmentTeam = "${RD_DEVELOPMENT_TEAM}";
 					};
 				};
 			};
@@ -1229,6 +1235,7 @@
 				78CB2D8372C5E22D60B0F8D4 /* PDFViewController.swift in Sources */,
 				E9F963FBA755456117E01B92 /* PageCommand.swift in Sources */,
 				9EF618C55662D50B612DA755 /* Paths.swift in Sources */,
+				E3DB191DE6F9BFAE0ED6F7A2 /* PaywallSubscriptionCopy.swift in Sources */,
 				7A8C7F3E8B3E534D9BD642D6 /* PaywallView.swift in Sources */,
 				9D0C50EC4EF594B96870670B /* ProPurchaseManager.swift in Sources */,
 				CEC59B3405B6C00D2093D75A /* Publication.swift in Sources */,
@@ -1325,6 +1332,7 @@
 				1DD78F753BCD6CFC8ED98D87 /* OnboardingFlowTests.swift in Sources */,
 				60A28F8FE505117EFE788FA3 /* OrphanedFilePolicyTests.swift in Sources */,
 				DC01982A5EC812A5EF23999C /* PagePilotLANRecoveryPolicyTests.swift in Sources */,
+				8F82458161412F42DFC03785 /* PaywallSubscriptionCopyTests.swift in Sources */,
 				F043BE516A43D554709BD551 /* QuickPositionJumpPolicyTests.swift in Sources */,
 				8EFAB7D91CF2081BE63FB5FF /* QuickPositionJumpSessionTests.swift in Sources */,
 				0BB40644CC5EE846FE2F9E3F /* ReaderEditingActionsTests.swift in Sources */,
@@ -1492,7 +1500,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
-				DEVELOPMENT_TEAM = 29C8MS76CZ;
+				DEVELOPMENT_TEAM = "${RD_DEVELOPMENT_TEAM}";
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -1515,8 +1523,8 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = iPhone/pagepilot.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 41;
-				DEVELOPMENT_TEAM = 29C8MS76CZ;
+				CURRENT_PROJECT_VERSION = 42;
+				DEVELOPMENT_TEAM = "${RD_DEVELOPMENT_TEAM}";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = iPhone/Info.plist;
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
@@ -1601,8 +1609,8 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = iPhone/pagepilot.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 41;
-				DEVELOPMENT_TEAM = 29C8MS76CZ;
+				CURRENT_PROJECT_VERSION = 42;
+				DEVELOPMENT_TEAM = "${RD_DEVELOPMENT_TEAM}";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = iPhone/Info.plist;
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
@@ -1621,8 +1629,8 @@
 		4756EBF2B17E64AA1CB6FA93 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CURRENT_PROJECT_VERSION = 41;
-				DEVELOPMENT_TEAM = 29C8MS76CZ;
+				CURRENT_PROJECT_VERSION = 42;
+				DEVELOPMENT_TEAM = "${RD_DEVELOPMENT_TEAM}";
 				INFOPLIST_FILE = ReadingLiveActivity/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -1641,8 +1649,8 @@
 		491914B06B8D49E52D031C3C /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CURRENT_PROJECT_VERSION = 41;
-				DEVELOPMENT_TEAM = 29C8MS76CZ;
+				CURRENT_PROJECT_VERSION = 42;
+				DEVELOPMENT_TEAM = "${RD_DEVELOPMENT_TEAM}";
 				INFOPLIST_FILE = ReadingLiveActivity/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -1662,8 +1670,8 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CURRENT_PROJECT_VERSION = 41;
-				DEVELOPMENT_TEAM = 29C8MS76CZ;
+				CURRENT_PROJECT_VERSION = 42;
+				DEVELOPMENT_TEAM = "${RD_DEVELOPMENT_TEAM}";
 				INFOPLIST_FILE = WatchRemote/Info.plist;
 				MARKETING_VERSION = 1.0.21;
 				PRODUCT_BUNDLE_IDENTIFIER = com.panyang.PagePilot.WatchRemote;
@@ -1678,7 +1686,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
-				DEVELOPMENT_TEAM = 29C8MS76CZ;
+				DEVELOPMENT_TEAM = "${RD_DEVELOPMENT_TEAM}";
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -1697,8 +1705,8 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CURRENT_PROJECT_VERSION = 41;
-				DEVELOPMENT_TEAM = 29C8MS76CZ;
+				CURRENT_PROJECT_VERSION = 42;
+				DEVELOPMENT_TEAM = "${RD_DEVELOPMENT_TEAM}";
 				INFOPLIST_FILE = WatchRemote/Info.plist;
 				MARKETING_VERSION = 1.0.21;
 				PRODUCT_BUNDLE_IDENTIFIER = com.panyang.PagePilot.WatchRemote;

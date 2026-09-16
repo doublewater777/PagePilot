@@ -381,7 +381,7 @@
 "paywall_feature_streak_subtitle" = "Track your rhythm";
 "paywall_feature_notes_title" = "Unlimited notes";
 "paywall_feature_notes_subtitle" = "No highlight cap";
-"paywall_assurance_trial" = "1-week free trial";
+"paywall_assurance_trial" = "7-day free trial";
 "paywall_assurance_cancel" = "Cancel anytime";
 "paywall_trial_note" = "Trial renews automatically after it ends. You can cancel anytime in Settings.";
 "paywall_one_time" = "One-time purchase, yours forever";
@@ -394,7 +394,7 @@
 "paywall_retry_button" = "Retry";
 "paywall_error_title" = "Purchase Failed";
 "paywall_success_title" = "Pro Unlocked!";
-"paywall_trial_badge" = "1-Week Free Trial";
+"paywall_trial_badge" = "7-Day Free Trial";
 
 /* Settings Pro */
 "settings_pro_unlocked" = "PagePilot Pro";
@@ -432,18 +432,24 @@
 "paywall_privacy_policy" = "Privacy Policy";
 "paywall_recommended_badge" = "Recommended";
 "paywall_limited_badge" = "Limited";
-"paywall_trial_eligible_label" = "1 Week Free";
+"paywall_trial_eligible_label" = "7 Days Free";
 "paywall_lifetime_sub" = "One-time purchase";
 "paywall_save_badge" = "Save 16%";
-"paywall_buy_button_eligible" = "Start 1-Week Free Trial";
+"paywall_buy_button_eligible" = "Start 7-Day Free Trial";
 "paywall_buy_button_ineligible" = "Continue";
 "paywall_buy_button_lifetime" = "Unlock Lifetime";
-"paywall_trial_duration_eligible_monthly" = "1 Week Free, then %@/month";
-"paywall_trial_duration_eligible_yearly" = "1 Week Free, then %@/year";
+"paywall_trial_duration_eligible_monthly" = "7 days free, then %@/month";
+"paywall_trial_duration_eligible_yearly" = "7 days free, then %@/year";
 "paywall_trial_duration_ineligible_monthly" = "%@/month";
 "paywall_trial_duration_ineligible_yearly" = "%@/year";
 "paywall_trial_duration_lifetime" = "%@ one-time";
 "paywall_subscription_billing_note" = "Monthly and yearly plans renew automatically and can be cancelled in App Store settings. Lifetime is a one-time purchase.";
+"paywall_purchase_disclosure_trial_monthly" = "7-day free trial, then %@/month. Automatically renews unless canceled in App Store subscription settings.";
+"paywall_purchase_disclosure_trial_yearly" = "7-day free trial, then %@/year. Automatically renews unless canceled in App Store subscription settings.";
+"paywall_purchase_disclosure_paid_monthly" = "%@/month. Automatically renews unless canceled in App Store subscription settings.";
+"paywall_purchase_disclosure_paid_yearly" = "%@/year. Automatically renews unless canceled in App Store subscription settings.";
+"paywall_purchase_disclosure_lifetime" = "One-time purchase. This is not a subscription and does not renew.";
+
 
 /* Bookshelf Status */
 "bookshelf_status_not_started" = "Not Started";

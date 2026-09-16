@@ -83,7 +83,14 @@
           "recurringSubscriptionPeriod": "P1Y",
           "referenceName": "Yearly Pro",
           "subscriptionGroupID": "A4B1A7C2",
-          "type": "RecurringSubscription"
+          "type": "RecurringSubscription",
+          "introductoryOffer": {
+            "displayPrice": "0",
+            "internalID": "F4A5B6C7",
+            "numberOfPeriods": 1,
+            "paymentMode": "free",
+            "subscriptionPeriod": "P1W"
+          }
         }
       ]
     }
