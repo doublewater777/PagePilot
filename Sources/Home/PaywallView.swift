@@ -420,20 +420,71 @@ struct PaywallView: View {
         }
     }
 
+    private var purchaseDisclosureText: String? {
+        guard let selectedProduct else { return nil }
+
+        let price = displayPrice(for: selectedProduct)
+        if selectedProduct.id.contains("lifetime") {
+            return String(
+                format: NSLocalizedString("paywall_trial_duration_lifetime", comment: ""),
+                price
+            )
+        }
+
+        let key: String
+        if selectedProduct.id.contains("monthly") {
+            key = canStartFreeTrial
+                ? "paywall_trial_duration_eligible_monthly"
+                : "paywall_trial_duration_ineligible_monthly"
+        } else {
+            key = canStartFreeTrial
+                ? "paywall_trial_duration_eligible_yearly"
+                : "paywall_trial_duration_ineligible_yearly"
+        }
+
+        return String(format: NSLocalizedString(key, comment: ""), price)
+    }
+
+    private var purchaseBillingNoteText: String {
+        guard let selectedProduct else {
+            return NSLocalizedString("paywall_subscription_billing_note", comment: "")
+        }
+
+        if selectedProduct.id.contains("lifetime") {
+            return NSLocalizedString("paywall_one_time", comment: "")
+        }
+
+        return NSLocalizedString(
+            canStartFreeTrial ? "paywall_trial_note" : "paywall_subscription_billing_note",
+            comment: ""
+        )
+    }
+
     private var purchasePanel: some View {
         VStack(spacing: 9) {
             HStack(spacing: 14) {
                 if canStartFreeTrial {
                     assuranceItem(icon: "checkmark.seal.fill", text: NSLocalizedString("paywall_assurance_trial", comment: ""))
                 }
-                assuranceItem(icon: "xmark.seal.fill", text: NSLocalizedString("paywall_assurance_cancel", comment: ""))
+                if selectedProduct?.id.contains("lifetime") == false {
+                    assuranceItem(icon: "xmark.seal.fill", text: NSLocalizedString("paywall_assurance_cancel", comment: ""))
+                }
             }
 
-            Text(NSLocalizedString(canStartFreeTrial ? "paywall_trial_note" : "paywall_subscription_billing_note", comment: ""))
+            if let purchaseDisclosureText {
+                Text(purchaseDisclosureText)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(AppColors.primaryText)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityAddTraits(.isStaticText)
+            }
+
+            Text(purchaseBillingNoteText)
                 .font(.system(size: 10.5))
                 .foregroundColor(AppColors.secondaryText)
                 .multilineTextAlignment(.center)
-                .lineLimit(2)
+                .fixedSize(horizontal: false, vertical: true)
                 .minimumScaleFactor(0.9)
 
             Button(action: purchase) {
