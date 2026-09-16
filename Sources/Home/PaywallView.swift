@@ -411,38 +411,35 @@ struct PaywallView: View {
             return NSLocalizedString("paywall_buy_button_ineligible", comment: "")
         }
         
-        if selectedProduct.id.contains("lifetime") {
+        if selectedProduct.subscription == nil {
             return NSLocalizedString("paywall_buy_button_lifetime", comment: "")
-        } else if canStartFreeTrial {
-            return NSLocalizedString("paywall_buy_button_eligible", comment: "")
-        } else {
-            return NSLocalizedString("paywall_buy_button_ineligible", comment: "")
         }
+
+        // Keep the CTA generic so it can never contradict StoreKit's actual trial period.
+        return NSLocalizedString("paywall_buy_button_ineligible", comment: "")
     }
 
     private var purchaseDisclosureText: String? {
         guard let selectedProduct else { return nil }
 
         let price = displayPrice(for: selectedProduct)
-        if selectedProduct.id.contains("lifetime") {
+        guard let subscription = selectedProduct.subscription else {
             return String(
                 format: NSLocalizedString("paywall_trial_duration_lifetime", comment: ""),
                 price
             )
         }
 
-        let key: String
-        if selectedProduct.id.contains("monthly") {
-            key = canStartFreeTrial
-                ? "paywall_trial_duration_eligible_monthly"
-                : "paywall_trial_duration_ineligible_monthly"
-        } else {
-            key = canStartFreeTrial
-                ? "paywall_trial_duration_eligible_yearly"
-                : "paywall_trial_duration_ineligible_yearly"
+        let billingPeriod = subscription.subscriptionPeriod.formatted(
+            selectedProduct.subscriptionPeriodFormatStyle
+        )
+
+        guard canStartFreeTrial, let offer = freeTrialOffer(for: selectedProduct) else {
+            return "\(price) / \(billingPeriod)"
         }
 
-        return String(format: NSLocalizedString(key, comment: ""), price)
+        let trialPeriod = offer.period.formatted(selectedProduct.subscriptionPeriodFormatStyle)
+        return "\(offer.displayPrice) / \(trialPeriod) → \(price) / \(billingPeriod)"
     }
 
     private var purchaseBillingNoteText: String {
@@ -450,7 +447,7 @@ struct PaywallView: View {
             return NSLocalizedString("paywall_subscription_billing_note", comment: "")
         }
 
-        if selectedProduct.id.contains("lifetime") {
+        if selectedProduct.subscription == nil {
             return NSLocalizedString("paywall_one_time", comment: "")
         }
 
@@ -462,12 +459,12 @@ struct PaywallView: View {
 
     private var purchasePanel: some View {
         VStack(spacing: 9) {
-            HStack(spacing: 14) {
-                if canStartFreeTrial {
-                    assuranceItem(icon: "checkmark.seal.fill", text: NSLocalizedString("paywall_assurance_trial", comment: ""))
-                }
-                if selectedProduct?.id.contains("lifetime") == false {
-                    assuranceItem(icon: "xmark.seal.fill", text: NSLocalizedString("paywall_assurance_cancel", comment: ""))
+            if selectedProduct?.subscription != nil {
+                HStack(spacing: 14) {
+                    assuranceItem(
+                        icon: "xmark.seal.fill",
+                        text: NSLocalizedString("paywall_assurance_cancel", comment: "")
+                    )
                 }
             }
 
@@ -710,15 +707,14 @@ struct PaywallView: View {
             return
         }
         
-        if selectedProduct.id.contains("lifetime") {
+        guard let subscription = selectedProduct.subscription else {
             isEligibleForTrial = false
             return
         }
         
         Task {
-            if let subscription = selectedProduct.subscription, freeTrialOffer(for: selectedProduct) != nil {
-                let eligible = await subscription.isEligibleForIntroOffer
-                isEligibleForTrial = eligible
+            if freeTrialOffer(for: selectedProduct) != nil {
+                isEligibleForTrial = await subscription.isEligibleForIntroOffer
             } else {
                 isEligibleForTrial = false
             }
