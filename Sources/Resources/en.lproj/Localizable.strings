@@ -452,18 +452,24 @@
 "paywall_billing_period_week" = "week";
 "paywall_billing_period_month" = "month";
 "paywall_billing_period_year" = "year";
+"paywall_billing_period_days" = "days";
+"paywall_billing_period_weeks" = "weeks";
+"paywall_billing_period_months" = "months";
+"paywall_billing_period_years" = "years";
+"paywall_subscription_price_per_period" = "%1$@/%2$@";
+"paywall_subscription_price_every_period" = "%1$@ every %2$d %3$@";
 "paywall_buy_button_eligible" = "Start %@ Free Trial";
 "paywall_buy_button_ineligible" = "Continue";
 "paywall_buy_button_lifetime" = "Unlock Lifetime";
-"paywall_trial_duration_eligible_monthly" = "%@ free, then %@/%@";
+"paywall_trial_duration_eligible_monthly" = "%@ free, then %@";
 "paywall_trial_duration_eligible_yearly" = "7 days free, then %@/year";
 "paywall_trial_duration_ineligible_monthly" = "%@/month";
 "paywall_trial_duration_ineligible_yearly" = "%@/year";
 "paywall_trial_duration_lifetime" = "%@ one-time";
 "paywall_subscription_billing_note" = "Monthly and yearly plans renew automatically and can be cancelled in App Store settings. Lifetime is a one-time purchase.";
-"paywall_purchase_disclosure_trial" = "%@ free trial, then %@/%@. Automatically renews unless canceled in App Store subscription settings.";
+"paywall_purchase_disclosure_trial" = "%@ free trial, then %@. Automatically renews unless canceled in App Store subscription settings.";
 
-"paywall_purchase_disclosure_paid" = "%@/%@. Automatically renews unless canceled in App Store subscription settings.";
+"paywall_purchase_disclosure_paid" = "%@. Automatically renews unless canceled in App Store subscription settings.";
 
 "paywall_purchase_disclosure_lifetime" = "One-time purchase. This is not a subscription and does not renew.";
 

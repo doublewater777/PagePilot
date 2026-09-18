@@ -452,18 +452,24 @@
 "paywall_billing_period_week" = "semaine";
 "paywall_billing_period_month" = "mois";
 "paywall_billing_period_year" = "an";
+"paywall_billing_period_days" = "jours";
+"paywall_billing_period_weeks" = "semaines";
+"paywall_billing_period_months" = "mois";
+"paywall_billing_period_years" = "ans";
+"paywall_subscription_price_per_period" = "%1$@/%2$@";
+"paywall_subscription_price_every_period" = "%1$@ pour %2$d %3$@";
 "paywall_buy_button_eligible" = "Commencer l’essai gratuit de %@";
 "paywall_buy_button_ineligible" = "Continuer";
 "paywall_buy_button_lifetime" = "Débloquer à vie";
-"paywall_trial_duration_eligible_monthly" = "%@ gratuits, puis %@/%@";
+"paywall_trial_duration_eligible_monthly" = "%@ d’essai gratuit, puis %@";
 "paywall_trial_duration_eligible_yearly" = "7 jours gratuits, puis %@/an";
 "paywall_trial_duration_ineligible_monthly" = "%@/mois";
 "paywall_trial_duration_ineligible_yearly" = "%@/an";
 "paywall_trial_duration_lifetime" = "%@ en un seul paiement";
 "paywall_subscription_billing_note" = "Les forfaits mensuel et annuel se renouvellent automatiquement et peuvent être annulés dans les réglages de l’App Store. L’offre à vie est un achat unique.";
-"paywall_purchase_disclosure_trial" = "Essai gratuit de %@, puis %@/%@. Renouvellement automatique sauf annulation dans les réglages d’abonnement de l’App Store.";
+"paywall_purchase_disclosure_trial" = "Essai gratuit de %@, puis %@. Renouvellement automatique sauf annulation dans les réglages d’abonnement de l’App Store.";
 
-"paywall_purchase_disclosure_paid" = "%@/%@. Renouvellement automatique sauf annulation dans les réglages d’abonnement de l’App Store.";
+"paywall_purchase_disclosure_paid" = "%@. Renouvellement automatique sauf annulation dans les réglages d’abonnement de l’App Store.";
 
 "paywall_purchase_disclosure_lifetime" = "Achat unique. Ce n’est pas un abonnement et il ne se renouvelle pas.";
 

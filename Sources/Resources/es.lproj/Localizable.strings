@@ -452,18 +452,24 @@
 "paywall_billing_period_week" = "semana";
 "paywall_billing_period_month" = "mes";
 "paywall_billing_period_year" = "año";
+"paywall_billing_period_days" = "días";
+"paywall_billing_period_weeks" = "semanas";
+"paywall_billing_period_months" = "meses";
+"paywall_billing_period_years" = "años";
+"paywall_subscription_price_per_period" = "%1$@/%2$@";
+"paywall_subscription_price_every_period" = "%1$@ cada %2$d %3$@";
 "paywall_buy_button_eligible" = "Empieza la prueba gratuita de %@";
 "paywall_buy_button_ineligible" = "Continuar";
 "paywall_buy_button_lifetime" = "Desbloquear de por vida";
-"paywall_trial_duration_eligible_monthly" = "%@ gratis, luego %@/%@";
+"paywall_trial_duration_eligible_monthly" = "%@ gratis, luego %@";
 "paywall_trial_duration_eligible_yearly" = "7 días gratis, luego %@/año";
 "paywall_trial_duration_ineligible_monthly" = "%@/mes";
 "paywall_trial_duration_ineligible_yearly" = "%@/año";
 "paywall_trial_duration_lifetime" = "%@ una vez";
 "paywall_subscription_billing_note" = "Los planes mensuales y anuales se renuevan automáticamente y se pueden cancelar en la configuración de la App Store. La vida es una compra única.";
-"paywall_purchase_disclosure_trial" = "Prueba gratuita de %@, luego %@/%@. Se renueva automáticamente salvo cancelación en los ajustes de suscripción de App Store.";
+"paywall_purchase_disclosure_trial" = "Prueba gratuita de %@, luego %@. Se renueva automáticamente salvo cancelación en los ajustes de suscripción de App Store.";
 
-"paywall_purchase_disclosure_paid" = "%@/%@. Se renueva automáticamente salvo cancelación en los ajustes de suscripción de App Store.";
+"paywall_purchase_disclosure_paid" = "%@. Se renueva automáticamente salvo cancelación en los ajustes de suscripción de App Store.";
 
 "paywall_purchase_disclosure_lifetime" = "Compra única. No es una suscripción y no se renueva.";
 

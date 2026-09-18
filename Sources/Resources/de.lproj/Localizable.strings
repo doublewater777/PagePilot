@@ -452,18 +452,24 @@
 "paywall_billing_period_week" = "Woche";
 "paywall_billing_period_month" = "Monat";
 "paywall_billing_period_year" = "Jahr";
+"paywall_billing_period_days" = "Tage";
+"paywall_billing_period_weeks" = "Wochen";
+"paywall_billing_period_months" = "Monate";
+"paywall_billing_period_years" = "Jahre";
+"paywall_subscription_price_per_period" = "%1$@/%2$@";
+"paywall_subscription_price_every_period" = "%1$@ alle %2$d %3$@";
 "paywall_buy_button_eligible" = "%@ kostenlose Testphase starten";
 "paywall_buy_button_ineligible" = "Fortfahren";
 "paywall_buy_button_lifetime" = "Lebenslangen Zugriff freischalten";
-"paywall_trial_duration_eligible_monthly" = "%@ kostenlos, danach %@/%@";
+"paywall_trial_duration_eligible_monthly" = "%@ kostenlos, danach %@";
 "paywall_trial_duration_eligible_yearly" = "7 Tage kostenlos, danach %@/Jahr";
 "paywall_trial_duration_ineligible_monthly" = "%@/Monat";
 "paywall_trial_duration_ineligible_yearly" = "%@/Jahr";
 "paywall_trial_duration_lifetime" = "%@ einmalig";
 "paywall_subscription_billing_note" = "Monats- und Jahrespläne verlängern sich automatisch und können in den App-Store-Einstellungen gekündigt werden. Der lebenslange Zugriff ist ein einmaliger Kauf.";
-"paywall_purchase_disclosure_trial" = "%@ kostenlos, danach %@/%@. Verlängert sich automatisch, sofern nicht in den App-Store-Abo-Einstellungen gekündigt.";
+"paywall_purchase_disclosure_trial" = "%@ kostenlos, danach %@. Verlängert sich automatisch, sofern nicht in den App-Store-Abo-Einstellungen gekündigt.";
 
-"paywall_purchase_disclosure_paid" = "%@/%@. Verlängert sich automatisch, sofern nicht in den App-Store-Abo-Einstellungen gekündigt.";
+"paywall_purchase_disclosure_paid" = "%@. Verlängert sich automatisch, sofern nicht in den App-Store-Abo-Einstellungen gekündigt.";
 
 "paywall_purchase_disclosure_lifetime" = "Einmaliger Kauf. Dies ist kein Abonnement und verlängert sich nicht.";
 
