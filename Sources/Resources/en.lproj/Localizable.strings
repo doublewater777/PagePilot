@@ -92,7 +92,6 @@
 "error_out_of_space" = "Your storage is full. Please free up some space to continue.";
 "error_read" = "Failed to read the resource.";
 
-
 /* MARK: Library */
 
 /* Hint message when the library is empty */
@@ -158,7 +157,6 @@
 "library_demo_book_message" = "\"%@\" is a simulated demo book and cannot be opened for reading.";
 "library_all_books" = "All Books";
 
-
 /* MARK: Reader */
 
 /* Error message when adding a new bookmark failed */
@@ -221,7 +219,6 @@
 "reader_drm_return_message" = "Returning the loan will prevent you from accessing the publication.";
 /* Success message after returning a publication */
 "reader_drm_return_success_message" = "Publication returned successfully.";
-
 
 /* MARK: LCP */
 "lcp_type" = "Readium LCP";
@@ -435,21 +432,46 @@
 "paywall_trial_eligible_label" = "7 Days Free";
 "paywall_lifetime_sub" = "One-time purchase";
 "paywall_save_badge" = "Save 16%";
-"paywall_buy_button_eligible" = "Start 7-Day Free Trial";
+"paywall_trial_duration_day" = "%d-day";
+"paywall_trial_duration_days" = "%d-day";
+"paywall_trial_duration_week" = "%d-week";
+"paywall_trial_duration_weeks" = "%d-week";
+"paywall_trial_duration_month" = "%d-month";
+"paywall_trial_duration_months" = "%d-month";
+"paywall_trial_duration_year" = "%d-year";
+"paywall_trial_duration_years" = "%d-year";
+"paywall_trial_duration_day_title" = "%d-Day";
+"paywall_trial_duration_days_title" = "%d-Day";
+"paywall_trial_duration_week_title" = "%d-Week";
+"paywall_trial_duration_weeks_title" = "%d-Week";
+"paywall_trial_duration_month_title" = "%d-Month";
+"paywall_trial_duration_months_title" = "%d-Month";
+"paywall_trial_duration_year_title" = "%d-Year";
+"paywall_trial_duration_years_title" = "%d-Year";
+"paywall_billing_period_day" = "day";
+"paywall_billing_period_week" = "week";
+"paywall_billing_period_month" = "month";
+"paywall_billing_period_year" = "year";
+"paywall_billing_period_days" = "days";
+"paywall_billing_period_weeks" = "weeks";
+"paywall_billing_period_months" = "months";
+"paywall_billing_period_years" = "years";
+"paywall_subscription_price_per_period" = "%1$@/%2$@";
+"paywall_subscription_price_every_period" = "%1$@ every %2$d %3$@";
+"paywall_buy_button_eligible" = "Start %@ Free Trial";
 "paywall_buy_button_ineligible" = "Continue";
 "paywall_buy_button_lifetime" = "Unlock Lifetime";
-"paywall_trial_duration_eligible_monthly" = "7 days free, then %@/month";
+"paywall_trial_duration_eligible_monthly" = "%@ free, then %@";
 "paywall_trial_duration_eligible_yearly" = "7 days free, then %@/year";
 "paywall_trial_duration_ineligible_monthly" = "%@/month";
 "paywall_trial_duration_ineligible_yearly" = "%@/year";
 "paywall_trial_duration_lifetime" = "%@ one-time";
 "paywall_subscription_billing_note" = "Monthly and yearly plans renew automatically and can be cancelled in App Store settings. Lifetime is a one-time purchase.";
-"paywall_purchase_disclosure_trial_monthly" = "7-day free trial, then %@/month. Automatically renews unless canceled in App Store subscription settings.";
-"paywall_purchase_disclosure_trial_yearly" = "7-day free trial, then %@/year. Automatically renews unless canceled in App Store subscription settings.";
-"paywall_purchase_disclosure_paid_monthly" = "%@/month. Automatically renews unless canceled in App Store subscription settings.";
-"paywall_purchase_disclosure_paid_yearly" = "%@/year. Automatically renews unless canceled in App Store subscription settings.";
-"paywall_purchase_disclosure_lifetime" = "One-time purchase. This is not a subscription and does not renew.";
+"paywall_purchase_disclosure_trial" = "%@ free trial, then %@. Automatically renews unless canceled in App Store subscription settings.";
 
+"paywall_purchase_disclosure_paid" = "%@. Automatically renews unless canceled in App Store subscription settings.";
+
+"paywall_purchase_disclosure_lifetime" = "One-time purchase. This is not a subscription and does not renew.";
 
 /* Bookshelf Status */
 "bookshelf_status_not_started" = "Not Started";

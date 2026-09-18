@@ -92,7 +92,6 @@
 "error_out_of_space" = "Votre espace de stockage est saturé. Libérez de l’espace pour continuer.";
 "error_read" = "Impossible de lire la ressource.";
 
-
 /* MARK: Library */
 
 /* Hint message when the library is empty */
@@ -158,7 +157,6 @@
 "library_demo_book_message" = "\"%@\" est un livre de démonstration simulé et ne peut pas être ouvert pour la lecture.";
 "library_all_books" = "Tous les livres";
 
-
 /* MARK: Reader */
 
 /* Error message when adding a new bookmark failed */
@@ -221,7 +219,6 @@
 "reader_drm_return_message" = "Le retour du prêt vous empêchera d’accéder à la publication.";
 /* Success message after returning a publication */
 "reader_drm_return_success_message" = "Publication rendue avec succès.";
-
 
 /* MARK: LCP */
 "lcp_type" = "Readium LCP";
@@ -435,21 +432,46 @@
 "paywall_trial_eligible_label" = "7 jours gratuits";
 "paywall_lifetime_sub" = "Achat unique";
 "paywall_save_badge" = "Économisez 16 %";
-"paywall_buy_button_eligible" = "Commencer l’essai gratuit de 7 jours";
+"paywall_trial_duration_day" = "%d jour";
+"paywall_trial_duration_days" = "%d jours";
+"paywall_trial_duration_week" = "%d semaine";
+"paywall_trial_duration_weeks" = "%d semaines";
+"paywall_trial_duration_month" = "%d mois";
+"paywall_trial_duration_months" = "%d mois";
+"paywall_trial_duration_year" = "%d an";
+"paywall_trial_duration_years" = "%d ans";
+"paywall_trial_duration_day_title" = "%d jour";
+"paywall_trial_duration_days_title" = "%d jours";
+"paywall_trial_duration_week_title" = "%d semaine";
+"paywall_trial_duration_weeks_title" = "%d semaines";
+"paywall_trial_duration_month_title" = "%d mois";
+"paywall_trial_duration_months_title" = "%d mois";
+"paywall_trial_duration_year_title" = "%d an";
+"paywall_trial_duration_years_title" = "%d ans";
+"paywall_billing_period_day" = "jour";
+"paywall_billing_period_week" = "semaine";
+"paywall_billing_period_month" = "mois";
+"paywall_billing_period_year" = "an";
+"paywall_billing_period_days" = "jours";
+"paywall_billing_period_weeks" = "semaines";
+"paywall_billing_period_months" = "mois";
+"paywall_billing_period_years" = "ans";
+"paywall_subscription_price_per_period" = "%1$@/%2$@";
+"paywall_subscription_price_every_period" = "%1$@ pour %2$d %3$@";
+"paywall_buy_button_eligible" = "Commencer l’essai gratuit de %@";
 "paywall_buy_button_ineligible" = "Continuer";
 "paywall_buy_button_lifetime" = "Débloquer à vie";
-"paywall_trial_duration_eligible_monthly" = "7 jours gratuits, puis %@/mois";
+"paywall_trial_duration_eligible_monthly" = "%@ d’essai gratuit, puis %@";
 "paywall_trial_duration_eligible_yearly" = "7 jours gratuits, puis %@/an";
 "paywall_trial_duration_ineligible_monthly" = "%@/mois";
 "paywall_trial_duration_ineligible_yearly" = "%@/an";
 "paywall_trial_duration_lifetime" = "%@ en un seul paiement";
 "paywall_subscription_billing_note" = "Les forfaits mensuel et annuel se renouvellent automatiquement et peuvent être annulés dans les réglages de l’App Store. L’offre à vie est un achat unique.";
-"paywall_purchase_disclosure_trial_monthly" = "Essai gratuit de 7 jours, puis %@/mois. Renouvellement automatique sauf annulation dans les réglages d’abonnement de l’App Store.";
-"paywall_purchase_disclosure_trial_yearly" = "Essai gratuit de 7 jours, puis %@/an. Renouvellement automatique sauf annulation dans les réglages d’abonnement de l’App Store.";
-"paywall_purchase_disclosure_paid_monthly" = "%@/mois. Renouvellement automatique sauf annulation dans les réglages d’abonnement de l’App Store.";
-"paywall_purchase_disclosure_paid_yearly" = "%@/an. Renouvellement automatique sauf annulation dans les réglages d’abonnement de l’App Store.";
-"paywall_purchase_disclosure_lifetime" = "Achat unique. Ce n’est pas un abonnement et il ne se renouvelle pas.";
+"paywall_purchase_disclosure_trial" = "Essai gratuit de %@, puis %@. Renouvellement automatique sauf annulation dans les réglages d’abonnement de l’App Store.";
 
+"paywall_purchase_disclosure_paid" = "%@. Renouvellement automatique sauf annulation dans les réglages d’abonnement de l’App Store.";
+
+"paywall_purchase_disclosure_lifetime" = "Achat unique. Ce n’est pas un abonnement et il ne se renouvelle pas.";
 
 /* Bookshelf Status */
 "bookshelf_status_not_started" = "Pas commencé";

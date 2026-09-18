@@ -92,7 +92,6 @@
 "error_out_of_space" = "存储空间不足，请释放一些空间后继续。";
 "error_read" = "资源读取失败。";
 
-
 /* MARK: Library */
 
 /* Hint message when the library is empty */
@@ -158,7 +157,6 @@
 "library_demo_book_message" = "《%@》是一本演示模拟图书，无法打开阅读。";
 "library_all_books" = "全部书籍";
 
-
 /* MARK: Reader */
 
 /* Error message when adding a new bookmark failed */
@@ -221,7 +219,6 @@
 "reader_drm_return_message" = "归还后将无法再访问此出版物。";
 /* Success message after returning a publication */
 "reader_drm_return_success_message" = "出版物归还成功。";
-
 
 /* MARK: LCP */
 "lcp_type" = "Readium LCP";
@@ -435,21 +432,46 @@
 "paywall_trial_eligible_label" = "7 天免费";
 "paywall_lifetime_sub" = "一次性购买";
 "paywall_save_badge" = "立省 16%";
-"paywall_buy_button_eligible" = "开始 7 天免费试用";
+"paywall_trial_duration_day" = "%d 天";
+"paywall_trial_duration_days" = "%d 天";
+"paywall_trial_duration_week" = "%d 周";
+"paywall_trial_duration_weeks" = "%d 周";
+"paywall_trial_duration_month" = "%d 个月";
+"paywall_trial_duration_months" = "%d 个月";
+"paywall_trial_duration_year" = "%d 年";
+"paywall_trial_duration_years" = "%d 年";
+"paywall_trial_duration_day_title" = "%d 天";
+"paywall_trial_duration_days_title" = "%d 天";
+"paywall_trial_duration_week_title" = "%d 周";
+"paywall_trial_duration_weeks_title" = "%d 周";
+"paywall_trial_duration_month_title" = "%d 个月";
+"paywall_trial_duration_months_title" = "%d 个月";
+"paywall_trial_duration_year_title" = "%d 年";
+"paywall_trial_duration_years_title" = "%d 年";
+"paywall_billing_period_day" = "天";
+"paywall_billing_period_week" = "周";
+"paywall_billing_period_month" = "月";
+"paywall_billing_period_year" = "年";
+"paywall_billing_period_days" = "天";
+"paywall_billing_period_weeks" = "周";
+"paywall_billing_period_months" = "个月";
+"paywall_billing_period_years" = "年";
+"paywall_subscription_price_per_period" = "%1$@/%2$@";
+"paywall_subscription_price_every_period" = "每 %2$d %3$@ %1$@";
+"paywall_buy_button_eligible" = "开始 %@免费试用";
 "paywall_buy_button_ineligible" = "继续";
 "paywall_buy_button_lifetime" = "解锁终身会员";
-"paywall_trial_duration_eligible_monthly" = "7 天免费试用，之后 %@/月";
+"paywall_trial_duration_eligible_monthly" = "%@免费试用，之后%@";
 "paywall_trial_duration_eligible_yearly" = "7 天免费试用，之后 %@/年";
 "paywall_trial_duration_ineligible_monthly" = "%@/月";
 "paywall_trial_duration_ineligible_yearly" = "%@/年";
 "paywall_trial_duration_lifetime" = "%@ 一次性购买";
 "paywall_subscription_billing_note" = "月/年会员将自动续期，可随时在 App Store 设置中取消。终身会员为一次性购买。";
-"paywall_purchase_disclosure_trial_monthly" = "7 天免费试用，之后 %@/月，自动续订。可随时在 App Store 订阅设置中取消。";
-"paywall_purchase_disclosure_trial_yearly" = "7 天免费试用，之后 %@/年，自动续订。可随时在 App Store 订阅设置中取消。";
-"paywall_purchase_disclosure_paid_monthly" = "%@/月，自动续订。可随时在 App Store 订阅设置中取消。";
-"paywall_purchase_disclosure_paid_yearly" = "%@/年，自动续订。可随时在 App Store 订阅设置中取消。";
-"paywall_purchase_disclosure_lifetime" = "一次性购买，非订阅，不会自动续费。";
+"paywall_purchase_disclosure_trial" = "%@免费试用，之后 %@，自动续订。可随时在 App Store 订阅设置中取消。";
 
+"paywall_purchase_disclosure_paid" = "%@，自动续订。可随时在 App Store 订阅设置中取消。";
+
+"paywall_purchase_disclosure_lifetime" = "一次性购买，非订阅，不会自动续费。";
 
 /* Bookshelf Status */
 "bookshelf_status_not_started" = "未开始";

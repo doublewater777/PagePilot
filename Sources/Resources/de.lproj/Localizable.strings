@@ -92,7 +92,6 @@
 "error_out_of_space" = "Ihr Speicher ist voll. Bitte schaffen Sie Speicherplatz, um fortzufahren.";
 "error_read" = "Die Ressource konnte nicht gelesen werden.";
 
-
 /* MARK: Library */
 
 /* Hint message when the library is empty */
@@ -158,7 +157,6 @@
 "library_demo_book_message" = "\"%@\" ist ein simuliertes Demobuch und kann nicht zum Lesen geöffnet werden.";
 "library_all_books" = "Alle Bücher";
 
-
 /* MARK: Reader */
 
 /* Error message when adding a new bookmark failed */
@@ -221,7 +219,6 @@
 "reader_drm_return_message" = "Wenn Sie die Ausleihe zurückgeben, können Sie nicht mehr auf die Publikation zugreifen.";
 /* Success message after returning a publication */
 "reader_drm_return_success_message" = "Publikation erfolgreich zurückgegeben.";
-
 
 /* MARK: LCP */
 "lcp_type" = "Readium LCP";
@@ -435,21 +432,46 @@
 "paywall_trial_eligible_label" = "7 Tage kostenlos";
 "paywall_lifetime_sub" = "Einmaliger Kauf";
 "paywall_save_badge" = "16 % sparen";
-"paywall_buy_button_eligible" = "7-tägige kostenlose Testphase starten";
+"paywall_trial_duration_day" = "%d Tag";
+"paywall_trial_duration_days" = "%d Tage";
+"paywall_trial_duration_week" = "%d Woche";
+"paywall_trial_duration_weeks" = "%d Wochen";
+"paywall_trial_duration_month" = "%d Monat";
+"paywall_trial_duration_months" = "%d Monate";
+"paywall_trial_duration_year" = "%d Jahr";
+"paywall_trial_duration_years" = "%d Jahre";
+"paywall_trial_duration_day_title" = "%d-tägige";
+"paywall_trial_duration_days_title" = "%d-tägige";
+"paywall_trial_duration_week_title" = "%d-wöchige";
+"paywall_trial_duration_weeks_title" = "%d-wöchige";
+"paywall_trial_duration_month_title" = "%d-monatige";
+"paywall_trial_duration_months_title" = "%d-monatige";
+"paywall_trial_duration_year_title" = "%d-jährige";
+"paywall_trial_duration_years_title" = "%d-jährige";
+"paywall_billing_period_day" = "Tag";
+"paywall_billing_period_week" = "Woche";
+"paywall_billing_period_month" = "Monat";
+"paywall_billing_period_year" = "Jahr";
+"paywall_billing_period_days" = "Tage";
+"paywall_billing_period_weeks" = "Wochen";
+"paywall_billing_period_months" = "Monate";
+"paywall_billing_period_years" = "Jahre";
+"paywall_subscription_price_per_period" = "%1$@/%2$@";
+"paywall_subscription_price_every_period" = "%1$@ alle %2$d %3$@";
+"paywall_buy_button_eligible" = "%@ kostenlose Testphase starten";
 "paywall_buy_button_ineligible" = "Fortfahren";
 "paywall_buy_button_lifetime" = "Lebenslangen Zugriff freischalten";
-"paywall_trial_duration_eligible_monthly" = "7 Tage kostenlos, danach %@/Monat";
+"paywall_trial_duration_eligible_monthly" = "%@ kostenlos, danach %@";
 "paywall_trial_duration_eligible_yearly" = "7 Tage kostenlos, danach %@/Jahr";
 "paywall_trial_duration_ineligible_monthly" = "%@/Monat";
 "paywall_trial_duration_ineligible_yearly" = "%@/Jahr";
 "paywall_trial_duration_lifetime" = "%@ einmalig";
 "paywall_subscription_billing_note" = "Monats- und Jahrespläne verlängern sich automatisch und können in den App-Store-Einstellungen gekündigt werden. Der lebenslange Zugriff ist ein einmaliger Kauf.";
-"paywall_purchase_disclosure_trial_monthly" = "7 Tage kostenlos, danach %@/Monat. Verlängert sich automatisch, sofern nicht in den App-Store-Abo-Einstellungen gekündigt.";
-"paywall_purchase_disclosure_trial_yearly" = "7 Tage kostenlos, danach %@/Jahr. Verlängert sich automatisch, sofern nicht in den App-Store-Abo-Einstellungen gekündigt.";
-"paywall_purchase_disclosure_paid_monthly" = "%@/Monat. Verlängert sich automatisch, sofern nicht in den App-Store-Abo-Einstellungen gekündigt.";
-"paywall_purchase_disclosure_paid_yearly" = "%@/Jahr. Verlängert sich automatisch, sofern nicht in den App-Store-Abo-Einstellungen gekündigt.";
-"paywall_purchase_disclosure_lifetime" = "Einmaliger Kauf. Dies ist kein Abonnement und verlängert sich nicht.";
+"paywall_purchase_disclosure_trial" = "%@ kostenlos, danach %@. Verlängert sich automatisch, sofern nicht in den App-Store-Abo-Einstellungen gekündigt.";
 
+"paywall_purchase_disclosure_paid" = "%@. Verlängert sich automatisch, sofern nicht in den App-Store-Abo-Einstellungen gekündigt.";
+
+"paywall_purchase_disclosure_lifetime" = "Einmaliger Kauf. Dies ist kein Abonnement und verlängert sich nicht.";
 
 /* Bookshelf Status */
 "bookshelf_status_not_started" = "Nicht begonnen";

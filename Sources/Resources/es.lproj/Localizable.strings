@@ -92,7 +92,6 @@
 "error_out_of_space" = "Tu almacenamiento está lleno. Libere espacio para continuar.";
 "error_read" = "No se pudo leer el recurso.";
 
-
 /* MARK: Library */
 
 /* Hint message when the library is empty */
@@ -158,7 +157,6 @@
 "library_demo_book_message" = "\"%@\" es un libro de demostración simulado y no se puede abrir para leer.";
 "library_all_books" = "Todos los libros";
 
-
 /* MARK: Reader */
 
 /* Error message when adding a new bookmark failed */
@@ -221,7 +219,6 @@
 "reader_drm_return_message" = "La devolución del préstamo le impedirá acceder a la publicación.";
 /* Success message after returning a publication */
 "reader_drm_return_success_message" = "La publicación se devolvió exitosamente.";
-
 
 /* MARK: LCP */
 "lcp_type" = "Readio LCP";
@@ -435,21 +432,46 @@
 "paywall_trial_eligible_label" = "7 días gratis";
 "paywall_lifetime_sub" = "Compra única";
 "paywall_save_badge" = "Ahorra 16%";
-"paywall_buy_button_eligible" = "Empieza la prueba gratuita de 7 días";
+"paywall_trial_duration_day" = "%d día";
+"paywall_trial_duration_days" = "%d días";
+"paywall_trial_duration_week" = "%d semana";
+"paywall_trial_duration_weeks" = "%d semanas";
+"paywall_trial_duration_month" = "%d mes";
+"paywall_trial_duration_months" = "%d meses";
+"paywall_trial_duration_year" = "%d año";
+"paywall_trial_duration_years" = "%d años";
+"paywall_trial_duration_day_title" = "%d día";
+"paywall_trial_duration_days_title" = "%d días";
+"paywall_trial_duration_week_title" = "%d semana";
+"paywall_trial_duration_weeks_title" = "%d semanas";
+"paywall_trial_duration_month_title" = "%d mes";
+"paywall_trial_duration_months_title" = "%d meses";
+"paywall_trial_duration_year_title" = "%d año";
+"paywall_trial_duration_years_title" = "%d años";
+"paywall_billing_period_day" = "día";
+"paywall_billing_period_week" = "semana";
+"paywall_billing_period_month" = "mes";
+"paywall_billing_period_year" = "año";
+"paywall_billing_period_days" = "días";
+"paywall_billing_period_weeks" = "semanas";
+"paywall_billing_period_months" = "meses";
+"paywall_billing_period_years" = "años";
+"paywall_subscription_price_per_period" = "%1$@/%2$@";
+"paywall_subscription_price_every_period" = "%1$@ cada %2$d %3$@";
+"paywall_buy_button_eligible" = "Empieza la prueba gratuita de %@";
 "paywall_buy_button_ineligible" = "Continuar";
 "paywall_buy_button_lifetime" = "Desbloquear de por vida";
-"paywall_trial_duration_eligible_monthly" = "7 días gratis, luego %@/mes";
+"paywall_trial_duration_eligible_monthly" = "%@ gratis, luego %@";
 "paywall_trial_duration_eligible_yearly" = "7 días gratis, luego %@/año";
 "paywall_trial_duration_ineligible_monthly" = "%@/mes";
 "paywall_trial_duration_ineligible_yearly" = "%@/año";
 "paywall_trial_duration_lifetime" = "%@ una vez";
 "paywall_subscription_billing_note" = "Los planes mensuales y anuales se renuevan automáticamente y se pueden cancelar en la configuración de la App Store. La vida es una compra única.";
-"paywall_purchase_disclosure_trial_monthly" = "Prueba gratuita de 7 días, luego %@/mes. Se renueva automáticamente salvo cancelación en los ajustes de suscripción de App Store.";
-"paywall_purchase_disclosure_trial_yearly" = "Prueba gratuita de 7 días, luego %@/año. Se renueva automáticamente salvo cancelación en los ajustes de suscripción de App Store.";
-"paywall_purchase_disclosure_paid_monthly" = "%@/mes. Se renueva automáticamente salvo cancelación en los ajustes de suscripción de App Store.";
-"paywall_purchase_disclosure_paid_yearly" = "%@/año. Se renueva automáticamente salvo cancelación en los ajustes de suscripción de App Store.";
-"paywall_purchase_disclosure_lifetime" = "Compra única. No es una suscripción y no se renueva.";
+"paywall_purchase_disclosure_trial" = "Prueba gratuita de %@, luego %@. Se renueva automáticamente salvo cancelación en los ajustes de suscripción de App Store.";
 
+"paywall_purchase_disclosure_paid" = "%@. Se renueva automáticamente salvo cancelación en los ajustes de suscripción de App Store.";
+
+"paywall_purchase_disclosure_lifetime" = "Compra única. No es una suscripción y no se renueva.";
 
 /* Bookshelf Status */
 "bookshelf_status_not_started" = "No iniciado";
