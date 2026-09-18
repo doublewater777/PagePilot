@@ -467,7 +467,7 @@
 "paywall_trial_duration_ineligible_yearly" = "%@/年";
 "paywall_trial_duration_lifetime" = "%@ 一次性购买";
 "paywall_subscription_billing_note" = "月/年会员将自动续期，可随时在 App Store 设置中取消。终身会员为一次性购买。";
-"paywall_purchase_disclosure_trial" = "%@免费试用，之后%@，自动续订。可随时在 App Store 订阅设置中取消。";
+"paywall_purchase_disclosure_trial" = "%@免费试用，之后 %@，自动续订。可随时在 App Store 订阅设置中取消。";
 
 "paywall_purchase_disclosure_paid" = "%@，自动续订。可随时在 App Store 订阅设置中取消。";
 
