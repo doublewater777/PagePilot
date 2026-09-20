@@ -197,7 +197,8 @@ final class ReadingSessionRepositoryTests: XCTestCase {
 
         try await books.remove(bookId)
 
-        XCTAssertTrue(try await sessions.recent(for: bookId, limit: 10).isEmpty)
+        let remainingSessions = try await sessions.recent(for: bookId, limit: 10)
+        XCTAssertTrue(remainingSessions.isEmpty)
     }
 
     func testReadingHistoryAccessMatchesStatsEntitlement() {
