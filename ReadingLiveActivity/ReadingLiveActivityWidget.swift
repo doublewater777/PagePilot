@@ -5,6 +5,7 @@
 //
 
 import ActivityKit
+import AppIntents
 import SwiftUI
 import WidgetKit
 
@@ -118,9 +119,14 @@ private struct ReadingLiveActivityAdaptiveContent: View {
                     .font(.caption)
                     .fontWeight(.semibold)
                     .lineLimit(1)
+
+                Spacer(minLength: 2)
+
+                ReadingElapsedTime(startedAt: context.attributes.startedAt)
+                    .font(.caption2)
             }
 
-            HStack(alignment: .firstTextBaseline, spacing: 6) {
+            HStack(spacing: 7) {
                 Text(percentText(context.state.progression))
                     .font(.title3)
                     .fontWeight(.bold)
@@ -128,8 +134,19 @@ private struct ReadingLiveActivityAdaptiveContent: View {
 
                 Spacer(minLength: 2)
 
-                ReadingElapsedTime(startedAt: context.attributes.startedAt)
-                    .font(.caption2)
+                Button(intent: ReadingPreviousPageIntent()) {
+                    Image(systemName: "chevron.left")
+                        .frame(width: 28, height: 24)
+                }
+                .buttonStyle(.bordered)
+                .accessibilityLabel("Previous Page")
+
+                Button(intent: ReadingNextPageIntent()) {
+                    Image(systemName: "chevron.right")
+                        .frame(width: 28, height: 24)
+                }
+                .buttonStyle(.bordered)
+                .accessibilityLabel("Next Page")
             }
 
             ProgressView(value: clamped(context.state.progression))
