@@ -558,7 +558,7 @@ class ReaderViewController<N: Navigator>: UIViewController,
         }
 
         if let summary {
-            ReaderSessionSummaryPresenter.present(summary, after: self)
+            ReadingSessionSummaryPresenter.present(summary, after: self)
         }
     }
 
