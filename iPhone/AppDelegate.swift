@@ -43,6 +43,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             print("Failed to initialize AppModule: \(error)")
         }
 
+        // Listen before activating transport so a LiveActivityIntent that
+        // wakes this process can immediately hand its page-turn request to the
+        // existing Reader / iPad relay pipeline.
+        observeReadingLiveActivityPageTurnRequests()
+
         // Activate Watch connectivity early so the session state is always
         // current, even before the reader is opened.
         WatchPageTurnService.shared.activate()
@@ -86,6 +91,22 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             await service.cleanOrphanedFiles()
             application.endBackgroundTask(taskID)
         }
+    }
+
+    private func observeReadingLiveActivityPageTurnRequests() {
+        NotificationCenter.default.publisher(for: .readingLiveActivityPageTurnRequested)
+            .receive(on: RunLoop.main)
+            .compactMap { $0.object as? ReadingLiveActivityPageTurnRequest }
+            .sink { request in
+                guard let command = PageCommand(rawValue: request.direction.rawValue) else {
+                    return
+                }
+                WatchPageTurnService.shared.handleLiveActivityPageTurn(
+                    command,
+                    commandID: request.commandID
+                )
+            }
+            .store(in: &subscriptions)
     }
 
     /// Configures the shared `AVAudioSession` so that audio features (audiobook
