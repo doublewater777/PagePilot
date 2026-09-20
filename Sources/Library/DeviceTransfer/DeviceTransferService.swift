@@ -74,6 +74,16 @@ final class DeviceTransferService: NSObject, ObservableObject {
             }
         )
 
+        // POST /pair — bootstrap a shared secret while Receive mode is explicitly active.
+        webServer.addHandler(
+            forMethod: "POST",
+            path: "/pair",
+            request: ReadiumGCDWebServerDataRequest.self,
+            processBlock: { [weak self] request in
+                self?.handlePairing(request: request)
+            }
+        )
+
         // POST /receive — accepts a single book file
         webServer.addHandler(
             forMethod: "POST",
@@ -143,6 +153,15 @@ final class DeviceTransferService: NSObject, ObservableObject {
     /// Sends a single book file to the given peer.
     /// Returns the number of bytes sent, or throws on failure.
     func sendBook(at fileURL: URL, to peer: TransferPeer, progress: @escaping (Double) -> Void) async throws {
+        do {
+            try await LANPairingManager.shared.ensurePaired(
+                with: peer.endpoint,
+                discoveryID: peer.id
+            )
+        } catch {
+            throw DeviceTransferError.sendFailed
+        }
+
         let filename = fileURL.lastPathComponent
 
         var request = URLRequest(url: peer.endpoint.appendingPathComponent("receive"))
@@ -160,6 +179,26 @@ final class DeviceTransferService: NSObject, ObservableObject {
     }
 
     // MARK: - Incoming file handler
+
+    private func handlePairing(request: ReadiumGCDWebServerRequest?) -> ReadiumGCDWebServerResponse? {
+        guard let dataRequest = request as? ReadiumGCDWebServerDataRequest else {
+            return errorResponse(message: "Invalid pairing request", status: 400)
+        }
+
+        do {
+            let responseData = try LANPairingManager.shared.acceptOffer(dataRequest.data)
+            return ReadiumGCDWebServerDataResponse(
+                data: responseData,
+                contentType: "application/json"
+            )
+        } catch LANPairingError.alreadyPaired {
+            NSLog("[Security][LAN] pairing rejected because peer is already paired")
+            return errorResponse(message: "Peer is already paired", status: 409)
+        } catch {
+            NSLog("[Security][LAN] invalid pairing request rejected")
+            return errorResponse(message: "Invalid pairing request", status: 400)
+        }
+    }
 
     private func handleIncomingFile(request: ReadiumGCDWebServerRequest?) -> ReadiumGCDWebServerResponse? {
         guard let dataRequest = request as? ReadiumGCDWebServerDataRequest,
