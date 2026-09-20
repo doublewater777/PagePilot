@@ -925,6 +925,26 @@ final class WatchPageTurnService: NSObject, ObservableObject {
         }
     }
 
+    /// Handles page turns requested from the interactive Reading Live Activity.
+    /// The intent runs in the containing app process without presenting UI, so
+    /// reuse the same local Reader and Pro iPad relay paths as the Watch remote.
+    func handleLiveActivityPageTurn(_ command: PageCommand, commandID: String) {
+        if UIDevice.current.userInterfaceIdiom == .phone {
+            // Match the Watch remote's automatic fan-out behavior: an active
+            // iPhone Reader turns locally, while Pro may also reach a nearby
+            // active iPad Reader. Each route decides readiness independently.
+            handleCommand(command)
+
+            if ProPurchaseManager.shared.hasProAccess {
+                PagePilotLANBrowser.shared.warmUp()
+                relayCommandToLAN(command, requestID: commandID)
+            }
+            return
+        }
+
+        handleCommand(command)
+    }
+
     private func handleCommand(_ command: PageCommand, completion: (([String: Any]) -> Void)? = nil) {
         Task { @MainActor in
             guard !self.isPageTurnSuppressed else {
