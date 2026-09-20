@@ -1806,6 +1806,12 @@ private enum ReadingHistoryLoadState {
     case failed
 }
 
+@ViewBuilder
+func readingHistoryDestination(book: Book?) -> some View {
+    ReadingHistoryView(book: book)
+}
+
+
 private struct ReadingHistoryView: View {
     @Environment(\.colorScheme) private var colorScheme
     @ObservedObject private var proPurchase = ProPurchaseManager.shared
