@@ -108,7 +108,6 @@ struct ReaderSessionLifecycle {
     }
 }
 
-
 struct ReadingSessionSummary: Equatable {
     enum DailyGoalFeedback: Equatable {
         case remaining(minutes: Int)
