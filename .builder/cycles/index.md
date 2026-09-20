@@ -2,6 +2,7 @@
 
 | Cycle | Feature | Status | Linked Stage | Gate | Decision | Follow-up |
 | --- | --- | --- | --- | --- | --- | --- |
+| 2026-09-20-watch-workout-page-turn | Workout-compatible Watch page turning | active | 01-hypothesis | pending | add Workout guidance and interactive Smart Stack page turns using the existing Reader routes | verify CI and paired-device Workout behavior |
 | 2026-09-16-paywall-trial-disclosure | Paywall trial price auto-renew disclosure | active | 10-growth-channel | pending | show trial length, post-trial price, and auto-renew beside the subscribe CTA | resubmit after App Review |
 | 2026-06-06-app-store-approval-launch | App Store approval launch distribution | active | 10-growth-channel | weak_pass | distribute first launch copy, then measure channel response | fill results.md after posts |
 | 2026-07-19-onboarding-import-sources | Onboarding import sources | completed | 01-hypothesis | pass | expose Files, Wi-Fi, and OPDS without delaying permission prompts | watch for source-choice friction in user feedback |
