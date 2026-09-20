@@ -974,3 +974,9 @@
 "onboarding_tour_page3_chip1" = "Sincronización";
 "onboarding_tour_page3_chip2" = "iPhone e iPad";
 "onboarding_tour_page3_chip3" = "CloudKit privado";
+
+/* MARK: Watch Workout Compatibility */
+"watch_workout_section" = "Compatibilidad con entrenos";
+"watch_workout_title" = "Mantén PagePilot disponible durante el entrenamiento";
+"watch_workout_detail" = "En el Apple Watch, abre Ajustes → General → Volver al reloj → Entreno y desactiva Volver a la app. El entrenamiento seguirá registrándose.";
+"watch_workout_footer" = "También puedes establecer el tiempo de Volver al reloj de PagePilot en 1 hora para reducir interrupciones.";
