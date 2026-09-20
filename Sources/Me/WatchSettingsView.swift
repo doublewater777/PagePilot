@@ -21,6 +21,7 @@ struct WatchSettingsView: View {
     var body: some View {
         List {
             watchStatusSection
+            workoutCompatibilitySection
             doubleTapSection
         }
         .listStyle(.insetGrouped)
@@ -89,6 +90,25 @@ struct WatchSettingsView: View {
             return "onboarding_watch_open_detail"
         case .ready:
             return "onboarding_watch_ready_detail"
+        }
+    }
+
+    // MARK: - Workout Compatibility
+
+    private var workoutCompatibilitySection: some View {
+        Section(
+            header: Text(NSLocalizedString("watch_workout_section", comment: "")),
+            footer: Text(NSLocalizedString("watch_workout_footer", comment: ""))
+        ) {
+            Label(
+                NSLocalizedString("watch_workout_title", comment: ""),
+                systemImage: "figure.run"
+            )
+
+            Text(NSLocalizedString("watch_workout_detail", comment: ""))
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
