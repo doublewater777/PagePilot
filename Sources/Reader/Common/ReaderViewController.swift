@@ -178,7 +178,11 @@ enum ReadingSessionSummaryLayoutPolicy {
 final class ReadingSessionSummaryViewController: UIViewController {
 
     let summary: ReadingSessionSummary
+    var onHistoryRequested: (() -> Void)?
+    var onPredictionRequested: (() -> Void)?
     private(set) var contentStack = UIStackView()
+    private(set) var historyButton = UIButton(type: .system)
+    private(set) var predictionButton = UIButton(type: .system)
     private(set) var dismissButton = UIButton(type: .system)
 
     init(summary: ReadingSessionSummary) {
@@ -266,6 +270,20 @@ final class ReadingSessionSummaryViewController: UIViewController {
             contentStack.addArrangedSubview(goalLabel)
         }
 
+        historyButton = makeInsightButton(
+            title: NSLocalizedString("reader_session_summary_history_action", comment: ""),
+            action: #selector(openHistory),
+            accessibilityIdentifier: "readingSessionSummary.history"
+        )
+        contentStack.addArrangedSubview(historyButton)
+
+        predictionButton = makeInsightButton(
+            title: NSLocalizedString("reader_session_summary_prediction_action", comment: ""),
+            action: #selector(openPrediction),
+            accessibilityIdentifier: "readingSessionSummary.prediction"
+        )
+        contentStack.addArrangedSubview(predictionButton)
+
         var buttonConfiguration = UIButton.Configuration.filled()
         buttonConfiguration.title = NSLocalizedString("reader_session_summary_done", comment: "")
         buttonConfiguration.buttonSize = .large
@@ -295,6 +313,21 @@ final class ReadingSessionSummaryViewController: UIViewController {
             ),
             fillWidth,
         ])
+    }
+
+    private func makeInsightButton(
+        title: String,
+        action: Selector,
+        accessibilityIdentifier: String
+    ) -> UIButton {
+        var configuration = UIButton.Configuration.tinted()
+        configuration.title = title
+        configuration.buttonSize = .large
+
+        let button = UIButton(configuration: configuration)
+        button.addTarget(self, action: action, for: .touchUpInside)
+        button.accessibilityIdentifier = accessibilityIdentifier
+        return button
     }
 
     private func makeLabel(text: String, textStyle: UIFont.TextStyle) -> UILabel {
@@ -345,13 +378,42 @@ final class ReadingSessionSummaryViewController: UIViewController {
             ?? "\(Int((progression * 100).rounded()))%"
     }
 
+    @objc private func openHistory() {
+        onHistoryRequested?()
+    }
+
+    @objc private func openPrediction() {
+        onPredictionRequested?()
+    }
+
     @objc private func dismissSummary() {
         dismiss(animated: true)
     }
 }
 
+private struct ReadingSessionInsightSheet: View {
+    @Environment(\.dismiss) private var dismiss
+
+    let book: Book?
+
+    var body: some View {
+        NavigationStack {
+            ReadingHistoryView(book: book)
+                .toolbar {
+                    ToolbarItem(placement: .topBarLeading) {
+                        SheetCloseButton { dismiss() }
+                    }
+                }
+        }
+    }
+}
+
 enum ReadingSessionSummaryPresenter {
-    static func present(_ summary: ReadingSessionSummary, after reader: UIViewController) {
+    static func present(
+        _ summary: ReadingSessionSummary,
+        bookId: Book.Id,
+        after reader: UIViewController
+    ) {
         guard let navigationController = reader.navigationController else { return }
 
         // A completed pop can release the Reader before this deferred block
@@ -367,6 +429,33 @@ enum ReadingSessionSummaryPresenter {
             }
 
             let summaryViewController = ReadingSessionSummaryViewController(summary: summary)
+            summaryViewController.onHistoryRequested = { [weak summaryViewController, weak host] in
+                Analytics.shared.log(.readingSessionInsightIntent(
+                    destination: .history,
+                    source: .sessionSummary
+                ))
+                summaryViewController?.dismiss(animated: true) { [weak host] in
+                    guard let host else { return }
+                    presentInsight(book: nil, from: host)
+                }
+            }
+            summaryViewController.onPredictionRequested = { [weak summaryViewController, weak host] in
+                Analytics.shared.log(.readingSessionInsightIntent(
+                    destination: .prediction,
+                    source: .sessionSummary
+                ))
+                summaryViewController?.dismiss(animated: true) { [weak host] in
+                    guard let host,
+                          let books = AppModule.shared?.books else {
+                        return
+                    }
+                    Task { @MainActor in
+                        guard let book = try? await books.get(bookId) else { return }
+                        presentInsight(book: book, from: host)
+                    }
+                }
+            }
+
             if let sheet = summaryViewController.sheetPresentationController {
                 sheet.detents = [.medium()]
                 sheet.prefersGrabberVisible = true
@@ -382,6 +471,21 @@ enum ReadingSessionSummaryPresenter {
         } else {
             DispatchQueue.main.async(execute: presentationBlock)
         }
+    }
+
+    @MainActor
+    private static func presentInsight(book: Book?, from host: UIViewController) {
+        guard host.presentedViewController == nil else { return }
+
+        let viewController = UIHostingController(
+            rootView: ReadingSessionInsightSheet(book: book)
+        )
+        viewController.modalPresentationStyle = .pageSheet
+        if let sheet = viewController.sheetPresentationController {
+            sheet.detents = [.large()]
+            sheet.prefersGrabberVisible = true
+        }
+        host.present(viewController, animated: true)
     }
 }
 
@@ -574,7 +678,11 @@ class ReaderViewController<N: Navigator>: UIViewController,
         }
 
         if let summary {
-            ReadingSessionSummaryPresenter.present(summary, after: self)
+            ReadingSessionSummaryPresenter.present(
+                summary,
+                bookId: finishedSession.bookId,
+                after: self
+            )
         }
     }
 
