@@ -974,3 +974,9 @@
 "onboarding_tour_page3_chip1" = "Auto Sync";
 "onboarding_tour_page3_chip2" = "iPhone & iPad";
 "onboarding_tour_page3_chip3" = "Private CloudKit";
+
+/* MARK: Watch Workout Compatibility */
+"watch_workout_section" = "Workout Compatibility";
+"watch_workout_title" = "Keep PagePilot available during workouts";
+"watch_workout_detail" = "On Apple Watch, open Settings → General → Return to Clock → Workout, then turn off Return to App. Your workout keeps recording.";
+"watch_workout_footer" = "You can also set PagePilot's Return to Clock duration to 1 hour for fewer interruptions.";
