@@ -277,6 +277,18 @@ enum LANAuthenticationHeaders {
     static let signature = "X-PagePilot-Signature"
 }
 
+enum LANAuthenticationDecision: Equatable {
+    case authorized(peerDeviceID: String)
+    case unauthorized(LANAuthenticationFailure)
+
+    var statusCode: Int {
+        switch self {
+        case .authorized: return 200
+        case .unauthorized: return 401
+        }
+    }
+}
+
 enum LANAuthenticationFailure: Error, Equatable {
     case missingHeader(String)
     case invalidTimestamp
@@ -426,26 +438,27 @@ final class LANRequestAuthenticator {
         return .success(deviceID)
     }
 
-    @discardableResult
-    func authenticateOrLog(
+    func authorize(
         method: String,
         path: String,
         body: Data?,
         headers: [String: String],
         remoteAddress: String?,
         now: Date = Date()
-    ) -> Result<String, LANAuthenticationFailure> {
-        let result = authenticate(
+    ) -> LANAuthenticationDecision {
+        switch authenticate(
             method: method,
             path: path,
             body: body,
             headers: headers,
             now: now
-        )
-        if case .failure(let failure) = result {
+        ) {
+        case .success(let peerDeviceID):
+            return .authorized(peerDeviceID: peerDeviceID)
+        case .failure(let failure):
             LANSecurityLogger.authenticationFailure(failure, remoteAddress: remoteAddress)
+            return .unauthorized(failure)
         }
-        return result
     }
 
     private static func signature(
