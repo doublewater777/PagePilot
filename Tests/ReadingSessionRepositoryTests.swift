@@ -41,7 +41,8 @@ final class ReadingSessionRepositoryTests: XCTestCase {
 
         _ = try await sessions.add(session)
 
-        let stored = try XCTUnwrap(try await sessions.recent(limit: 1).first)
+        let recentSessions = try await sessions.recent(limit: 1)
+        let stored = try XCTUnwrap(recentSessions.first)
         XCTAssertEqual(stored.bookId, bookId)
         XCTAssertEqual(stored.durationSeconds, 125)
         XCTAssertEqual(stored.startProgression, 0.2, accuracy: 0.0001)
@@ -129,7 +130,8 @@ final class ReadingSessionRepositoryTests: XCTestCase {
         )
 
         XCTAssertNil(id)
-        XCTAssertEqual(try await sessions.count(), 0)
+        let sessionCount = try await sessions.count()
+        XCTAssertEqual(sessionCount, 0)
     }
 
     func testDeletingBookCascadesReadingSessions() async throws {
@@ -146,11 +148,13 @@ final class ReadingSessionRepositoryTests: XCTestCase {
                 watchPageTurns: 4
             )
         )
-        XCTAssertEqual(try await sessions.count(), 1)
+        let countBeforeDeletion = try await sessions.count()
+        XCTAssertEqual(countBeforeDeletion, 1)
 
         try await books.remove(bookId)
 
-        XCTAssertEqual(try await sessions.count(), 0)
+        let countAfterDeletion = try await sessions.count()
+        XCTAssertEqual(countAfterDeletion, 0)
     }
 
     private func addBook(title: String) async throws -> Book.Id {
