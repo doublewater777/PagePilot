@@ -4,6 +4,26 @@ import XCTest
 
 @MainActor
 final class ReadingLiveActivityCoordinatorTests: XCTestCase {
+    func testLiveActivityPageTurnIntentsMapToExistingPageCommands() {
+        XCTAssertEqual(
+            ReadingPreviousPageIntent.direction.rawValue,
+            PageCommand.prev.rawValue
+        )
+        XCTAssertEqual(
+            ReadingNextPageIntent.direction.rawValue,
+            PageCommand.next.rawValue
+        )
+    }
+
+    func testLiveActivityPageTurnRequestsUseUniqueCommandIdentifiers() {
+        let first = ReadingLiveActivityPageTurnRequest(direction: .next)
+        let second = ReadingLiveActivityPageTurnRequest(direction: .next)
+
+        XCTAssertFalse(first.commandID.isEmpty)
+        XCTAssertFalse(second.commandID.isEmpty)
+        XCTAssertNotEqual(first.commandID, second.commandID)
+    }
+
     func testStartsOneActivityWithCurrentReadingState() async {
         let client = FakeReadingLiveActivityClient()
         let coordinator = ReadingLiveActivityCoordinator(client: client)
