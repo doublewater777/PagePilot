@@ -931,6 +931,7 @@ final class WatchPageTurnService: NSObject, ObservableObject {
         }
     }
 
+    @MainActor
     private func recordSuccessfulWatchPageTurn(origin: WatchPageTurnOrigin) {
         ReviewPromptManager.shared.recordWatchPageTurn()
         NotificationCenter.default.post(
