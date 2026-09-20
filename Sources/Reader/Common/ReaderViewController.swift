@@ -354,11 +354,14 @@ enum ReadingSessionSummaryPresenter {
     static func present(_ summary: ReadingSessionSummary, after reader: UIViewController) {
         guard let navigationController = reader.navigationController else { return }
 
-        let presentationBlock: () -> Void = { [weak navigationController, weak reader] in
+        // A completed pop can release the Reader before this deferred block
+        // runs. Keep only its identity so presentation does not depend on the
+        // popped Reader still being alive.
+        let readerIdentifier = ObjectIdentifier(reader)
+        let presentationBlock: () -> Void = { [weak navigationController] in
             guard let navigationController,
-                  let reader,
                   let host = navigationController.topViewController,
-                  host !== reader,
+                  ObjectIdentifier(host) != readerIdentifier,
                   host.presentedViewController == nil else {
                 return
             }
