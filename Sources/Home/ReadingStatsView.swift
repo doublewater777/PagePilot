@@ -1806,7 +1806,7 @@ private enum ReadingHistoryLoadState {
     case failed
 }
 
-struct ReadingHistoryView: View {
+private struct ReadingHistoryView: View {
     @Environment(\.colorScheme) private var colorScheme
     @ObservedObject private var proPurchase = ProPurchaseManager.shared
     @State private var state: ReadingHistoryLoadState = .loading
