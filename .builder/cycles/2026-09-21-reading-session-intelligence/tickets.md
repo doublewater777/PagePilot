@@ -2,6 +2,8 @@
 
 ## RS-1 — Persist detailed ReadingSession history
 
+GitHub: #59
+
 **Status:** implementation in PR #57.
 
 ### Scope
@@ -25,6 +27,8 @@
 
 ## RS-2 — Harden session lifecycle and measurement
 
+GitHub: #60
+
 **Depends on:** RS-1.
 
 ### Scope
@@ -45,6 +49,8 @@
 ---
 
 ## RS-3 — Add post-session Summary
+
+GitHub: #61
 
 **Depends on:** RS-1, RS-2.
 
@@ -68,6 +74,8 @@
 
 ## RS-4 — Add Reading History
 
+GitHub: #62
+
 **Depends on:** RS-1.
 
 ### Scope
@@ -88,6 +96,8 @@
 ---
 
 ## RS-5 — Add reading pace and finish prediction
+
+GitHub: #63
 
 **Depends on:** RS-1, RS-4.
 
@@ -111,6 +121,8 @@
 
 ## RS-6 — Sync ReadingSession history with iCloud
 
+GitHub: #64
+
 **Depends on:** RS-1; should follow product validation of history.
 
 ### Scope
@@ -131,6 +143,8 @@
 ---
 
 ## RS-7 — Contextual Pro conversion and product measurement
+
+GitHub: #65
 
 **Depends on:** RS-3, RS-4, RS-5.
 
