@@ -152,6 +152,8 @@ struct ReadingStatsView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .frame(maxWidth: 680)
+        .frame(maxWidth: .infinity, alignment: .center)
     }
 
     private var scopeSelector: some View {
