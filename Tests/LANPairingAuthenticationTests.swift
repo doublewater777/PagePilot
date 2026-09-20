@@ -144,6 +144,25 @@ final class LANPairingAuthenticationTests: XCTestCase {
         )
     }
 
+    func testAuthorizationMiddlewareReturns401ForUnauthenticatedPeer() {
+        let receiverStore = InMemoryPairingStore(deviceID: "ipad")
+        let receiver = LANRequestAuthenticator(credentials: receiverStore)
+
+        let decision = receiver.authorize(
+            method: "GET",
+            path: "/status",
+            body: nil,
+            headers: [:],
+            remoteAddress: "192.0.2.10"
+        )
+
+        XCTAssertEqual(
+            decision,
+            .unauthorized(.missingHeader(LANAuthenticationHeaders.deviceID))
+        )
+        XCTAssertEqual(decision.statusCode, 401)
+    }
+
     func testExpiredTimestampIsRejectedBeforeNonceConsumption() throws {
         let secret = Data(repeating: 0x22, count: 32)
         let senderStore = InMemoryPairingStore(deviceID: "iphone")
