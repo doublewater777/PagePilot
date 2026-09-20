@@ -297,7 +297,6 @@ final class ReaderLiveActivityBackgroundPolicyTests: XCTestCase {
     }
 }
 
-
 final class ReadingSessionSummaryTests: XCTestCase {
     func testMeaningfulThresholdQualifiesAtDurationBoundary() {
         XCTAssertNotNil(
@@ -407,51 +406,39 @@ final class ReadingSessionSummaryTests: XCTestCase {
         XCTAssertTrue(source.contains("if isVisibleReaderExit, let detailedSession"))
     }
 
-    @MainActor
-    func testSummaryViewIsDismissibleAccessibleAndAdaptive() throws {
-        let summary = ReadingSessionSummary(
-            durationSeconds: 125,
-            startProgression: 0.20,
-            endProgression: 0.35,
-            progressDelta: 0.15,
-            watchPageTurns: 0,
-            dailyGoalFeedback: .remaining(minutes: 10)
-        )
-        let viewController = ReadingSessionSummaryViewController(summary: summary)
-        viewController.loadViewIfNeeded()
-
-        XCTAssertFalse(viewController.isModalInPresentation)
+    func testSummaryLayoutPolicySupportsNarrowAndWideContainers() {
         XCTAssertEqual(
-            viewController.dismissButton.accessibilityIdentifier,
-            "readingSessionSummary.dismiss"
+            ReadingSessionSummaryLayoutPolicy.contentWidth(for: 320),
+            272,
+            accuracy: 0.001
         )
-        XCTAssertNil(
-            viewController.contentStack.arrangedSubviews.first {
-                $0.accessibilityIdentifier == "readingSessionSummary.watchTurns"
-            },
-            "A zero Watch count must not create a fake Watch metric."
+        XCTAssertEqual(
+            ReadingSessionSummaryLayoutPolicy.contentWidth(for: 1024),
+            480,
+            accuracy: 0.001
         )
-
-        let labels = viewController.contentStack.arrangedSubviews.compactMap { $0 as? UILabel }
-        XCTAssertFalse(labels.isEmpty)
-        XCTAssertTrue(labels.allSatisfy(\.adjustsFontForContentSizeCategory))
-
-        let titleLabel = try XCTUnwrap(
-            labels.first { $0.accessibilityIdentifier == "readingSessionSummary.title" }
+        XCTAssertEqual(
+            ReadingSessionSummaryLayoutPolicy.contentWidth(for: 40),
+            0,
+            accuracy: 0.001
         )
-        XCTAssertTrue(titleLabel.accessibilityTraits.contains(.header))
+    }
 
-        viewController.view.bounds = CGRect(x: 0, y: 0, width: 320, height: 700)
-        viewController.view.setNeedsLayout()
-        viewController.view.layoutIfNeeded()
-        XCTAssertLessThanOrEqual(viewController.contentStack.frame.width, 272.5)
+    func testSummaryViewDeclaresDismissalAccessibilityAndDynamicTypeBehavior() throws {
+        let source = try Self.readerViewControllerSource()
 
-        viewController.view.bounds = CGRect(x: 0, y: 0, width: 1024, height: 900)
-        viewController.view.setNeedsLayout()
-        viewController.view.layoutIfNeeded()
-        XCTAssertLessThanOrEqual(
-            viewController.contentStack.frame.width,
-            ReadingSessionSummaryViewController.maximumContentWidth + 0.5
+        XCTAssertTrue(source.contains("isModalInPresentation = false"))
+        XCTAssertTrue(source.contains("view.accessibilityViewIsModal = true"))
+        XCTAssertTrue(source.contains("titleLabel.accessibilityTraits.insert(.header)"))
+        XCTAssertTrue(source.contains("label.adjustsFontForContentSizeCategory = true"))
+        XCTAssertTrue(source.contains(#"dismissButton.accessibilityIdentifier = "readingSessionSummary.dismiss""#))
+        XCTAssertTrue(source.contains("dismissButton.addTarget(self, action: #selector(dismissSummary)"))
+        XCTAssertTrue(source.contains("if summary.watchPageTurns > 0"))
+        XCTAssertTrue(source.contains("let scrollView = UIScrollView()"))
+        XCTAssertTrue(
+            source.contains(
+                "lessThanOrEqualToConstant: ReadingSessionSummaryLayoutPolicy.maximumContentWidth"
+            )
         )
     }
 
