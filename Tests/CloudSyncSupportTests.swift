@@ -285,7 +285,7 @@ final class CloudSyncSupportTests: XCTestCase {
         })
     }
 
-    func testReadingSessionOutboxDoesNotDisplaceExistingBookAndProgressChanges() async throws {
+    func testReadingSessionOutboxDoesNotRegressExistingRecordTypes() async throws {
         let context = try makeCloudSyncTestContext()
         defer { try? FileManager.default.removeItem(at: context.directory) }
 
@@ -297,6 +297,22 @@ final class CloudSyncSupportTests: XCTestCase {
                 type: "application/epub+zip",
                 url: AnyURL(string: "dirty.epub")!,
                 syncID: "book-dirty"
+            )
+        )
+        let locator = Locator(
+            href: AnyURL(string: "chapter.xhtml")!,
+            mediaType: .xhtml,
+            locations: .init(progression: 0.25, totalProgression: 0.25)
+        )
+        _ = try await BookmarkRepository(db: context.db).add(
+            Bookmark(bookId: bookID, locator: locator, syncID: "bookmark-dirty")
+        )
+        _ = try await HighlightRepository(db: context.db).add(
+            Highlight(
+                bookId: bookID,
+                locator: locator,
+                color: .yellow,
+                syncID: "highlight-dirty"
             )
         )
         let startedAt = Date(timeIntervalSince1970: 5_000)
@@ -315,6 +331,8 @@ final class CloudSyncSupportTests: XCTestCase {
         let changes = try await context.store.pendingChanges(limit: 20)
         XCTAssertTrue(changes.contains { $0.recordType == .book })
         XCTAssertTrue(changes.contains { $0.recordType == .progress })
+        XCTAssertTrue(changes.contains { $0.recordType == .bookmark })
+        XCTAssertTrue(changes.contains { $0.recordType == .highlight })
         XCTAssertTrue(changes.contains { $0.recordType == .readingSession })
     }
 
