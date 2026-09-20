@@ -974,3 +974,9 @@
 "onboarding_tour_page3_chip1" = "实时云同步";
 "onboarding_tour_page3_chip2" = "iPhone · iPad";
 "onboarding_tour_page3_chip3" = "私人 CloudKit";
+
+/* MARK: Watch Workout Compatibility */
+"watch_workout_section" = "体能训练兼容";
+"watch_workout_title" = "训练时保持 PagePilot 可用";
+"watch_workout_detail" = "在 Apple Watch 上打开“设置 → 通用 → 返回时钟 → 体能训练”，然后关闭“返回 App”。体能训练仍会继续记录。";
+"watch_workout_footer" = "你也可以把 PagePilot 的“返回时钟”时间设为 1 小时，减少阅读被打断。";
