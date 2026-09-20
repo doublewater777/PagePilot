@@ -166,8 +166,16 @@ enum ReadingSessionSummaryPolicy {
     }
 }
 
-final class ReadingSessionSummaryViewController: UIViewController {
+enum ReadingSessionSummaryLayoutPolicy {
+    static let horizontalInset: CGFloat = 24
     static let maximumContentWidth: CGFloat = 480
+
+    static func contentWidth(for containerWidth: CGFloat) -> CGFloat {
+        max(0, min(maximumContentWidth, containerWidth - horizontalInset * 2))
+    }
+}
+
+final class ReadingSessionSummaryViewController: UIViewController {
 
     let summary: ReadingSessionSummary
     private(set) var contentStack = UIStackView()
@@ -178,7 +186,10 @@ final class ReadingSessionSummaryViewController: UIViewController {
         super.init(nibName: nil, bundle: nil)
         modalPresentationStyle = .pageSheet
         isModalInPresentation = false
-        preferredContentSize = CGSize(width: Self.maximumContentWidth, height: 360)
+        preferredContentSize = CGSize(
+            width: ReadingSessionSummaryLayoutPolicy.maximumContentWidth,
+            height: 360
+        )
     }
 
     @available(*, unavailable)
@@ -266,7 +277,7 @@ final class ReadingSessionSummaryViewController: UIViewController {
         let safeArea = view.safeAreaLayoutGuide
         let fillWidth = contentStack.widthAnchor.constraint(
             equalTo: scrollView.frameLayoutGuide.widthAnchor,
-            constant: -48
+            constant: -(ReadingSessionSummaryLayoutPolicy.horizontalInset * 2)
         )
         fillWidth.priority = .defaultHigh
 
@@ -279,7 +290,9 @@ final class ReadingSessionSummaryViewController: UIViewController {
             contentStack.topAnchor.constraint(equalTo: scrollView.contentLayoutGuide.topAnchor, constant: 24),
             contentStack.bottomAnchor.constraint(equalTo: scrollView.contentLayoutGuide.bottomAnchor, constant: -24),
             contentStack.centerXAnchor.constraint(equalTo: scrollView.frameLayoutGuide.centerXAnchor),
-            contentStack.widthAnchor.constraint(lessThanOrEqualToConstant: Self.maximumContentWidth),
+            contentStack.widthAnchor.constraint(
+                lessThanOrEqualToConstant: ReadingSessionSummaryLayoutPolicy.maximumContentWidth
+            ),
             fillWidth,
         ])
     }
