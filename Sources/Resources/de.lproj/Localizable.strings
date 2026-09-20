@@ -981,3 +981,15 @@
 "reader_session_summary_progress_format" = "%@ → %@ · +%@";
 "reader_session_summary_watch_turns_format" = "Watch-Seitenwechsel: %d";
 "reader_session_summary_done" = "Fertig";
+"reading_history_title" = "Leseverlauf";
+"reading_history_subtitle" = "Letzte Sitzungen ansehen und den Verlauf eines Buchs öffnen.";
+"reading_history_locked_title" = "Der Leseverlauf ist eine Pro-Funktion";
+"reading_history_locked_body" = "Heutige Lesestatistiken und Sitzungszusammenfassungen bleiben kostenlos. Pro schaltet den langfristigen Sitzungsverlauf frei.";
+"reading_history_empty_title" = "Noch keine Lesesitzungen";
+"reading_history_empty_body" = "Abgeschlossene visuelle Lesesitzungen erscheinen hier.";
+"reading_history_loading" = "Leseverlauf wird geladen…";
+"reading_history_error_title" = "Leseverlauf konnte nicht geladen werden";
+"reading_history_error_body" = "Versuche es gleich noch einmal.";
+"reading_history_retry" = "Erneut versuchen";
+"reading_history_watch_turns" = "%d Apple Watch-Seitenwechsel";
+"reading_history_watch_none" = "Keine Apple Watch-Seitenwechsel";
