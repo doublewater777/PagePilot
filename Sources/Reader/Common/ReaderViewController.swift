@@ -108,6 +108,268 @@ struct ReaderSessionLifecycle {
     }
 }
 
+
+struct ReadingSessionSummary: Equatable {
+    enum DailyGoalFeedback: Equatable {
+        case remaining(minutes: Int)
+        case complete
+    }
+
+    let durationSeconds: Int
+    let startProgression: Double
+    let endProgression: Double
+    let progressDelta: Double
+    let watchPageTurns: Int
+    let dailyGoalFeedback: DailyGoalFeedback?
+}
+
+enum ReadingSessionSummaryPolicy {
+    static let minimumDurationSeconds = 2 * 60
+    static let minimumForwardProgress = 0.01
+    static let minimumWatchPageTurns = 5
+    private static let progressComparisonTolerance = 1e-9
+
+    static func makeSummary(
+        for session: ReadingSession,
+        todaySeconds: Int,
+        goalMinutes: Int,
+        suppressGoalCompletion: Bool
+    ) -> ReadingSessionSummary? {
+        let isMeaningful =
+            session.durationSeconds >= minimumDurationSeconds
+            || session.progressDelta >= minimumForwardProgress - progressComparisonTolerance
+            || session.watchPageTurns >= minimumWatchPageTurns
+
+        guard isMeaningful else { return nil }
+
+        let dailyGoalFeedback: ReadingSessionSummary.DailyGoalFeedback?
+        if goalMinutes <= 0 {
+            dailyGoalFeedback = nil
+        } else {
+            let goalSeconds = goalMinutes * 60
+            if todaySeconds >= goalSeconds {
+                dailyGoalFeedback = suppressGoalCompletion ? nil : .complete
+            } else {
+                let remainingSeconds = max(0, goalSeconds - todaySeconds)
+                let remainingMinutes = max(1, (remainingSeconds + 59) / 60)
+                dailyGoalFeedback = .remaining(minutes: remainingMinutes)
+            }
+        }
+
+        return ReadingSessionSummary(
+            durationSeconds: session.durationSeconds,
+            startProgression: session.startProgression,
+            endProgression: session.endProgression,
+            progressDelta: session.progressDelta,
+            watchPageTurns: session.watchPageTurns,
+            dailyGoalFeedback: dailyGoalFeedback
+        )
+    }
+}
+
+final class ReadingSessionSummaryViewController: UIViewController {
+    static let maximumContentWidth: CGFloat = 480
+
+    let summary: ReadingSessionSummary
+    private(set) var contentStack = UIStackView()
+    private(set) var dismissButton = UIButton(type: .system)
+
+    init(summary: ReadingSessionSummary) {
+        self.summary = summary
+        super.init(nibName: nil, bundle: nil)
+        modalPresentationStyle = .pageSheet
+        isModalInPresentation = false
+        preferredContentSize = CGSize(width: Self.maximumContentWidth, height: 360)
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+
+        view.backgroundColor = .systemGroupedBackground
+        view.accessibilityViewIsModal = true
+
+        let scrollView = UIScrollView()
+        scrollView.translatesAutoresizingMaskIntoConstraints = false
+        scrollView.alwaysBounceVertical = false
+        view.addSubview(scrollView)
+
+        contentStack.axis = .vertical
+        contentStack.alignment = .fill
+        contentStack.spacing = 16
+        contentStack.translatesAutoresizingMaskIntoConstraints = false
+        contentStack.accessibilityIdentifier = "readingSessionSummary.content"
+        scrollView.addSubview(contentStack)
+
+        let titleLabel = makeLabel(
+            text: NSLocalizedString("reader_session_summary_title", comment: ""),
+            textStyle: .title2
+        )
+        titleLabel.font = UIFontMetrics(forTextStyle: .title2)
+            .scaledFont(for: UIFont.systemFont(ofSize: 22, weight: .semibold))
+        titleLabel.accessibilityTraits.insert(.header)
+        titleLabel.accessibilityIdentifier = "readingSessionSummary.title"
+        contentStack.addArrangedSubview(titleLabel)
+
+        let durationLabel = makeLabel(
+            text: Self.durationText(seconds: summary.durationSeconds),
+            textStyle: .title1
+        )
+        durationLabel.accessibilityIdentifier = "readingSessionSummary.duration"
+        contentStack.addArrangedSubview(durationLabel)
+
+        let progressLabel = makeLabel(
+            text: progressText(),
+            textStyle: .body
+        )
+        progressLabel.accessibilityIdentifier = "readingSessionSummary.progress"
+        contentStack.addArrangedSubview(progressLabel)
+
+        if summary.watchPageTurns > 0 {
+            let format = NSLocalizedString("reader_session_summary_watch_turns_format", comment: "")
+            let watchLabel = makeLabel(
+                text: String(format: format, summary.watchPageTurns),
+                textStyle: .body
+            )
+            watchLabel.accessibilityIdentifier = "readingSessionSummary.watchTurns"
+            contentStack.addArrangedSubview(watchLabel)
+        }
+
+        if let dailyGoalFeedback = summary.dailyGoalFeedback {
+            let goalText: String
+            switch dailyGoalFeedback {
+            case let .remaining(minutes):
+                goalText = String(
+                    format: NSLocalizedString("stats_goal_remaining_message", comment: ""),
+                    minutes
+                )
+            case .complete:
+                goalText = NSLocalizedString("stats_goal_complete_message", comment: "")
+            }
+
+            let goalLabel = makeLabel(text: goalText, textStyle: .subheadline)
+            goalLabel.accessibilityIdentifier = "readingSessionSummary.dailyGoal"
+            contentStack.addArrangedSubview(goalLabel)
+        }
+
+        var buttonConfiguration = UIButton.Configuration.filled()
+        buttonConfiguration.title = NSLocalizedString("reader_session_summary_done", comment: "")
+        buttonConfiguration.buttonSize = .large
+        dismissButton.configuration = buttonConfiguration
+        dismissButton.addTarget(self, action: #selector(dismissSummary), for: .touchUpInside)
+        dismissButton.accessibilityIdentifier = "readingSessionSummary.dismiss"
+        contentStack.addArrangedSubview(dismissButton)
+
+        let safeArea = view.safeAreaLayoutGuide
+        let fillWidth = contentStack.widthAnchor.constraint(
+            equalTo: scrollView.frameLayoutGuide.widthAnchor,
+            constant: -48
+        )
+        fillWidth.priority = .defaultHigh
+
+        NSLayoutConstraint.activate([
+            scrollView.leadingAnchor.constraint(equalTo: safeArea.leadingAnchor),
+            scrollView.trailingAnchor.constraint(equalTo: safeArea.trailingAnchor),
+            scrollView.topAnchor.constraint(equalTo: safeArea.topAnchor),
+            scrollView.bottomAnchor.constraint(equalTo: safeArea.bottomAnchor),
+
+            contentStack.topAnchor.constraint(equalTo: scrollView.contentLayoutGuide.topAnchor, constant: 24),
+            contentStack.bottomAnchor.constraint(equalTo: scrollView.contentLayoutGuide.bottomAnchor, constant: -24),
+            contentStack.centerXAnchor.constraint(equalTo: scrollView.frameLayoutGuide.centerXAnchor),
+            contentStack.widthAnchor.constraint(lessThanOrEqualToConstant: Self.maximumContentWidth),
+            fillWidth,
+        ])
+    }
+
+    private func makeLabel(text: String, textStyle: UIFont.TextStyle) -> UILabel {
+        let label = UILabel()
+        label.text = text
+        label.font = UIFont.preferredFont(forTextStyle: textStyle)
+        label.adjustsFontForContentSizeCategory = true
+        label.numberOfLines = 0
+        label.textColor = .label
+        return label
+    }
+
+    private func progressText() -> String {
+        let start = Self.percentText(summary.startProgression)
+        let end = Self.percentText(summary.endProgression)
+
+        guard summary.progressDelta > 0 else {
+            return "\(start) → \(end)"
+        }
+
+        let delta = Self.percentText(summary.progressDelta)
+        return String(
+            format: NSLocalizedString("reader_session_summary_progress_format", comment: ""),
+            start,
+            end,
+            delta
+        )
+    }
+
+    private static func durationText(seconds: Int) -> String {
+        let formatter = DateComponentsFormatter()
+        formatter.unitsStyle = .abbreviated
+        formatter.maximumUnitCount = 2
+        formatter.allowedUnits = seconds >= 3600
+            ? [.hour, .minute]
+            : (seconds >= 60 ? [.minute] : [.second])
+
+        return formatter.string(from: TimeInterval(max(0, seconds)))
+            ?? "\(max(0, seconds))s"
+    }
+
+    private static func percentText(_ progression: Double) -> String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .percent
+        formatter.maximumFractionDigits = 0
+
+        return formatter.string(from: NSNumber(value: progression))
+            ?? "\(Int((progression * 100).rounded()))%"
+    }
+
+    @objc private func dismissSummary() {
+        dismiss(animated: true)
+    }
+}
+
+enum ReadingSessionSummaryPresenter {
+    static func present(_ summary: ReadingSessionSummary, after reader: UIViewController) {
+        guard let navigationController = reader.navigationController else { return }
+
+        let presentationBlock: () -> Void = { [weak navigationController, weak reader] in
+            guard let navigationController,
+                  let reader,
+                  let host = navigationController.topViewController,
+                  host !== reader,
+                  host.presentedViewController == nil else {
+                return
+            }
+
+            let summaryViewController = ReadingSessionSummaryViewController(summary: summary)
+            if let sheet = summaryViewController.sheetPresentationController {
+                sheet.detents = [.medium()]
+                sheet.prefersGrabberVisible = true
+            }
+            host.present(summaryViewController, animated: true)
+        }
+
+        if let transitionCoordinator = reader.transitionCoordinator {
+            transitionCoordinator.animate(alongsideTransition: nil) { context in
+                guard !context.isCancelled else { return }
+                DispatchQueue.main.async(execute: presentationBlock)
+            }
+        } else {
+            DispatchQueue.main.async(execute: presentationBlock)
+        }
+    }
+}
+
 /// Base class for all reader view controllers.
 class ReaderViewController<N: Navigator>: UIViewController,
     NavigatorDelegate, UIPopoverPresentationControllerDelegate, Loggable
@@ -188,12 +450,18 @@ class ReaderViewController<N: Navigator>: UIViewController,
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
 
+        let isReaderExit =
+            isMovingFromParent
+            || isBeingDismissed
+            || navigationController?.isBeingDismissed == true
+
         MicroReadingSessionPresenter.readerWillDisappear(self)
         finishReadingSession(
-            readingSessionLifecycle.readerWillDisappear(at: Date())
+            readingSessionLifecycle.readerWillDisappear(at: Date()),
+            isVisibleReaderExit: isReaderExit
         )
         setMainTabBarHidden(false, animated: animated)
-        if (isMovingFromParent || isBeingDismissed),
+        if isReaderExit,
            UIApplication.shared.applicationState == .active {
             ReviewPromptManager.shared.tryPromptReview()
         }
@@ -225,7 +493,7 @@ class ReaderViewController<N: Navigator>: UIViewController,
 
     private func finishReadingSession(
         _ finishedSession: ReaderSessionLifecycle.FinishedSession?,
-        celebrateGoal: Bool = true
+        isVisibleReaderExit: Bool
     ) {
         guard let finishedSession else { return }
 
@@ -237,6 +505,7 @@ class ReaderViewController<N: Navigator>: UIViewController,
             bookId: finishedSession.bookId
         )
 
+        var detailedSession: ReadingSession?
         if supportsDetailedReadingSessions {
             let endProgression = navigator.currentLocation?.locations.totalProgression
                 ?? finishedSession.startProgression
@@ -248,6 +517,7 @@ class ReaderViewController<N: Navigator>: UIViewController,
                 endProgression: endProgression,
                 watchPageTurns: finishedSession.watchPageTurns
             )
+            detailedSession = session
 
             if session.durationSeconds > 0 {
                 Task {
@@ -260,18 +530,37 @@ class ReaderViewController<N: Navigator>: UIViewController,
             }
         }
 
-        // Celebrate the daily goal once per day, only on a visible exit (not
-        // backgrounding) so the toast is actually seen.
-        guard celebrateGoal,
-              ReadingGoalPolicy.goalReached(
-                  todaySeconds: ReadingStatsStore.shared.todayReadingSeconds(),
-                  goalMinutes: ReadingPreferences.dailyGoalMinutes
-              ),
-              !ReadingGoalCelebration.alreadyCelebratedToday() else {
-            return
+        let todaySeconds = ReadingStatsStore.shared.todayReadingSeconds()
+        let goalMinutes = ReadingPreferences.dailyGoalMinutes
+        let goalReached = ReadingGoalPolicy.goalReached(
+            todaySeconds: todaySeconds,
+            goalMinutes: goalMinutes
+        )
+        let shouldCelebrateGoal =
+            isVisibleReaderExit
+            && goalReached
+            && !ReadingGoalCelebration.alreadyCelebratedToday()
+
+        let summary: ReadingSessionSummary?
+        if isVisibleReaderExit, let detailedSession {
+            summary = ReadingSessionSummaryPolicy.makeSummary(
+                for: detailedSession,
+                todaySeconds: todaySeconds,
+                goalMinutes: goalMinutes,
+                suppressGoalCompletion: shouldCelebrateGoal
+            )
+        } else {
+            summary = nil
         }
-        ReadingGoalCelebration.markCelebratedToday()
-        toast(NSLocalizedString("reader_goal_reached", comment: ""), on: view, duration: 2)
+
+        if shouldCelebrateGoal {
+            ReadingGoalCelebration.markCelebratedToday()
+            toast(NSLocalizedString("reader_goal_reached", comment: ""), on: view, duration: 2)
+        }
+
+        if let summary {
+            ReaderSessionSummaryPresenter.present(summary, after: self)
+        }
     }
 
     @objc private func appDidEnterBackground() {
@@ -280,7 +569,7 @@ class ReaderViewController<N: Navigator>: UIViewController,
         // is still on screen.
         finishReadingSession(
             readingSessionLifecycle.applicationDidEnterBackground(at: Date()),
-            celebrateGoal: false
+            isVisibleReaderExit: false
         )
     }
 
