@@ -13,6 +13,12 @@ latest_gate:
   date: 2026-07-29
   loop_back_to:
 cycles:
+  - id: 2026-09-21-reading-session-intelligence
+    feature: Reading Session history, summary, and pace intelligence
+    status: planned
+    started_at: 2026-09-21
+    completed_at:
+    linked_stage: 10-growth-channel
   - id: 2026-09-16-paywall-trial-disclosure
     feature: Paywall trial price auto-renew disclosure
     status: active
@@ -85,4 +91,4 @@ cycles:
     started_at: 2026-09-14
     completed_at: 2026-09-14
     linked_stage: 01-hypothesis
-updated_at: 2026-09-14
+updated_at: 2026-09-21
