@@ -398,7 +398,7 @@ private struct ReadingSessionInsightSheet: View {
 
     var body: some View {
         NavigationStack {
-            ReadingHistoryView(book: book)
+            readingHistoryDestination(book: book)
                 .toolbar {
                     ToolbarItem(placement: .topBarLeading) {
                         SheetCloseButton { dismiss() }
