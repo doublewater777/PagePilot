@@ -984,7 +984,7 @@
 "reading_history_title" = "Historique de lecture";
 "reading_history_subtitle" = "Consultez les sessions récentes et ouvrez un livre pour voir son historique.";
 "reading_history_locked_title" = "L’historique de lecture est une fonctionnalité Pro";
-"reading_history_locked_body" = "Les statistiques du jour et les résumés de session restent gratuits. Pro débloque l’historique longitudinal des sessions.";
+"reading_history_locked_body" = "Les statistiques du jour et les résumés de session restent gratuits. Pro débloque l’historique des sessions et les estimations de rythme.";
 "reading_history_empty_title" = "Aucune session de lecture";
 "reading_history_empty_body" = "Les sessions de lecture visuelle terminées apparaîtront ici.";
 "reading_history_loading" = "Chargement de l’historique de lecture…";
@@ -993,3 +993,10 @@
 "reading_history_retry" = "Réessayer";
 "reading_history_watch_turns" = "%d changements de page via Apple Watch";
 "reading_history_watch_none" = "Aucun changement de page via Apple Watch";
+
+"reading_pace_estimate_title" = "Estimation du rythme de lecture";
+"reading_pace_insufficient_body" = "Pas encore assez de données pour une estimation. Lisez au moins 3 sessions, 20 minutes actives et avancez de 5 %.";
+"reading_pace_remaining_format" = "Environ %@ de lecture active restante";
+"reading_pace_velocity_format" = "Rythme récent : %@ par minute active";
+"reading_pace_finish_format" = "Fin approx. : %@";
+"reading_pace_estimate_basis" = "Estimation basée sur les sessions récentes. Votre rythme peut varier.";

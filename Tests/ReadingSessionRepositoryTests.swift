@@ -230,6 +230,255 @@ final class ReadingSessionRepositoryTests: XCTestCase {
         XCTAssertFalse(historySource.contains("UIDevice.current"))
     }
 
+
+    func testReadingPaceRequiresReliabilityThresholdsAndAcceptsExactBoundary() {
+        let base = Date(timeIntervalSince1970: 100_000)
+
+        let sparse = [
+            makeSession(start: base, duration: 600, startProgress: 0.10, endProgress: 0.13),
+            makeSession(start: base.addingTimeInterval(700), duration: 600, startProgress: 0.13, endProgress: 0.16),
+        ]
+        guard case .insufficientData = ReadingPaceCalculator.estimate(
+            sessions: sparse,
+            currentProgression: 0.16,
+            now: base
+        ) else {
+            return XCTFail("Two sessions must remain below the reliability threshold")
+        }
+
+        let tooShort = [
+            makeSession(start: base, duration: 399, startProgress: 0.10, endProgress: 0.12),
+            makeSession(start: base.addingTimeInterval(500), duration: 399, startProgress: 0.12, endProgress: 0.14),
+            makeSession(start: base.addingTimeInterval(1_000), duration: 399, startProgress: 0.14, endProgress: 0.16),
+        ]
+        guard case .insufficientData = ReadingPaceCalculator.estimate(
+            sessions: tooShort,
+            currentProgression: 0.16,
+            now: base
+        ) else {
+            return XCTFail("Less than twenty active minutes must remain insufficient")
+        }
+
+        let tooLittleProgress = [
+            makeSession(start: base, duration: 400, startProgress: 0.10, endProgress: 0.116),
+            makeSession(start: base.addingTimeInterval(500), duration: 400, startProgress: 0.116, endProgress: 0.132),
+            makeSession(start: base.addingTimeInterval(1_000), duration: 400, startProgress: 0.132, endProgress: 0.149),
+        ]
+        guard case .insufficientData = ReadingPaceCalculator.estimate(
+            sessions: tooLittleProgress,
+            currentProgression: 0.149,
+            now: base
+        ) else {
+            return XCTFail("Less than five percentage points must remain insufficient")
+        }
+
+        let exactBoundary = [
+            makeSession(start: base, duration: 400, startProgress: 0.10, endProgress: 0.12),
+            makeSession(start: base.addingTimeInterval(500), duration: 400, startProgress: 0.12, endProgress: 0.14),
+            makeSession(start: base.addingTimeInterval(1_000), duration: 400, startProgress: 0.14, endProgress: 0.15),
+        ]
+        guard case let .estimate(estimate) = ReadingPaceCalculator.estimate(
+            sessions: exactBoundary,
+            currentProgression: 0.50,
+            now: base
+        ) else {
+            return XCTFail("Exact reliability thresholds should produce an estimate")
+        }
+
+        XCTAssertEqual(estimate.progressPerActiveMinute, 0.0025, accuracy: 0.000_001)
+        XCTAssertEqual(estimate.remainingActiveMinutes, 200, accuracy: 0.001)
+    }
+
+    func testReadingPaceHandlesSlowAndFastHistories() {
+        let base = Date(timeIntervalSince1970: 200_000)
+        let slow = [
+            makeSession(start: base, duration: 600, startProgress: 0.10, endProgress: 0.12),
+            makeSession(start: base.addingTimeInterval(700), duration: 600, startProgress: 0.12, endProgress: 0.14),
+            makeSession(start: base.addingTimeInterval(1_400), duration: 600, startProgress: 0.14, endProgress: 0.16),
+        ]
+        let fast = [
+            makeSession(start: base, duration: 600, startProgress: 0.10, endProgress: 0.20),
+            makeSession(start: base.addingTimeInterval(700), duration: 600, startProgress: 0.20, endProgress: 0.30),
+            makeSession(start: base.addingTimeInterval(1_400), duration: 600, startProgress: 0.30, endProgress: 0.40),
+        ]
+
+        guard case let .estimate(slowEstimate) = ReadingPaceCalculator.estimate(
+            sessions: slow,
+            currentProgression: 0.50,
+            now: base
+        ) else {
+            return XCTFail("Slow qualifying history should estimate")
+        }
+        guard case let .estimate(fastEstimate) = ReadingPaceCalculator.estimate(
+            sessions: fast,
+            currentProgression: 0.40,
+            now: base
+        ) else {
+            return XCTFail("Fast qualifying history should estimate")
+        }
+
+        XCTAssertEqual(slowEstimate.progressPerActiveMinute, 0.002, accuracy: 0.000_001)
+        XCTAssertEqual(slowEstimate.remainingActiveMinutes, 250, accuracy: 0.001)
+        XCTAssertEqual(fastEstimate.progressPerActiveMinute, 0.01, accuracy: 0.000_001)
+        XCTAssertEqual(fastEstimate.remainingActiveMinutes, 60, accuracy: 0.001)
+    }
+
+    func testBackwardAndNoProgressSessionsDoNotIncreaseForwardVelocity() {
+        let base = Date(timeIntervalSince1970: 300_000)
+        let forward = [
+            makeSession(start: base, duration: 600, startProgress: 0.10, endProgress: 0.12),
+            makeSession(start: base.addingTimeInterval(700), duration: 600, startProgress: 0.12, endProgress: 0.14),
+            makeSession(start: base.addingTimeInterval(1_400), duration: 600, startProgress: 0.14, endProgress: 0.16),
+        ]
+        guard case let .estimate(baseline) = ReadingPaceCalculator.estimate(
+            sessions: forward,
+            currentProgression: 0.50,
+            now: base
+        ) else {
+            return XCTFail("Baseline history should estimate")
+        }
+
+        let mixed = forward + [
+            makeSession(
+                start: base.addingTimeInterval(2_100),
+                duration: 900,
+                startProgress: 0.30,
+                endProgress: 0.20
+            ),
+            makeSession(
+                start: base.addingTimeInterval(3_100),
+                duration: 900,
+                startProgress: 0.20,
+                endProgress: 0.20
+            ),
+        ]
+        guard case let .estimate(mixedEstimate) = ReadingPaceCalculator.estimate(
+            sessions: mixed,
+            currentProgression: 0.50,
+            now: base
+        ) else {
+            return XCTFail("Mixed history should still estimate")
+        }
+
+        XCTAssertEqual(
+            mixedEstimate.progressPerActiveMinute,
+            baseline.progressPerActiveMinute,
+            accuracy: 0.000_001
+        )
+        XCTAssertEqual(
+            mixedEstimate.remainingActiveMinutes,
+            baseline.remainingActiveMinutes,
+            accuracy: 0.001
+        )
+    }
+
+    func testFinishDateRequiresRecentBehaviorAcrossThreeActiveDays() {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        let now = calendar.date(
+            from: DateComponents(year: 2026, month: 9, day: 21, hour: 12)
+        )!
+
+        let sameDay = [
+            makeSession(start: now.addingTimeInterval(-3_000), duration: 600, startProgress: 0.10, endProgress: 0.12),
+            makeSession(start: now.addingTimeInterval(-2_000), duration: 600, startProgress: 0.12, endProgress: 0.14),
+            makeSession(start: now.addingTimeInterval(-1_000), duration: 600, startProgress: 0.14, endProgress: 0.16),
+        ]
+        guard case let .estimate(sameDayEstimate) = ReadingPaceCalculator.estimate(
+            sessions: sameDay,
+            currentProgression: 0.50,
+            now: now,
+            calendar: calendar
+        ) else {
+            return XCTFail("Qualifying pace should still estimate without a finish date")
+        }
+        XCTAssertNil(sameDayEstimate.approximateFinishDate)
+
+        let threeDays = [
+            makeSession(
+                start: calendar.date(byAdding: .day, value: -2, to: now)!,
+                duration: 600,
+                startProgress: 0.10,
+                endProgress: 0.12
+            ),
+            makeSession(
+                start: calendar.date(byAdding: .day, value: -1, to: now)!,
+                duration: 600,
+                startProgress: 0.12,
+                endProgress: 0.14
+            ),
+            makeSession(
+                start: now.addingTimeInterval(-1_000),
+                duration: 600,
+                startProgress: 0.14,
+                endProgress: 0.16
+            ),
+        ]
+        guard case let .estimate(threeDayEstimate) = ReadingPaceCalculator.estimate(
+            sessions: threeDays,
+            currentProgression: 0.50,
+            now: now,
+            calendar: calendar
+        ) else {
+            return XCTFail("Three-day qualifying history should estimate")
+        }
+        XCTAssertNotNil(threeDayEstimate.approximateFinishDate)
+    }
+
+    func testReadingPaceUIAndLocalizationContracts() throws {
+        let statsSource = try Self.source(named: "Sources/Home/ReadingStatsView.swift")
+        guard let historyStart = statsSource.range(of: "private struct ReadingHistoryView: View") else {
+            return XCTFail("ReadingHistoryView is missing")
+        }
+        let historySource = String(statsSource[historyStart.lowerBound...])
+
+        XCTAssertTrue(historySource.contains("ReadingPaceEstimateCard(result: paceResult)"))
+        XCTAssertTrue(historySource.contains("ReadingPaceCalculator.estimate("))
+        XCTAssertTrue(historySource.contains("currentProgression: currentBook.progression"))
+        XCTAssertTrue(historySource.contains("reading_pace_estimate_title"))
+        XCTAssertTrue(historySource.contains(".frame(maxWidth: 680)"))
+        XCTAssertFalse(historySource.contains("UIDevice.current"))
+
+        let localizationPaths = [
+            "Sources/Resources/en.lproj/Localizable.strings",
+            "Sources/Resources/zh-Hans.lproj/Localizable.strings",
+            "Sources/Resources/es.lproj/Localizable.strings",
+            "Sources/Resources/fr.lproj/Localizable.strings",
+            "Sources/Resources/de.lproj/Localizable.strings",
+        ]
+        let requiredKeys = [
+            "reading_pace_estimate_title",
+            "reading_pace_insufficient_body",
+            "reading_pace_remaining_format",
+            "reading_pace_velocity_format",
+            "reading_pace_finish_format",
+            "reading_pace_estimate_basis",
+        ]
+
+        for path in localizationPaths {
+            let strings = try Self.source(named: path)
+            for key in requiredKeys {
+                XCTAssertTrue(strings.contains("\"\(key)\""), "\(path) is missing \(key)")
+            }
+        }
+    }
+
+    private func makeSession(
+        start: Date,
+        duration: Int,
+        startProgress: Double,
+        endProgress: Double
+    ) -> ReadingSession {
+        ReadingSession(
+            bookId: Book.Id(rawValue: 1),
+            startedAt: start,
+            endedAt: start.addingTimeInterval(TimeInterval(duration)),
+            startProgression: startProgress,
+            endProgression: endProgress,
+            watchPageTurns: 0
+        )
+    }
+
     private static func source(named path: String) throws -> String {
         let repositoryURL = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()

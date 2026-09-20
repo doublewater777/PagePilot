@@ -984,7 +984,7 @@
 "reading_history_title" = "Leseverlauf";
 "reading_history_subtitle" = "Letzte Sitzungen ansehen und den Verlauf eines Buchs öffnen.";
 "reading_history_locked_title" = "Der Leseverlauf ist eine Pro-Funktion";
-"reading_history_locked_body" = "Heutige Lesestatistiken und Sitzungszusammenfassungen bleiben kostenlos. Pro schaltet den langfristigen Sitzungsverlauf frei.";
+"reading_history_locked_body" = "Heutige Lesestatistiken und Sitzungszusammenfassungen bleiben kostenlos. Pro schaltet Sitzungsverlauf und Lesetempo-Schätzungen frei.";
 "reading_history_empty_title" = "Noch keine Lesesitzungen";
 "reading_history_empty_body" = "Abgeschlossene visuelle Lesesitzungen erscheinen hier.";
 "reading_history_loading" = "Leseverlauf wird geladen…";
@@ -993,3 +993,10 @@
 "reading_history_retry" = "Erneut versuchen";
 "reading_history_watch_turns" = "%d Apple Watch-Seitenwechsel";
 "reading_history_watch_none" = "Keine Apple Watch-Seitenwechsel";
+
+"reading_pace_estimate_title" = "Lesetempo-Schätzung";
+"reading_pace_insufficient_body" = "Noch nicht genug Daten für eine Schätzung. Lies mindestens 3 Sitzungen, 20 aktive Minuten und 5 % vorwärts.";
+"reading_pace_remaining_format" = "Noch etwa %@ aktive Lesezeit";
+"reading_pace_velocity_format" = "Aktuelles Tempo: %@ pro aktiver Minute";
+"reading_pace_finish_format" = "Voraussichtliches Ende: %@";
+"reading_pace_estimate_basis" = "Schätzung anhand der letzten Lesesitzungen. Dein Tempo kann sich ändern.";
