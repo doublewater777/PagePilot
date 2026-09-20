@@ -63,6 +63,8 @@ final class ContextualProConversionTests: XCTestCase {
         XCTAssertTrue(source.contains("ReadingPremiumPreviewCard("))
         XCTAssertTrue(source.contains("reading_history_preview_title"))
         XCTAssertTrue(source.contains("reading_prediction_preview_title"))
+        XCTAssertTrue(source.contains(#"bodyText: NSLocalizedString("reading_history_preview_body""#))
+        XCTAssertTrue(source.contains("let bodyText: String"))
         XCTAssertTrue(source.contains(".proUpgradeIntent(source: source)"))
         XCTAssertTrue(source.contains("PaywallView(analyticsSource: paywallSource.rawValue)"))
         XCTAssertTrue(source.contains("book == nil ? .readingHistoryPreview : .readingPredictionPreview"))

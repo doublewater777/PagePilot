@@ -2005,7 +2005,7 @@ struct ReadingHistoryView: View {
         ReadingPremiumPreviewCard(
             icon: "clock.arrow.circlepath",
             title: NSLocalizedString("reading_history_preview_title", comment: ""),
-            body: NSLocalizedString("reading_history_preview_body", comment: "")
+            bodyText: NSLocalizedString("reading_history_preview_body", comment: "")
         )
     }
 
@@ -2013,7 +2013,7 @@ struct ReadingHistoryView: View {
         ReadingPremiumPreviewCard(
             icon: "speedometer",
             title: NSLocalizedString("reading_prediction_preview_title", comment: ""),
-            body: NSLocalizedString("reading_prediction_preview_body", comment: "")
+            bodyText: NSLocalizedString("reading_prediction_preview_body", comment: "")
         )
     }
 
@@ -2135,7 +2135,7 @@ struct ReadingHistoryView: View {
 private struct ReadingPremiumPreviewCard: View {
     let icon: String
     let title: String
-    let body: String
+    let bodyText: String
 
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
@@ -2149,7 +2149,7 @@ private struct ReadingPremiumPreviewCard: View {
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundColor(AppColors.primaryText)
 
-                Text(body)
+                Text(bodyText)
                     .font(.system(size: 13))
                     .foregroundColor(AppColors.secondaryText)
                     .fixedSize(horizontal: false, vertical: true)
