@@ -19,6 +19,11 @@ private enum WatchPageTurnErrorCode {
     static let proRequired = "PRO_REQUIRED"
 }
 
+enum WatchPageTurnOrigin {
+    case direct
+    case iPadRelay
+}
+
 enum WatchAvailability {
     case unsupported
     case unpaired
@@ -874,7 +879,8 @@ final class WatchPageTurnService: NSObject, ObservableObject {
     }
 
     /// Call this from VisualReaderViewController when it disappears.
-    func unregisterNavigator() {
+    func unregisterNavigator(_ navigator: VisualNavigator) {
+        guard let activeNavigator, activeNavigator === navigator else { return }
         self.activeNavigator = nil
         pageTurnSuppressionToken = nil
         var context = WatchPageTurnSettings().watchContext
@@ -925,6 +931,14 @@ final class WatchPageTurnService: NSObject, ObservableObject {
         }
     }
 
+    private func recordSuccessfulWatchPageTurn(origin: WatchPageTurnOrigin) {
+        ReviewPromptManager.shared.recordWatchPageTurn()
+        NotificationCenter.default.post(
+            name: .watchPageTurnDidSucceed,
+            object: origin
+        )
+    }
+
     private func handleCommand(_ command: PageCommand, completion: (([String: Any]) -> Void)? = nil) {
         Task { @MainActor in
             guard !self.isPageTurnSuppressed else {
@@ -955,8 +969,7 @@ final class WatchPageTurnService: NSObject, ObservableObject {
             }
 
             if succeeded {
-                ReviewPromptManager.shared.recordWatchPageTurn()
-                NotificationCenter.default.post(name: .watchPageTurnDidSucceed, object: nil)
+                self.recordSuccessfulWatchPageTurn(origin: .direct)
             }
 
             var payload = self.localStatusPayload(route: WatchPageTurnRoute.direct)
@@ -1288,8 +1301,7 @@ final class WatchPageTurnService: NSObject, ObservableObject {
                     }
 
                     if succeeded {
-                        ReviewPromptManager.shared.recordWatchPageTurn()
-                        NotificationCenter.default.post(name: .watchPageTurnDidSucceed, object: nil)
+                        WatchPageTurnService.shared.recordSuccessfulWatchPageTurn(origin: .iPadRelay)
                     }
 
                     completionBlock(WatchPageTurnService.shared.jsonResponse([

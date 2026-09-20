@@ -51,6 +51,12 @@ Reuse the existing `ReaderViewController` lifecycle rather than adding another s
 
 A failure to persist detailed history must not prevent the Reader from closing or daily stats from being recorded.
 
+## Supported media
+
+- Detailed `ReadingSession` history is limited to the visual Reader path (currently EPUB and PDF).
+- Audiobook/audio-only playback is intentionally unsupported by this session-history model.
+- Existing `ReadingStatsStore` behavior remains independent and must not regress for unsupported media.
+
 ## Session Summary
 
 A later UI ticket should present, for a meaningful session:

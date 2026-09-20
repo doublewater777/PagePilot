@@ -1,21 +1,17 @@
 import Foundation
 import XCTest
+@testable import PagePilot
 
 final class ReaderLiveActivityBackgroundPolicyTests: XCTestCase {
     func testReaderBackgroundingFinishesReadingSession() throws {
         let source = try Self.readerViewControllerSource()
-
-        XCTAssertNil(
-            Self.range(of: "pauseForegroundReadingStatsIfNeeded", in: source),
-            "Backgrounding ends the session, so there is no foreground stats to pause."
-        )
 
         let backgroundHandler = try Self.requiredLine(
             "@objc private func appDidEnterBackground()",
             in: source
         )
         let finishCall = try Self.requiredLine(
-            "finishReadingSessionIfNeeded(celebrateGoal: false)",
+            "readingSessionLifecycle.applicationDidEnterBackground(at: Date())",
             in: source,
             startingAfter: backgroundHandler
         )
@@ -27,26 +23,24 @@ final class ReaderLiveActivityBackgroundPolicyTests: XCTestCase {
 
         XCTAssertGreaterThan(finishCall, backgroundHandler)
         XCTAssertNil(
-            Self.range(of: "startReadingSessionIfNeeded()", in: source, startingAfter: backgroundHandler)
-                .flatMap { $0 < nextBoundary ? $0 : nil },
-            "Backgrounding must not restart a session it just ended."
+            Self.range(
+                of: "readingSessionLifecycle.applicationDidBecomeActive(",
+                in: source,
+                startingAfter: backgroundHandler
+            ).flatMap { $0 < nextBoundary ? $0 : nil },
+            "Backgrounding must not restart the interval it just ended."
         )
     }
 
-    func testReaderForegroundingRestartsReadingSession() throws {
+    func testReaderForegroundingRestartsReadingSessionOnlyThroughActiveBoundary() throws {
         let source = try Self.readerViewControllerSource()
-
-        XCTAssertNil(
-            Self.range(of: "resumeForegroundReadingStatsIfNeeded", in: source),
-            "Foregrounding restarts the session, so there is no separate stats resume."
-        )
 
         let foregroundHandler = try Self.requiredLine(
             "@objc private func appDidBecomeActive()",
             in: source
         )
         let startCall = try Self.requiredLine(
-            "startReadingSessionIfNeeded()",
+            "readingSessionLifecycle.applicationDidBecomeActive(",
             in: source,
             startingAfter: foregroundHandler
         )
@@ -54,7 +48,7 @@ final class ReaderLiveActivityBackgroundPolicyTests: XCTestCase {
         XCTAssertGreaterThan(startCall, foregroundHandler)
     }
 
-    func testReaderExitStillEndsWatchSessionAndLiveActivity() throws {
+    func testReaderExitEndsTheVisibleSession() throws {
         let source = try Self.readerViewControllerSource()
 
         let disappearBoundary = try Self.requiredLine(
@@ -62,7 +56,7 @@ final class ReaderLiveActivityBackgroundPolicyTests: XCTestCase {
             in: source
         )
         let finishCall = try Self.requiredLine(
-            "finishReadingSessionIfNeeded()",
+            "readingSessionLifecycle.readerWillDisappear(at: Date())",
             in: source,
             startingAfter: disappearBoundary
         )
@@ -70,13 +64,209 @@ final class ReaderLiveActivityBackgroundPolicyTests: XCTestCase {
         XCTAssertGreaterThan(finishCall, disappearBoundary)
     }
 
+    func testBackgroundForegroundCreatesTwoNonOverlappingSessions() throws {
+        let bookId = Book.Id(rawValue: 11)
+        var lifecycle = ReaderSessionLifecycle(bookId: bookId)
+        let firstStart = Date(timeIntervalSince1970: 100)
+        let backgroundAt = firstStart.addingTimeInterval(30)
+        let secondStart = backgroundAt.addingTimeInterval(5)
+        let dismissalAt = secondStart.addingTimeInterval(20)
+
+        let first = try XCTUnwrap(
+            lifecycle.readerDidAppear(
+                at: firstStart,
+                progression: 0.1,
+                applicationIsActive: true
+            )
+        )
+        XCTAssertEqual(first.bookId, bookId)
+
+        let firstFinished = try XCTUnwrap(
+            lifecycle.applicationDidEnterBackground(at: backgroundAt)
+        )
+        let second = try XCTUnwrap(
+            lifecycle.applicationDidBecomeActive(
+                at: secondStart,
+                progression: 0.2
+            )
+        )
+        let secondFinished = try XCTUnwrap(
+            lifecycle.readerWillDisappear(at: dismissalAt)
+        )
+
+        XCTAssertLessThanOrEqual(firstFinished.endedAt, second.startedAt)
+        XCTAssertEqual(firstFinished.bookId, bookId)
+        XCTAssertEqual(secondFinished.bookId, bookId)
+        XCTAssertEqual(secondFinished.startedAt, secondStart)
+    }
+
+    func testReaderDismissalFinalizesExactlyOnce() throws {
+        var lifecycle = ReaderSessionLifecycle(bookId: Book.Id(rawValue: 12))
+        let start = Date(timeIntervalSince1970: 200)
+
+        XCTAssertNotNil(
+            lifecycle.readerDidAppear(
+                at: start,
+                progression: 0.3,
+                applicationIsActive: true
+            )
+        )
+        XCTAssertNotNil(
+            lifecycle.readerWillDisappear(at: start.addingTimeInterval(10))
+        )
+        XCTAssertNil(
+            lifecycle.readerWillDisappear(at: start.addingTimeInterval(11))
+        )
+        XCTAssertNil(
+            lifecycle.applicationDidEnterBackground(at: start.addingTimeInterval(12))
+        )
+    }
+
+    func testSuccessfulDirectAndRelayWatchTurnsCountOnlyInsideActiveSession() throws {
+        var lifecycle = ReaderSessionLifecycle(bookId: Book.Id(rawValue: 13))
+        let start = Date(timeIntervalSince1970: 300)
+
+        lifecycle.recordSuccessfulWatchPageTurn(origin: .direct)
+        _ = lifecycle.readerDidAppear(
+            at: start,
+            progression: 0.4,
+            applicationIsActive: true
+        )
+        lifecycle.recordSuccessfulWatchPageTurn(origin: .direct)
+        lifecycle.recordSuccessfulWatchPageTurn(origin: .iPadRelay)
+
+        let finished = try XCTUnwrap(
+            lifecycle.readerWillDisappear(at: start.addingTimeInterval(15))
+        )
+        XCTAssertEqual(finished.watchPageTurns, 2)
+
+        lifecycle.recordSuccessfulWatchPageTurn(origin: .direct)
+        XCTAssertNil(
+            lifecycle.applicationDidEnterBackground(at: start.addingTimeInterval(16))
+        )
+    }
+
+    func testSeparateReadersKeepTheirOwnBookAttribution() throws {
+        let firstBook = Book.Id(rawValue: 21)
+        let secondBook = Book.Id(rawValue: 22)
+        var firstReader = ReaderSessionLifecycle(bookId: firstBook)
+        var secondReader = ReaderSessionLifecycle(bookId: secondBook)
+        let start = Date(timeIntervalSince1970: 400)
+
+        _ = firstReader.readerDidAppear(
+            at: start,
+            progression: 0.1,
+            applicationIsActive: true
+        )
+        let firstFinished = try XCTUnwrap(
+            firstReader.readerWillDisappear(at: start.addingTimeInterval(5))
+        )
+
+        _ = secondReader.readerDidAppear(
+            at: start.addingTimeInterval(6),
+            progression: 0.7,
+            applicationIsActive: true
+        )
+        secondReader.recordSuccessfulWatchPageTurn(origin: .iPadRelay)
+        let secondFinished = try XCTUnwrap(
+            secondReader.readerWillDisappear(at: start.addingTimeInterval(12))
+        )
+
+        XCTAssertEqual(firstFinished.bookId, firstBook)
+        XCTAssertEqual(secondFinished.bookId, secondBook)
+        XCTAssertEqual(firstFinished.watchPageTurns, 0)
+        XCTAssertEqual(secondFinished.watchPageTurns, 1)
+    }
+
+    func testSessionRequiresVisibleReaderAndActiveApplication() {
+        var lifecycle = ReaderSessionLifecycle(bookId: Book.Id(rawValue: 30))
+        let now = Date(timeIntervalSince1970: 500)
+
+        XCTAssertNil(
+            lifecycle.applicationDidBecomeActive(
+                at: now,
+                progression: 0.2
+            )
+        )
+        XCTAssertNil(
+            lifecycle.readerDidAppear(
+                at: now,
+                progression: 0.2,
+                applicationIsActive: false
+            )
+        )
+        XCTAssertNotNil(
+            lifecycle.applicationDidBecomeActive(
+                at: now.addingTimeInterval(1),
+                progression: 0.2
+            )
+        )
+    }
+
+    func testWatchDirectAndIPadRelaySuccessPathsPublishMeasuredTurns() throws {
+        let source = try Self.watchPageTurnServiceSource()
+
+        XCTAssertEqual(
+            Self.occurrenceCount(
+                of: "recordSuccessfulWatchPageTurn(origin: .direct)",
+                in: source
+            ),
+            1
+        )
+        XCTAssertEqual(
+            Self.occurrenceCount(
+                of: "recordSuccessfulWatchPageTurn(origin: .iPadRelay)",
+                in: source
+            ),
+            1
+        )
+    }
+
+    func testVisibleVisualReaderOwnsWatchNavigatorRegistration() throws {
+        let source = try Self.visualReaderViewControllerSource()
+
+        let appearBoundary = try Self.requiredLine(
+            "override func viewWillAppear(_ animated: Bool)",
+            in: source
+        )
+        let registerCall = try Self.requiredLine(
+            "WatchPageTurnService.shared.registerNavigator(visualNavigator, publication: publication)",
+            in: source,
+            startingAfter: appearBoundary
+        )
+        let disappearBoundary = try Self.requiredLine(
+            "override func viewWillDisappear(_ animated: Bool)",
+            in: source,
+            startingAfter: registerCall
+        )
+        let unregisterCall = try Self.requiredLine(
+            "WatchPageTurnService.shared.unregisterNavigator(visualNavigator)",
+            in: source,
+            startingAfter: disappearBoundary
+        )
+
+        XCTAssertGreaterThan(registerCall, appearBoundary)
+        XCTAssertLessThan(registerCall, disappearBoundary)
+        XCTAssertGreaterThan(unregisterCall, disappearBoundary)
+    }
+
     private static func readerViewControllerSource() throws -> String {
+        try source(named: "Sources/Reader/Common/ReaderViewController.swift")
+    }
+
+    private static func visualReaderViewControllerSource() throws -> String {
+        try source(named: "Sources/Reader/Common/VisualReaderViewController.swift")
+    }
+
+    private static func watchPageTurnServiceSource() throws -> String {
+        try source(named: "Sources/App/Services/WatchPageTurnService.swift")
+    }
+
+    private static func source(named path: String) throws -> String {
         let repositoryURL = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
             .deletingLastPathComponent()
-        let sourceURL = repositoryURL
-            .appendingPathComponent("Sources/Reader/Common/ReaderViewController.swift")
-
+        let sourceURL = repositoryURL.appendingPathComponent(path)
         return try String(contentsOf: sourceURL, encoding: .utf8)
     }
 
@@ -100,5 +290,9 @@ final class ReaderLiveActivityBackgroundPolicyTests: XCTestCase {
         return source.range(of: line, range: start..<source.endIndex)?
             .lowerBound
             .utf16Offset(in: source)
+    }
+
+    private static func occurrenceCount(of needle: String, in source: String) -> Int {
+        source.components(separatedBy: needle).count - 1
     }
 }
