@@ -424,6 +424,18 @@ final class ReadingSessionSummaryTests: XCTestCase {
         )
     }
 
+    func testSummaryPresentationDoesNotRequirePoppedReaderToStayAlive() throws {
+        let source = try Self.readerViewControllerSource()
+
+        XCTAssertTrue(source.contains("let readerIdentifier = ObjectIdentifier(reader)"))
+        XCTAssertTrue(source.contains("let presentationBlock: () -> Void = { [weak navigationController] in"))
+        XCTAssertTrue(source.contains("ObjectIdentifier(host) != readerIdentifier"))
+        XCTAssertFalse(
+            source.contains("[weak navigationController, weak reader]"),
+            "The deferred post-pop presenter must not depend on the popped Reader surviving."
+        )
+    }
+
     func testSummaryViewDeclaresDismissalAccessibilityAndDynamicTypeBehavior() throws {
         let source = try Self.readerViewControllerSource()
 
