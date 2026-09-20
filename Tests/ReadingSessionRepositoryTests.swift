@@ -157,6 +157,88 @@ final class ReadingSessionRepositoryTests: XCTestCase {
         XCTAssertEqual(countAfterDeletion, 0)
     }
 
+    func testRecentLimitPreservesNewestFirstOrdering() async throws {
+        let bookId = try await addBook(title: "Limited")
+        let base = Date(timeIntervalSince1970: 20_000)
+
+        for offset in [0.0, 60.0, 120.0] {
+            _ = try await sessions.add(
+                ReadingSession(
+                    bookId: bookId,
+                    startedAt: base.addingTimeInterval(offset),
+                    endedAt: base.addingTimeInterval(offset + 30),
+                    startProgression: offset / 1_000,
+                    endProgression: offset / 1_000 + 0.01,
+                    watchPageTurns: Int(offset / 60)
+                )
+            )
+        }
+
+        let recentSessions = try await sessions.recent(for: bookId, limit: 2)
+
+        XCTAssertEqual(recentSessions.count, 2)
+        XCTAssertEqual(recentSessions.map(\.watchPageTurns), [2, 1])
+    }
+
+    func testDeletedBookHasNoPerBookHistoryRows() async throws {
+        let bookId = try await addBook(title: "Deleted")
+        let start = Date(timeIntervalSince1970: 30_000)
+
+        _ = try await sessions.add(
+            ReadingSession(
+                bookId: bookId,
+                startedAt: start,
+                endedAt: start.addingTimeInterval(45),
+                startProgression: 0.4,
+                endProgression: 0.45,
+                watchPageTurns: 0
+            )
+        )
+
+        try await books.remove(bookId)
+
+        XCTAssertTrue(try await sessions.recent(for: bookId, limit: 10).isEmpty)
+    }
+
+    func testReadingHistoryAccessMatchesStatsEntitlement() {
+        XCTAssertFalse(ReadingStatsScope.day.requiresPro)
+        XCTAssertTrue(ReadingStatsScope.summary.requiresPro)
+        XCTAssertFalse(ReadingHistoryAccess.canAccess(hasProAccess: false))
+        XCTAssertTrue(ReadingHistoryAccess.canAccess(hasProAccess: true))
+    }
+
+    func testReadingHistoryUIIncludesRequiredStatesFactsAndAdaptiveLayout() throws {
+        let source = try Self.source(named: "Sources/Home/ReadingStatsView.swift")
+        guard let historyStart = source.range(of: "private struct ReadingHistoryView: View") else {
+            return XCTFail("ReadingHistoryView is missing")
+        }
+        let historySource = String(source[historyStart.lowerBound...])
+
+        XCTAssertTrue(historySource.contains("case .loading"))
+        XCTAssertTrue(historySource.contains("case .empty"))
+        XCTAssertTrue(historySource.contains("ProgressView()"))
+        XCTAssertTrue(historySource.contains("ReadingHistoryView(book: item.book)"))
+        XCTAssertTrue(historySource.contains("ReadingHistoryAccess.canAccess(hasProAccess: proPurchase.hasProAccess)"))
+        XCTAssertTrue(historySource.contains(".frame(maxWidth: 680, alignment: .leading)"))
+        XCTAssertTrue(historySource.contains("item.book.title"))
+        XCTAssertTrue(historySource.contains("item.session.startedAt"))
+        XCTAssertTrue(historySource.contains("item.session.durationSeconds"))
+        XCTAssertTrue(historySource.contains("item.session.startProgression"))
+        XCTAssertTrue(historySource.contains("item.session.endProgression"))
+        XCTAssertTrue(historySource.contains("item.session.watchPageTurns"))
+        XCTAssertFalse(historySource.contains("UIDevice.current"))
+    }
+
+    private static func source(named path: String) throws -> String {
+        let repositoryURL = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        return try String(
+            contentsOf: repositoryURL.appendingPathComponent(path),
+            encoding: .utf8
+        )
+    }
+
     private func addBook(title: String) async throws -> Book.Id {
         try await books.add(
             Book(
