@@ -974,3 +974,9 @@
 "onboarding_tour_page3_chip1" = "Auto-Sync";
 "onboarding_tour_page3_chip2" = "iPhone & iPad";
 "onboarding_tour_page3_chip3" = "Privates CloudKit";
+
+/* MARK: Watch Workout Compatibility */
+"watch_workout_section" = "Training-Kompatibilität";
+"watch_workout_title" = "PagePilot während des Trainings verfügbar halten";
+"watch_workout_detail" = "Öffne auf der Apple Watch Einstellungen → Allgemein → Zurück zur Uhr → Training und deaktiviere Zur App zurückkehren. Das Training wird weiter aufgezeichnet.";
+"watch_workout_footer" = "Du kannst für PagePilot außerdem 1 Stunde bis zur Rückkehr zur Uhr einstellen, um Unterbrechungen zu reduzieren.";
