@@ -22,7 +22,13 @@ class ReaderViewController<N: Navigator>: UIViewController,
     let bookId: Book.Id
     private let books: BookRepository
     private let bookmarks: BookmarkRepository
-    private var readingSessionStartDate: Date?
+    private struct ActiveReadingSession {
+        let startedAt: Date
+        let startProgression: Double
+        let watchPageTurnCountAtStart: Int
+    }
+
+    private var activeReadingSession: ActiveReadingSession?
     private var suppressedReadingProgress: Locator?
     private(set) var isReadingProgressPersistenceSuppressed = false
 
@@ -104,27 +110,63 @@ class ReaderViewController<N: Navigator>: UIViewController,
     }
 
     private func startReadingSessionIfNeeded() {
-        guard readingSessionStartDate == nil else { return }
+        guard activeReadingSession == nil else { return }
+
         let startDate = Date()
-        readingSessionStartDate = startDate
+        let startProgression = navigator.currentLocation?.locations.totalProgression
+            ?? WatchPageTurnService.shared.currentBookProgress
+
+        activeReadingSession = ActiveReadingSession(
+            startedAt: startDate,
+            startProgression: startProgression,
+            watchPageTurnCountAtStart: ReviewPromptManager.shared.watchPageTurnCount
+        )
+
         WatchReadingSessionContext.begin(
             at: startDate,
-            progression: WatchPageTurnService.shared.currentBookProgress
+            progression: startProgression
         )
     }
 
     private func finishReadingSessionIfNeeded(celebrateGoal: Bool = true) {
-        guard let startDate = readingSessionStartDate else { return }
+        guard let activeSession = activeReadingSession else { return }
 
         let endDate = Date()
-        readingSessionStartDate = nil
+        let endProgression = navigator.currentLocation?.locations.totalProgression
+            ?? activeSession.startProgression
+        let watchPageTurns = max(
+            0,
+            ReviewPromptManager.shared.watchPageTurnCount
+                - activeSession.watchPageTurnCountAtStart
+        )
+
+        activeReadingSession = nil
         WatchReadingSessionContext.end()
 
         ReadingStatsStore.shared.recordReadingSession(
-            startDate: startDate,
+            startDate: activeSession.startedAt,
             endDate: endDate,
             bookId: bookId
         )
+
+        let session = ReadingSession(
+            bookId: bookId,
+            startedAt: activeSession.startedAt,
+            endedAt: endDate,
+            startProgression: activeSession.startProgression,
+            endProgression: endProgression,
+            watchPageTurns: watchPageTurns
+        )
+
+        if session.durationSeconds > 0 {
+            Task {
+                do {
+                    try await AppModule.shared?.readingSessions.add(session)
+                } catch {
+                    print("ReaderViewController: failed to save reading session: \(error)")
+                }
+            }
+        }
 
         // Celebrate the daily goal once per day, only on a visible exit (not
         // backgrounding) so the toast is actually seen.
