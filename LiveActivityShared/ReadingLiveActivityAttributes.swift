@@ -5,6 +5,7 @@
 //
 
 import ActivityKit
+import AppIntents
 import Foundation
 
 struct ReadingLiveActivityAttributes: ActivityAttributes {
@@ -15,4 +16,53 @@ struct ReadingLiveActivityAttributes: ActivityAttributes {
 
     let sessionID: String
     let startedAt: Date
+}
+
+enum ReadingLiveActivityPageTurnDirection: String, Equatable, Sendable {
+    case previous = "prev"
+    case next = "next"
+}
+
+struct ReadingLiveActivityPageTurnRequest: Equatable, Sendable {
+    let direction: ReadingLiveActivityPageTurnDirection
+    let commandID: String
+
+    init(
+        direction: ReadingLiveActivityPageTurnDirection,
+        commandID: String = UUID().uuidString
+    ) {
+        self.direction = direction
+        self.commandID = commandID
+    }
+}
+
+extension Notification.Name {
+    static let readingLiveActivityPageTurnRequested =
+        Notification.Name("readingLiveActivityPageTurnRequested")
+}
+
+struct ReadingPreviousPageIntent: LiveActivityIntent {
+    static var title: LocalizedStringResource = "Previous Page"
+    static let direction: ReadingLiveActivityPageTurnDirection = .previous
+
+    func perform() async throws -> some IntentResult {
+        NotificationCenter.default.post(
+            name: .readingLiveActivityPageTurnRequested,
+            object: ReadingLiveActivityPageTurnRequest(direction: Self.direction)
+        )
+        return .result()
+    }
+}
+
+struct ReadingNextPageIntent: LiveActivityIntent {
+    static var title: LocalizedStringResource = "Next Page"
+    static let direction: ReadingLiveActivityPageTurnDirection = .next
+
+    func perform() async throws -> some IntentResult {
+        NotificationCenter.default.post(
+            name: .readingLiveActivityPageTurnRequested,
+            object: ReadingLiveActivityPageTurnRequest(direction: Self.direction)
+        )
+        return .result()
+    }
 }
