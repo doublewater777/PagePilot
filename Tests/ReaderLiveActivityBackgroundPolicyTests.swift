@@ -366,6 +366,36 @@ final class ReadingSessionSummaryTests: XCTestCase {
         )
     }
 
+    func testNineSecondSessionIsSuppressedAtFloorBoundaryEvenWithProgress() {
+        XCTAssertNil(
+            ReadingSessionSummaryPolicy.makeSummary(
+                for: makeSession(
+                    durationSeconds: 9,
+                    startProgression: 0.20,
+                    endProgression: 0.25
+                ),
+                todaySeconds: 0,
+                goalMinutes: 30,
+                suppressGoalCompletion: false
+            )
+        )
+    }
+
+    func testTenSecondSessionQualifiesAtFloorBoundaryWithProgress() {
+        XCTAssertNotNil(
+            ReadingSessionSummaryPolicy.makeSummary(
+                for: makeSession(
+                    durationSeconds: 10,
+                    startProgression: 0.20,
+                    endProgression: 0.25
+                ),
+                todaySeconds: 0,
+                goalMinutes: 30,
+                suppressGoalCompletion: false
+            )
+        )
+    }
+
     func testExtremelyShortSessionDoesNotProduceSummaryEvenWithWatchTurns() {
         XCTAssertNil(
             ReadingSessionSummaryPolicy.makeSummary(
