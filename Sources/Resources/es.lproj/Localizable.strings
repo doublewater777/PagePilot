@@ -378,7 +378,7 @@
 "paywall_feature_streak_subtitle" = "Sigue tu ritmo";
 "paywall_feature_notes_title" = "Notas ilimitadas";
 "paywall_feature_notes_subtitle" = "Sin límite de resaltado";
-"paywall_assurance_trial" = "Prueba gratuita de 7 días";
+"paywall_assurance_trial" = "Prueba gratuita de 3 días";
 "paywall_assurance_cancel" = "Cancelar en cualquier momento";
 "paywall_trial_note" = "La prueba se renueva automáticamente una vez finalizada. Puedes cancelar en cualquier momento en Configuración.";
 "paywall_one_time" = "Compra única, tuya para siempre";
@@ -391,7 +391,7 @@
 "paywall_retry_button" = "Rever";
 "paywall_error_title" = "Compra fallida";
 "paywall_success_title" = "¡Pro desbloqueado!";
-"paywall_trial_badge" = "Prueba gratuita de 7 días";
+"paywall_trial_badge" = "Prueba gratuita de 3 días";
 
 /* Settings Pro */
 "settings_pro_unlocked" = "PagePilot Pro";
@@ -429,7 +429,7 @@
 "paywall_privacy_policy" = "política de privacidad";
 "paywall_recommended_badge" = "Recomendado";
 "paywall_limited_badge" = "Limitado";
-"paywall_trial_eligible_label" = "7 días gratis";
+"paywall_trial_eligible_label" = "3 días gratis";
 "paywall_lifetime_sub" = "Compra única";
 "paywall_save_badge" = "Ahorra 16%";
 "paywall_trial_duration_day" = "%d día";
@@ -462,7 +462,7 @@
 "paywall_buy_button_ineligible" = "Continuar";
 "paywall_buy_button_lifetime" = "Desbloquear de por vida";
 "paywall_trial_duration_eligible_monthly" = "%@ gratis, luego %@";
-"paywall_trial_duration_eligible_yearly" = "7 días gratis, luego %@/año";
+"paywall_trial_duration_eligible_yearly" = "3 días gratis, luego %@/año";
 "paywall_trial_duration_ineligible_monthly" = "%@/mes";
 "paywall_trial_duration_ineligible_yearly" = "%@/año";
 "paywall_trial_duration_lifetime" = "%@ una vez";

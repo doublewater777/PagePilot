@@ -4,6 +4,7 @@ import XCTest
 @testable import PagePilot
 
 final class PaywallSubscriptionCopyTests: XCTestCase {
+    private let threeDays = PaywallTrialPeriod(value: 3, unit: .day, periodCount: 1)
     private let sevenDays = PaywallTrialPeriod(value: 7, unit: .day, periodCount: 1)
     private let oneWeek = PaywallTrialPeriod(value: 1, unit: .week, periodCount: 1)
     private let oneMonth = PaywallTrialPeriod(value: 1, unit: .month, periodCount: 1)
@@ -348,6 +349,38 @@ final class PaywallSubscriptionCopyTests: XCTestCase {
         XCTAssertEqual(zhSubtitle, "仅 ¥2.3/月，省 16%")
         XCTAssertFalse(zhDisclosure.hasPrefix(zhSubtitle), zhDisclosure)
         XCTAssertNotEqual(zhSubtitle, zhDisclosure)
+    }
+
+    func testThreeDayTrialDisclosureAcrossLanguages() throws {
+        let expected: [String: (trial: String, renew: String, cta: String)] = [
+            "en": ("3-day free trial, then ¥28/year", "Automatically renews", "Start 3-Day Free Trial"),
+            "zh-Hans": ("3 天免费试用，之后 ¥28/年", "自动续订", "开始 3 天免费试用"),
+            "de": ("3 Tage kostenlos, danach ¥28/Jahr", "Verlängert sich automatisch", "3-tägige kostenlose Testphase starten"),
+            "es": ("Prueba gratuita de 3 días, luego ¥28/año", "Se renueva automáticamente", "Empieza la prueba gratuita de 3 días"),
+            "fr": ("Essai gratuit de 3 jours, puis ¥28/an", "Renouvellement automatique", "Commencer l’essai gratuit de 3 jours"),
+        ]
+
+        for (language, strings) in expected {
+            let bundle = try localizedBundle(language)
+            let disclosure = PaywallSubscriptionCopy.purchaseDisclosure(
+                kind: .yearly,
+                displayPrice: "¥28",
+                isTrialEligible: true,
+                trialPeriod: threeDays,
+                billingPeriod: yearlyBillingPeriod,
+                bundle: bundle
+            )
+            XCTAssertTrue(disclosure.contains(strings.trial), "\(language) missing trial+price: \(disclosure)")
+            XCTAssertTrue(disclosure.contains(strings.renew), "\(language) missing auto-renew: \(disclosure)")
+
+            let cta = PaywallSubscriptionCopy.buyButtonText(
+                kind: .yearly,
+                isTrialEligible: true,
+                trialPeriod: threeDays,
+                bundle: bundle
+            )
+            XCTAssertEqual(cta, strings.cta, "\(language) buy button text mismatch")
+        }
     }
 
     func testSupportedLanguagesKeepTrialPriceAndRenewalTogether() throws {
