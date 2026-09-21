@@ -978,6 +978,7 @@
 
 /* Post-session summary */
 "reader_session_summary_title" = "Session de lecture";
+"reader_session_summary_book_progress" = "Progression du livre";
 "reader_session_summary_progress_format" = "%@ → %@ · +%@";
 "reader_session_summary_watch_turns_format" = "Pages tournées avec la Watch : %d";
 "reader_session_summary_done" = "Terminé";

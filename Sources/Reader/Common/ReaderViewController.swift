@@ -124,6 +124,7 @@ struct ReadingSessionSummary: Equatable {
 
 enum ReadingSessionSummaryPolicy {
     static let minimumDurationSeconds = 2 * 60
+    static let minimumSessionFloorSeconds = 10
     static let minimumForwardProgress = 0.01
     static let minimumWatchPageTurns = 5
     private static let progressComparisonTolerance = 1e-9
@@ -134,6 +135,8 @@ enum ReadingSessionSummaryPolicy {
         goalMinutes: Int,
         suppressGoalCompletion: Bool
     ) -> ReadingSessionSummary? {
+        guard session.durationSeconds >= minimumSessionFloorSeconds else { return nil }
+
         let isMeaningful =
             session.durationSeconds >= minimumDurationSeconds
             || session.progressDelta >= minimumForwardProgress - progressComparisonTolerance
@@ -485,14 +488,27 @@ final class ReadingSessionSummaryViewController: UIViewController {
         progressStack.alignment = .fill
         progressStack.spacing = 6
 
+        let progressHeaderStack = UIStackView()
+        progressHeaderStack.axis = .horizontal
+        progressHeaderStack.alignment = .firstBaseline
+        progressHeaderStack.distribution = .equalSpacing
+
+        let progressCaption = UILabel()
+        progressCaption.text = NSLocalizedString("reader_session_summary_book_progress", comment: "")
+        progressCaption.font = .systemFont(ofSize: 11, weight: .medium)
+        progressCaption.textColor = .secondaryLabel
+        progressHeaderStack.addArrangedSubview(progressCaption)
+
         let progressLabel = makeLabel(
             text: progressText(),
             textStyle: .body
         )
-        progressLabel.font = .systemFont(ofSize: 13, weight: .semibold)
-        progressLabel.textColor = .secondaryLabel
+        progressLabel.font = .systemFont(ofSize: 13, weight: .bold)
+        progressLabel.textColor = .label
         progressLabel.accessibilityIdentifier = "readingSessionSummary.progress"
-        progressStack.addArrangedSubview(progressLabel)
+        progressHeaderStack.addArrangedSubview(progressLabel)
+
+        progressStack.addArrangedSubview(progressHeaderStack)
 
         let progressTrack = UIView()
         progressTrack.translatesAutoresizingMaskIntoConstraints = false
