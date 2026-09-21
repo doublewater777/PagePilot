@@ -188,11 +188,15 @@ final class ReadingSessionSummaryViewController: UIViewController {
     init(summary: ReadingSessionSummary) {
         self.summary = summary
         super.init(nibName: nil, bundle: nil)
-        modalPresentationStyle = .pageSheet
+        if UIDevice.current.userInterfaceIdiom == .pad {
+            modalPresentationStyle = .formSheet
+        } else {
+            modalPresentationStyle = .pageSheet
+        }
         isModalInPresentation = false
         preferredContentSize = CGSize(
             width: ReadingSessionSummaryLayoutPolicy.maximumContentWidth,
-            height: 360
+            height: 380
         )
     }
 
@@ -214,7 +218,7 @@ final class ReadingSessionSummaryViewController: UIViewController {
 
         contentStack.axis = .vertical
         contentStack.alignment = .fill
-        contentStack.spacing = 16
+        contentStack.spacing = 12
         contentStack.translatesAutoresizingMaskIntoConstraints = false
         contentStack.accessibilityIdentifier = "readingSessionSummary.content"
         scrollView.addSubview(contentStack)
@@ -305,8 +309,8 @@ final class ReadingSessionSummaryViewController: UIViewController {
             scrollView.topAnchor.constraint(equalTo: safeArea.topAnchor),
             scrollView.bottomAnchor.constraint(equalTo: safeArea.bottomAnchor),
 
-            contentStack.topAnchor.constraint(equalTo: scrollView.contentLayoutGuide.topAnchor, constant: 24),
-            contentStack.bottomAnchor.constraint(equalTo: scrollView.contentLayoutGuide.bottomAnchor, constant: -24),
+            contentStack.topAnchor.constraint(equalTo: scrollView.contentLayoutGuide.topAnchor, constant: 20),
+            contentStack.bottomAnchor.constraint(equalTo: scrollView.contentLayoutGuide.bottomAnchor, constant: -20),
             contentStack.centerXAnchor.constraint(equalTo: scrollView.frameLayoutGuide.centerXAnchor),
             contentStack.widthAnchor.constraint(
                 lessThanOrEqualToConstant: ReadingSessionSummaryLayoutPolicy.maximumContentWidth
@@ -320,9 +324,10 @@ final class ReadingSessionSummaryViewController: UIViewController {
         action: Selector,
         accessibilityIdentifier: String
     ) -> UIButton {
-        var configuration = UIButton.Configuration.tinted()
+        var configuration = UIButton.Configuration.gray()
         configuration.title = title
-        configuration.buttonSize = .large
+        configuration.buttonSize = .medium
+        configuration.cornerStyle = .capsule
 
         let button = UIButton(configuration: configuration)
         button.addTarget(self, action: action, for: .touchUpInside)
@@ -457,7 +462,14 @@ enum ReadingSessionSummaryPresenter {
             }
 
             if let sheet = summaryViewController.sheetPresentationController {
-                sheet.detents = [.medium()]
+                if #available(iOS 16.0, *) {
+                    let compactDetent = UISheetPresentationController.Detent.custom(identifier: .init("compactSummary")) { _ in
+                        380
+                    }
+                    sheet.detents = [compactDetent, .medium()]
+                } else {
+                    sheet.detents = [.medium()]
+                }
                 sheet.prefersGrabberVisible = true
             }
             host.present(summaryViewController, animated: true)

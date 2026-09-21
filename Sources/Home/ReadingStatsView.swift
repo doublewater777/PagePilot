@@ -1999,7 +1999,7 @@ private struct ReadingHistoryView: View {
             .frame(maxWidth: 520)
             .frame(maxWidth: .infinity)
             .padding(.horizontal, 20)
-            .padding(.vertical, 32)
+            .padding(.vertical, 24)
         }
     }
 

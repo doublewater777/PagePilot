@@ -362,7 +362,7 @@
 
 /* Paywall */
 "paywall_title" = "专注阅读，收获更多";
-"paywall_subtitle" = "无限书架、Watch 控 iPad 与深度统计，让阅读更自由。";
+"paywall_subtitle" = "无限书架、Watch 控制 iPad 与深度统计，让阅读更自由。";
 "paywall_pro_badge" = "年会员主推";
 "paywall_feature_unlimited_books" = "无限添加书籍（普通版最多 10 本）";
 "paywall_feature_ipad_page_turn" = "Apple Watch 可控制 iPad 翻页";
@@ -370,7 +370,7 @@
 "paywall_feature_streak" = "连续阅读天数追踪";
 "paywall_feature_unlimited_title" = "无限书架";
 "paywall_feature_unlimited_subtitle" = "不再限制 10 本";
-"paywall_feature_watch_title" = "Watch 控 iPad";
+"paywall_feature_watch_title" = "Watch 控制 iPad";
 "paywall_feature_watch_subtitle" = "iPhone 翻页免费";
 "paywall_feature_stats_title" = "深度统计";
 "paywall_feature_stats_subtitle" = "周月年趋势";
@@ -401,7 +401,7 @@
 "settings_pro_upgrade_body" = "解锁无限书架、深度统计、无限笔记和更多阅读能力";
 "settings_pro_benefit_library" = "无限书架";
 "settings_pro_benefit_stats" = "深度统计";
-"settings_pro_benefit_watch" = "Watch 控 iPad";
+"settings_pro_benefit_watch" = "Watch 控制 iPad";
 "settings_pro_benefit_notes" = "无限笔记";
 
 /* Purchase Errors */

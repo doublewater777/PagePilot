@@ -477,8 +477,8 @@ struct PaywallView: View {
             Button(NSLocalizedString("paywall_restore_button", comment: "")) {
                 Task { await restore() }
             }
-            .font(.system(size: 12, weight: .medium))
-            .foregroundColor(AppColors.secondaryText.opacity(0.65))
+            .font(.system(size: 13, weight: .medium))
+            .foregroundColor(AppColors.secondaryText)
             .disabled(isPurchasing)
         }
         .padding(.top, 2)
