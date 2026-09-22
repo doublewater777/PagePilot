@@ -6,6 +6,19 @@
 
 import Foundation
 
+enum ReadingSessionAnalytics {
+    enum Destination: String {
+        case history
+        case prediction
+    }
+
+    enum Source: String {
+        case sessionSummary = "reading_session_summary"
+        case readingHistoryPreview = "reading_history_preview"
+        case readingPredictionPreview = "reading_prediction_preview"
+    }
+}
+
 /// Lightweight analytics wrapper for tracking Pro conversion funnel.
 /// Uses NotificationCenter so multiple observers can subscribe.
 enum AnalyticsEvent {
@@ -20,6 +33,11 @@ enum AnalyticsEvent {
     case proAccessGranted
     case trialActivated
     case trialExpired
+    case readingSessionInsightIntent(
+        destination: ReadingSessionAnalytics.Destination,
+        source: ReadingSessionAnalytics.Source
+    )
+    case proUpgradeIntent(source: ReadingSessionAnalytics.Source)
     case statsScopeChanged(to: String)
 
     var name: String {
@@ -35,6 +53,8 @@ enum AnalyticsEvent {
         case .proAccessGranted: return "pro_access_granted"
         case .trialActivated: return "trial_activated"
         case .trialExpired: return "trial_expired"
+        case .readingSessionInsightIntent: return "reading_session_insight_intent"
+        case .proUpgradeIntent: return "pro_upgrade_intent"
         case .statsScopeChanged: return "stats_scope_changed"
         }
     }
@@ -45,6 +65,13 @@ enum AnalyticsEvent {
             return ["source": source]
         case .purchaseFailed(let error):
             return ["error": error]
+        case let .readingSessionInsightIntent(destination, source):
+            return [
+                "destination": destination.rawValue,
+                "source": source.rawValue,
+            ]
+        case .proUpgradeIntent(let source):
+            return ["source": source.rawValue]
         case .statsScopeChanged(let scope):
             return ["scope": scope]
         default:

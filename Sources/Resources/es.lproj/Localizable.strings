@@ -978,13 +978,22 @@
 
 /* Post-session summary */
 "reader_session_summary_title" = "Sesión de lectura";
+"reader_session_summary_book_progress" = "Progreso del libro";
 "reader_session_summary_progress_format" = "%@ → %@ · +%@";
 "reader_session_summary_watch_turns_format" = "Pasos de página con Watch: %d";
 "reader_session_summary_done" = "Listo";
+"reader_session_summary_history_action" = "Ver historial de lectura";
+"reader_session_summary_prediction_action" = "Ver estimación de ritmo";
 "reading_history_title" = "Historial de lectura";
 "reading_history_subtitle" = "Revisa sesiones recientes y abre un libro para ver su historial.";
 "reading_history_locked_title" = "El historial de lectura es una función Pro";
 "reading_history_locked_body" = "Las estadísticas de hoy y los resúmenes de sesión siguen siendo gratuitos. Pro desbloquea el historial de sesiones y las estimaciones de ritmo.";
+"reading_prediction_locked_title" = "La predicción del ritmo es Pro";
+"reading_prediction_locked_body" = "El resumen inmediato de la sesión sigue siendo gratuito. Pro usa sesiones recientes para estimar el tiempo de lectura activa restante y, cuando es fiable, una fecha aproximada de finalización.";
+"reading_history_preview_title" = "Historial de sesiones a largo plazo";
+"reading_history_preview_body" = "Consulta la fecha, duración, avance y giros con Apple Watch de cada sesión.";
+"reading_prediction_preview_title" = "Predicción de ritmo y finalización";
+"reading_prediction_preview_body" = "Usa sesiones recientes para estimar el tiempo de lectura activa restante y una fecha aproximada de finalización.";
 "reading_history_empty_title" = "Aún no hay sesiones de lectura";
 "reading_history_empty_body" = "Las sesiones de lectura visual finalizadas aparecerán aquí.";
 "reading_history_loading" = "Cargando historial de lectura…";

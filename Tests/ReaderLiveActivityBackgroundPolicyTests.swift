@@ -351,6 +351,65 @@ final class ReadingSessionSummaryTests: XCTestCase {
         )
     }
 
+    func testExtremelyShortSessionDoesNotProduceSummaryEvenWithProgress() {
+        XCTAssertNil(
+            ReadingSessionSummaryPolicy.makeSummary(
+                for: makeSession(
+                    durationSeconds: 3,
+                    startProgression: 0.20,
+                    endProgression: 0.25
+                ),
+                todaySeconds: 0,
+                goalMinutes: 30,
+                suppressGoalCompletion: false
+            )
+        )
+    }
+
+    func testNineSecondSessionIsSuppressedAtFloorBoundaryEvenWithProgress() {
+        XCTAssertNil(
+            ReadingSessionSummaryPolicy.makeSummary(
+                for: makeSession(
+                    durationSeconds: 9,
+                    startProgression: 0.20,
+                    endProgression: 0.25
+                ),
+                todaySeconds: 0,
+                goalMinutes: 30,
+                suppressGoalCompletion: false
+            )
+        )
+    }
+
+    func testTenSecondSessionQualifiesAtFloorBoundaryWithProgress() {
+        XCTAssertNotNil(
+            ReadingSessionSummaryPolicy.makeSummary(
+                for: makeSession(
+                    durationSeconds: 10,
+                    startProgression: 0.20,
+                    endProgression: 0.25
+                ),
+                todaySeconds: 0,
+                goalMinutes: 30,
+                suppressGoalCompletion: false
+            )
+        )
+    }
+
+    func testExtremelyShortSessionDoesNotProduceSummaryEvenWithWatchTurns() {
+        XCTAssertNil(
+            ReadingSessionSummaryPolicy.makeSummary(
+                for: makeSession(
+                    durationSeconds: 5,
+                    watchPageTurns: 6
+                ),
+                todaySeconds: 0,
+                goalMinutes: 30,
+                suppressGoalCompletion: false
+            )
+        )
+    }
+
     func testSummaryCarriesSessionMetricsWithoutInventingWatchTurns() throws {
         let summary = try XCTUnwrap(
             ReadingSessionSummaryPolicy.makeSummary(

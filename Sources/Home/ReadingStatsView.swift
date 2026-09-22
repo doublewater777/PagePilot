@@ -1806,11 +1806,18 @@ private enum ReadingHistoryLoadState {
     case failed
 }
 
+@ViewBuilder
+func readingHistoryDestination(book: Book?) -> some View {
+    ReadingHistoryView(book: book)
+}
+
+
 private struct ReadingHistoryView: View {
     @Environment(\.colorScheme) private var colorScheme
     @ObservedObject private var proPurchase = ProPurchaseManager.shared
     @State private var state: ReadingHistoryLoadState = .loading
     @State private var showPaywall = false
+    @State private var paywallSource = ReadingSessionAnalytics.Source.readingHistoryPreview
     @State private var paceResult: ReadingPaceEstimateResult?
 
     private let book: Book?
@@ -1837,7 +1844,7 @@ private struct ReadingHistoryView: View {
         .toolbarBackground(Color(.systemGroupedBackground), for: .navigationBar)
         .toolbarBackground(.visible, for: .navigationBar)
         .sheet(isPresented: $showPaywall) {
-            PaywallView()
+            PaywallView(analyticsSource: paywallSource.rawValue)
         }
         .task(id: proPurchase.hasProAccess) {
             guard canAccessHistory else { return }
@@ -1942,18 +1949,37 @@ private struct ReadingHistoryView: View {
                 }
                 .frame(width: 64, height: 64)
 
-                Text(NSLocalizedString("reading_history_locked_title", comment: ""))
-                    .font(.system(size: 22, weight: .bold))
-                    .foregroundColor(AppColors.primaryText)
-                    .multilineTextAlignment(.center)
+                Text(NSLocalizedString(
+                    book == nil ? "reading_history_locked_title" : "reading_prediction_locked_title",
+                    comment: ""
+                ))
+                .font(.system(size: 22, weight: .bold))
+                .foregroundColor(AppColors.primaryText)
+                .multilineTextAlignment(.center)
 
-                Text(NSLocalizedString("reading_history_locked_body", comment: ""))
-                    .font(.system(size: 14))
-                    .foregroundColor(AppColors.secondaryText)
-                    .multilineTextAlignment(.center)
-                    .lineSpacing(3)
+                Text(NSLocalizedString(
+                    book == nil ? "reading_history_locked_body" : "reading_prediction_locked_body",
+                    comment: ""
+                ))
+                .font(.system(size: 14))
+                .foregroundColor(AppColors.secondaryText)
+                .multilineTextAlignment(.center)
+                .lineSpacing(3)
+
+                VStack(spacing: 12) {
+                    if book != nil {
+                        predictionPreview
+                        historyPreview
+                    } else {
+                        historyPreview
+                        predictionPreview
+                    }
+                }
 
                 Button {
+                    let source = upgradeSource
+                    paywallSource = source
+                    Analytics.shared.log(.proUpgradeIntent(source: source))
                     showPaywall = true
                 } label: {
                     Text(NSLocalizedString("stats_upgrade_pro", comment: ""))
@@ -1973,8 +1999,28 @@ private struct ReadingHistoryView: View {
             .frame(maxWidth: 520)
             .frame(maxWidth: .infinity)
             .padding(.horizontal, 20)
-            .padding(.vertical, 32)
+            .padding(.vertical, 24)
         }
+    }
+
+    private var upgradeSource: ReadingSessionAnalytics.Source {
+        book == nil ? .readingHistoryPreview : .readingPredictionPreview
+    }
+
+    private var historyPreview: some View {
+        ReadingPremiumPreviewCard(
+            icon: "clock.arrow.circlepath",
+            title: NSLocalizedString("reading_history_preview_title", comment: ""),
+            bodyText: NSLocalizedString("reading_history_preview_body", comment: "")
+        )
+    }
+
+    private var predictionPreview: some View {
+        ReadingPremiumPreviewCard(
+            icon: "speedometer",
+            title: NSLocalizedString("reading_prediction_preview_title", comment: ""),
+            bodyText: NSLocalizedString("reading_prediction_preview_body", comment: "")
+        )
     }
 
     private func historyStateView(
@@ -2088,6 +2134,39 @@ private struct ReadingHistoryView: View {
         } catch {
             state = .failed
         }
+    }
+}
+
+
+private struct ReadingPremiumPreviewCard: View {
+    let icon: String
+    let title: String
+    let bodyText: String
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: icon)
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundColor(AppColors.accentBlue)
+                .frame(width: 28)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(AppColors.primaryText)
+
+                Text(bodyText)
+                    .font(.system(size: 13))
+                    .foregroundColor(AppColors.secondaryText)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Spacer(minLength: 0)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .background(Color(.secondarySystemGroupedBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 }
 

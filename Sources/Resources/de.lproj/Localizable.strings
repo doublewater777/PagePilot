@@ -978,13 +978,22 @@
 
 /* Post-session summary */
 "reader_session_summary_title" = "Lesesitzung";
+"reader_session_summary_book_progress" = "Buchfortschritt";
 "reader_session_summary_progress_format" = "%@ → %@ · +%@";
 "reader_session_summary_watch_turns_format" = "Watch-Seitenwechsel: %d";
 "reader_session_summary_done" = "Fertig";
+"reader_session_summary_history_action" = "Leseverlauf ansehen";
+"reader_session_summary_prediction_action" = "Tempo-Schätzung ansehen";
 "reading_history_title" = "Leseverlauf";
 "reading_history_subtitle" = "Letzte Sitzungen ansehen und den Verlauf eines Buchs öffnen.";
 "reading_history_locked_title" = "Der Leseverlauf ist eine Pro-Funktion";
 "reading_history_locked_body" = "Heutige Lesestatistiken und Sitzungszusammenfassungen bleiben kostenlos. Pro schaltet Sitzungsverlauf und Lesetempo-Schätzungen frei.";
+"reading_prediction_locked_title" = "Lesetempo-Prognosen sind Pro";
+"reading_prediction_locked_body" = "Die direkte Sitzungszusammenfassung bleibt kostenlos. Pro nutzt letzte Sitzungen, um die verbleibende aktive Lesezeit und bei ausreichender Datenlage ein ungefähres Enddatum zu schätzen.";
+"reading_history_preview_title" = "Langfristiger Sitzungsverlauf";
+"reading_history_preview_body" = "Sieh Datum, Dauer, Fortschritt und Apple-Watch-Seitenwechsel jeder Sitzung.";
+"reading_prediction_preview_title" = "Tempo- und Abschlussprognose";
+"reading_prediction_preview_body" = "Nutze letzte Sitzungen, um verbleibende aktive Lesezeit und ein ungefähres Enddatum zu schätzen.";
 "reading_history_empty_title" = "Noch keine Lesesitzungen";
 "reading_history_empty_body" = "Abgeschlossene visuelle Lesesitzungen erscheinen hier.";
 "reading_history_loading" = "Leseverlauf wird geladen…";

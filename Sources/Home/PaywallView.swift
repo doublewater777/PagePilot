@@ -30,9 +30,14 @@ struct PaywallView: View {
     @State private var safariURL: IdentifiableURL?
 
     let context: PaywallContext
+    let analyticsSource: String
 
-    init(context: PaywallContext = .general) {
+    init(
+        context: PaywallContext = .general,
+        analyticsSource: String = "paywall_sheet"
+    ) {
         self.context = context
+        self.analyticsSource = analyticsSource
     }
 
     private var selectedProduct: Product? {
@@ -117,7 +122,7 @@ struct PaywallView: View {
         .presentationDetents(isPad ? [.large] : [.height(680)])
         .presentationDragIndicator(.hidden)
         .onAppear {
-            Analytics.shared.log(.paywallViewed(source: "paywall_sheet"))
+            Analytics.shared.log(.paywallViewed(source: analyticsSource))
             Task {
                 await loadProductsIfNeeded()
             }
@@ -472,8 +477,8 @@ struct PaywallView: View {
             Button(NSLocalizedString("paywall_restore_button", comment: "")) {
                 Task { await restore() }
             }
-            .font(.system(size: 12, weight: .medium))
-            .foregroundColor(AppColors.secondaryText.opacity(0.65))
+            .font(.system(size: 13, weight: .medium))
+            .foregroundColor(AppColors.secondaryText)
             .disabled(isPurchasing)
         }
         .padding(.top, 2)

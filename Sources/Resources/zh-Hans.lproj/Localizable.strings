@@ -362,7 +362,7 @@
 
 /* Paywall */
 "paywall_title" = "专注阅读，收获更多";
-"paywall_subtitle" = "无限书架、Watch 控 iPad 与深度统计，让阅读更自由。";
+"paywall_subtitle" = "无限书架、Watch 控制 iPad 与深度统计，让阅读更自由。";
 "paywall_pro_badge" = "年会员主推";
 "paywall_feature_unlimited_books" = "无限添加书籍（普通版最多 10 本）";
 "paywall_feature_ipad_page_turn" = "Apple Watch 可控制 iPad 翻页";
@@ -370,7 +370,7 @@
 "paywall_feature_streak" = "连续阅读天数追踪";
 "paywall_feature_unlimited_title" = "无限书架";
 "paywall_feature_unlimited_subtitle" = "不再限制 10 本";
-"paywall_feature_watch_title" = "Watch 控 iPad";
+"paywall_feature_watch_title" = "Watch 控制 iPad";
 "paywall_feature_watch_subtitle" = "iPhone 翻页免费";
 "paywall_feature_stats_title" = "深度统计";
 "paywall_feature_stats_subtitle" = "周月年趋势";
@@ -401,7 +401,7 @@
 "settings_pro_upgrade_body" = "解锁无限书架、深度统计、无限笔记和更多阅读能力";
 "settings_pro_benefit_library" = "无限书架";
 "settings_pro_benefit_stats" = "深度统计";
-"settings_pro_benefit_watch" = "Watch 控 iPad";
+"settings_pro_benefit_watch" = "Watch 控制 iPad";
 "settings_pro_benefit_notes" = "无限笔记";
 
 /* Purchase Errors */
@@ -978,13 +978,22 @@
 
 /* Post-session summary */
 "reader_session_summary_title" = "本次阅读";
+"reader_session_summary_book_progress" = "书籍进度";
 "reader_session_summary_progress_format" = "%@ → %@ · +%@";
 "reader_session_summary_watch_turns_format" = "Watch 翻页：%d 次";
 "reader_session_summary_done" = "完成";
+"reader_session_summary_history_action" = "查看阅读历史";
+"reader_session_summary_prediction_action" = "查看速度估算";
 "reading_history_title" = "阅读历史";
 "reading_history_subtitle" = "按时间回看最近阅读，并查看每本书的会话记录。";
 "reading_history_locked_title" = "阅读历史属于 Pro";
 "reading_history_locked_body" = "今日阅读统计和单次阅读总结仍免费；Pro 解锁长期会话历史和阅读速度估算。";
+"reading_prediction_locked_title" = "阅读速度预测属于 Pro";
+"reading_prediction_locked_body" = "即时阅读总结始终免费。Pro 会根据近期会话估算剩余有效阅读时间，并在数据可靠时给出预计完成日期。";
+"reading_history_preview_title" = "长期会话历史";
+"reading_history_preview_body" = "查看每次阅读的日期、时长、进度变化和 Apple Watch 翻页记录。";
+"reading_prediction_preview_title" = "阅读速度与完成预测";
+"reading_prediction_preview_body" = "根据近期会话估算剩余有效阅读时间和预计完成日期。";
 "reading_history_empty_title" = "还没有阅读会话";
 "reading_history_empty_body" = "完成一次可视阅读后，会话会显示在这里。";
 "reading_history_loading" = "正在加载阅读历史…";
