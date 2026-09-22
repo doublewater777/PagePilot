@@ -6,6 +6,8 @@
 "watch.notConnected" = "Not Connected";
 "watch.status.connecting" = "Connecting to iPhone…";
 "watch.crownHint" = "Crown to turn pages";
+"watch.previousPage" = "Previous";
+"watch.nextPage" = "Next";
 "watch.hint.openIPhone" = "Open PagePilot on iPhone";
 "watch.hint.openIPad" = "Open PagePilot on iPad";
 "watch.hint.openBookIPhone" = "Open a book on iPhone";
