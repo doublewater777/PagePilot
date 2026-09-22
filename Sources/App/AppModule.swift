@@ -39,6 +39,7 @@ final class AppModule {
     let cloudSync: CloudSyncService
 
     let books: BookRepository
+    let readingSessions: ReadingSessionRepository
     let bookmarkRepository: BookmarkRepository
     let highlightRepository: HighlightRepository
     let opdsFeeds: OPDSFeedRepository
@@ -62,6 +63,7 @@ final class AppModule {
         StartupProfiler.shared.record("AppModule: Initializing Readium Opener & Server")
         readium = Readium()
         books = BookRepository(db: db)
+        readingSessions = ReadingSessionRepository(db: db)
         opdsFeeds = OPDSFeedRepository(db: db)
 
         StartupProfiler.shared.record("AppModule: Initializing Submodules (Library, Reader, Home)")

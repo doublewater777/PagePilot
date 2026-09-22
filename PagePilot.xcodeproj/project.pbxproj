@@ -128,6 +128,7 @@
 		9536B73881D8B2990F824085 /* EPUBModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 676E011FB9B8B9A2BEE038E0 /* EPUBModule.swift */; };
 		98D7D18BF11505849A36AA65 /* LibraryFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B989D4B572C7F20B3C691D2 /* LibraryFactory.swift */; };
 		9C5AA93B59D0794452D4B623 /* Book.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4667F53DE812B82C31FD923 /* Book.swift */; };
+		F37C91D85A624BE0B3D74A16 /* ReadingSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = E14B63C42D9A47C8A61F20B5 /* ReadingSession.swift */; };
 		9D0C50EC4EF594B96870670B /* ProPurchaseManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 31EE66AC5EDD18FEF3E2DBD7 /* ProPurchaseManager.swift */; };
 		9D2F637F891561867453C159 /* URL.swift in Sources */ = {isa = PBXBuildFile; fileRef = 177E7755BBB078929A6DF1AB /* URL.swift */; };
 		9DB7A28FD3B3CF321ED301A9 /* LCPViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29CA5455089052F77F11B978 /* LCPViewModel.swift */; };
@@ -436,6 +437,7 @@
 		C2CEA58DCBF6A480F09C088C /* Locator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Locator.swift; sourceTree = "<group>"; };
 		C2D15A9E53D4374742A8A4B5 /* PageCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageCommand.swift; sourceTree = "<group>"; };
 		C4667F53DE812B82C31FD923 /* Book.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Book.swift; sourceTree = "<group>"; };
+		E14B63C42D9A47C8A61F20B5 /* ReadingSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadingSession.swift; sourceTree = "<group>"; };
 		C59A0A024F0BCF8919BFF5F9 /* Toast.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Toast.swift; sourceTree = "<group>"; };
 		C6C3DBF450EAE0AD996E8CA1 /* ReadingReminderScheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadingReminderScheduler.swift; sourceTree = "<group>"; };
 		CAB423D8755B14CA2E44D3C3 /* WatchSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchSettingsView.swift; sourceTree = "<group>"; };
@@ -510,6 +512,7 @@
 			isa = PBXGroup;
 			children = (
 				C4667F53DE812B82C31FD923 /* Book.swift */,
+				E14B63C42D9A47C8A61F20B5 /* ReadingSession.swift */,
 				5E8A1A65F68EC5042259DF4D /* Bookmark.swift */,
 				2FAB8ACF6B564AA02C9CD588 /* Database.swift */,
 				332A8241704543B2EDD01A87 /* Highlight.swift */,
@@ -1180,6 +1183,7 @@
 				AB1F4E273AF69598F756DEAA /* AudiobookViewController.swift in Sources */,
 				855E2D2F18B0F4B632409D4A /* BarButtonItem.swift in Sources */,
 				9C5AA93B59D0794452D4B623 /* Book.swift in Sources */,
+				F37C91D85A624BE0B3D74A16 /* ReadingSession.swift in Sources */,
 				EB50271922B87EE0074B5E96 /* Bookmark.swift in Sources */,
 				1301356D92DDA4102D6EEDBC /* BookmarkCellView.swift in Sources */,
 				EF447A9F19FF5B9DD99759FC /* CloudSyncService.swift in Sources */,

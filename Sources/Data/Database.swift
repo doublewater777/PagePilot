@@ -152,6 +152,33 @@ final class Database {
             }
         }
 
+        migrator.registerMigration("addReadingSessions") { db in
+            try db.create(table: "readingSession") { t in
+                t.autoIncrementedPrimaryKey("id")
+                t.column("sessionID", .text).notNull().unique()
+                t.column("bookId", .integer).references("book", onDelete: .cascade).notNull()
+                t.column("startedAt", .datetime).notNull()
+                t.column("endedAt", .datetime).notNull()
+                t.column("durationSeconds", .integer).notNull()
+                t.column("startProgression", .double).notNull().defaults(to: 0)
+                t.column("endProgression", .double).notNull().defaults(to: 0)
+                t.column("watchPageTurns", .integer).notNull().defaults(to: 0)
+            }
+
+            try db.create(
+                index: "index_reading_session_started_at",
+                on: "readingSession",
+                columns: ["startedAt"],
+                ifNotExists: true
+            )
+            try db.create(
+                index: "index_reading_session_book_started_at",
+                on: "readingSession",
+                columns: ["bookId", "startedAt"],
+                ifNotExists: true
+            )
+        }
+
         try migrator.migrate(writer)
     }
 
