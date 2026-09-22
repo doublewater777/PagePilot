@@ -984,7 +984,7 @@
 "reading_history_title" = "阅读历史";
 "reading_history_subtitle" = "按时间回看最近阅读，并查看每本书的会话记录。";
 "reading_history_locked_title" = "阅读历史属于 Pro";
-"reading_history_locked_body" = "今日阅读统计和单次阅读总结仍免费；Pro 解锁长期会话历史。";
+"reading_history_locked_body" = "今日阅读统计和单次阅读总结仍免费；Pro 解锁长期会话历史和阅读速度估算。";
 "reading_history_empty_title" = "还没有阅读会话";
 "reading_history_empty_body" = "完成一次可视阅读后，会话会显示在这里。";
 "reading_history_loading" = "正在加载阅读历史…";
@@ -993,3 +993,10 @@
 "reading_history_retry" = "重试";
 "reading_history_watch_turns" = "Apple Watch 翻页 %d 次";
 "reading_history_watch_none" = "本次未使用 Apple Watch 翻页";
+
+"reading_pace_estimate_title" = "阅读速度估算";
+"reading_pace_insufficient_body" = "数据还不足以估算。至少完成 3 次阅读、累计 20 分钟，并向前阅读 5% 后再显示结果。";
+"reading_pace_remaining_format" = "预计还需 %@ 的有效阅读时间";
+"reading_pace_velocity_format" = "近期速度：每有效分钟 %@";
+"reading_pace_finish_format" = "预计完成时间：%@";
+"reading_pace_estimate_basis" = "根据近期阅读会话估算，实际速度可能变化。";

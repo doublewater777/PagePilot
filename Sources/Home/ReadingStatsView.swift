@@ -1811,6 +1811,7 @@ private struct ReadingHistoryView: View {
     @ObservedObject private var proPurchase = ProPurchaseManager.shared
     @State private var state: ReadingHistoryLoadState = .loading
     @State private var showPaywall = false
+    @State private var paceResult: ReadingPaceEstimateResult?
 
     private let book: Book?
 
@@ -1856,12 +1857,32 @@ private struct ReadingHistoryView: View {
             )
 
         case .empty:
-            historyStateView(
-                icon: "clock.badge.questionmark",
-                title: NSLocalizedString("reading_history_empty_title", comment: ""),
-                message: NSLocalizedString("reading_history_empty_body", comment: ""),
-                showsProgress: false
-            )
+            if book != nil {
+                ScrollView {
+                    VStack(spacing: 16) {
+                        if let paceResult {
+                            ReadingPaceEstimateCard(result: paceResult)
+                        }
+                        historyStateViewContent(
+                            icon: "clock.badge.questionmark",
+                            title: NSLocalizedString("reading_history_empty_title", comment: ""),
+                            message: NSLocalizedString("reading_history_empty_body", comment: ""),
+                            showsProgress: false
+                        )
+                    }
+                    .frame(maxWidth: 680)
+                    .frame(maxWidth: .infinity)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 32)
+                }
+            } else {
+                historyStateView(
+                    icon: "clock.badge.questionmark",
+                    title: NSLocalizedString("reading_history_empty_title", comment: ""),
+                    message: NSLocalizedString("reading_history_empty_body", comment: ""),
+                    showsProgress: false
+                )
+            }
 
         case .failed:
             ScrollView {
@@ -1887,6 +1908,9 @@ private struct ReadingHistoryView: View {
         case let .loaded(items):
             ScrollView(.vertical, showsIndicators: false) {
                 LazyVStack(spacing: 12) {
+                    if let paceResult {
+                        ReadingPaceEstimateCard(result: paceResult)
+                    }
                     ForEach(items) { item in
                         historyRow(item)
                     }
@@ -2021,6 +2045,7 @@ private struct ReadingHistoryView: View {
     @MainActor
     private func loadHistory() async {
         state = .loading
+        paceResult = nil
 
         guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else {
             state = .failed
@@ -2047,6 +2072,13 @@ private struct ReadingHistoryView: View {
                 }
             }
 
+            if let bookId = book?.id, let currentBook = booksByID[bookId] {
+                paceResult = ReadingPaceCalculator.estimate(
+                    sessions: sessions,
+                    currentProgression: currentBook.progression
+                )
+            }
+
             let items = sessions.compactMap { session -> ReadingHistoryItem? in
                 guard let book = booksByID[session.bookId] else { return nil }
                 return ReadingHistoryItem(session: session, book: book)
@@ -2057,6 +2089,93 @@ private struct ReadingHistoryView: View {
             state = .failed
         }
     }
+}
+
+
+private struct ReadingPaceEstimateCard: View {
+    let result: ReadingPaceEstimateResult
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Label(
+                NSLocalizedString("reading_pace_estimate_title", comment: ""),
+                systemImage: "speedometer"
+            )
+            .font(.system(size: 16, weight: .bold))
+            .foregroundColor(AppColors.primaryText)
+
+            switch result {
+            case .insufficientData:
+                Text(NSLocalizedString("reading_pace_insufficient_body", comment: ""))
+                    .font(.system(size: 14))
+                    .foregroundColor(AppColors.secondaryText)
+                    .fixedSize(horizontal: false, vertical: true)
+
+            case let .estimate(estimate):
+                Text(String(
+                    format: NSLocalizedString("reading_pace_remaining_format", comment: ""),
+                    Self.durationText(minutes: estimate.remainingActiveMinutes)
+                ))
+                .font(.system(size: 18, weight: .bold))
+                .foregroundColor(AppColors.primaryText)
+
+                Text(String(
+                    format: NSLocalizedString("reading_pace_velocity_format", comment: ""),
+                    Self.percentFormatter.string(
+                        from: NSNumber(value: estimate.progressPerActiveMinute)
+                    ) ?? "0%"
+                ))
+                .font(.system(size: 13))
+                .foregroundColor(AppColors.secondaryText)
+
+                if let finishDate = estimate.approximateFinishDate {
+                    Text(String(
+                        format: NSLocalizedString("reading_pace_finish_format", comment: ""),
+                        Self.finishDateFormatter.string(from: finishDate)
+                    ))
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(AppColors.primaryText)
+                }
+
+                Text(NSLocalizedString("reading_pace_estimate_basis", comment: ""))
+                    .font(.system(size: 12))
+                    .foregroundColor(AppColors.tertiaryText)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .background(AppColors.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .accessibilityElement(children: .combine)
+    }
+
+    private static func durationText(minutes: Double) -> String {
+        let formatter = DateComponentsFormatter()
+        formatter.allowedUnits = minutes >= 60 ? [.hour, .minute] : [.minute]
+        formatter.unitsStyle = .abbreviated
+        formatter.maximumUnitCount = 2
+        var calendar = Calendar.current
+        calendar.locale = AppAppearancePreferences.locale
+        formatter.calendar = calendar
+        return formatter.string(from: max(0, minutes) * 60) ?? "—"
+    }
+
+    private static let percentFormatter: NumberFormatter = {
+        let formatter = NumberFormatter()
+        formatter.locale = AppAppearancePreferences.locale
+        formatter.numberStyle = .percent
+        formatter.maximumFractionDigits = 2
+        return formatter
+    }()
+
+    private static let finishDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = AppAppearancePreferences.locale
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .none
+        return formatter
+    }()
 }
 
 private struct ReadingHistorySessionCard: View {
