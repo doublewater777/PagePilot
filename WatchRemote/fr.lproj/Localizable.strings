@@ -18,3 +18,8 @@
 "watch.error.openIPhone" = "Ouvrez PagePilot sur l’iPhone";
 "watch.error.generic" = "Impossible de tourner la page. Réessayez.";
 "watch.error.proRequired" = "Pour tourner les pages sur iPad, PagePilot Pro doit être installé sur l’iPhone.";
+
+"watch.workoutHelp.button" = "Pendant un entraînement ?";
+"watch.workoutHelp.title" = "Tourner les pages pendant un entraînement";
+"watch.workoutHelp.message" = "Si l’Apple Watch revient toujours à Exercice lorsque vous levez le poignet, ouvrez Réglages → Général → Retour au cadran → Exercice, puis désactivez Revenir à l’app. L’entraînement continuera d’être enregistré.";
+"watch.workoutHelp.dismiss" = "Compris";
