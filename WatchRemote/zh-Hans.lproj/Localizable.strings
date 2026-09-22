@@ -6,6 +6,8 @@
 "watch.notConnected" = "未连接";
 "watch.status.connecting" = "正在连接 iPhone…";
 "watch.crownHint" = "旋转表冠翻页";
+"watch.previousPage" = "上一页";
+"watch.nextPage" = "下一页";
 "watch.hint.openIPhone" = "请在 iPhone 上打开 PagePilot";
 "watch.hint.openIPad" = "请在 iPad 上打开 PagePilot";
 "watch.hint.openBookIPhone" = "请在 iPhone 上打开一本书";

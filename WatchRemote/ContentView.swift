@@ -1,5 +1,9 @@
 import SwiftUI
 
+#if os(watchOS)
+import WatchKit
+#endif
+
 struct ContentView: View {
     @State private var crownValue: Double = 0.0
     @State private var lastSentValue: Double = 0.0
@@ -65,9 +69,9 @@ struct ContentView: View {
 
             if isConnected && connectivityManager.activeReaderCount > 1 {
                 Image(systemName: "ipad.and.iphone")
-                    .font(.title2)
+                    .font(.title3)
                     .foregroundStyle(.secondary)
-                    .frame(maxHeight: .infinity)
+                    .frame(height: 22)
                     .accessibilityHidden(true)
             } else if isConnected && connectivityManager.readerReady && !connectivityManager.bookTitle.isEmpty {
                 readingDashboard
@@ -106,7 +110,7 @@ struct ContentView: View {
     }
 
     private var readingDashboard: some View {
-        VStack(spacing: 5) {
+        VStack(spacing: 4) {
             Text(connectivityManager.bookTitle)
                 .font(.caption)
                 .fontWeight(.semibold)
@@ -116,7 +120,7 @@ struct ContentView: View {
 
             HStack(alignment: .firstTextBaseline, spacing: 6) {
                 Text(String(format: "%.0f%%", clampedBookProgress * 100))
-                    .font(.title3)
+                    .font(.headline)
                     .fontWeight(.bold)
                     .monospacedDigit()
 
@@ -150,30 +154,43 @@ struct ContentView: View {
     }
 
     private var pageTurnButtons: some View {
-        HStack(spacing: 20) {
+        VStack(spacing: 6) {
             Button {
-                connectivityManager.sendCommand(.prev)
+                sendPageTurn(.prev)
             } label: {
-                Image(systemName: "chevron.left")
-                    .font(.title2)
-                    .frame(width: 42, height: 32)
+                HStack(spacing: 6) {
+                    Image(systemName: "chevron.left")
+                    Text(LocalizedStringKey("watch.previousPage"))
+                }
+                .font(.headline)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+                .frame(maxWidth: .infinity, minHeight: 44)
             }
             .buttonStyle(.bordered)
+            .accessibilityIdentifier("watch.pageTurn.previous")
 
             Button {
-                connectivityManager.sendCommand(.next)
+                sendPageTurn(.next)
             } label: {
-                Image(systemName: "chevron.right")
-                    .font(.title2)
-                    .frame(width: 42, height: 32)
+                HStack(spacing: 7) {
+                    Text(LocalizedStringKey("watch.nextPage"))
+                    Image(systemName: "chevron.right")
+                }
+                .font(.title3)
+                .fontWeight(.semibold)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+                .frame(maxWidth: .infinity, minHeight: 56)
             }
-            .buttonStyle(.bordered)
+            .buttonStyle(.borderedProminent)
+            .accessibilityIdentifier("watch.pageTurn.next")
         }
     }
 
     private var doubleTapShortcutButton: some View {
         Button {
-            connectivityManager.sendCommand(.next)
+            sendPageTurn(.next)
         } label: {
             Color.clear
                 .frame(width: 1, height: 1)
@@ -182,6 +199,13 @@ struct ContentView: View {
         .opacity(0.01)
         .accessibilityHidden(true)
         .handGestureShortcutIfEnabled(connectivityManager.doubleTapPageTurn)
+    }
+
+    private func sendPageTurn(_ command: PageCommand) {
+        #if os(watchOS)
+        WKInterfaceDevice.current().play(.click)
+        #endif
+        connectivityManager.sendCommand(command)
     }
 
     private func elapsedText(at date: Date, since startDate: Date) -> String {
@@ -208,7 +232,7 @@ struct ContentView: View {
 
         if abs(delta) > currentThreshold {
             let direction: PageCommand = delta > 0 ? .next : .prev
-            connectivityManager.sendCommand(direction)
+            sendPageTurn(direction)
             lastSentValue = value
             lastPageTurnTime = now
         }
