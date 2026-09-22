@@ -354,8 +354,7 @@ struct HomeView: View {
                         }
                     }
             }
-            .presentationDragIndicator(.visible)
-            .presentationBackground(Color(.systemGroupedBackground))
+            .appSheetStyle(.content)
         }
         .sheet(isPresented: $showNotes) {
             // NavigationView (.stack) instead of NavigationStack: NavigationStack
@@ -372,8 +371,7 @@ struct HomeView: View {
                     }
             }
             .navigationViewStyle(.stack)
-            .presentationDragIndicator(.visible)
-            .presentationBackground(Color(.systemGroupedBackground))
+            .appSheetStyle(.content)
         }
         .sheet(
             item: $microReadingBook,
@@ -394,9 +392,7 @@ struct HomeView: View {
                     microReadingBook = nil
                 }
             )
-            .presentationDetents([.medium])
-            .presentationDragIndicator(.visible)
-            .presentationBackground(AppColors.background)
+            .appSheetStyle(.compact)
         }
     }
 

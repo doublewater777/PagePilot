@@ -106,18 +106,12 @@ private struct VolumeKeyEducationView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // No cancel button — dismiss by swipe down.
-            Capsule()
-                .fill(Color.secondary.opacity(0.35))
-                .frame(width: 36, height: 5)
-                .padding(.top, 10)
-                .padding(.bottom, 12)
-
             Text(NSLocalizedString("volume_key_edu_title", comment: ""))
                 .font(.system(size: 18, weight: .bold))
                 .foregroundStyle(AppColors.primaryText)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 20)
+                .padding(.top, 24)
                 .padding(.bottom, 12)
 
             VStack(spacing: 10) {
@@ -162,9 +156,7 @@ private struct VolumeKeyEducationView: View {
             .padding(.bottom, 16)
         }
         .background(Color(.systemGroupedBackground))
-        .presentationDetents([.height(420), .medium])
-        .presentationDragIndicator(.hidden)
-        .presentationBackground(Color(.systemGroupedBackground))
+        .appSheetStyle(.compact)
     }
 }
 

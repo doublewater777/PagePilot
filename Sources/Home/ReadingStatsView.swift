@@ -62,6 +62,7 @@ struct ReadingStatsView: View {
                 streakDays: statsStore.snapshot(for: .summary).currentStreakDays,
                 books: Array(booksMap.values)
             )
+            .appSheetStyle(.content)
         }
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
