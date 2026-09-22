@@ -179,6 +179,13 @@ final class Database {
             )
         }
 
+        migrator.registerMigration("addReadingSessionCloudSync") { db in
+            try db.alter(table: "readingSession") { t in
+                t.add(column: "needsSync", .boolean).notNull().defaults(to: true)
+            }
+            try db.execute(sql: "UPDATE readingSession SET needsSync = 1")
+        }
+
         try migrator.migrate(writer)
     }
 

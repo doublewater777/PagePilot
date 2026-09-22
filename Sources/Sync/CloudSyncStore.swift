@@ -74,6 +74,7 @@ final class CloudSyncStore {
             try db.execute(sql: "UPDATE book SET needsSync = 1, contentNeedsSync = 1")
             try db.execute(sql: "UPDATE bookmark SET needsSync = 1")
             try db.execute(sql: "UPDATE highlight SET needsSync = 1")
+            try db.execute(sql: "UPDATE readingSession SET needsSync = 1")
             try CloudRecordMetadata.deleteAll(db)
         }
     }
@@ -144,6 +145,22 @@ final class CloudSyncStore {
                 result.append(contentsOf: highlights.map {
                     PendingCloudChange(recordType: .highlight, syncID: $0.syncID, kind: .save)
                 })
+                remaining -= highlights.count
+            }
+
+            if remaining > 0 {
+                let sessions = try ReadingSession
+                    .filter(ReadingSession.Columns.needsSync == true)
+                    .order(ReadingSession.Columns.startedAt)
+                    .limit(remaining)
+                    .fetchAll(db)
+                result.append(contentsOf: sessions.map {
+                    PendingCloudChange(
+                        recordType: .readingSession,
+                        syncID: CloudSyncIdentifier.readingSession(sessionID: $0.sessionID),
+                        kind: .save
+                    )
+                })
             }
 
             return result
@@ -162,6 +179,9 @@ final class CloudSyncStore {
         }
         if syncID.hasPrefix("highlight-") {
             return try await highlightRecord(syncID: syncID, recordID: recordID)
+        }
+        if syncID.hasPrefix("session-") {
+            return try await readingSessionRecord(syncID: syncID, recordID: recordID)
         }
         if syncID.hasPrefix("book-") {
             return try await bookRecord(syncID: syncID, recordID: recordID)
@@ -280,6 +300,34 @@ final class CloudSyncStore {
         return record
     }
 
+    private func readingSessionRecord(syncID: String, recordID: CKRecord.ID) async throws -> CKRecord? {
+        guard let sessionID = CloudSyncIdentifier.readingSessionID(from: syncID),
+              let payload = try await db.read({ db -> (ReadingSession, String)? in
+                  guard let session = try ReadingSession
+                      .filter(ReadingSession.Columns.sessionID == sessionID)
+                      .fetchOne(db),
+                        let book = try Book.fetchOne(db, key: session.bookId)
+                  else { return nil }
+                  return (session, book.syncID)
+              })
+        else { return nil }
+
+        let session = payload.0
+        let record = try await baseRecord(type: .readingSession, syncID: syncID, recordID: recordID)
+        record["schemaVersion"] = Int64(1)
+        record["sessionID"] = session.sessionID
+        record["bookSyncID"] = payload.1
+        record["book"] = parentReference(bookSyncID: payload.1, zoneID: recordID.zoneID)
+        record["startedAt"] = session.startedAt
+        record["endedAt"] = session.endedAt
+        record["durationSeconds"] = Int64(session.durationSeconds)
+        record["startProgression"] = session.startProgression
+        record["endProgression"] = session.endProgression
+        record["watchPageTurns"] = Int64(session.watchPageTurns)
+        record["updatedAt"] = session.endedAt
+        return record
+    }
+
     // MARK: - CloudKit -> local merge
 
     func applyFetchedRecords(_ records: [CKRecord]) async throws -> [CKRecord.ID] {
@@ -309,6 +357,8 @@ final class CloudSyncStore {
             localWins = try await applyBookmark(record)
         case .highlight:
             localWins = try await applyHighlight(record)
+        case .readingSession:
+            localWins = try await applyReadingSession(record)
         }
 
         // Child records may be durably deferred until their Book arrives.
@@ -432,6 +482,8 @@ final class CloudSyncStore {
                                 .updateAll(db, Bookmark.Columns.needsSync.set(to: true))
                             try Highlight.filter(Highlight.Columns.bookId == localID)
                                 .updateAll(db, Highlight.Columns.needsSync.set(to: true))
+                            try ReadingSession.filter(ReadingSession.Columns.bookId == localID)
+                                .updateAll(db, ReadingSession.Columns.needsSync.set(to: true))
                         }
                         local.needsSync = true
                         try local.save(db)
@@ -600,6 +652,83 @@ final class CloudSyncStore {
         }
     }
 
+    private func applyReadingSession(_ record: CKRecord) async throws -> Bool {
+        let syncID = record.recordID.recordName
+        guard let sessionID = record["sessionID"] as? String,
+              CloudSyncIdentifier.readingSession(sessionID: sessionID) == syncID,
+              let bookSyncID = record["bookSyncID"] as? String,
+              let startedAt = record["startedAt"] as? Date,
+              let endedAt = record["endedAt"] as? Date,
+              let duration = (record["durationSeconds"] as? NSNumber)?.intValue,
+              let startProgression = (record["startProgression"] as? NSNumber)?.doubleValue,
+              let endProgression = (record["endProgression"] as? NSNumber)?.doubleValue,
+              let watchPageTurns = (record["watchPageTurns"] as? NSNumber)?.intValue,
+              duration > 0
+        else { return false }
+
+        if let deletedAt = try await tombstone(type: .book, syncID: bookSyncID)?.deletedAt {
+            try await db.write { db in
+                try SyncTombstone(
+                    recordType: CloudSyncRecordType.readingSession.rawValue,
+                    syncID: syncID,
+                    deletedAt: deletedAt
+                ).save(db)
+                try DeferredCloudRecord
+                    .filter(Column("recordType") == CloudSyncRecordType.readingSession.rawValue
+                        && Column("syncID") == syncID)
+                    .deleteAll(db)
+            }
+            return false
+        }
+
+        guard try await hasBook(syncID: bookSyncID) else {
+            try await deferRemoteRecord(record)
+            return false
+        }
+
+        return try await db.write { db in
+            guard let book = try Book.filter(Book.Columns.syncID == bookSyncID).fetchOne(db),
+                  let bookID = book.id
+            else { return false }
+
+            if var local = try ReadingSession
+                .filter(ReadingSession.Columns.sessionID == sessionID)
+                .fetchOne(db)
+            {
+                let matches = local.bookId == bookID
+                    && local.startedAt == startedAt
+                    && local.endedAt == endedAt
+                    && local.durationSeconds == duration
+                    && abs(local.startProgression - startProgression) < 0.000_000_1
+                    && abs(local.endProgression - endProgression) < 0.000_000_1
+                    && local.watchPageTurns == watchPageTurns
+
+                if matches {
+                    local.needsSync = false
+                    try local.save(db)
+                    return false
+                }
+
+                local.needsSync = true
+                try local.save(db)
+                return true
+            }
+
+            var session = ReadingSession(
+                sessionID: sessionID,
+                bookId: bookID,
+                startedAt: startedAt,
+                endedAt: endedAt,
+                startProgression: startProgression,
+                endProgression: endProgression,
+                watchPageTurns: watchPageTurns,
+                needsSync: false
+            )
+            try session.insert(db)
+            return false
+        }
+    }
+
     // MARK: - Deferred child records
 
     func replayDeferredRecords() async throws -> [CKRecord.ID] {
@@ -675,6 +804,10 @@ final class CloudSyncStore {
                             .filter(Highlight.Columns.bookId == id)
                             .select(Highlight.Columns.syncID, as: String.self)
                             .fetchAll(db)
+                        let sessionIDs = try ReadingSession
+                            .filter(ReadingSession.Columns.bookId == id)
+                            .select(ReadingSession.Columns.sessionID, as: String.self)
+                            .fetchAll(db)
                         try Book.deleteOne(db, key: id)
                         for childID in bookmarkIDs {
                             try self.deleteMetadata(db: db, type: .bookmark, syncID: childID)
@@ -682,8 +815,16 @@ final class CloudSyncStore {
                         for childID in highlightIDs {
                             try self.deleteMetadata(db: db, type: .highlight, syncID: childID)
                         }
+                        for sessionID in sessionIDs {
+                            try self.deleteMetadata(
+                                db: db,
+                                type: .readingSession,
+                                syncID: CloudSyncIdentifier.readingSession(sessionID: sessionID)
+                            )
+                        }
                     }
                 }
+                try self.removeDeferredReadingSessions(db: db, bookSyncID: syncID)
                 try self.deleteMetadata(
                     db: db,
                     type: .progress,
@@ -700,6 +841,13 @@ final class CloudSyncStore {
 
             case .highlight:
                 try Highlight.filter(Highlight.Columns.syncID == syncID).deleteAll(db)
+
+            case .readingSession:
+                if let sessionID = CloudSyncIdentifier.readingSessionID(from: syncID) {
+                    try ReadingSession
+                        .filter(ReadingSession.Columns.sessionID == sessionID)
+                        .deleteAll(db)
+                }
             }
 
             try SyncTombstone
@@ -756,6 +904,18 @@ final class CloudSyncStore {
             case .highlight:
                 if var local = try Highlight.filter(Highlight.Columns.syncID == syncID).fetchOne(db),
                    local.updatedAt <= sentUpdatedAt
+                {
+                    local.needsSync = false
+                    try local.save(db)
+                }
+
+            case .readingSession:
+                if let sessionID = CloudSyncIdentifier.readingSessionID(from: syncID),
+                   var local = try ReadingSession
+                       .filter(ReadingSession.Columns.sessionID == sessionID)
+                       .fetchOne(db),
+                   let book = try Book.fetchOne(db, key: local.bookId),
+                   record["bookSyncID"] as? String == book.syncID
                 {
                     local.needsSync = false
                     try local.save(db)
@@ -828,6 +988,20 @@ final class CloudSyncStore {
             .deleteAll(db)
     }
 
+    private func removeDeferredReadingSessions(db: GRDB.Database, bookSyncID: String) throws {
+        let deferred = try DeferredCloudRecord
+            .filter(Column("recordType") == CloudSyncRecordType.readingSession.rawValue)
+            .fetchAll(db)
+        for item in deferred {
+            guard let record = try? CKRecord.fromDeferredArchive(item.payload),
+                  record["bookSyncID"] as? String == bookSyncID
+            else { continue }
+            try DeferredCloudRecord
+                .filter(Column("recordType") == item.recordType && Column("syncID") == item.syncID)
+                .deleteAll(db)
+        }
+    }
+
     private func hasBook(syncID: String) async throws -> Bool {
         try await db.read { db in
             try Book.filter(Book.Columns.syncID == syncID).fetchCount(db) > 0
@@ -838,6 +1012,7 @@ final class CloudSyncStore {
         if syncID.hasPrefix("progress-") { return .progress }
         if syncID.hasPrefix("bookmark-") { return .bookmark }
         if syncID.hasPrefix("highlight-") { return .highlight }
+        if syncID.hasPrefix("session-") { return .readingSession }
         if syncID.hasPrefix("book-") { return .book }
         return nil
     }
@@ -848,7 +1023,8 @@ final class CloudSyncStore {
         case .progress: return 1
         case .bookmark: return 2
         case .highlight: return 3
-        case nil: return 4
+        case .readingSession: return 4
+        case nil: return 5
         }
     }
 

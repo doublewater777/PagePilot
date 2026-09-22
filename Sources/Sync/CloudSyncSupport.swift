@@ -14,6 +14,7 @@ enum CloudSyncRecordType: String, CaseIterable, Sendable {
     case progress = "ReadingProgress"
     case bookmark = "Bookmark"
     case highlight = "Highlight"
+    case readingSession = "ReadingSession"
 
     var recordNamePrefix: String {
         switch self {
@@ -21,6 +22,7 @@ enum CloudSyncRecordType: String, CaseIterable, Sendable {
         case .progress: return "progress"
         case .bookmark: return "bookmark"
         case .highlight: return "highlight"
+        case .readingSession: return "session"
         }
     }
 }
@@ -43,6 +45,17 @@ enum CloudSyncIdentifier {
 
     static func highlight() -> String {
         "highlight-\(UUID().uuidString.lowercased())"
+    }
+
+    static func readingSession(sessionID: String) -> String {
+        "session-\(sessionID)"
+    }
+
+    static func readingSessionID(from syncID: String) -> String? {
+        let prefix = "session-"
+        guard syncID.hasPrefix(prefix) else { return nil }
+        let sessionID = String(syncID.dropFirst(prefix.count))
+        return sessionID.isEmpty ? nil : sessionID
     }
 
     static func stableBook(identifier: String?, fallbackID: Int64) -> String {

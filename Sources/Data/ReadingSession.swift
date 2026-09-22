@@ -21,6 +21,7 @@ struct ReadingSession: Codable, FetchableRecord, PersistableRecord {
     let startProgression: Double
     let endProgression: Double
     let watchPageTurns: Int
+    var needsSync: Bool
 
     var progressDelta: Double {
         max(0, endProgression - startProgression)
@@ -34,7 +35,8 @@ struct ReadingSession: Codable, FetchableRecord, PersistableRecord {
         endedAt: Date,
         startProgression: Double,
         endProgression: Double,
-        watchPageTurns: Int
+        watchPageTurns: Int,
+        needsSync: Bool = true
     ) {
         self.id = id
         self.sessionID = sessionID
@@ -45,6 +47,7 @@ struct ReadingSession: Codable, FetchableRecord, PersistableRecord {
         self.startProgression = Self.clampProgress(startProgression)
         self.endProgression = Self.clampProgress(endProgression)
         self.watchPageTurns = max(0, watchPageTurns)
+        self.needsSync = needsSync
     }
 
     private static func clampProgress(_ value: Double) -> Double {
@@ -61,6 +64,7 @@ struct ReadingSession: Codable, FetchableRecord, PersistableRecord {
         case startProgression
         case endProgression
         case watchPageTurns
+        case needsSync
     }
 }
 
@@ -198,11 +202,13 @@ final class ReadingSessionRepository {
     func add(_ session: ReadingSession) async throws -> ReadingSession.Id? {
         guard session.durationSeconds > 0 else { return nil }
 
-        return try await db.write { db in
+        let id = try await db.write { db in
             var session = session
             try session.insert(db)
             return ReadingSession.Id(rawValue: db.lastInsertedRowID)
         }
+        NotificationCenter.default.post(name: .cloudSyncLocalDataDidChange, object: nil)
+        return id
     }
 
     func recent(limit: Int = 20) async throws -> [ReadingSession] {

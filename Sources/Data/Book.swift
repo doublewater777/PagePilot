@@ -243,6 +243,9 @@ final class BookRepository {
             guard let book = try Book.fetchOne(db, key: id) else { return }
             let bookmarks = try Bookmark.filter(Bookmark.Columns.bookId == id).fetchAll(db)
             let highlights = try Highlight.filter(Highlight.Columns.bookId == id).fetchAll(db)
+            let readingSessions = try ReadingSession
+                .filter(ReadingSession.Columns.bookId == id)
+                .fetchAll(db)
             let now = Date()
 
             for bookmark in bookmarks where !bookmark.syncID.isEmpty {
@@ -256,6 +259,13 @@ final class BookRepository {
                 try SyncTombstone(
                     recordType: CloudSyncRecordType.highlight.rawValue,
                     syncID: highlight.syncID,
+                    deletedAt: now
+                ).save(db)
+            }
+            for session in readingSessions where !session.sessionID.isEmpty {
+                try SyncTombstone(
+                    recordType: CloudSyncRecordType.readingSession.rawValue,
+                    syncID: CloudSyncIdentifier.readingSession(sessionID: session.sessionID),
                     deletedAt: now
                 ).save(db)
             }
