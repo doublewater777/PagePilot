@@ -118,9 +118,7 @@ struct PaywallView: View {
             .padding(.trailing, isPad ? 20 : 16)
         }
         .background(AppColors.background.ignoresSafeArea())
-        // iPhone: compact sheet; iPad: large form so layout / close aren't cramped.
-        .presentationDetents(isPad ? [.large] : [.height(680)])
-        .presentationDragIndicator(.hidden)
+        .appSheetStyle(.content)
         .onAppear {
             Analytics.shared.log(.paywallViewed(source: analyticsSource))
             Task {
