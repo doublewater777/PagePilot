@@ -25,7 +25,7 @@ struct ContentView: View {
         if !connectivityManager.lastError.isEmpty {
             return nil
         }
-        if connectivityManager.isConnecting {
+        if connectivityManager.isConnecting && !connectivityManager.readerReady {
             return "watch.status.connecting"
         }
         if !isConnected {
@@ -56,6 +56,18 @@ struct ContentView: View {
         .digitalCrownRotation($crownValue)
         #endif
         .onAppear {
+            #if DEBUG
+            if CommandLine.arguments.contains("-mockReading") {
+                connectivityManager.isReachable = true
+                connectivityManager.readerReady = true
+                connectivityManager.bookTitle = "人类简史"
+                connectivityManager.bookProgress = 0.42
+                connectivityManager.readingSessionStartedAt = Date().addingTimeInterval(-1800)
+                connectivityManager.readingSessionStartProgress = 0.28
+                connectivityManager.lastError = ""
+                return
+            }
+            #endif
             connectivityManager.refreshConnectionStatus()
         }
         .onChange(of: crownValue) { newValue in
@@ -64,14 +76,14 @@ struct ContentView: View {
     }
 
     private var content: some View {
-        VStack(spacing: 5) {
+        VStack(spacing: 4) {
             actionableErrorMessage
 
             if isConnected && connectivityManager.activeReaderCount > 1 {
                 Image(systemName: "ipad.and.iphone")
                     .font(.title3)
                     .foregroundStyle(.secondary)
-                    .frame(height: 22)
+                    .frame(height: 20)
                     .accessibilityHidden(true)
             } else if isConnected && connectivityManager.readerReady && !connectivityManager.bookTitle.isEmpty {
                 readingDashboard
@@ -83,61 +95,81 @@ struct ContentView: View {
 
             passiveStatusMessage
 
-            if isConnected {
-                Text(LocalizedStringKey("watch.crownHint"))
-                    .font(.caption2)
-                    .foregroundStyle(.tertiary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.75)
+            if isConnected && (!connectivityManager.readerReady || connectivityManager.bookTitle.isEmpty) {
+                HStack(spacing: 4) {
+                    Image(systemName: "digitalcrown.arrow.clockwise")
+                        .imageScale(.small)
+                    Text(LocalizedStringKey("watch.crownHint"))
+                }
+                .font(.system(size: 11, weight: .medium, design: .rounded))
+                .foregroundStyle(.tertiary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
             }
         }
-        .padding(.horizontal, 5)
+        .padding(.horizontal, 4)
     }
 
     @ViewBuilder
     private var actionableErrorMessage: some View {
         if isConnected && !connectivityManager.lastError.isEmpty {
-            Text(connectivityManager.lastError)
-                .font(.caption2)
-                .foregroundColor(.orange)
-                .lineLimit(2)
-                .minimumScaleFactor(0.7)
-                .multilineTextAlignment(.center)
+            HStack(spacing: 4) {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .imageScale(.small)
+                Text(connectivityManager.lastError)
+            }
+            .font(.caption2)
+            .foregroundStyle(.orange)
+            .lineLimit(2)
+            .minimumScaleFactor(0.7)
+            .multilineTextAlignment(.center)
         }
     }
 
     @ViewBuilder
     private var passiveStatusMessage: some View {
         if !isConnected && !connectivityManager.lastError.isEmpty {
-            Text(connectivityManager.lastError)
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-                .lineLimit(2)
-                .minimumScaleFactor(0.75)
-                .multilineTextAlignment(.center)
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                Image(systemName: "exclamationmark.circle")
+                    .imageScale(.small)
+                Text(connectivityManager.lastError)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.75)
+            }
+            .font(.caption2)
+            .foregroundStyle(.secondary)
+            .multilineTextAlignment(.center)
         } else if let guidanceKey {
-            Text(LocalizedStringKey(guidanceKey))
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-                .lineLimit(2)
-                .minimumScaleFactor(0.75)
-                .multilineTextAlignment(.center)
+            HStack(alignment: .center, spacing: 4) {
+                if connectivityManager.isConnecting {
+                    ProgressView()
+                        .scaleEffect(0.55)
+                        .frame(width: 12, height: 12)
+                } else {
+                    Image(systemName: "iphone.gen3")
+                        .imageScale(.small)
+                }
+                Text(LocalizedStringKey(guidanceKey))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.72)
+            }
+            .font(.caption2)
+            .foregroundStyle(.secondary)
         }
     }
 
     private var readingDashboard: some View {
-        VStack(spacing: 4) {
+        VStack(spacing: 2) {
             Text(connectivityManager.bookTitle)
-                .font(.caption)
-                .fontWeight(.semibold)
+                .font(.system(.caption2, design: .rounded).weight(.semibold))
                 .lineLimit(1)
-                .minimumScaleFactor(0.72)
+                .minimumScaleFactor(0.75)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
             HStack(alignment: .firstTextBaseline, spacing: 6) {
                 Text(String(format: "%.0f%%", clampedBookProgress * 100))
-                    .font(.headline)
-                    .fontWeight(.bold)
+                    .font(.system(.headline, design: .rounded).weight(.bold))
+                    .foregroundStyle(Color.pagePilotBlue)
                     .monospacedDigit()
 
                 Spacer(minLength: 2)
@@ -148,8 +180,11 @@ struct ContentView: View {
             }
 
             ProgressView(value: clampedBookProgress)
+                .tint(Color.pagePilotBlue)
         }
-        .padding(.horizontal, 3)
+        .padding(.horizontal, 6)
+        .padding(.vertical, 3)
+        .background(Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
     }
 
     private func sessionSummary(startedAt: Date) -> some View {
@@ -176,12 +211,13 @@ struct ContentView: View {
             } label: {
                 HStack(spacing: 6) {
                     Image(systemName: "chevron.left")
+                        .font(.system(.headline, design: .rounded).weight(.semibold))
                     Text(LocalizedStringKey("watch.previousPage"))
                 }
-                .font(.headline)
+                .font(.system(.headline, design: .rounded).weight(.semibold))
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
-                .frame(maxWidth: .infinity, minHeight: 44)
+                .frame(maxWidth: .infinity, minHeight: 42)
             }
             .buttonStyle(.bordered)
             .accessibilityIdentifier("watch.pageTurn.previous")
@@ -192,14 +228,15 @@ struct ContentView: View {
                 HStack(spacing: 7) {
                     Text(LocalizedStringKey("watch.nextPage"))
                     Image(systemName: "chevron.right")
+                        .font(.system(.title3, design: .rounded).weight(.bold))
                 }
-                .font(.title3)
-                .fontWeight(.semibold)
+                .font(.system(.title3, design: .rounded).weight(.bold))
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
-                .frame(maxWidth: .infinity, minHeight: 56)
+                .frame(maxWidth: .infinity, minHeight: 52)
             }
             .buttonStyle(.borderedProminent)
+            .tint(Color.pagePilotBlue)
             .accessibilityIdentifier("watch.pageTurn.next")
         }
     }
@@ -265,3 +302,20 @@ extension View {
         }
     }
 }
+
+// MARK: - Color Palette (Aligned with docs/design-system.md)
+
+extension Color {
+    /// PagePilot Blue `#386EF2` (领航蓝 - 品牌主色 / Watch 翻页控制)
+    static let pagePilotBlue = Color(red: 56 / 255, green: 110 / 255, blue: 242 / 255)
+    /// PagePilot Teal `#299E94` (流畅绿)
+    static let pagePilotTeal = Color(red: 41 / 255, green: 158 / 255, blue: 148 / 255)
+}
+
+#if DEBUG
+#Preview("Disconnected") {
+    ContentView()
+        .environmentObject(WatchConnectivityManager.shared)
+}
+#endif
+
