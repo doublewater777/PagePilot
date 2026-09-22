@@ -974,3 +974,10 @@
 "onboarding_tour_page3_chip1" = "Auto-Sync";
 "onboarding_tour_page3_chip2" = "iPhone & iPad";
 "onboarding_tour_page3_chip3" = "Privates CloudKit";
+
+
+/* Post-session summary */
+"reader_session_summary_title" = "Lesesitzung";
+"reader_session_summary_progress_format" = "%@ → %@ · +%@";
+"reader_session_summary_watch_turns_format" = "Watch-Seitenwechsel: %d";
+"reader_session_summary_done" = "Fertig";

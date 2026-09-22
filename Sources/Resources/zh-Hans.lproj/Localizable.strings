@@ -974,3 +974,10 @@
 "onboarding_tour_page3_chip1" = "实时云同步";
 "onboarding_tour_page3_chip2" = "iPhone · iPad";
 "onboarding_tour_page3_chip3" = "私人 CloudKit";
+
+
+/* Post-session summary */
+"reader_session_summary_title" = "本次阅读";
+"reader_session_summary_progress_format" = "%@ → %@ · +%@";
+"reader_session_summary_watch_turns_format" = "Watch 翻页：%d 次";
+"reader_session_summary_done" = "完成";

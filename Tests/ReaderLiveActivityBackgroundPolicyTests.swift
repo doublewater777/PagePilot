@@ -296,3 +296,188 @@ final class ReaderLiveActivityBackgroundPolicyTests: XCTestCase {
         source.components(separatedBy: needle).count - 1
     }
 }
+
+final class ReadingSessionSummaryTests: XCTestCase {
+    func testMeaningfulThresholdQualifiesAtDurationBoundary() {
+        XCTAssertNotNil(
+            ReadingSessionSummaryPolicy.makeSummary(
+                for: makeSession(durationSeconds: 120),
+                todaySeconds: 0,
+                goalMinutes: 30,
+                suppressGoalCompletion: false
+            )
+        )
+    }
+
+    func testMeaningfulThresholdQualifiesAtOnePercentForwardProgress() {
+        XCTAssertNotNil(
+            ReadingSessionSummaryPolicy.makeSummary(
+                for: makeSession(
+                    durationSeconds: 10,
+                    startProgression: 0.20,
+                    endProgression: 0.21
+                ),
+                todaySeconds: 0,
+                goalMinutes: 30,
+                suppressGoalCompletion: false
+            )
+        )
+    }
+
+    func testMeaningfulThresholdQualifiesAtFiveWatchTurns() {
+        XCTAssertNotNil(
+            ReadingSessionSummaryPolicy.makeSummary(
+                for: makeSession(durationSeconds: 10, watchPageTurns: 5),
+                todaySeconds: 0,
+                goalMinutes: 30,
+                suppressGoalCompletion: false
+            )
+        )
+    }
+
+    func testTrivialExitDoesNotProduceSummary() {
+        XCTAssertNil(
+            ReadingSessionSummaryPolicy.makeSummary(
+                for: makeSession(
+                    durationSeconds: 119,
+                    startProgression: 0.20,
+                    endProgression: 0.209,
+                    watchPageTurns: 4
+                ),
+                todaySeconds: 0,
+                goalMinutes: 30,
+                suppressGoalCompletion: false
+            )
+        )
+    }
+
+    func testSummaryCarriesSessionMetricsWithoutInventingWatchTurns() throws {
+        let summary = try XCTUnwrap(
+            ReadingSessionSummaryPolicy.makeSummary(
+                for: makeSession(
+                    durationSeconds: 125,
+                    startProgression: 0.20,
+                    endProgression: 0.35,
+                    watchPageTurns: 0
+                ),
+                todaySeconds: 20 * 60,
+                goalMinutes: 30,
+                suppressGoalCompletion: false
+            )
+        )
+
+        XCTAssertEqual(summary.durationSeconds, 125)
+        XCTAssertEqual(summary.startProgression, 0.20, accuracy: 0.0001)
+        XCTAssertEqual(summary.endProgression, 0.35, accuracy: 0.0001)
+        XCTAssertEqual(summary.progressDelta, 0.15, accuracy: 0.0001)
+        XCTAssertEqual(summary.watchPageTurns, 0)
+        XCTAssertEqual(summary.dailyGoalFeedback, .remaining(minutes: 10))
+    }
+
+    func testDailyGoalCompletionIsSuppressedWhenExistingCelebrationWillFire() throws {
+        let session = makeSession(durationSeconds: 120)
+
+        let suppressed = try XCTUnwrap(
+            ReadingSessionSummaryPolicy.makeSummary(
+                for: session,
+                todaySeconds: 30 * 60,
+                goalMinutes: 30,
+                suppressGoalCompletion: true
+            )
+        )
+        XCTAssertNil(suppressed.dailyGoalFeedback)
+
+        let alreadyCelebrated = try XCTUnwrap(
+            ReadingSessionSummaryPolicy.makeSummary(
+                for: session,
+                todaySeconds: 30 * 60,
+                goalMinutes: 30,
+                suppressGoalCompletion: false
+            )
+        )
+        XCTAssertEqual(alreadyCelebrated.dailyGoalFeedback, .complete)
+    }
+
+    func testSummaryIsOnlyRequestedForActualReaderExit() throws {
+        let source = try Self.readerViewControllerSource()
+
+        XCTAssertTrue(source.contains("isVisibleReaderExit: isReaderExit"))
+        XCTAssertTrue(source.contains("isVisibleReaderExit: false"))
+        XCTAssertTrue(source.contains("if isVisibleReaderExit, let detailedSession"))
+    }
+
+    func testSummaryLayoutPolicySupportsNarrowAndWideContainers() {
+        XCTAssertEqual(
+            ReadingSessionSummaryLayoutPolicy.contentWidth(for: 320),
+            272,
+            accuracy: 0.001
+        )
+        XCTAssertEqual(
+            ReadingSessionSummaryLayoutPolicy.contentWidth(for: 1024),
+            480,
+            accuracy: 0.001
+        )
+        XCTAssertEqual(
+            ReadingSessionSummaryLayoutPolicy.contentWidth(for: 40),
+            0,
+            accuracy: 0.001
+        )
+    }
+
+    func testSummaryPresentationDoesNotRequirePoppedReaderToStayAlive() throws {
+        let source = try Self.readerViewControllerSource()
+
+        XCTAssertTrue(source.contains("let readerIdentifier = ObjectIdentifier(reader)"))
+        XCTAssertTrue(source.contains("let presentationBlock: () -> Void = { [weak navigationController] in"))
+        XCTAssertTrue(source.contains("ObjectIdentifier(host) != readerIdentifier"))
+        XCTAssertFalse(
+            source.contains("[weak navigationController, weak reader]"),
+            "The deferred post-pop presenter must not depend on the popped Reader surviving."
+        )
+    }
+
+    func testSummaryViewDeclaresDismissalAccessibilityAndDynamicTypeBehavior() throws {
+        let source = try Self.readerViewControllerSource()
+
+        XCTAssertTrue(source.contains("isModalInPresentation = false"))
+        XCTAssertTrue(source.contains("view.accessibilityViewIsModal = true"))
+        XCTAssertTrue(source.contains("titleLabel.accessibilityTraits.insert(.header)"))
+        XCTAssertTrue(source.contains("label.adjustsFontForContentSizeCategory = true"))
+        XCTAssertTrue(source.contains(#"dismissButton.accessibilityIdentifier = "readingSessionSummary.dismiss""#))
+        XCTAssertTrue(source.contains("dismissButton.addTarget(self, action: #selector(dismissSummary)"))
+        XCTAssertTrue(source.contains("if summary.watchPageTurns > 0"))
+        XCTAssertTrue(source.contains("let scrollView = UIScrollView()"))
+        XCTAssertTrue(
+            source.contains(
+                "lessThanOrEqualToConstant: ReadingSessionSummaryLayoutPolicy.maximumContentWidth"
+            )
+        )
+    }
+
+    private func makeSession(
+        durationSeconds: Int,
+        startProgression: Double = 0.20,
+        endProgression: Double = 0.20,
+        watchPageTurns: Int = 0
+    ) -> ReadingSession {
+        let start = Date(timeIntervalSince1970: 1_000)
+        return ReadingSession(
+            bookId: Book.Id(rawValue: 1),
+            startedAt: start,
+            endedAt: start.addingTimeInterval(TimeInterval(durationSeconds)),
+            startProgression: startProgression,
+            endProgression: endProgression,
+            watchPageTurns: watchPageTurns
+        )
+    }
+
+    private static func readerViewControllerSource() throws -> String {
+        let repositoryURL = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let sourceURL = repositoryURL.appendingPathComponent(
+            "Sources/Reader/Common/ReaderViewController.swift"
+        )
+        return try String(contentsOf: sourceURL, encoding: .utf8)
+    }
+}
