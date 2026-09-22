@@ -32,6 +32,7 @@ struct ReadingStatsView: View {
         ScrollView(.vertical, showsIndicators: false) {
             VStack(alignment: .leading, spacing: 18) {
                 header
+                historyEntry
                 scopeSelector
                 periodNavigator
 
@@ -106,6 +107,53 @@ struct ReadingStatsView: View {
                 .foregroundColor(AppColors.secondaryText)
                 .fixedSize(horizontal: false, vertical: true)
         }
+    }
+
+    private var historyEntry: some View {
+        NavigationLink {
+            ReadingHistoryView()
+        } label: {
+            HStack(spacing: 14) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(AppColors.accentBlue.opacity(colorScheme == .dark ? 0.22 : 0.12))
+                    Image(systemName: "clock.arrow.circlepath")
+                        .font(.system(size: 19, weight: .semibold))
+                        .foregroundColor(AppColors.accentBlue)
+                }
+                .frame(width: 46, height: 46)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(NSLocalizedString("reading_history_title", comment: ""))
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(AppColors.primaryText)
+
+                    Text(NSLocalizedString("reading_history_subtitle", comment: ""))
+                        .font(.system(size: 12))
+                        .foregroundColor(AppColors.secondaryText)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                Spacer(minLength: 8)
+
+                if !proPurchase.hasProAccess {
+                    Image(systemName: "lock.fill")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundColor(AppColors.secondaryText)
+                }
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundColor(AppColors.tertiaryText)
+            }
+            .padding(16)
+            .background(Color(.secondarySystemGroupedBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .frame(maxWidth: 680)
+        .frame(maxWidth: .infinity, alignment: .center)
     }
 
     private var scopeSelector: some View {
@@ -1739,6 +1787,401 @@ struct ReadingStatsView: View {
         formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.timeZone = .current
         formatter.dateFormat = "yyyy-MM-dd"
+        return formatter
+    }()
+}
+
+
+private struct ReadingHistoryItem: Identifiable {
+    let session: ReadingSession
+    let book: Book
+
+    var id: String { session.sessionID }
+}
+
+private enum ReadingHistoryLoadState {
+    case loading
+    case empty
+    case loaded([ReadingHistoryItem])
+    case failed
+}
+
+private struct ReadingHistoryView: View {
+    @Environment(\.colorScheme) private var colorScheme
+    @ObservedObject private var proPurchase = ProPurchaseManager.shared
+    @State private var state: ReadingHistoryLoadState = .loading
+    @State private var showPaywall = false
+
+    private let book: Book?
+
+    init(book: Book? = nil) {
+        self.book = book
+    }
+
+    private var canAccessHistory: Bool {
+        ReadingHistoryAccess.canAccess(hasProAccess: proPurchase.hasProAccess)
+    }
+
+    var body: some View {
+        Group {
+            if canAccessHistory {
+                historyContent
+            } else {
+                lockedContent
+            }
+        }
+        .background(Color(.systemGroupedBackground))
+        .navigationTitle(book?.title ?? NSLocalizedString("reading_history_title", comment: ""))
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(Color(.systemGroupedBackground), for: .navigationBar)
+        .toolbarBackground(.visible, for: .navigationBar)
+        .sheet(isPresented: $showPaywall) {
+            PaywallView()
+        }
+        .task(id: proPurchase.hasProAccess) {
+            guard canAccessHistory else { return }
+            await loadHistory()
+        }
+    }
+
+    @ViewBuilder
+    private var historyContent: some View {
+        switch state {
+        case .loading:
+            historyStateView(
+                icon: nil,
+                title: NSLocalizedString("reading_history_loading", comment: ""),
+                message: nil,
+                showsProgress: true
+            )
+
+        case .empty:
+            historyStateView(
+                icon: "clock.badge.questionmark",
+                title: NSLocalizedString("reading_history_empty_title", comment: ""),
+                message: NSLocalizedString("reading_history_empty_body", comment: ""),
+                showsProgress: false
+            )
+
+        case .failed:
+            ScrollView {
+                VStack(spacing: 16) {
+                    historyStateViewContent(
+                        icon: "exclamationmark.triangle",
+                        title: NSLocalizedString("reading_history_error_title", comment: ""),
+                        message: NSLocalizedString("reading_history_error_body", comment: ""),
+                        showsProgress: false
+                    )
+
+                    Button(NSLocalizedString("reading_history_retry", comment: "")) {
+                        Task { await loadHistory() }
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
+                .frame(maxWidth: 520)
+                .frame(maxWidth: .infinity)
+                .padding(.horizontal, 20)
+                .padding(.vertical, 32)
+            }
+
+        case let .loaded(items):
+            ScrollView(.vertical, showsIndicators: false) {
+                LazyVStack(spacing: 12) {
+                    ForEach(items) { item in
+                        historyRow(item)
+                    }
+                }
+                .frame(maxWidth: 680, alignment: .leading)
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding(.horizontal, 20)
+                .padding(.vertical, 18)
+            }
+        }
+    }
+
+    private var lockedContent: some View {
+        ScrollView {
+            VStack(spacing: 18) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .fill(LinearGradient(
+                            colors: [
+                                AppColors.accentBlue.opacity(colorScheme == .dark ? 0.28 : 0.14),
+                                AppColors.accentTeal.opacity(colorScheme == .dark ? 0.24 : 0.12)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ))
+                    Image(systemName: "clock.arrow.circlepath")
+                        .font(.system(size: 28, weight: .semibold))
+                        .foregroundColor(AppColors.accentBlue)
+                }
+                .frame(width: 64, height: 64)
+
+                Text(NSLocalizedString("reading_history_locked_title", comment: ""))
+                    .font(.system(size: 22, weight: .bold))
+                    .foregroundColor(AppColors.primaryText)
+                    .multilineTextAlignment(.center)
+
+                Text(NSLocalizedString("reading_history_locked_body", comment: ""))
+                    .font(.system(size: 14))
+                    .foregroundColor(AppColors.secondaryText)
+                    .multilineTextAlignment(.center)
+                    .lineSpacing(3)
+
+                Button {
+                    showPaywall = true
+                } label: {
+                    Text(NSLocalizedString("stats_upgrade_pro", comment: ""))
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 15)
+                        .background(LinearGradient(
+                            colors: [AppColors.accentBlue, AppColors.accentTeal],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        ))
+                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                }
+                .buttonStyle(.plain)
+            }
+            .frame(maxWidth: 520)
+            .frame(maxWidth: .infinity)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 32)
+        }
+    }
+
+    private func historyStateView(
+        icon: String?,
+        title: String,
+        message: String?,
+        showsProgress: Bool
+    ) -> some View {
+        ScrollView {
+            historyStateViewContent(
+                icon: icon,
+                title: title,
+                message: message,
+                showsProgress: showsProgress
+            )
+            .frame(maxWidth: 520)
+            .frame(maxWidth: .infinity)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 48)
+        }
+    }
+
+    private func historyStateViewContent(
+        icon: String?,
+        title: String,
+        message: String?,
+        showsProgress: Bool
+    ) -> some View {
+        VStack(spacing: 12) {
+            if showsProgress {
+                ProgressView()
+                    .controlSize(.large)
+            } else if let icon {
+                Image(systemName: icon)
+                    .font(.system(size: 32, weight: .semibold))
+                    .foregroundColor(AppColors.tertiaryText)
+            }
+
+            Text(title)
+                .font(.system(size: 18, weight: .bold))
+                .foregroundColor(AppColors.primaryText)
+                .multilineTextAlignment(.center)
+
+            if let message {
+                Text(message)
+                    .font(.system(size: 14))
+                    .foregroundColor(AppColors.secondaryText)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func historyRow(_ item: ReadingHistoryItem) -> some View {
+        if book == nil {
+            NavigationLink {
+                ReadingHistoryView(book: item.book)
+            } label: {
+                ReadingHistorySessionCard(item: item, showsDisclosure: true)
+            }
+            .buttonStyle(.plain)
+        } else {
+            ReadingHistorySessionCard(item: item, showsDisclosure: false)
+        }
+    }
+
+    @MainActor
+    private func loadHistory() async {
+        state = .loading
+
+        guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else {
+            state = .failed
+            return
+        }
+
+        do {
+            let sessions: [ReadingSession]
+            if let book {
+                guard let bookId = book.id else {
+                    state = .empty
+                    return
+                }
+                sessions = try await appDelegate.app.readingSessions.recent(for: bookId, limit: 100)
+            } else {
+                sessions = try await appDelegate.app.readingSessions.recent(limit: 100)
+            }
+
+            let books = try await appDelegate.app.books.allOnce()
+            var booksByID: [Book.Id: Book] = [:]
+            for book in books {
+                if let id = book.id {
+                    booksByID[id] = book
+                }
+            }
+
+            let items = sessions.compactMap { session -> ReadingHistoryItem? in
+                guard let book = booksByID[session.bookId] else { return nil }
+                return ReadingHistoryItem(session: session, book: book)
+            }
+
+            state = items.isEmpty ? .empty : .loaded(items)
+        } catch {
+            state = .failed
+        }
+    }
+}
+
+private struct ReadingHistorySessionCard: View {
+    let item: ReadingHistoryItem
+    let showsDisclosure: Bool
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            cover
+
+            VStack(alignment: .leading, spacing: 7) {
+                Text(item.book.title)
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundColor(AppColors.primaryText)
+                    .lineLimit(2)
+
+                Text(Self.dateTimeFormatter.string(from: item.session.startedAt))
+                    .font(.system(size: 12))
+                    .foregroundColor(AppColors.secondaryText)
+
+                Label(durationText, systemImage: "clock")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(AppColors.primaryText)
+
+                Label(progressText, systemImage: "arrow.right.circle")
+                    .font(.system(size: 13))
+                    .foregroundColor(AppColors.secondaryText)
+
+                Label(watchText, systemImage: "applewatch.watchface")
+                    .font(.system(size: 13))
+                    .foregroundColor(AppColors.secondaryText)
+            }
+
+            Spacer(minLength: 8)
+
+            if showsDisclosure {
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundColor(AppColors.tertiaryText)
+                    .padding(.top, 4)
+            }
+        }
+        .padding(14)
+        .background(AppColors.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .contentShape(Rectangle())
+        .accessibilityElement(children: .combine)
+    }
+
+    @ViewBuilder
+    private var cover: some View {
+        if let coverURL = item.book.cover?.url {
+            AsyncImage(url: coverURL) { image in
+                image
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+            } placeholder: {
+                coverPlaceholder
+            }
+            .frame(width: 44, height: 62)
+            .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
+            .clipped()
+        } else {
+            coverPlaceholder
+                .frame(width: 44, height: 62)
+                .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
+        }
+    }
+
+    private var coverPlaceholder: some View {
+        ZStack {
+            Color(.secondarySystemBackground)
+            Image(systemName: "book.closed")
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundColor(AppColors.tertiaryText)
+        }
+    }
+
+    private var durationText: String {
+        let formatter = DateComponentsFormatter()
+        formatter.allowedUnits = item.session.durationSeconds >= 3600
+            ? [.hour, .minute]
+            : (item.session.durationSeconds >= 60 ? [.minute, .second] : [.second])
+        formatter.unitsStyle = .abbreviated
+        formatter.maximumUnitCount = 2
+        return formatter.string(from: TimeInterval(item.session.durationSeconds))
+            ?? "\(item.session.durationSeconds)s"
+    }
+
+    private var progressText: String {
+        let start = Self.percentFormatter.string(from: NSNumber(value: item.session.startProgression)) ?? "0%"
+        let end = Self.percentFormatter.string(from: NSNumber(value: item.session.endProgression)) ?? "0%"
+        let range = "\(start) → \(end)"
+
+        guard item.session.progressDelta > 0.0001 else {
+            return range
+        }
+
+        let delta = Self.percentFormatter.string(from: NSNumber(value: item.session.progressDelta)) ?? "0%"
+        return "\(range) · +\(delta)"
+    }
+
+    private var watchText: String {
+        guard item.session.watchPageTurns > 0 else {
+            return NSLocalizedString("reading_history_watch_none", comment: "")
+        }
+        return String(
+            format: NSLocalizedString("reading_history_watch_turns", comment: ""),
+            item.session.watchPageTurns
+        )
+    }
+
+    private static let dateTimeFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = AppAppearancePreferences.locale
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .short
+        return formatter
+    }()
+
+    private static let percentFormatter: NumberFormatter = {
+        let formatter = NumberFormatter()
+        formatter.locale = AppAppearancePreferences.locale
+        formatter.numberStyle = .percent
+        formatter.maximumFractionDigits = 0
         return formatter
     }()
 }

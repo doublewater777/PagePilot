@@ -10,6 +10,12 @@ extension Notification.Name {
     static let readingStatsDidChange = Notification.Name("readingStatsDidChange")
 }
 
+enum ReadingHistoryAccess {
+    static func canAccess(hasProAccess: Bool) -> Bool {
+        hasProAccess
+    }
+}
+
 enum ReadingStatsScope: String, CaseIterable, Identifiable {
     case summary
     case day

@@ -981,3 +981,15 @@
 "reader_session_summary_progress_format" = "%@ → %@ · +%@";
 "reader_session_summary_watch_turns_format" = "Pasos de página con Watch: %d";
 "reader_session_summary_done" = "Listo";
+"reading_history_title" = "Historial de lectura";
+"reading_history_subtitle" = "Revisa sesiones recientes y abre un libro para ver su historial.";
+"reading_history_locked_title" = "El historial de lectura es una función Pro";
+"reading_history_locked_body" = "Las estadísticas de hoy y los resúmenes de sesión siguen siendo gratuitos. Pro desbloquea el historial longitudinal de sesiones.";
+"reading_history_empty_title" = "Aún no hay sesiones de lectura";
+"reading_history_empty_body" = "Las sesiones de lectura visual finalizadas aparecerán aquí.";
+"reading_history_loading" = "Cargando historial de lectura…";
+"reading_history_error_title" = "No se pudo cargar el historial";
+"reading_history_error_body" = "Vuelve a intentarlo en un momento.";
+"reading_history_retry" = "Reintentar";
+"reading_history_watch_turns" = "%d giros desde Apple Watch";
+"reading_history_watch_none" = "Sin giros desde Apple Watch";

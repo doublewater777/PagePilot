@@ -981,3 +981,15 @@
 "reader_session_summary_progress_format" = "%@ → %@ · +%@";
 "reader_session_summary_watch_turns_format" = "Watch turns: %d";
 "reader_session_summary_done" = "Done";
+"reading_history_title" = "Reading history";
+"reading_history_subtitle" = "Review recent sessions and open a book to see its history.";
+"reading_history_locked_title" = "Reading history is a Pro feature";
+"reading_history_locked_body" = "Today’s reading stats and post-session summaries stay free. Pro unlocks longitudinal session history.";
+"reading_history_empty_title" = "No reading sessions yet";
+"reading_history_empty_body" = "Finished visual reading sessions will appear here.";
+"reading_history_loading" = "Loading reading history…";
+"reading_history_error_title" = "Couldn’t load reading history";
+"reading_history_error_body" = "Try again in a moment.";
+"reading_history_retry" = "Retry";
+"reading_history_watch_turns" = "%d Apple Watch turns";
+"reading_history_watch_none" = "No Apple Watch turns";

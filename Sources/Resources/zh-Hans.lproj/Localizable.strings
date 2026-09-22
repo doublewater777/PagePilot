@@ -981,3 +981,15 @@
 "reader_session_summary_progress_format" = "%@ → %@ · +%@";
 "reader_session_summary_watch_turns_format" = "Watch 翻页：%d 次";
 "reader_session_summary_done" = "完成";
+"reading_history_title" = "阅读历史";
+"reading_history_subtitle" = "按时间回看最近阅读，并查看每本书的会话记录。";
+"reading_history_locked_title" = "阅读历史属于 Pro";
+"reading_history_locked_body" = "今日阅读统计和单次阅读总结仍免费；Pro 解锁长期会话历史。";
+"reading_history_empty_title" = "还没有阅读会话";
+"reading_history_empty_body" = "完成一次可视阅读后，会话会显示在这里。";
+"reading_history_loading" = "正在加载阅读历史…";
+"reading_history_error_title" = "无法加载阅读历史";
+"reading_history_error_body" = "请稍后重试。";
+"reading_history_retry" = "重试";
+"reading_history_watch_turns" = "Apple Watch 翻页 %d 次";
+"reading_history_watch_none" = "本次未使用 Apple Watch 翻页";
