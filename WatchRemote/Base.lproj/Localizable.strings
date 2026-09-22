@@ -18,3 +18,8 @@
 "watch.error.openIPhone" = "Open PagePilot on iPhone";
 "watch.error.generic" = "Couldn't turn the page. Try again.";
 "watch.error.proRequired" = "iPad page turn needs PagePilot Pro on iPhone.";
+
+"watch.workoutHelp.button" = "Using Workout?";
+"watch.workoutHelp.title" = "Page Turn During Workouts";
+"watch.workoutHelp.message" = "If your Watch keeps returning to Workout after you raise your wrist, go to Settings → General → Return to Clock → Workout and turn off Return to App. Your workout will keep recording.";
+"watch.workoutHelp.dismiss" = "Got It";
