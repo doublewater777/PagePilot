@@ -18,3 +18,8 @@
 "watch.error.openIPhone" = "Abra PagePilot en iPhone";
 "watch.error.generic" = "No pude pasar la página. Intentar otra vez.";
 "watch.error.proRequired" = "El paso de página del iPad necesita PagePilot Pro en el iPhone.";
+
+"watch.workoutHelp.button" = "¿Durante entreno?";
+"watch.workoutHelp.title" = "Pasar páginas al entrenar";
+"watch.workoutHelp.message" = "Si el Apple Watch vuelve siempre a Entreno al levantar la muñeca, ve a Ajustes → General → Volver al reloj → Entreno y desactiva Volver a la app. El entrenamiento seguirá registrándose.";
+"watch.workoutHelp.dismiss" = "Entendido";

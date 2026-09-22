@@ -8,6 +8,7 @@ struct ContentView: View {
     @State private var crownValue: Double = 0.0
     @State private var lastSentValue: Double = 0.0
     @State private var lastPageTurnTime: Date = Date()
+    @State private var isWorkoutHelpPresented = false
     @EnvironmentObject var connectivityManager: WatchConnectivityManager
 
     // Crown rotation thresholds
@@ -73,6 +74,14 @@ struct ContentView: View {
         .onChange(of: crownValue) { newValue in
             handleCrownRotation(newValue)
         }
+        .alert(
+            Text(LocalizedStringKey("watch.workoutHelp.title")),
+            isPresented: $isWorkoutHelpPresented
+        ) {
+            Button(LocalizedStringKey("watch.workoutHelp.dismiss"), role: .cancel) {}
+        } message: {
+            Text(LocalizedStringKey("watch.workoutHelp.message"))
+        }
     }
 
     private var content: some View {
@@ -94,6 +103,22 @@ struct ContentView: View {
             pageTurnButtons
 
             passiveStatusMessage
+
+            if isConnected && connectivityManager.readerReady {
+                Button {
+                    isWorkoutHelpPresented = true
+                } label: {
+                    Label(
+                        LocalizedStringKey("watch.workoutHelp.button"),
+                        systemImage: "figure.run"
+                    )
+                    .font(.caption2)
+                    .lineLimit(1)
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(.tertiary)
+                .accessibilityIdentifier("watch.workoutHelp")
+            }
 
             if isConnected && (!connectivityManager.readerReady || connectivityManager.bookTitle.isEmpty) {
                 HStack(spacing: 4) {

@@ -18,3 +18,8 @@
 "watch.error.openIPhone" = "请在 iPhone 上打开 PagePilot";
 "watch.error.generic" = "翻页失败，请重试";
 "watch.error.proRequired" = "控制 iPad 翻页需要 iPhone 上的 PagePilot Pro";
+
+"watch.workoutHelp.button" = "训练时用？";
+"watch.workoutHelp.title" = "训练时翻页";
+"watch.workoutHelp.message" = "如果抬腕后总是返回“体能训练”，请在 Apple Watch 的“设置 → 通用 → 返回时钟 → 体能训练”中关闭“返回 App”。训练仍会继续记录。";
+"watch.workoutHelp.dismiss" = "知道了";
