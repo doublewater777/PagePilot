@@ -64,8 +64,8 @@ struct ContentView: View {
     }
 
     private var content: some View {
-        VStack(spacing: 6) {
-            statusMessage
+        VStack(spacing: 5) {
+            actionableErrorMessage
 
             if isConnected && connectivityManager.activeReaderCount > 1 {
                 Image(systemName: "ipad.and.iphone")
@@ -81,28 +81,44 @@ struct ContentView: View {
 
             pageTurnButtons
 
-            Text(LocalizedStringKey("watch.crownHint"))
-                .font(.caption2)
-                .foregroundColor(.secondary)
-                .lineLimit(1)
-                .minimumScaleFactor(0.75)
+            passiveStatusMessage
+
+            if isConnected {
+                Text(LocalizedStringKey("watch.crownHint"))
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
+            }
         }
         .padding(.horizontal, 5)
     }
 
     @ViewBuilder
-    private var statusMessage: some View {
-        if !connectivityManager.lastError.isEmpty {
+    private var actionableErrorMessage: some View {
+        if isConnected && !connectivityManager.lastError.isEmpty {
             Text(connectivityManager.lastError)
                 .font(.caption2)
                 .foregroundColor(.orange)
                 .lineLimit(2)
                 .minimumScaleFactor(0.7)
                 .multilineTextAlignment(.center)
+        }
+    }
+
+    @ViewBuilder
+    private var passiveStatusMessage: some View {
+        if !isConnected && !connectivityManager.lastError.isEmpty {
+            Text(connectivityManager.lastError)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .lineLimit(2)
+                .minimumScaleFactor(0.75)
+                .multilineTextAlignment(.center)
         } else if let guidanceKey {
             Text(LocalizedStringKey(guidanceKey))
                 .font(.caption2)
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
                 .lineLimit(2)
                 .minimumScaleFactor(0.75)
                 .multilineTextAlignment(.center)
@@ -154,7 +170,7 @@ struct ContentView: View {
     }
 
     private var pageTurnButtons: some View {
-        VStack(spacing: 6) {
+        VStack(spacing: 4) {
             Button {
                 sendPageTurn(.prev)
             } label: {
