@@ -22,6 +22,7 @@
 		0E362E17B7DF64173074AA08 /* PagePilotLiveActivity.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 39BC5978F29B6DA3D93CEEAC /* PagePilotLiveActivity.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		0ED6F683EC27AD1153669A6C /* VolumeKeyDecisionPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1B31C7D21A4E5E27CFDC60B /* VolumeKeyDecisionPolicy.swift */; };
 		104BA34DD595B17FB70E76F5 /* PDFModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = A94A4DC16BE84E52279A3438 /* PDFModule.swift */; };
+		1181D557E29FA1B8F8BA5C36 /* ReadingSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B9E9D8AC6B9B741604CF33E /* ReadingSession.swift */; };
 		11CB0F652AF98108E96A072F /* ReaderTextSelectionMenuPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = D876971DD04F363679C5081B /* ReaderTextSelectionMenuPresenter.swift */; };
 		1301356D92DDA4102D6EEDBC /* BookmarkCellView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36344EB8BDDF407AE9443828 /* BookmarkCellView.swift */; };
 		1352AD9E079C6EBC0CAD84C7 /* ThrottledCommandQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29A1B8DCF9F7B1768AC101A3 /* ThrottledCommandQueue.swift */; };
@@ -38,6 +39,7 @@
 		2014AE08B3CA61C9A465499D /* LCPModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 498B0C1C2A5BBB4635DB9205 /* LCPModule.swift */; };
 		22840EACD39FC157B5217F99 /* WatchCommandOutcomeStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41BC0A1B066A7E177AC73760 /* WatchCommandOutcomeStateTests.swift */; };
 		228DAF8BD55D37AE4A79761B /* VolumeKeySettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19E6F1DD380B9E864C81ACDA /* VolumeKeySettingsView.swift */; };
+		22CC8F3524C1E94A10708878 /* ContextualProConversionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 609CB59BB68F7D4B2E76E073 /* ContextualProConversionTests.swift */; };
 		23F6333C8704E4ED52731B78 /* HighlightNoteEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9BE090D11709317E8544B91 /* HighlightNoteEditor.swift */; };
 		2406FA5B79F4561461DEE877 /* ContinueReadingSelector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01AEEB20DEA6BB82824F5D61 /* ContinueReadingSelector.swift */; };
 		241CA724AE151194CBCCF6F7 /* LibraryError.swift in Sources */ = {isa = PBXBuildFile; fileRef = E556BE39A9716505BCE414DC /* LibraryError.swift */; };
@@ -105,7 +107,9 @@
 		731992CB6648C944BA3BE567 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63F8CCAA4761556BB7A96EDF /* AppDelegate.swift */; };
 		741E48B8A6ABD461C363ED02 /* ReviewPromptManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E185B7E3FF85537522C9B4D /* ReviewPromptManagerTests.swift */; };
 		74C5A728A5472DC977E682CF /* DRM.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = E3CF731283C1800ED315C9C7 /* DRM.storyboard */; };
+		751C79DD15C27240191A945F /* ReadingSessionRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F2119C133C136EB7FF710F2 /* ReadingSessionRepositoryTests.swift */; };
 		761B2F56C1DA2CAD630A4B33 /* SearchViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C78E8EB5BCCEF02217049C6 /* SearchViewModel.swift */; };
+		78B01E5FFC52B730F112B5CF /* LANPairingAuthentication.swift in Sources */ = {isa = PBXBuildFile; fileRef = D57C4921198083B5A404923C /* LANPairingAuthentication.swift */; };
 		78CB2D8372C5E22D60B0F8D4 /* PDFViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D9D2ACEE0154486BBCCD2B2 /* PDFViewController.swift */; };
 		7A8C7F3E8B3E534D9BD642D6 /* PaywallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2189AA0D7B2F199F1F6EB27 /* PaywallView.swift */; };
 		7C7E3DC7F00B31C49158FD55 /* ThrottledCommandQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29A1B8DCF9F7B1768AC101A3 /* ThrottledCommandQueue.swift */; };
@@ -128,7 +132,6 @@
 		9536B73881D8B2990F824085 /* EPUBModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 676E011FB9B8B9A2BEE038E0 /* EPUBModule.swift */; };
 		98D7D18BF11505849A36AA65 /* LibraryFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B989D4B572C7F20B3C691D2 /* LibraryFactory.swift */; };
 		9C5AA93B59D0794452D4B623 /* Book.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4667F53DE812B82C31FD923 /* Book.swift */; };
-		F37C91D85A624BE0B3D74A16 /* ReadingSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = E14B63C42D9A47C8A61F20B5 /* ReadingSession.swift */; };
 		9D0C50EC4EF594B96870670B /* ProPurchaseManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 31EE66AC5EDD18FEF3E2DBD7 /* ProPurchaseManager.swift */; };
 		9D2F637F891561867453C159 /* URL.swift in Sources */ = {isa = PBXBuildFile; fileRef = 177E7755BBB078929A6DF1AB /* URL.swift */; };
 		9DB7A28FD3B3CF321ED301A9 /* LCPViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29CA5455089052F77F11B978 /* LCPViewModel.swift */; };
@@ -185,6 +188,7 @@
 		E3DB191DE6F9BFAE0ED6F7A2 /* PaywallSubscriptionCopy.swift in Sources */ = {isa = PBXBuildFile; fileRef = B77BE225B50F2586C12AFF0F /* PaywallSubscriptionCopy.swift */; };
 		E77575F2F911944528C256B7 /* ReadingLiveActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2726E4AFC0F2CA0481ACB736 /* ReadingLiveActivityAttributes.swift */; };
 		E7A2C316C908B1E9F01C65B9 /* MBProgressHUD in Frameworks */ = {isa = PBXBuildFile; productRef = 3C3D34DFF9245C495B9DF145 /* MBProgressHUD */; };
+		E84415132A7A8A4854E95086 /* LANPairingAuthenticationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40686AC45901789E2A732A8D /* LANPairingAuthenticationTests.swift */; };
 		E9B8886B571D721CC5AE9BCE /* TXTToEPUBConverter.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBB201BC5603B0A25588D1FA /* TXTToEPUBConverter.swift */; };
 		E9F963FBA755456117E01B92 /* PageCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2D15A9E53D4374742A8A4B5 /* PageCommand.swift */; };
 		EAF46A3D04F322BD049E85DC /* WatchResponseEpoch.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0473A9449BB4CB4F06744A94 /* WatchResponseEpoch.swift */; };
@@ -316,6 +320,7 @@
 		39BC5978F29B6DA3D93CEEAC /* PagePilotLiveActivity.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = PagePilotLiveActivity.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		3A5E2F8781739707E8F58868 /* es */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = es; path = es.lproj/Onboarding.strings; sourceTree = "<group>"; };
 		3B9A2E3F44D2855C5CC80483 /* es */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = es; path = es.lproj/Localizable.strings; sourceTree = "<group>"; };
+		40686AC45901789E2A732A8D /* LANPairingAuthenticationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LANPairingAuthenticationTests.swift; sourceTree = "<group>"; };
 		406E3A29726A3B225101E709 /* fr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = fr; path = fr.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		41BC0A1B066A7E177AC73760 /* WatchCommandOutcomeStateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchCommandOutcomeStateTests.swift; sourceTree = "<group>"; };
 		439D33E26E5543F01F91B932 /* ImportDedupTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImportDedupTests.swift; sourceTree = "<group>"; };
@@ -347,6 +352,7 @@
 		5CDBE3DF9B4EF210AE563642 /* Base */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = Base; path = Base.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		5E7E8D2E6C8E4E8F45EF2BC1 /* Paths.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Paths.swift; sourceTree = "<group>"; };
 		5E8A1A65F68EC5042259DF4D /* Bookmark.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Bookmark.swift; sourceTree = "<group>"; };
+		609CB59BB68F7D4B2E76E073 /* ContextualProConversionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContextualProConversionTests.swift; sourceTree = "<group>"; };
 		6170E8620EED7FEC1EBC273C /* CloudKit.Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = CloudKit.Debug.xcconfig; sourceTree = "<group>"; };
 		624A0908024583EAA723EF37 /* WatchConnectivityManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchConnectivityManager.swift; sourceTree = "<group>"; };
 		62967626DB216BAB7677B5A2 /* AudiobookModule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudiobookModule.swift; sourceTree = "<group>"; };
@@ -394,12 +400,14 @@
 		89E1A6F7ACDE11C9A2A513A8 /* ReaderModule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReaderModule.swift; sourceTree = "<group>"; };
 		8AFD12698D59F063197FC3EB /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Library.storyboard; sourceTree = "<group>"; };
 		8DA0E6603D4969DD32E0C366 /* UIViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UIViewController.swift; sourceTree = "<group>"; };
+		8F2119C133C136EB7FF710F2 /* ReadingSessionRepositoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadingSessionRepositoryTests.swift; sourceTree = "<group>"; };
 		91B40801496BC91B524225D7 /* QuickPositionJumpPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickPositionJumpPolicy.swift; sourceTree = "<group>"; };
 		93CF2A56FBD82A6F904200EF /* DeviceTransferView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceTransferView.swift; sourceTree = "<group>"; };
 		949EFA5CFEC2030DD06AE28E /* QuickPositionJumpOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickPositionJumpOverlay.swift; sourceTree = "<group>"; };
 		976F2C23C21DB1988B556922 /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = de; path = de.lproj/Localizable.strings; sourceTree = "<group>"; };
 		97F77DFF25C35C9D24740F4F /* fr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = fr; path = fr.lproj/Localizable.strings; sourceTree = "<group>"; };
 		97F9D8E076DDD0DC21C955FA /* WiFiTransferView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WiFiTransferView.swift; sourceTree = "<group>"; };
+		9B9E9D8AC6B9B741604CF33E /* ReadingSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadingSession.swift; sourceTree = "<group>"; };
 		9C57E0ABC039AC334730DDB8 /* MinimalEPUBPackager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MinimalEPUBPackager.swift; sourceTree = "<group>"; };
 		9CE4A162B4DB08F509EC0B56 /* MarkdownToEPUBConverterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownToEPUBConverterTests.swift; sourceTree = "<group>"; };
 		9D5902798099C3EE8E8D95B9 /* Fonts */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Fonts; path = Sources/Resources/Fonts; sourceTree = SOURCE_ROOT; };
@@ -437,7 +445,6 @@
 		C2CEA58DCBF6A480F09C088C /* Locator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Locator.swift; sourceTree = "<group>"; };
 		C2D15A9E53D4374742A8A4B5 /* PageCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageCommand.swift; sourceTree = "<group>"; };
 		C4667F53DE812B82C31FD923 /* Book.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Book.swift; sourceTree = "<group>"; };
-		E14B63C42D9A47C8A61F20B5 /* ReadingSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadingSession.swift; sourceTree = "<group>"; };
 		C59A0A024F0BCF8919BFF5F9 /* Toast.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Toast.swift; sourceTree = "<group>"; };
 		C6C3DBF450EAE0AD996E8CA1 /* ReadingReminderScheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadingReminderScheduler.swift; sourceTree = "<group>"; };
 		CAB423D8755B14CA2E44D3C3 /* WatchSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchSettingsView.swift; sourceTree = "<group>"; };
@@ -447,6 +454,7 @@
 		D345B3526CABD83831589416 /* TTSView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TTSView.swift; sourceTree = "<group>"; };
 		D45A11ECCDC450EA04E7FEFF /* AppModule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModule.swift; sourceTree = "<group>"; };
 		D52B3665C8713205FC7913E9 /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = de; path = de.lproj/PublicationMenuViewController.strings; sourceTree = "<group>"; };
+		D57C4921198083B5A404923C /* LANPairingAuthentication.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LANPairingAuthentication.swift; sourceTree = "<group>"; };
 		D585255A46999C8768D3CBC2 /* BarButtonItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BarButtonItem.swift; sourceTree = "<group>"; };
 		D5B287F95A1282CF890CB098 /* PagePilotWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PagePilotWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		D69EF603726F0347A6B45665 /* UIImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UIImage.swift; sourceTree = "<group>"; };
@@ -512,12 +520,12 @@
 			isa = PBXGroup;
 			children = (
 				C4667F53DE812B82C31FD923 /* Book.swift */,
-				E14B63C42D9A47C8A61F20B5 /* ReadingSession.swift */,
 				5E8A1A65F68EC5042259DF4D /* Bookmark.swift */,
 				2FAB8ACF6B564AA02C9CD588 /* Database.swift */,
 				332A8241704543B2EDD01A87 /* Highlight.swift */,
 				BF91762E299FD57C7AC2CBA0 /* LastReadBooks.swift */,
 				5355ADE5301164B81735A4BC /* OPDSFeed.swift */,
+				9B9E9D8AC6B9B741604CF33E /* ReadingSession.swift */,
 				17C2938BC9582E89D37DD539 /* UserPreferencesStore.swift */,
 			);
 			path = Data;
@@ -728,11 +736,13 @@
 				04E306DAF2494EEC5ED84526 /* BookFileAvailabilityTests.swift */,
 				83FC454CBD0AD1C3914E0E8E /* BookQuotaTests.swift */,
 				23DFDAFADB283187AF23E49F /* CloudSyncSupportTests.swift */,
+				609CB59BB68F7D4B2E76E073 /* ContextualProConversionTests.swift */,
 				6F7B3BBBC229C74F04221454 /* ContinueReadingSelectorTests.swift */,
 				32C6CDAD8966D6F593498CE9 /* CoverImageLoaderTests.swift */,
 				096A54519E8222A9B204D786 /* HighlightRepositoryTests.swift */,
 				439D33E26E5543F01F91B932 /* ImportDedupTests.swift */,
 				0DB3918DE6CF908CE14C8094 /* IPadReaderHintCopyTests.swift */,
+				40686AC45901789E2A732A8D /* LANPairingAuthenticationTests.swift */,
 				9CE4A162B4DB08F509EC0B56 /* MarkdownToEPUBConverterTests.swift */,
 				B34990F2C72974B1BAB26F4A /* MicroReadingSessionTests.swift */,
 				781C773DC4838154E1E55642 /* NotesQuotaTests.swift */,
@@ -749,6 +759,7 @@
 				69FC579296D9E2AB2FEE6671 /* ReadingLiveActivityCoordinatorTests.swift */,
 				75101E10554FA1562B6B8AD6 /* ReadingLiveActivityRecoveryTests.swift */,
 				8762D8E9C5C305A508B899AE /* ReadingReminderPolicyTests.swift */,
+				8F2119C133C136EB7FF710F2 /* ReadingSessionRepositoryTests.swift */,
 				6741F8F1C282AFC4145A5C97 /* ReadingStatsStoreTests.swift */,
 				F2268822A56BC83D6B6F9ECF /* RemoteCommandLifecycleTests.swift */,
 				9E185B7E3FF85537522C9B4D /* ReviewPromptManagerTests.swift */,
@@ -857,6 +868,7 @@
 		BB829802149A246C18E13A29 /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				D57C4921198083B5A404923C /* LANPairingAuthentication.swift */,
 				2A9A96C46FC1FAFC2B5E3A02 /* ReadingLiveActivityCoordinator.swift */,
 				E9E54C5159982A5C4D4D9EE9 /* ReviewPromptManager.swift */,
 				B12B9C27210C1C03A2BE62DE /* WatchPageTurnService.swift */,
@@ -1090,16 +1102,16 @@
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
 					320F55E134D9FEBE35DAF208 = {
-						DevelopmentTeam = 29C8MS76CZ;
+						DevelopmentTeam = "29C8MS76CZ";
 					};
 					76A5899AC0394DE9CD301C46 = {
-						DevelopmentTeam = 29C8MS76CZ;
+						DevelopmentTeam = "29C8MS76CZ";
 					};
 					A9D7F6E593F49E495DA90E96 = {
-						DevelopmentTeam = 29C8MS76CZ;
+						DevelopmentTeam = "29C8MS76CZ";
 					};
 					BD5410D9566E7DFEBEBE9BC5 = {
-						DevelopmentTeam = 29C8MS76CZ;
+						DevelopmentTeam = "29C8MS76CZ";
 					};
 				};
 			};
@@ -1183,7 +1195,6 @@
 				AB1F4E273AF69598F756DEAA /* AudiobookViewController.swift in Sources */,
 				855E2D2F18B0F4B632409D4A /* BarButtonItem.swift in Sources */,
 				9C5AA93B59D0794452D4B623 /* Book.swift in Sources */,
-				F37C91D85A624BE0B3D74A16 /* ReadingSession.swift in Sources */,
 				EB50271922B87EE0074B5E96 /* Bookmark.swift in Sources */,
 				1301356D92DDA4102D6EEDBC /* BookmarkCellView.swift in Sources */,
 				EF447A9F19FF5B9DD99759FC /* CloudSyncService.swift in Sources */,
@@ -1207,6 +1218,7 @@
 				B3FDBA976D9DD8DEA643DF37 /* HomeView.swift in Sources */,
 				F33B353C5311780ECEAD8B99 /* IPadWatchConnectionView.swift in Sources */,
 				6CC69048746FEA1682303D03 /* IconButton.swift in Sources */,
+				78B01E5FFC52B730F112B5CF /* LANPairingAuthentication.swift in Sources */,
 				4AEFD509B3CDCB8C858E7506 /* LCPManagementTableViewController.swift in Sources */,
 				2014AE08B3CA61C9A465499D /* LCPModule.swift in Sources */,
 				9DB7A28FD3B3CF321ED301A9 /* LCPViewModel.swift in Sources */,
@@ -1262,6 +1274,7 @@
 				7068AF4B6054B192C0620220 /* ReadingLiveActivityAttributes.swift in Sources */,
 				60F66A631340B6CE21990535 /* ReadingLiveActivityCoordinator.swift in Sources */,
 				C8C96D29EC46198C88D3A3E9 /* ReadingReminderScheduler.swift in Sources */,
+				1181D557E29FA1B8F8BA5C36 /* ReadingSession.swift in Sources */,
 				6ED9D22EAB4141F442DF75FE /* ReadingShareCardView.swift in Sources */,
 				F0F783E64CE2CB1B7F7B520D /* ReadingStatsStore.swift in Sources */,
 				534ADFC3B311BAA0565526BD /* ReadingStatsView.swift in Sources */,
@@ -1324,11 +1337,13 @@
 				BBFB08C8653DCB9A4A54CCA9 /* BookFileAvailabilityTests.swift in Sources */,
 				533D51CDB6F14BD986B8B72D /* BookQuotaTests.swift in Sources */,
 				035A0D3C137D9D8C57BAB97D /* CloudSyncSupportTests.swift in Sources */,
+				22CC8F3524C1E94A10708878 /* ContextualProConversionTests.swift in Sources */,
 				028A2542EBF1344183C10DF9 /* ContinueReadingSelectorTests.swift in Sources */,
 				C7081AC5C070FCD855485D67 /* CoverImageLoaderTests.swift in Sources */,
 				E1F538DCE620199B19EBD58D /* HighlightRepositoryTests.swift in Sources */,
 				2E05E17D865D7BF58512A90D /* IPadReaderHintCopyTests.swift in Sources */,
 				A554E7E327A89BB40320FCE6 /* ImportDedupTests.swift in Sources */,
+				E84415132A7A8A4854E95086 /* LANPairingAuthenticationTests.swift in Sources */,
 				80C6394D3E7123F5244C10A3 /* MarkdownToEPUBConverterTests.swift in Sources */,
 				F928CA31906E7B5D7FF05A1E /* MicroReadingSessionTests.swift in Sources */,
 				5C7CD64DB29A14E9E51BF887 /* NotesQuotaTests.swift in Sources */,
@@ -1345,6 +1360,7 @@
 				65E0C9C8AD3675456C9A4D5C /* ReadingLiveActivityCoordinatorTests.swift in Sources */,
 				2AC2D380B271919D23E9885D /* ReadingLiveActivityRecoveryTests.swift in Sources */,
 				DD96F1B62B8316E72F0CA57E /* ReadingReminderPolicyTests.swift in Sources */,
+				751C79DD15C27240191A945F /* ReadingSessionRepositoryTests.swift in Sources */,
 				2D1919EE8CC75BBF926D7D6A /* ReadingStatsStoreTests.swift in Sources */,
 				19EC494FAE3076E42F2F90BB /* RemoteCommandLifecycleTests.swift in Sources */,
 				741E48B8A6ABD461C363ED02 /* ReviewPromptManagerTests.swift in Sources */,
@@ -1504,7 +1520,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
-				DEVELOPMENT_TEAM = 29C8MS76CZ;
+				DEVELOPMENT_TEAM = "29C8MS76CZ";
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -1528,7 +1544,7 @@
 				CODE_SIGN_ENTITLEMENTS = iPhone/pagepilot.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 43;
-				DEVELOPMENT_TEAM = 29C8MS76CZ;
+				DEVELOPMENT_TEAM = "29C8MS76CZ";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = iPhone/Info.plist;
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
@@ -1614,7 +1630,7 @@
 				CODE_SIGN_ENTITLEMENTS = iPhone/pagepilot.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 43;
-				DEVELOPMENT_TEAM = 29C8MS76CZ;
+				DEVELOPMENT_TEAM = "29C8MS76CZ";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = iPhone/Info.plist;
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
@@ -1634,7 +1650,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CURRENT_PROJECT_VERSION = 43;
-				DEVELOPMENT_TEAM = 29C8MS76CZ;
+				DEVELOPMENT_TEAM = "29C8MS76CZ";
 				INFOPLIST_FILE = ReadingLiveActivity/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -1654,7 +1670,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CURRENT_PROJECT_VERSION = 43;
-				DEVELOPMENT_TEAM = 29C8MS76CZ;
+				DEVELOPMENT_TEAM = "29C8MS76CZ";
 				INFOPLIST_FILE = ReadingLiveActivity/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -1675,7 +1691,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CURRENT_PROJECT_VERSION = 43;
-				DEVELOPMENT_TEAM = 29C8MS76CZ;
+				DEVELOPMENT_TEAM = "29C8MS76CZ";
 				INFOPLIST_FILE = WatchRemote/Info.plist;
 				MARKETING_VERSION = 1.0.21;
 				PRODUCT_BUNDLE_IDENTIFIER = com.panyang.PagePilot.WatchRemote;
@@ -1690,7 +1706,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
-				DEVELOPMENT_TEAM = 29C8MS76CZ;
+				DEVELOPMENT_TEAM = "29C8MS76CZ";
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -1710,7 +1726,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CURRENT_PROJECT_VERSION = 43;
-				DEVELOPMENT_TEAM = 29C8MS76CZ;
+				DEVELOPMENT_TEAM = "29C8MS76CZ";
 				INFOPLIST_FILE = WatchRemote/Info.plist;
 				MARKETING_VERSION = 1.0.21;
 				PRODUCT_BUNDLE_IDENTIFIER = com.panyang.PagePilot.WatchRemote;
