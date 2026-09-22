@@ -58,6 +58,8 @@ struct WatchInstallReminderStore {
 
 /// Base class for the reader view controller of a `VisualNavigator`.
 class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewController<N>, VisualNavigatorDelegate, ReaderPositionIndicatorProviding {
+    override var supportsDetailedReadingSessions: Bool { true }
+
     private lazy var positionLabel = UILabel()
 
     var positionIndicatorView: UIView {
@@ -264,11 +266,7 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
             }
         }
 
-        // Register with WatchPageTurnService for remote page turn control
         WatchPageTurnService.shared.activate()
-        if let visualNavigator = navigator as? VisualNavigator {
-            WatchPageTurnService.shared.registerNavigator(visualNavigator, publication: publication)
-        }
         showOnboardingWatchGuideIfNeeded()
         showOnboardingIPadHintIfNeeded()
 
@@ -548,6 +546,10 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
 
+        if let visualNavigator = navigator as? VisualNavigator {
+            WatchPageTurnService.shared.registerNavigator(visualNavigator, publication: publication)
+        }
+
         VolumeKeyService.shared.register(self)
         VolumeKeyService.shared.onPageForward = { [weak self] in
             guard self?.quickPositionJumpController?.isActive != true,
@@ -571,7 +573,9 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
         wasTTSPlayingBeforeQuickPositionJump = false
         quickPositionJumpController?.cancel()
         ttsViewModel?.stop()
-        WatchPageTurnService.shared.unregisterNavigator()
+        if let visualNavigator = navigator as? VisualNavigator {
+            WatchPageTurnService.shared.unregisterNavigator(visualNavigator)
+        }
     }
 
     override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {

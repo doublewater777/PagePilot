@@ -11,6 +11,103 @@ import SafariServices
 import SwiftUI
 import UIKit
 
+struct ReaderSessionLifecycle {
+    struct ActiveSession {
+        let bookId: Book.Id
+        let startedAt: Date
+        let startProgression: Double
+        var watchPageTurns: Int = 0
+    }
+
+    struct FinishedSession {
+        let bookId: Book.Id
+        let startedAt: Date
+        let endedAt: Date
+        let startProgression: Double
+        let watchPageTurns: Int
+    }
+
+    private let bookId: Book.Id
+    private(set) var isReaderVisible = false
+    private var activeSession: ActiveSession?
+
+    init(bookId: Book.Id) {
+        self.bookId = bookId
+    }
+
+    mutating func readerDidAppear(
+        at startedAt: Date,
+        progression: Double,
+        applicationIsActive: Bool
+    ) -> ActiveSession? {
+        isReaderVisible = true
+        return startIfNeeded(
+            at: startedAt,
+            progression: progression,
+            applicationIsActive: applicationIsActive
+        )
+    }
+
+    mutating func readerWillDisappear(at endedAt: Date) -> FinishedSession? {
+        isReaderVisible = false
+        return finishIfNeeded(at: endedAt)
+    }
+
+    mutating func applicationDidEnterBackground(at endedAt: Date) -> FinishedSession? {
+        finishIfNeeded(at: endedAt)
+    }
+
+    mutating func applicationDidBecomeActive(
+        at startedAt: Date,
+        progression: Double
+    ) -> ActiveSession? {
+        startIfNeeded(
+            at: startedAt,
+            progression: progression,
+            applicationIsActive: true
+        )
+    }
+
+    mutating func recordSuccessfulWatchPageTurn(origin: WatchPageTurnOrigin) {
+        guard var session = activeSession else { return }
+        session.watchPageTurns += 1
+        activeSession = session
+    }
+
+    private mutating func startIfNeeded(
+        at startedAt: Date,
+        progression: Double,
+        applicationIsActive: Bool
+    ) -> ActiveSession? {
+        guard isReaderVisible,
+              applicationIsActive,
+              activeSession == nil else {
+            return nil
+        }
+
+        let session = ActiveSession(
+            bookId: bookId,
+            startedAt: startedAt,
+            startProgression: progression
+        )
+        activeSession = session
+        return session
+    }
+
+    private mutating func finishIfNeeded(at endedAt: Date) -> FinishedSession? {
+        guard let session = activeSession else { return nil }
+        activeSession = nil
+
+        return FinishedSession(
+            bookId: session.bookId,
+            startedAt: session.startedAt,
+            endedAt: endedAt,
+            startProgression: session.startProgression,
+            watchPageTurns: session.watchPageTurns
+        )
+    }
+}
+
 /// Base class for all reader view controllers.
 class ReaderViewController<N: Navigator>: UIViewController,
     NavigatorDelegate, UIPopoverPresentationControllerDelegate, Loggable
@@ -22,13 +119,9 @@ class ReaderViewController<N: Navigator>: UIViewController,
     let bookId: Book.Id
     private let books: BookRepository
     private let bookmarks: BookmarkRepository
-    private struct ActiveReadingSession {
-        let startedAt: Date
-        let startProgression: Double
-        let watchPageTurnCountAtStart: Int
-    }
+    private var readingSessionLifecycle: ReaderSessionLifecycle
 
-    private var activeReadingSession: ActiveReadingSession?
+    var supportsDetailedReadingSessions: Bool { false }
     private var suppressedReadingProgress: Locator?
     private(set) var isReadingProgressPersistenceSuppressed = false
 
@@ -49,6 +142,7 @@ class ReaderViewController<N: Navigator>: UIViewController,
         self.bookId = bookId
         self.books = books
         self.bookmarks = bookmarks
+        self.readingSessionLifecycle = ReaderSessionLifecycle(bookId: bookId)
 
         super.init(nibName: nil, bundle: nil)
     }
@@ -68,6 +162,7 @@ class ReaderViewController<N: Navigator>: UIViewController,
         navigationItem.rightBarButtonItems = makeNavigationBarButtons()
         NotificationCenter.default.addObserver(self, selector: #selector(appDidEnterBackground), name: UIApplication.didEnterBackgroundNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(appDidBecomeActive), name: UIApplication.didBecomeActiveNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(watchPageTurnDidSucceed(_:)), name: .watchPageTurnDidSucceed, object: nil)
 
         LastReadBooks.record(id: bookId.rawValue)
     }
@@ -76,14 +171,17 @@ class ReaderViewController<N: Navigator>: UIViewController,
         super.viewWillAppear(animated)
 
         setMainTabBarHidden(true, animated: animated)
-        if view.window != nil {
-            startReadingSessionIfNeeded()
-        }
     }
 
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
-        startReadingSessionIfNeeded()
+        beginReadingSession(
+            readingSessionLifecycle.readerDidAppear(
+                at: Date(),
+                progression: currentReadingProgression,
+                applicationIsActive: UIApplication.shared.applicationState == .active
+            )
+        )
         MicroReadingSessionPresenter.readerDidAppear(self)
     }
 
@@ -91,7 +189,9 @@ class ReaderViewController<N: Navigator>: UIViewController,
         super.viewWillDisappear(animated)
 
         MicroReadingSessionPresenter.readerWillDisappear(self)
-        finishReadingSessionIfNeeded()
+        finishReadingSession(
+            readingSessionLifecycle.readerWillDisappear(at: Date())
+        )
         setMainTabBarHidden(false, animated: animated)
         if (isMovingFromParent || isBeingDismissed),
            UIApplication.shared.applicationState == .active {
@@ -109,61 +209,53 @@ class ReaderViewController<N: Navigator>: UIViewController,
         }
     }
 
-    private func startReadingSessionIfNeeded() {
-        guard activeReadingSession == nil else { return }
-
-        let startDate = Date()
-        let startProgression = navigator.currentLocation?.locations.totalProgression
+    private var currentReadingProgression: Double {
+        navigator.currentLocation?.locations.totalProgression
             ?? WatchPageTurnService.shared.currentBookProgress
+    }
 
-        activeReadingSession = ActiveReadingSession(
-            startedAt: startDate,
-            startProgression: startProgression,
-            watchPageTurnCountAtStart: ReviewPromptManager.shared.watchPageTurnCount
-        )
+    private func beginReadingSession(_ session: ReaderSessionLifecycle.ActiveSession?) {
+        guard let session else { return }
 
         WatchReadingSessionContext.begin(
-            at: startDate,
-            progression: startProgression
+            at: session.startedAt,
+            progression: session.startProgression
         )
     }
 
-    private func finishReadingSessionIfNeeded(celebrateGoal: Bool = true) {
-        guard let activeSession = activeReadingSession else { return }
+    private func finishReadingSession(
+        _ finishedSession: ReaderSessionLifecycle.FinishedSession?,
+        celebrateGoal: Bool = true
+    ) {
+        guard let finishedSession else { return }
 
-        let endDate = Date()
-        let endProgression = navigator.currentLocation?.locations.totalProgression
-            ?? activeSession.startProgression
-        let watchPageTurns = max(
-            0,
-            ReviewPromptManager.shared.watchPageTurnCount
-                - activeSession.watchPageTurnCountAtStart
-        )
-
-        activeReadingSession = nil
         WatchReadingSessionContext.end()
 
         ReadingStatsStore.shared.recordReadingSession(
-            startDate: activeSession.startedAt,
-            endDate: endDate,
-            bookId: bookId
+            startDate: finishedSession.startedAt,
+            endDate: finishedSession.endedAt,
+            bookId: finishedSession.bookId
         )
 
-        let session = ReadingSession(
-            bookId: bookId,
-            startedAt: activeSession.startedAt,
-            endedAt: endDate,
-            startProgression: activeSession.startProgression,
-            endProgression: endProgression,
-            watchPageTurns: watchPageTurns
-        )
+        if supportsDetailedReadingSessions {
+            let endProgression = navigator.currentLocation?.locations.totalProgression
+                ?? finishedSession.startProgression
+            let session = ReadingSession(
+                bookId: finishedSession.bookId,
+                startedAt: finishedSession.startedAt,
+                endedAt: finishedSession.endedAt,
+                startProgression: finishedSession.startProgression,
+                endProgression: endProgression,
+                watchPageTurns: finishedSession.watchPageTurns
+            )
 
-        if session.durationSeconds > 0 {
-            Task {
-                do {
-                    try await AppModule.shared?.readingSessions.add(session)
-                } catch {
-                    print("ReaderViewController: failed to save reading session: \(error)")
+            if session.durationSeconds > 0 {
+                Task {
+                    do {
+                        try await AppModule.shared?.readingSessions.add(session)
+                    } catch {
+                        print("ReaderViewController: failed to save reading session: \(error)")
+                    }
                 }
             }
         }
@@ -183,16 +275,30 @@ class ReaderViewController<N: Navigator>: UIViewController,
     }
 
     @objc private func appDidEnterBackground() {
-        // Backgrounding ends the reading session: the Watch is no longer a
-        // page-turn surface, so the Live Activity and stats session stop here.
-        finishReadingSessionIfNeeded(celebrateGoal: false)
+        // Backgrounding ends the active interval without changing visibility,
+        // so didBecomeActive can start a fresh interval only if this Reader
+        // is still on screen.
+        finishReadingSession(
+            readingSessionLifecycle.applicationDidEnterBackground(at: Date()),
+            celebrateGoal: false
+        )
     }
 
     /// The Watch Live Activity requires applicationState == .active;
     /// willEnterForeground fires while the app is still .inactive, so the
     /// restart must wait for didBecomeActive.
     @objc private func appDidBecomeActive() {
-        startReadingSessionIfNeeded()
+        beginReadingSession(
+            readingSessionLifecycle.applicationDidBecomeActive(
+                at: Date(),
+                progression: currentReadingProgression
+            )
+        )
+    }
+
+    @objc private func watchPageTurnDidSucceed(_ notification: Notification) {
+        guard let origin = notification.object as? WatchPageTurnOrigin else { return }
+        readingSessionLifecycle.recordSuccessfulWatchPageTurn(origin: origin)
     }
 
     // MARK: - Navigation bar
