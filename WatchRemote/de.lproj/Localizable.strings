@@ -18,3 +18,8 @@
 "watch.error.openIPhone" = "PagePilot auf dem iPhone öffnen";
 "watch.error.generic" = "Die Seite konnte nicht gewechselt werden. Bitte versuchen Sie es erneut.";
 "watch.error.proRequired" = "Zum Umblättern auf dem iPad ist PagePilot Pro auf dem iPhone erforderlich.";
+
+"watch.workoutHelp.button" = "Beim Training?";
+"watch.workoutHelp.title" = "Beim Training umblättern";
+"watch.workoutHelp.message" = "Wenn die Apple Watch beim Anheben des Handgelenks immer wieder zu Training zurückkehrt, öffne Einstellungen → Allgemein → Zurück zur Uhr → Training und deaktiviere Zur App zurückkehren. Das Training wird weiter aufgezeichnet.";
+"watch.workoutHelp.dismiss" = "Verstanden";
