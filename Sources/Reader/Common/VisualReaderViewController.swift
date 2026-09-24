@@ -75,6 +75,7 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
     private var wasTTSPlayingBeforeQuickPositionJump = false
     private var quickPositionJumpSuppressionToken: UUID?
     private var onboardingWatchGuideViewController: UIHostingController<OnboardingWatchGuideView>?
+    private var onboardingWatchSuccessCancellable: AnyCancellable?
     private var onboardingIPadHintViewController: UIHostingController<OnboardingIPadReaderHintView>?
     private var didDismissWatchGuideThisSession = false
     private let watchInstallReminderStore = WatchInstallReminderStore()
@@ -359,13 +360,12 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
             )
         }
 
-        NotificationCenter.default.publisher(for: .watchPageTurnDidSucceed)
+        onboardingWatchSuccessCancellable = NotificationCenter.default.publisher(for: .watchPageTurnDidSucceed)
             .prefix(1)
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in
                 self?.completeOnboardingWatchGuide()
             }
-            .store(in: &subscriptions)
     }
 
     private func showOnboardingIPadHintIfNeeded() {
@@ -458,6 +458,8 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
     }
 
     private func removeOnboardingWatchGuide() {
+        onboardingWatchSuccessCancellable?.cancel()
+        onboardingWatchSuccessCancellable = nil
         guard let hostingController = onboardingWatchGuideViewController else { return }
         hostingController.willMove(toParent: nil)
         hostingController.view.removeFromSuperview()

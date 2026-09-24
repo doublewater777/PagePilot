@@ -743,7 +743,7 @@ struct OnboardingView: View {
     }
 
     private func importSample() {
-        guard !hasFinished else { return }
+        guard !hasFinished, !isOpeningReader else { return }
         workTask?.cancel()
         isWorking = true
         errorMessage = nil
@@ -752,7 +752,7 @@ struct OnboardingView: View {
             do {
                 let url = try await OnboardingSamplePublication.makeURL()
                 let publication = try await importPublication(url)
-                guard !Task.isCancelled, !hasFinished else { return }
+                guard !Task.isCancelled, !hasFinished, !isOpeningReader else { return }
                 Analytics.shared.log(.onboardingImportSucceeded(source: ImportEntryPoint.sample.rawValue))
                 selectedPublication = publication
                 didChoosePublication(bookID: publication.bookID, source: .sample)
@@ -775,7 +775,7 @@ struct OnboardingView: View {
         source: OnboardingFlow.PublicationSource = .user,
         entryPoint: ImportEntryPoint = .files
     ) {
-        guard !hasFinished else { return }
+        guard !hasFinished, !isOpeningReader else { return }
         workTask?.cancel()
         isWorking = true
         errorMessage = nil
@@ -783,7 +783,7 @@ struct OnboardingView: View {
         workTask = Task {
             do {
                 let publication = try await importPublication(url)
-                guard !Task.isCancelled, !hasFinished else { return }
+                guard !Task.isCancelled, !hasFinished, !isOpeningReader else { return }
                 Analytics.shared.log(.onboardingImportSucceeded(source: entryPoint.rawValue))
                 selectedPublication = publication
                 didChoosePublication(bookID: publication.bookID, source: source)
@@ -838,7 +838,7 @@ struct OnboardingView: View {
         _ publication: OnboardingPublicationPresentation,
         entryPoint: ImportEntryPoint
     ) {
-        guard !hasFinished else { return }
+        guard !hasFinished, !isOpeningReader else { return }
         Analytics.shared.log(.onboardingImportSucceeded(source: entryPoint.rawValue))
         selectedPublication = publication
         didChoosePublication(bookID: publication.bookID, source: .user)
