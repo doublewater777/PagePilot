@@ -215,6 +215,59 @@ final class WatchInstallReminderPolicyTests: XCTestCase {
         }
     }
 
+    func testWatchSuccessObserverIsScopedToGuideLifetime() throws {
+        let source = try Self.visualReaderSource()
+
+        let property = try Self.requiredLine(
+            "private var onboardingWatchSuccessCancellable: AnyCancellable?",
+            in: source
+        )
+        let subscription = try Self.requiredLine(
+            "onboardingWatchSuccessCancellable = NotificationCenter.default.publisher(for: .watchPageTurnDidSucceed)",
+            in: source,
+            startingAfter: property
+        )
+        let removal = try Self.requiredLine(
+            "private func removeOnboardingWatchGuide()",
+            in: source
+        )
+        let cancellation = try Self.requiredLine(
+            "onboardingWatchSuccessCancellable?.cancel()",
+            in: source,
+            startingAfter: removal
+        )
+
+        XCTAssertGreaterThan(subscription, property)
+        XCTAssertGreaterThan(cancellation, removal)
+    }
+
+    func testReaderOpeningRejectsLateImportCompletions() throws {
+        let source = try Self.source(named: "iPhone/OnboardingView.swift")
+
+        XCTAssertGreaterThanOrEqual(
+            Self.occurrences(of: "guard !hasFinished, !isOpeningReader else { return }", in: source),
+            3,
+            "Sample, file, and alternative-source imports must stop once Reader opening begins."
+        )
+        XCTAssertGreaterThanOrEqual(
+            Self.occurrences(of: "guard !Task.isCancelled, !hasFinished, !isOpeningReader else { return }", in: source),
+            2,
+            "Async import completions must not overwrite the publication captured for Reader opening."
+        )
+    }
+
+    func testCollapsedWatchGuideDismissTargetMeetsTouchMinimum() throws {
+        let source = try Self.source(named: "Sources/Reader/Common/OnboardingWatchGuideView.swift")
+        let collapsedGuide = try Self.requiredLine("private var collapsedGuide", in: source)
+        let dismissTarget = try Self.requiredLine(
+            ".frame(width: 44, height: 44)",
+            in: source,
+            startingAfter: collapsedGuide
+        )
+
+        XCTAssertGreaterThan(dismissTarget, collapsedGuide)
+    }
+
     private func shouldShow(
         step: OnboardingFlow.Step,
         availability: WatchAvailability
@@ -243,6 +296,16 @@ final class WatchInstallReminderPolicyTests: XCTestCase {
             contentsOf: repositoryURL.appendingPathComponent(path),
             encoding: .utf8
         )
+    }
+
+    private static func occurrences(of substring: String, in source: String) -> Int {
+        var count = 0
+        var searchStart = source.startIndex
+        while let match = source.range(of: substring, range: searchStart..<source.endIndex) {
+            count += 1
+            searchStart = match.upperBound
+        }
+        return count
     }
 
     private static func requiredLine(

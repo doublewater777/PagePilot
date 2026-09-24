@@ -8,7 +8,9 @@
 
 新用户第一次打开 PagePilot 时，不再浏览纯介绍页，而是尽快完成一次核心体验：导入一本 Publication，在 Reader 中通过 Apple Watch 真实翻页。
 
-Onboarding Activation（首次成功 Watch 翻页）是设计上的首要结果。选择 iPad Watch Control Target 后购买 Pro Access 是次要结果。本方案不新增匿名分析或第三方分析 SDK，因此不做跨用户漏斗统计。
+Onboarding Activation（首次成功 Watch 翻页）是设计上的首要结果。选择 iPad Watch Control Target 后购买 Pro Access 是次要结果。实现使用本地 NotificationCenter 发布漏斗事件，不新增匿名分析或第三方分析 SDK，也不上传跨用户数据。
+
+当前漏斗事件覆盖 `onboarding_viewed`、`onboarding_tour_skipped`、导入开始/成功/失败、`onboarding_reader_opened`、Watch 引导显示/折叠/关闭，以及 `onboarding_watch_activation_completed`。事件只在本地发布，供调试或后续接入经过隐私评估的采集器使用。
 
 ## 非目标
 

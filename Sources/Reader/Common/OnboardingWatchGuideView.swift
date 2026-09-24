@@ -10,22 +10,87 @@ struct OnboardingWatchGuideView: View {
     @ObservedObject var service: WatchPageTurnService
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var isPulsing = false
+    @State private var isCollapsed = false
 
     let dismissTitle: LocalizedStringKey
     let onDismiss: () -> Void
+    let onCollapse: () -> Void
 
     init(
         service: WatchPageTurnService,
         dismissTitle: LocalizedStringKey = "onboarding_watch_skip",
-        onDismiss: @escaping () -> Void
+        onDismiss: @escaping () -> Void,
+        onCollapse: @escaping () -> Void = {}
     ) {
         self.service = service
         self.dismissTitle = dismissTitle
         self.onDismiss = onDismiss
+        self.onCollapse = onCollapse
     }
 
     var body: some View {
-        expandedGuide
+        Group {
+            if isCollapsed {
+                collapsedGuide
+            } else {
+                expandedGuide
+            }
+        }
+        .task {
+            do {
+                try await Task.sleep(for: .seconds(10))
+            } catch {
+                return
+            }
+            guard !Task.isCancelled, !isCollapsed else { return }
+            withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.2)) {
+                isCollapsed = true
+            }
+            onCollapse()
+        }
+    }
+
+    private var collapsedGuide: some View {
+        HStack(spacing: 10) {
+            Button {
+                withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.2)) {
+                    isCollapsed = false
+                }
+            } label: {
+                HStack(spacing: 10) {
+                    Image(systemName: statusIcon)
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundStyle(AppColors.accentBlue)
+                    Text("onboarding_watch_try")
+                        .font(.subheadline.weight(.semibold))
+                    Image(systemName: "chevron.up")
+                        .font(.caption.bold())
+                        .foregroundStyle(.tertiary)
+                }
+            }
+            .buttonStyle(.plain)
+
+            Spacer(minLength: 8)
+
+            Button(action: onDismiss) {
+                Image(systemName: "xmark")
+                    .font(.caption.bold())
+                    .foregroundStyle(.secondary)
+                    .frame(width: 28, height: 28)
+            }
+            .buttonStyle(.plain)
+            .frame(width: 44, height: 44)
+            .contentShape(Rectangle())
+            .accessibilityLabel(Text(dismissTitle))
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 9)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(AppColors.accentBlue.opacity(0.16), lineWidth: 1)
+        }
+        .shadow(color: Color.black.opacity(0.1), radius: 14, y: 6)
     }
 
     private var expandedGuide: some View {

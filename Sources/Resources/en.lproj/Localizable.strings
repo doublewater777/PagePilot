@@ -73,6 +73,7 @@
 "onboarding_watch_open_detail" = "Keep the Reader open, then send one page turn from your Watch.";
 "onboarding_watch_ready_title" = "Turn a Page from Your Wrist";
 "onboarding_watch_ready_detail" = "Tap forward, back, or rotate the crown and watch this page change.";
+"onboarding_watch_try" = "Try a Watch page turn";
 "onboarding_watch_success" = "Connected — ready to read";
 "onboarding_ipad_reader_hint_title" = "Turn Pages with Apple Watch";
 "onboarding_ipad_reader_hint_detail" = "While reading, PagePilot shows controls on your paired Apple Watch. Tap the Live Activity to open the Watch app.";

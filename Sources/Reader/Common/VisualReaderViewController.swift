@@ -75,6 +75,7 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
     private var wasTTSPlayingBeforeQuickPositionJump = false
     private var quickPositionJumpSuppressionToken: UUID?
     private var onboardingWatchGuideViewController: UIHostingController<OnboardingWatchGuideView>?
+    private var onboardingWatchSuccessCancellable: AnyCancellable?
     private var onboardingIPadHintViewController: UIHostingController<OnboardingIPadReaderHintView>?
     private var didDismissWatchGuideThisSession = false
     private let watchInstallReminderStore = WatchInstallReminderStore()
@@ -321,6 +322,7 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
 
     private func presentOnboardingWatchGuide() {
         let flow = OnboardingProgressStore().load(platform: .iPhone)
+        let isActivationGuide = flow.step == .reader
         let dismissTitle: LocalizedStringKey = flow.step == .reader
             ? "onboarding_watch_skip"
             : "close_button"
@@ -329,6 +331,11 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
             dismissTitle: dismissTitle,
             onDismiss: { [weak self] in
                 self?.dismissOnboardingWatchGuide()
+            },
+            onCollapse: {
+                if isActivationGuide {
+                    Analytics.shared.log(.onboardingWatchGuideCollapsed)
+                }
             }
         )
         let hostingController = UIHostingController(rootView: guide)
@@ -345,14 +352,20 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
         ])
         hostingController.didMove(toParent: self)
         onboardingWatchGuideViewController = hostingController
+        if isActivationGuide {
+            Analytics.shared.log(
+                .onboardingWatchGuideShown(
+                    availability: watchAvailabilityAnalyticsName
+                )
+            )
+        }
 
-        NotificationCenter.default.publisher(for: .watchPageTurnDidSucceed)
+        onboardingWatchSuccessCancellable = NotificationCenter.default.publisher(for: .watchPageTurnDidSucceed)
             .prefix(1)
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in
                 self?.completeOnboardingWatchGuide()
             }
-            .store(in: &subscriptions)
     }
 
     private func showOnboardingIPadHintIfNeeded() {
@@ -391,6 +404,7 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
         flow.didCompleteWatchPageTurn()
         store.save(flow)
         watchInstallReminderStore.reset()
+        Analytics.shared.log(.onboardingWatchActivationCompleted)
 
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
         toast(
@@ -421,12 +435,20 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
     private func dismissOnboardingWatchGuide() {
         let progressStore = OnboardingProgressStore()
         var flow = progressStore.load(platform: .iPhone)
-        if flow.step == .reader {
+        let isActivationGuide = flow.step == .reader
+        if isActivationGuide {
             flow.finish()
             progressStore.save(flow)
         }
 
         let availability = WatchPageTurnService.shared.watchAvailability
+        if isActivationGuide {
+            Analytics.shared.log(
+                .onboardingWatchGuideDismissed(
+                    availability: watchAvailabilityAnalyticsName
+                )
+            )
+        }
         if availability == .appNotInstalled {
             watchInstallReminderStore.dismiss()
         }
@@ -436,11 +458,23 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
     }
 
     private func removeOnboardingWatchGuide() {
+        onboardingWatchSuccessCancellable?.cancel()
+        onboardingWatchSuccessCancellable = nil
         guard let hostingController = onboardingWatchGuideViewController else { return }
         hostingController.willMove(toParent: nil)
         hostingController.view.removeFromSuperview()
         hostingController.removeFromParent()
         onboardingWatchGuideViewController = nil
+    }
+
+    private var watchAvailabilityAnalyticsName: String {
+        switch WatchPageTurnService.shared.watchAvailability {
+        case .unsupported: return "unsupported"
+        case .unpaired: return "unpaired"
+        case .appNotInstalled: return "app_not_installed"
+        case .unreachable: return "unreachable"
+        case .ready: return "ready"
+        }
     }
 
     private func removeOnboardingIPadHint() {

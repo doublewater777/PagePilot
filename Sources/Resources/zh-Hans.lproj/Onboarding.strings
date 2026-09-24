@@ -1,1 +1,10 @@
 "onboarding_use_sample_book" = "使用样书";
+"onboarding_sample_title" = "PagePilot 样书";
+"onboarding_sample_chapter1_title" = "安静的开始";
+"onboarding_sample_chapter1_body" = "房间安静得能听见翻页的声音。晨光落在桌面上，下一段文字静静等着你。\n\n阅读常常就是这样开始的。一行接着一行，书本让外面的世界继续前行，也给你留出一点呼吸的空间。";
+"onboarding_sample_chapter2_title" = "下一页";
+"onboarding_sample_chapter2_body" = "好的阅读节奏很容易辨认。读到最后一句时，注意力已经向前延伸，下一页几乎在你意识到之前就来了。\n\n这就是 PagePilot 想带来的体验。在 iPhone 或 iPad 上阅读，需要时，用 Apple Watch 在手腕上轻松翻页。";
+"onboarding_sample_chapter3_title" = "再读几分钟";
+"onboarding_sample_chapter3_body" = "几页文字就足以让人暂时离开喧闹。重要的是连贯感：只要有一点空闲，文字始终在那里。\n\n书籍留在你的书架中，阅读位置跟随书籍保存。准备好后，可以从“文件”、Wi‑Fi 传书或 OPDS 书源导入自己的出版物。";
+"onboarding_sample_chapter4_title" = "你的书架";
+"onboarding_sample_chapter4_body" = "最好的样书，最终还是你真正想读的那一本。它可以是小说、长文、待修改的稿件，或一本经常查阅的参考书。\n\n方便时再导入即可。在那之前，可以用这本短样书熟悉 Reader，并试试用 Watch 翻页。";

@@ -73,6 +73,7 @@
 "onboarding_watch_open_detail" = "保持 Reader 打开，再从手表发送一次翻页。";
 "onboarding_watch_ready_title" = "从手腕翻一页";
 "onboarding_watch_ready_detail" = "点击前进、后退或转动表冠，看看这一页发生变化。";
+"onboarding_watch_try" = "试试用 Watch 翻页";
 "onboarding_watch_success" = "连接成功，可以开始阅读";
 "onboarding_ipad_reader_hint_title" = "用 Apple Watch 翻页";
 "onboarding_ipad_reader_hint_detail" = "阅读时，已配对的 Apple Watch 会显示阅读控制；点实时活动即可打开 PagePilot。";
