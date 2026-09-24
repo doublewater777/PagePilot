@@ -260,7 +260,7 @@ final class WatchInstallReminderPolicyTests: XCTestCase {
         let source = try Self.source(named: "Sources/Reader/Common/OnboardingWatchGuideView.swift")
         let collapsedGuide = try Self.requiredLine("private var collapsedGuide", in: source)
         let dismissTarget = try Self.requiredLine(
-            ".frame(minWidth: 44, minHeight: 44)",
+            ".frame(width: 44, height: 44)",
             in: source,
             startingAfter: collapsedGuide
         )

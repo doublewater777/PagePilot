@@ -76,9 +76,11 @@ struct OnboardingWatchGuideView: View {
                 Image(systemName: "xmark")
                     .font(.caption.bold())
                     .foregroundStyle(.secondary)
-                    .frame(minWidth: 44, minHeight: 44)
+                    .frame(width: 28, height: 28)
             }
             .buttonStyle(.plain)
+            .frame(width: 44, height: 44)
+            .contentShape(Rectangle())
             .accessibilityLabel(Text(dismissTitle))
         }
         .padding(.horizontal, 16)
