@@ -19,7 +19,7 @@ enum ReadingSessionAnalytics {
     }
 }
 
-/// Lightweight analytics wrapper for tracking Pro conversion funnel.
+/// Lightweight analytics wrapper for tracking Pro and onboarding funnels.
 /// Uses NotificationCenter so multiple observers can subscribe.
 enum AnalyticsEvent {
     case paywallViewed(source: String)
@@ -39,6 +39,17 @@ enum AnalyticsEvent {
     )
     case proUpgradeIntent(source: ReadingSessionAnalytics.Source)
     case statsScopeChanged(to: String)
+    case onboardingViewed(platform: String)
+    case onboardingTourSkipped(page: Int)
+    case onboardingImportStarted(source: String)
+    case onboardingImportSucceeded(source: String)
+    case onboardingImportFailed(source: String, error: String)
+    case onboardingReaderOpened(source: String)
+    case onboardingDismissed(step: String)
+    case onboardingWatchGuideShown(availability: String)
+    case onboardingWatchGuideCollapsed
+    case onboardingWatchGuideDismissed(availability: String)
+    case onboardingWatchActivationCompleted
 
     var name: String {
         switch self {
@@ -56,6 +67,17 @@ enum AnalyticsEvent {
         case .readingSessionInsightIntent: return "reading_session_insight_intent"
         case .proUpgradeIntent: return "pro_upgrade_intent"
         case .statsScopeChanged: return "stats_scope_changed"
+        case .onboardingViewed: return "onboarding_viewed"
+        case .onboardingTourSkipped: return "onboarding_tour_skipped"
+        case .onboardingImportStarted: return "onboarding_import_started"
+        case .onboardingImportSucceeded: return "onboarding_import_succeeded"
+        case .onboardingImportFailed: return "onboarding_import_failed"
+        case .onboardingReaderOpened: return "onboarding_reader_opened"
+        case .onboardingDismissed: return "onboarding_dismissed"
+        case .onboardingWatchGuideShown: return "onboarding_watch_guide_shown"
+        case .onboardingWatchGuideCollapsed: return "onboarding_watch_guide_collapsed"
+        case .onboardingWatchGuideDismissed: return "onboarding_watch_guide_dismissed"
+        case .onboardingWatchActivationCompleted: return "onboarding_watch_activation_completed"
         }
     }
 
@@ -74,6 +96,22 @@ enum AnalyticsEvent {
             return ["source": source.rawValue]
         case .statsScopeChanged(let scope):
             return ["scope": scope]
+        case .onboardingViewed(let platform):
+            return ["platform": platform]
+        case .onboardingTourSkipped(let page):
+            return ["page": String(page)]
+        case .onboardingImportStarted(let source),
+             .onboardingImportSucceeded(let source):
+            return ["source": source]
+        case let .onboardingImportFailed(source, error):
+            return ["source": source, "error": error]
+        case .onboardingReaderOpened(let source):
+            return ["source": source]
+        case .onboardingDismissed(let step):
+            return ["step": step]
+        case .onboardingWatchGuideShown(let availability),
+             .onboardingWatchGuideDismissed(let availability):
+            return ["availability": availability]
         default:
             return [:]
         }

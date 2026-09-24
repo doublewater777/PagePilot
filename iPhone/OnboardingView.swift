@@ -28,8 +28,18 @@ struct OnboardingView: View {
     @State private var isOpeningReader = false
     @State private var isReaderTransitionActive = false
     @State private var hasFinished = false
+    @State private var didLogOnboardingView = false
+    @State private var didLogReaderOpened = false
     @State private var workTask: Task<Void, Never>?
     @State private var readerOpenTask: Task<Void, Never>?
+
+    private enum ImportEntryPoint: String {
+        case files
+        case externalFile
+        case wifi
+        case opds
+        case sample
+    }
 
     let importPublication: (URL) async throws -> OnboardingPublicationPresentation
     let loadPublication: (Int64) async -> OnboardingPublicationPresentation?
@@ -99,7 +109,7 @@ struct OnboardingView: View {
             allowsMultipleSelection: false
         ) { result in
             guard case let .success(urls) = result, let url = urls.first else { return }
-            importURL(url)
+            importURL(url, entryPoint: .files)
         }
         .confirmationDialog(
             "onboarding_import_source_title",
@@ -110,10 +120,16 @@ struct OnboardingView: View {
                 isImporterPresented = true
             }
             Button("onboarding_import_source_wifi") {
-                presentWiFiTransfer(didImportFromAlternativeSource)
+                Analytics.shared.log(.onboardingImportStarted(source: ImportEntryPoint.wifi.rawValue))
+                presentWiFiTransfer { publication in
+                    didImportFromAlternativeSource(publication, entryPoint: .wifi)
+                }
             }
             Button("onboarding_import_source_opds") {
-                presentOPDS(didImportFromAlternativeSource)
+                Analytics.shared.log(.onboardingImportStarted(source: ImportEntryPoint.opds.rawValue))
+                presentOPDS { publication in
+                    didImportFromAlternativeSource(publication, entryPoint: .opds)
+                }
             }
             Button("cancel_button", role: .cancel) {}
         }
@@ -122,15 +138,18 @@ struct OnboardingView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: .onboardingImportURLRequested)) { notification in
             guard let url = notification.object as? URL else { return }
-            importURL(url)
+            importURL(url, entryPoint: .externalFile)
         }
         .onAppear {
-            resumeIfNeeded()
-            if !hasHandledInitialURL,
-               flow.step == .choosePublication,
-               let initialURL {
+            if !didLogOnboardingView {
+                didLogOnboardingView = true
+                Analytics.shared.log(.onboardingViewed(platform: analyticsPlatformName))
+            }
+            if !hasHandledInitialURL, let initialURL {
                 hasHandledInitialURL = true
-                importURL(initialURL)
+                importURL(initialURL, entryPoint: .externalFile)
+            } else {
+                resumeIfNeeded()
             }
             if ProcessInfo.processInfo.arguments.contains("-AutoDismissOnboarding") {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
@@ -728,15 +747,23 @@ struct OnboardingView: View {
         workTask?.cancel()
         isWorking = true
         errorMessage = nil
+        Analytics.shared.log(.onboardingImportStarted(source: ImportEntryPoint.sample.rawValue))
         workTask = Task {
             do {
                 let url = try await OnboardingSamplePublication.makeURL()
                 let publication = try await importPublication(url)
                 guard !Task.isCancelled, !hasFinished else { return }
+                Analytics.shared.log(.onboardingImportSucceeded(source: ImportEntryPoint.sample.rawValue))
                 selectedPublication = publication
                 didChoosePublication(bookID: publication.bookID, source: .sample)
             } catch {
                 guard !Task.isCancelled, !hasFinished else { return }
+                Analytics.shared.log(
+                    .onboardingImportFailed(
+                        source: ImportEntryPoint.sample.rawValue,
+                        error: String(describing: type(of: error))
+                    )
+                )
                 errorMessage = error.localizedDescription
             }
             isWorking = false
@@ -745,20 +772,29 @@ struct OnboardingView: View {
 
     private func importURL(
         _ url: URL,
-        source: OnboardingFlow.PublicationSource = .user
+        source: OnboardingFlow.PublicationSource = .user,
+        entryPoint: ImportEntryPoint = .files
     ) {
         guard !hasFinished else { return }
         workTask?.cancel()
         isWorking = true
         errorMessage = nil
+        Analytics.shared.log(.onboardingImportStarted(source: entryPoint.rawValue))
         workTask = Task {
             do {
                 let publication = try await importPublication(url)
                 guard !Task.isCancelled, !hasFinished else { return }
+                Analytics.shared.log(.onboardingImportSucceeded(source: entryPoint.rawValue))
                 selectedPublication = publication
                 didChoosePublication(bookID: publication.bookID, source: source)
             } catch {
                 guard !Task.isCancelled, !hasFinished else { return }
+                Analytics.shared.log(
+                    .onboardingImportFailed(
+                        source: entryPoint.rawValue,
+                        error: String(describing: type(of: error))
+                    )
+                )
                 errorMessage = error.localizedDescription
             }
             isWorking = false
@@ -777,11 +813,15 @@ struct OnboardingView: View {
     }
 
     private func handleSkip() {
+        if flow.step == .watchIntro {
+            Analytics.shared.log(.onboardingTourSkipped(page: tourPage))
+        }
         if flow.platform == .iPhone, flow.step == .watchIntro, tourPage < 3 {
             withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
                 tourPage = 3
             }
         } else {
+            Analytics.shared.log(.onboardingDismissed(step: analyticsStepName))
             finish()
         }
     }
@@ -794,8 +834,12 @@ struct OnboardingView: View {
         onFlowChange(flow)
     }
 
-    private func didImportFromAlternativeSource(_ publication: OnboardingPublicationPresentation) {
+    private func didImportFromAlternativeSource(
+        _ publication: OnboardingPublicationPresentation,
+        entryPoint: ImportEntryPoint
+    ) {
         guard !hasFinished else { return }
+        Analytics.shared.log(.onboardingImportSucceeded(source: entryPoint.rawValue))
         selectedPublication = publication
         didChoosePublication(bookID: publication.bookID, source: .user)
     }
@@ -835,6 +879,10 @@ struct OnboardingView: View {
         }
         guard !isOpeningReader else { return }
         isOpeningReader = true
+        if !didLogReaderOpened {
+            didLogReaderOpened = true
+            Analytics.shared.log(.onboardingReaderOpened(source: selection.source.analyticsValue))
+        }
         if reduceMotion {
             hasFinished = true
             onOpenPublication(selection.bookID, flow.shouldShowWatchGuide)
@@ -883,6 +931,24 @@ struct OnboardingView: View {
         flow.finish()
         onFlowChange(flow)
         onFinish()
+    }
+
+    private var analyticsPlatformName: String {
+        switch flow.platform {
+        case .iPhone: return "iphone"
+        case .iPad: return "ipad"
+        }
+    }
+
+    private var analyticsStepName: String {
+        switch flow.step {
+        case .choosePublication: return "choose_publication"
+        case .chooseControlTarget: return "choose_control_target"
+        case .watchIntro: return "watch_intro"
+        case .reader: return "reader"
+        case .iPadHandoff: return "ipad_handoff"
+        case .completed: return "completed"
+        }
     }
 }
 

@@ -25,6 +25,13 @@ struct OnboardingFlow: Codable, Equatable {
     enum PublicationSource: Codable, Equatable {
         case user
         case sample
+
+        var analyticsValue: String {
+            switch self {
+            case .user: return "user"
+            case .sample: return "sample"
+            }
+        }
     }
 
     // Retained for source and saved-state compatibility. New onboarding never

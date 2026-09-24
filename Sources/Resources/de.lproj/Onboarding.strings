@@ -1,1 +1,10 @@
 "onboarding_use_sample_book" = "Beispielbuch verwenden";
+"onboarding_sample_title" = "PagePilot-Beispiel";
+"onboarding_sample_chapter1_title" = "Ein ruhiger Anfang";
+"onboarding_sample_chapter1_body" = "Der Raum war so still, dass man das leise Umblättern hören konnte. Morgenlicht lag auf dem Tisch, und der nächste Absatz wartete geduldig.\n\nLesen beginnt oft genau so. Eine Zeile führt zur nächsten, während ein Buch der Welt draußen ihren Lauf lässt und Ihnen etwas Raum zum Atemholen gibt.";
+"onboarding_sample_chapter2_title" = "Die nächste Seite";
+"onboarding_sample_chapter2_body" = "Einen guten Lesefluss erkennt man sofort. Der Blick erreicht den letzten Satz, die Aufmerksamkeit geht schon weiter, und die nächste Seite kommt fast von selbst.\n\nDas ist die Idee hinter PagePilot. Lesen Sie auf iPhone oder iPad und nutzen Sie bei Bedarf die Apple Watch als kleine Fernbedienung am Handgelenk.";
+"onboarding_sample_chapter3_title" = "Noch ein paar Minuten";
+"onboarding_sample_chapter3_body" = "Schon wenige Seiten können Sie für einen Moment aus dem Alltag holen. Entscheidend ist der Lesefluss: Der Text bleibt verfügbar, wann immer Sie eine freie Minute haben.\n\nIhre Bücher bleiben im Bücherregal, die Leseposition folgt dem Buch. Wenn Sie bereit sind, importieren Sie eine Publikation aus Dateien, per WLAN oder aus einem OPDS-Katalog.";
+"onboarding_sample_chapter4_title" = "Ihr Bücherregal";
+"onboarding_sample_chapter4_body" = "Die beste Leseprobe ist schließlich das Buch, das Sie wirklich lesen möchten: ein Roman, ein langer Artikel, ein Entwurf oder ein Nachschlagewerk.\n\nImportieren Sie es, wenn es passt. Bis dahin können Sie mit dieser kurzen Publikation den Reader erkunden und das Umblättern mit der Watch ausprobieren.";

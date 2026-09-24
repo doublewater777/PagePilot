@@ -73,6 +73,7 @@
 "onboarding_watch_open_detail" = "Lassen Sie den Reader geöffnet und senden Sie dann eine Seitenwechselaktion von Ihrer Watch.";
 "onboarding_watch_ready_title" = "Von Ihrem Handgelenk aus umblättern";
 "onboarding_watch_ready_detail" = "Tippen Sie auf vorwärts oder zurück oder drehen Sie die Krone und beobachten Sie, wie sich diese Seite ändert.";
+"onboarding_watch_try" = "Watch-Seitenwechsel ausprobieren";
 "onboarding_watch_success" = "Verbunden – bereit zum Lesen";
 "onboarding_ipad_reader_hint_title" = "Mit der Apple Watch umblättern";
 "onboarding_ipad_reader_hint_detail" = "Beim Lesen zeigt PagePilot Steuerungen auf der gekoppelten Apple Watch. Tippe auf die Live-Aktivität, um die Watch-App zu öffnen.";

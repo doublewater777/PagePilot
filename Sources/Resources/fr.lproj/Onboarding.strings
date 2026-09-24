@@ -1,1 +1,10 @@
 "onboarding_use_sample_book" = "Utiliser le livre d’exemple";
+"onboarding_sample_title" = "Exemple PagePilot";
+"onboarding_sample_chapter1_title" = "Un début paisible";
+"onboarding_sample_chapter1_body" = "La pièce était assez calme pour entendre le doux bruit d’une page tournée. La lumière du matin reposait sur la table et le paragraphe suivant attendait sans urgence.\n\nLa lecture commence souvent ainsi. Une ligne mène à la suivante, tandis qu’un livre laisse le monde extérieur avancer et vous offre un peu d’espace pour respirer.";
+"onboarding_sample_chapter2_title" = "La page suivante";
+"onboarding_sample_chapter2_body" = "On reconnaît facilement un bon rythme de lecture. Vos yeux arrivent à la dernière phrase, votre attention se tourne déjà vers la suite et la page suivante arrive presque naturellement.\n\nC’est l’idée de PagePilot. Lisez sur iPhone ou iPad et utilisez, quand cela vous aide, l’Apple Watch comme une petite télécommande au poignet.";
+"onboarding_sample_chapter3_title" = "Quelques minutes de plus";
+"onboarding_sample_chapter3_body" = "Quelques pages peuvent suffire à vous éloigner un instant du bruit. L’essentiel est la continuité : le texte reste disponible dès que vous avez une minute.\n\nVos livres restent dans votre bibliothèque et votre position de lecture suit le livre. Quand vous êtes prêt, importez une publication depuis Fichiers, par Wi‑Fi ou depuis un catalogue OPDS.";
+"onboarding_sample_chapter4_title" = "Votre bibliothèque";
+"onboarding_sample_chapter4_body" = "Le meilleur exemple est finalement le livre que vous souhaitez vraiment lire : un roman, un long article, un brouillon ou un document de référence.\n\nImportez-le quand vous le souhaitez. En attendant, explorez le lecteur avec cette courte publication et essayez de tourner une page avec l’Apple Watch.";

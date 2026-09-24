@@ -73,6 +73,7 @@
 "onboarding_watch_open_detail" = "Gardez le lecteur ouvert, puis envoyez un changement de page depuis votre Apple Watch.";
 "onboarding_watch_ready_title" = "Tournez une page depuis votre poignet";
 "onboarding_watch_ready_detail" = "Touchez suivant, précédent ou tournez la couronne pour voir cette page changer.";
+"onboarding_watch_try" = "Essayez de tourner une page avec l’Apple Watch";
 "onboarding_watch_success" = "Connecté — prêt à lire";
 "onboarding_ipad_reader_hint_title" = "Tournez les pages avec l’Apple Watch";
 "onboarding_ipad_reader_hint_detail" = "Pendant la lecture, PagePilot affiche les commandes sur votre Apple Watch jumelée. Touchez l’activité en direct pour ouvrir l’app Watch.";
