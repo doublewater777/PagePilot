@@ -263,8 +263,6 @@ struct IPadWatchConnectionView: View {
         localProbeOK = false
         phoneProbeOK = false
         probeStartedAt = Date()
-        localIPs = LocalNetworkInfo.ipv4Addresses()
-
         WatchPageTurnService.shared.activate()
 
         probeTask = Task { @MainActor in
