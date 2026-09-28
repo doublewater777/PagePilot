@@ -825,7 +825,7 @@
 "ipad_watch_summary_almost" = "Presque terminé";
 "ipad_watch_summary_almost_sub" = "Consultez la liste ci-dessous.";
 "ipad_watch_checklist_header" = "Liste de vérification";
-"ipad_watch_checklist_footer" = "Le « test iPhone » nécessite que l’iPhone soit sur le même réseau Wi‑Fi pour contacter cet iPad. L’ouverture de cette page lance automatiquement un test.";
+"ipad_watch_checklist_footer" = "Le « test iPhone » peut atteindre cet iPad via le même réseau Wi‑Fi ou une connexion directe à proximité. L’ouverture de cette page lance automatiquement un test.";
 "ipad_watch_check_wifi" = "Wi‑Fi";
 "ipad_watch_check_wifi_ok" = "Connecté";
 "ipad_watch_check_wifi_bad" = "Non connecté — activez le Wi‑Fi";
@@ -843,9 +843,9 @@
 "ipad_watch_next_header" = "Que faire ensuite";
 "ipad_watch_next_wifi" = "Rejoignez le même réseau Wi‑Fi que votre iPhone.";
 "ipad_watch_next_restart" = "Touchez Retester. Si l’échec persiste, quittez PagePilot et ouvrez-le à nouveau.";
-"ipad_watch_next_phone" = "Sur iPhone : Moi → Changement de page avec l’Apple Watch → choisissez iPad, gardez PagePilot ouvert, puis revenez ici et touchez Retester. Le même réseau Wi‑Fi suffit — le même identifiant Apple n’est pas requis.";
+"ipad_watch_next_phone" = "Sur iPhone : Moi → Changement de page avec l’Apple Watch → choisissez iPad, gardez PagePilot ouvert, revenez ici puis touchez Retester. Le même Wi‑Fi est privilégié, mais la connexion directe à proximité fonctionne aussi sans Internet.";
 "ipad_watch_how_header" = "Fonctionnement";
-"ipad_watch_how_body" = "Votre Apple Watch communique avec l’iPhone, qui atteint cet iPad via le Wi‑Fi. Cet écran teste activement le service local et attend une visite de test de l’iPhone.";
+"ipad_watch_how_body" = "Votre Apple Watch communique avec l’iPhone. Lorsqu’un réseau local commun est disponible, l’iPhone l’utilise pour atteindre cet iPad ; sinon, il tente une connexion directe à proximité. Cet écran teste le relais et attend une visite de test de l’iPhone.";
 
 /* MARK: TXT Import */
 "txt_error_cannot_read" = "Impossible de lire le fichier texte.";
