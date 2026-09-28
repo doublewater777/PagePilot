@@ -94,6 +94,15 @@ enum PagePilotLANFallbackPolicy {
     }
 }
 
+enum PagePilotRelayTransportPolicy {
+    static func shouldTryNearbyBeforeLAN(_ source: PagePilotLANEndpointSource) -> Bool {
+        if case .fallback = source {
+            return true
+        }
+        return false
+    }
+}
+
 enum PagePilotLANEndpointSource: Equatable {
     case fallback
     case bonjour(ObjectIdentifier)
@@ -796,6 +805,9 @@ final class WatchPageTurnService: NSObject, ObservableObject {
         }
         UserDefaults.standard.set(true, forKey: ipadRelayEnabledKey)
         startLANServer()
+        if lanServerRunning {
+            startNearbyRelayServer()
+        }
     }
 
     /// Stops iPad LAN advertising when Pro access is no longer valid.
@@ -803,6 +815,7 @@ final class WatchPageTurnService: NSObject, ObservableObject {
         guard UIDevice.current.userInterfaceIdiom == .pad else { return }
         UserDefaults.standard.set(false, forKey: ipadRelayEnabledKey)
         recentLANCommandIDs.removeAll()
+        PagePilotNearbyRelay.shared.stopServer()
         stopLANServer()
     }
 
@@ -811,6 +824,7 @@ final class WatchPageTurnService: NSObject, ObservableObject {
     func stopIPadRelayDiscovery() {
         guard UIDevice.current.userInterfaceIdiom == .phone else { return }
         PagePilotLANBrowser.shared.stopAndClear()
+        PagePilotNearbyRelay.shared.cancelPreparedFallback(clearEndpoint: true)
     }
 
     /// Keeps automatic nearby-iPad discovery warm on a Pro iPhone.
@@ -1018,10 +1032,15 @@ final class WatchPageTurnService: NSObject, ObservableObject {
             return
         }
 
+        // Peer-to-peer browsing runs only while a LAN request is in flight.
+        // This keeps the existing LAN/Bonjour route primary without making an
+        // offline fallback wait for discovery to start after LAN has failed.
+        PagePilotNearbyRelay.shared.prepareFallback()
+
         PagePilotLANBrowser.shared.endpoint { candidate in
-            // Entitlement may have changed while Bonjour discovery was pending.
-            // Re-check immediately before creating/sending any HTTP request.
+            // Entitlement may have changed while discovery was pending.
             guard ProPurchaseManager.shared.hasProAccess else {
+                PagePilotNearbyRelay.shared.cancelPreparedFallback()
                 replyHandler?(self.errorPayload(
                     route: WatchPageTurnRoute.iPhoneRelay,
                     code: WatchPageTurnErrorCode.proRequired,
@@ -1031,87 +1050,192 @@ final class WatchPageTurnService: NSObject, ObservableObject {
             }
 
             guard let candidate else {
-                replyHandler?(self.errorPayload(
-                    route: WatchPageTurnRoute.iPhoneRelay,
-                    code: WatchPageTurnErrorCode.iPadNotFound,
-                    message: "iPhone could not find PagePilot on iPad"
-                ))
-                return
-            }
-
-            let endpoint = candidate.url
-            let url = endpoint.appendingPathComponent(path)
-            var request = URLRequest(url: url)
-            request.httpMethod = method
-            request.timeoutInterval = 2.5
-            if let body {
-                request.httpBody = try? JSONSerialization.data(withJSONObject: body)
-                request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-            }
-
-            URLSession.shared.dataTask(with: request) { data, response, error in
-                if let error {
-                    if retryAfterInvalidation {
-                        PagePilotLANBrowser.shared.invalidate(candidate) {
-                            // relayRequestToLAN re-checks entitlement before the
-                            // retry performs any new discovery or HTTP request.
-                            self.relayRequestToLAN(
-                                path: path,
-                                method: method,
-                                body: body,
-                                retryAfterInvalidation: false,
-                                replyHandler: replyHandler
-                            )
-                        }
-                        return
-                    }
-
-                    PagePilotLANBrowser.shared.invalidate(candidate)
+                guard retryAfterInvalidation else {
+                    PagePilotNearbyRelay.shared.cancelPreparedFallback()
                     replyHandler?(self.errorPayload(
                         route: WatchPageTurnRoute.iPhoneRelay,
-                        code: WatchPageTurnErrorCode.relayTimeout,
-                        message: "\(error.localizedDescription) (\(url.absoluteString))"
+                        code: WatchPageTurnErrorCode.iPadNotFound,
+                        message: "iPhone could not find PagePilot on iPad"
                     ))
                     return
                 }
 
-                var payload: [String: Any] = [
-                    "status": "ok",
-                    "ok": true,
-                    "route": WatchPageTurnRoute.iPhoneRelay,
-                    "endpoint": endpoint.absoluteString
-                ]
-                if let data,
-                   let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
-                    payload.merge(json) { _, new in new }
-                    payload["route"] = WatchPageTurnRoute.iPhoneRelay
+                self.relayRequestToNearby(
+                    path: path,
+                    method: method,
+                    body: body,
+                    replyHandler: replyHandler
+                )
+                return
+            }
+
+            // The fixed iPad.local address is only a legacy LAN fallback. If a
+            // real nearby peer has been discovered, prefer it before spending
+            // time on a potentially stale hostname.
+            if retryAfterInvalidation,
+               PagePilotRelayTransportPolicy.shouldTryNearbyBeforeLAN(candidate.source) {
+                self.relayRequestToNearby(
+                    path: path,
+                    method: method,
+                    body: body,
+                    fallback: {
+                        self.performLANRelayRequest(
+                            candidate: candidate,
+                            path: path,
+                            method: method,
+                            body: body,
+                            retryAfterInvalidation: false,
+                            replyHandler: replyHandler
+                        )
+                    },
+                    replyHandler: replyHandler
+                )
+                return
+            }
+
+            self.performLANRelayRequest(
+                candidate: candidate,
+                path: path,
+                method: method,
+                body: body,
+                retryAfterInvalidation: retryAfterInvalidation,
+                replyHandler: replyHandler
+            )
+        }
+    }
+
+    private func relayRequestToNearby(
+        path: String,
+        method: String,
+        body: [String: Any]?,
+        fallback: (() -> Void)? = nil,
+        replyHandler: (([String: Any]) -> Void)? = nil
+    ) {
+        PagePilotNearbyRelay.shared.request(
+            path: path,
+            method: method,
+            body: body
+        ) { result in
+            guard ProPurchaseManager.shared.hasProAccess else {
+                replyHandler?(self.errorPayload(
+                    route: WatchPageTurnRoute.iPhoneRelay,
+                    code: WatchPageTurnErrorCode.proRequired,
+                    message: "pro is required for iPad page turn"
+                ))
+                return
+            }
+
+            switch result {
+            case .success(var payload):
+                payload["route"] = WatchPageTurnRoute.iPhoneRelay
+                payload["endpoint"] = "nearby-direct"
+                replyHandler?(payload)
+
+            case .failure(let error):
+                if let fallback {
+                    fallback()
+                    return
+                }
+                replyHandler?(self.errorPayload(
+                    route: WatchPageTurnRoute.iPhoneRelay,
+                    code: WatchPageTurnErrorCode.iPadNotFound,
+                    message: error.localizedDescription
+                ))
+            }
+        }
+    }
+
+    private func performLANRelayRequest(
+        candidate: PagePilotLANEndpointCandidate,
+        path: String,
+        method: String,
+        body: [String: Any]?,
+        retryAfterInvalidation: Bool,
+        replyHandler: (([String: Any]) -> Void)? = nil
+    ) {
+        let endpoint = candidate.url
+        let url = endpoint.appendingPathComponent(path)
+        var request = URLRequest(url: url)
+        request.httpMethod = method
+        request.timeoutInterval = 2.5
+        if let body {
+            request.httpBody = try? JSONSerialization.data(withJSONObject: body)
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        }
+
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error {
+                if retryAfterInvalidation {
+                    PagePilotLANBrowser.shared.invalidate(candidate) {
+                        self.relayRequestToNearby(
+                            path: path,
+                            method: method,
+                            body: body,
+                            fallback: {
+                                // Nearby direct was unavailable as well. Give
+                                // Bonjour one final fresh resolve before failing.
+                                self.relayRequestToLAN(
+                                    path: path,
+                                    method: method,
+                                    body: body,
+                                    retryAfterInvalidation: false,
+                                    replyHandler: replyHandler
+                                )
+                            },
+                            replyHandler: replyHandler
+                        )
+                    }
+                    return
                 }
 
-                if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
-                    // 409 = reader not ready still means the candidate answered.
-                    if http.statusCode != 409 {
-                        PagePilotLANBrowser.shared.invalidate(candidate)
-                    } else {
-                        PagePilotLANBrowser.shared.remember(candidate)
-                    }
-                    if payload["error"] == nil {
-                        payload = self.errorPayload(
-                            route: WatchPageTurnRoute.iPhoneRelay,
-                            code: http.statusCode == 409
-                                ? WatchPageTurnErrorCode.navigatorNotReady
-                                : WatchPageTurnErrorCode.relayTimeout,
-                            message: "iPad HTTP \(http.statusCode)"
-                        )
-                    } else {
-                        payload["status"] = "error"
-                        payload["ok"] = false
-                    }
+                PagePilotLANBrowser.shared.invalidate(candidate)
+                PagePilotNearbyRelay.shared.cancelPreparedFallback()
+                replyHandler?(self.errorPayload(
+                    route: WatchPageTurnRoute.iPhoneRelay,
+                    code: WatchPageTurnErrorCode.relayTimeout,
+                    message: "\(error.localizedDescription) (\(url.absoluteString))"
+                ))
+                return
+            }
+
+            PagePilotNearbyRelay.shared.cancelPreparedFallback()
+
+            var payload: [String: Any] = [
+                "status": "ok",
+                "ok": true,
+                "route": WatchPageTurnRoute.iPhoneRelay,
+                "endpoint": endpoint.absoluteString
+            ]
+            if let data,
+               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                payload.merge(json) { _, new in new }
+                payload["route"] = WatchPageTurnRoute.iPhoneRelay
+            }
+
+            if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
+                // 409 = reader not ready still means the candidate answered.
+                if http.statusCode != 409 {
+                    PagePilotLANBrowser.shared.invalidate(candidate)
                 } else {
                     PagePilotLANBrowser.shared.remember(candidate)
                 }
-                replyHandler?(payload)
-            }.resume()
-        }
+                if payload["error"] == nil {
+                    payload = self.errorPayload(
+                        route: WatchPageTurnRoute.iPhoneRelay,
+                        code: http.statusCode == 409
+                            ? WatchPageTurnErrorCode.navigatorNotReady
+                            : WatchPageTurnErrorCode.relayTimeout,
+                        message: "iPad HTTP \(http.statusCode)"
+                    )
+                } else {
+                    payload["status"] = "error"
+                    payload["ok"] = false
+                }
+            } else {
+                PagePilotLANBrowser.shared.remember(candidate)
+            }
+            replyHandler?(payload)
+        }.resume()
     }
 
     private func localStatusPayload(route: String) -> [String: Any] {
@@ -1182,6 +1306,32 @@ final class WatchPageTurnService: NSObject, ObservableObject {
                 self?.isLANWatchConnected = false
             }
         }
+    }
+
+    func markNearbyWatchConnected() {
+        lastLANHitAt = Date()
+        lastRemoteLANHitAt = Date()
+        lastLANClientAddress = "nearby-direct"
+        isLANWatchConnected = true
+        lanResetTimer?.invalidate()
+        lanResetTimer = Timer.scheduledTimer(withTimeInterval: 8.0, repeats: false) { [weak self] _ in
+            DispatchQueue.main.async {
+                self?.isLANWatchConnected = false
+            }
+        }
+    }
+
+    private func startNearbyRelayServer() {
+        PagePilotNearbyRelay.shared.startServer(
+            localPortProvider: { [weak self] in
+                self?.lanServerPort ?? 0
+            },
+            onPeerActivity: { [weak self] in
+                DispatchQueue.main.async {
+                    self?.markNearbyWatchConnected()
+                }
+            }
+        )
     }
 
     private func startLANServer() {
