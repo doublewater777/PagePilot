@@ -1,10 +1,16 @@
 import Foundation
+import UIKit
 
 enum PagePilotRelayIdentity {
     static let serviceNamePrefix = "PagePilot-iPad-"
     private static let identifierKey = "pagepilot_relay_identifier"
 
     static func localIdentifier(defaults: UserDefaults = .standard) -> String {
+        if let deviceIdentifier = UIDevice.current.identifierForVendor?.uuidString.lowercased() {
+            defaults.set(deviceIdentifier, forKey: identifierKey)
+            return deviceIdentifier
+        }
+
         if let existing = defaults.string(forKey: identifierKey),
            UUID(uuidString: existing) != nil {
             return existing.lowercased()
@@ -200,5 +206,59 @@ enum PagePilotRelayEntitlementLifecyclePolicy {
     static func action(isIPad: Bool, hasProAccess: Bool) -> PagePilotRelayEntitlementAction {
         guard isIPad else { return .noOp }
         return hasProAccess ? .start : .stop
+    }
+}
+
+
+enum PagePilotNearbyWatchFailure: Equatable {
+    case iPadNotFound
+    case relayTimeout
+    case proRequired
+}
+
+enum PagePilotNearbyWatchFailurePolicy {
+    static func failure(for error: Error) -> PagePilotNearbyWatchFailure {
+        guard let nearbyError = error as? PagePilotNearbyRelayError else {
+            return .relayTimeout
+        }
+
+        switch nearbyError.category {
+        case .notFound:
+            return .iPadNotFound
+        case .transport:
+            return .relayTimeout
+        case .authorization:
+            return .proRequired
+        }
+    }
+}
+
+enum PagePilotRelayRoutingStep: Equatable {
+    case lan
+    case nearby
+    case failNotFound
+}
+
+enum PagePilotRelayRoutingPolicy {
+    static func initialStep(
+        candidateSource: PagePilotLANEndpointSource?,
+        hasNearbyTarget: Bool
+    ) -> PagePilotRelayRoutingStep {
+        guard let candidateSource else {
+            return hasNearbyTarget ? .nearby : .failNotFound
+        }
+        if PagePilotRelayTransportPolicy.shouldTryNearbyBeforeLAN(candidateSource),
+           hasNearbyTarget {
+            return .nearby
+        }
+        return .lan
+    }
+
+    static func stepAfterLANFailure(hasNearbyTarget: Bool) -> PagePilotRelayRoutingStep {
+        hasNearbyTarget ? .nearby : .lan
+    }
+
+    static func stepAfterNearbyFailure(hasLANFallback: Bool) -> PagePilotRelayRoutingStep {
+        hasLANFallback ? .lan : .failNotFound
     }
 }
