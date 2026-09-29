@@ -812,15 +812,20 @@ final class WatchPageTurnService: NSObject, ObservableObject {
     /// Starts the iPad LAN page-turn server when this device is an iPad with Pro.
     /// Safe to call repeatedly; no-ops on iPhone or without Pro Access.
     func enableIPadRelay() {
-        guard UIDevice.current.userInterfaceIdiom == .pad else { return }
-        guard ProPurchaseManager.shared.hasProAccess else {
+        switch PagePilotRelayEntitlementLifecyclePolicy.action(
+            isIPad: UIDevice.current.userInterfaceIdiom == .pad,
+            hasProAccess: ProPurchaseManager.shared.hasProAccess
+        ) {
+        case .start:
+            UserDefaults.standard.set(true, forKey: ipadRelayEnabledKey)
+            startLANServer()
+            if lanServerRunning {
+                startNearbyRelayServer()
+            }
+        case .stop:
             disableIPadRelay()
+        case .noOp:
             return
-        }
-        UserDefaults.standard.set(true, forKey: ipadRelayEnabledKey)
-        startLANServer()
-        if lanServerRunning {
-            startNearbyRelayServer()
         }
     }
 
@@ -1133,7 +1138,9 @@ final class WatchPageTurnService: NSObject, ObservableObject {
             method: method,
             body: body,
             shouldProceed: {
-                ProPurchaseManager.shared.hasProAccess
+                PagePilotNearbyPendingRequestPolicy.shouldProceed(
+                    hasProAccess: ProPurchaseManager.shared.hasProAccess
+                )
             }
         ) { result in
             switch result {
@@ -1389,7 +1396,9 @@ final class WatchPageTurnService: NSObject, ObservableObject {
                 }
             },
             shouldAcceptRequest: {
-                ProPurchaseManager.shared.hasProAccess
+                PagePilotNearbyPendingRequestPolicy.shouldProceed(
+                    hasProAccess: ProPurchaseManager.shared.hasProAccess
+                )
             }
         )
     }
