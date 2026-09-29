@@ -1068,7 +1068,8 @@ final class WatchPageTurnService: NSObject, ObservableObject {
             let nearbyTarget = candidate?.relayIdentifier ?? associatedTarget
             let initialStep = PagePilotRelayRoutingPolicy.initialStep(
                 candidateSource: candidate?.source,
-                hasNearbyTarget: nearbyTarget != nil
+                hasNearbyTarget: nearbyTarget != nil,
+                allowNearby: retryAfterInvalidation
             )
 
             switch initialStep {
