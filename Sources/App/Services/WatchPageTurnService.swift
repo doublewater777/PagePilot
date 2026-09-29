@@ -112,6 +112,19 @@ struct PagePilotLANEndpointCandidate: Equatable {
     let url: URL
     let generation: UInt64
     let source: PagePilotLANEndpointSource
+    let relayIdentifier: String?
+
+    init(
+        url: URL,
+        generation: UInt64,
+        source: PagePilotLANEndpointSource,
+        relayIdentifier: String? = nil
+    ) {
+        self.url = url
+        self.generation = generation
+        self.source = source
+        self.relayIdentifier = relayIdentifier
+    }
 }
 
 enum PagePilotLANEndpointCandidatePolicy {
@@ -555,7 +568,8 @@ private final class PagePilotLANBrowser: NSObject, NetServiceBrowserDelegate, Ne
         let candidate = PagePilotLANEndpointCandidate(
             url: endpoint,
             generation: discoveryGeneration,
-            source: .bonjour(serviceID)
+            source: .bonjour(serviceID),
+            relayIdentifier: PagePilotRelayIdentity.identifier(fromServiceName: sender.name)
         )
         print("PagePilotLANBrowser: resolved \(sender.name) -> \(endpoint.absoluteString)")
         lastKnownCandidate = candidate
@@ -1032,13 +1046,10 @@ final class WatchPageTurnService: NSObject, ObservableObject {
             return
         }
 
-        // Peer-to-peer browsing runs only while a LAN request is in flight.
-        // This keeps the existing LAN/Bonjour route primary without making an
-        // offline fallback wait for discovery to start after LAN has failed.
-        PagePilotNearbyRelay.shared.prepareFallback()
+        let associatedTarget = PagePilotNearbyRelay.shared.associatedTargetIdentifier
+        PagePilotNearbyRelay.shared.prepareFallback(targetIdentifier: associatedTarget)
 
         PagePilotLANBrowser.shared.endpoint { candidate in
-            // Entitlement may have changed while discovery was pending.
             guard ProPurchaseManager.shared.hasProAccess else {
                 PagePilotNearbyRelay.shared.cancelPreparedFallback()
                 replyHandler?(self.errorPayload(
@@ -1049,8 +1060,44 @@ final class WatchPageTurnService: NSObject, ObservableObject {
                 return
             }
 
-            guard let candidate else {
-                guard retryAfterInvalidation else {
+            let nearbyTarget = candidate?.relayIdentifier ?? associatedTarget
+            let initialStep = PagePilotRelayRoutingPolicy.initialStep(
+                candidateSource: candidate?.source,
+                hasNearbyTarget: nearbyTarget != nil
+            )
+
+            switch initialStep {
+            case .failNotFound:
+                PagePilotNearbyRelay.shared.cancelPreparedFallback()
+                replyHandler?(self.errorPayload(
+                    route: WatchPageTurnRoute.iPhoneRelay,
+                    code: WatchPageTurnErrorCode.iPadNotFound,
+                    message: "iPhone could not find the associated PagePilot iPad"
+                ))
+
+            case .nearby:
+                self.relayRequestToNearby(
+                    targetIdentifier: nearbyTarget,
+                    path: path,
+                    method: method,
+                    body: body,
+                    fallback: candidate.map { candidate in
+                        {
+                            self.performLANRelayRequest(
+                                candidate: candidate,
+                                path: path,
+                                method: method,
+                                body: body,
+                                retryAfterInvalidation: false,
+                                replyHandler: replyHandler
+                            )
+                        }
+                    },
+                    replyHandler: replyHandler
+                )
+
+            case .lan:
+                guard let candidate else {
                     PagePilotNearbyRelay.shared.cancelPreparedFallback()
                     replyHandler?(self.errorPayload(
                         route: WatchPageTurnRoute.iPhoneRelay,
@@ -1060,51 +1107,20 @@ final class WatchPageTurnService: NSObject, ObservableObject {
                     return
                 }
 
-                self.relayRequestToNearby(
+                self.performLANRelayRequest(
+                    candidate: candidate,
                     path: path,
                     method: method,
                     body: body,
+                    retryAfterInvalidation: retryAfterInvalidation,
                     replyHandler: replyHandler
                 )
-                return
             }
-
-            // The fixed iPad.local address is only a legacy LAN fallback. If a
-            // real nearby peer has been discovered, prefer it before spending
-            // time on a potentially stale hostname.
-            if retryAfterInvalidation,
-               PagePilotRelayTransportPolicy.shouldTryNearbyBeforeLAN(candidate.source) {
-                self.relayRequestToNearby(
-                    path: path,
-                    method: method,
-                    body: body,
-                    fallback: {
-                        self.performLANRelayRequest(
-                            candidate: candidate,
-                            path: path,
-                            method: method,
-                            body: body,
-                            retryAfterInvalidation: false,
-                            replyHandler: replyHandler
-                        )
-                    },
-                    replyHandler: replyHandler
-                )
-                return
-            }
-
-            self.performLANRelayRequest(
-                candidate: candidate,
-                path: path,
-                method: method,
-                body: body,
-                retryAfterInvalidation: retryAfterInvalidation,
-                replyHandler: replyHandler
-            )
         }
     }
 
     private func relayRequestToNearby(
+        targetIdentifier: String?,
         path: String,
         method: String,
         body: [String: Any]?,
@@ -1112,33 +1128,51 @@ final class WatchPageTurnService: NSObject, ObservableObject {
         replyHandler: (([String: Any]) -> Void)? = nil
     ) {
         PagePilotNearbyRelay.shared.request(
+            targetIdentifier: targetIdentifier,
             path: path,
             method: method,
-            body: body
-        ) { result in
-            guard ProPurchaseManager.shared.hasProAccess else {
-                replyHandler?(self.errorPayload(
-                    route: WatchPageTurnRoute.iPhoneRelay,
-                    code: WatchPageTurnErrorCode.proRequired,
-                    message: "pro is required for iPad page turn"
-                ))
-                return
+            body: body,
+            shouldProceed: {
+                ProPurchaseManager.shared.hasProAccess
             }
-
+        ) { result in
             switch result {
             case .success(var payload):
+                guard ProPurchaseManager.shared.hasProAccess else {
+                    replyHandler?(self.errorPayload(
+                        route: WatchPageTurnRoute.iPhoneRelay,
+                        code: WatchPageTurnErrorCode.proRequired,
+                        message: "pro is required for iPad page turn"
+                    ))
+                    return
+                }
+
                 payload["route"] = WatchPageTurnRoute.iPhoneRelay
                 payload["endpoint"] = "nearby-direct"
                 replyHandler?(payload)
 
             case .failure(let error):
-                if let fallback {
+                let failure = PagePilotNearbyWatchFailurePolicy.failure(for: error)
+                if let fallback,
+                   PagePilotRelayRoutingPolicy.stepAfterNearbyFailure(hasLANFallback: true) == .lan,
+                   failure != .proRequired {
                     fallback()
                     return
                 }
+
+                let code: String
+                switch failure {
+                case .iPadNotFound:
+                    code = WatchPageTurnErrorCode.iPadNotFound
+                case .relayTimeout:
+                    code = WatchPageTurnErrorCode.relayTimeout
+                case .proRequired:
+                    code = WatchPageTurnErrorCode.proRequired
+                }
+
                 replyHandler?(self.errorPayload(
                     route: WatchPageTurnRoute.iPhoneRelay,
-                    code: WatchPageTurnErrorCode.iPadNotFound,
+                    code: code,
                     message: error.localizedDescription
                 ))
             }
@@ -1167,23 +1201,45 @@ final class WatchPageTurnService: NSObject, ObservableObject {
             if let error {
                 if retryAfterInvalidation {
                     PagePilotLANBrowser.shared.invalidate(candidate) {
-                        self.relayRequestToNearby(
-                            path: path,
-                            method: method,
-                            body: body,
-                            fallback: {
-                                // Nearby direct was unavailable as well. Give
-                                // Bonjour one final fresh resolve before failing.
-                                self.relayRequestToLAN(
-                                    path: path,
-                                    method: method,
-                                    body: body,
-                                    retryAfterInvalidation: false,
-                                    replyHandler: replyHandler
-                                )
-                            },
-                            replyHandler: replyHandler
-                        )
+                        let nearbyTarget = candidate.relayIdentifier
+                            ?? PagePilotNearbyRelay.shared.associatedTargetIdentifier
+                        switch PagePilotRelayRoutingPolicy.stepAfterLANFailure(
+                            hasNearbyTarget: nearbyTarget != nil
+                        ) {
+                        case .nearby:
+                            self.relayRequestToNearby(
+                                targetIdentifier: nearbyTarget,
+                                path: path,
+                                method: method,
+                                body: body,
+                                fallback: {
+                                    self.relayRequestToLAN(
+                                        path: path,
+                                        method: method,
+                                        body: body,
+                                        retryAfterInvalidation: false,
+                                        replyHandler: replyHandler
+                                    )
+                                },
+                                replyHandler: replyHandler
+                            )
+
+                        case .lan:
+                            self.relayRequestToLAN(
+                                path: path,
+                                method: method,
+                                body: body,
+                                retryAfterInvalidation: false,
+                                replyHandler: replyHandler
+                            )
+
+                        case .failNotFound:
+                            replyHandler?(self.errorPayload(
+                                route: WatchPageTurnRoute.iPhoneRelay,
+                                code: WatchPageTurnErrorCode.iPadNotFound,
+                                message: "iPhone could not find PagePilot on iPad"
+                            ))
+                        }
                     }
                     return
                 }
@@ -1213,11 +1269,11 @@ final class WatchPageTurnService: NSObject, ObservableObject {
             }
 
             if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
-                // 409 = reader not ready still means the candidate answered.
                 if http.statusCode != 409 {
                     PagePilotLANBrowser.shared.invalidate(candidate)
                 } else {
                     PagePilotLANBrowser.shared.remember(candidate)
+                    PagePilotNearbyRelay.shared.rememberAssociatedTarget(candidate.relayIdentifier)
                 }
                 if payload["error"] == nil {
                     payload = self.errorPayload(
@@ -1233,6 +1289,7 @@ final class WatchPageTurnService: NSObject, ObservableObject {
                 }
             } else {
                 PagePilotLANBrowser.shared.remember(candidate)
+                PagePilotNearbyRelay.shared.rememberAssociatedTarget(candidate.relayIdentifier)
             }
             replyHandler?(payload)
         }.resume()
@@ -1330,6 +1387,9 @@ final class WatchPageTurnService: NSObject, ObservableObject {
                 DispatchQueue.main.async {
                     self?.markNearbyWatchConnected()
                 }
+            },
+            shouldAcceptRequest: {
+                ProPurchaseManager.shared.hasProAccess
             }
         )
     }
@@ -1338,8 +1398,9 @@ final class WatchPageTurnService: NSObject, ObservableObject {
         guard lanServer == nil else { return }
 
         let webServer = ReadiumGCDWebServer()
-        let deviceName = UIDevice.current.name.replacingOccurrences(of: " ", with: "-")
-        let bonjourName = "PagePilot-iPad-\(deviceName)"
+        let bonjourName = PagePilotRelayIdentity.serviceName(
+            for: PagePilotRelayIdentity.localIdentifier()
+        )
 
         // GET /status
         webServer.addHandler(
