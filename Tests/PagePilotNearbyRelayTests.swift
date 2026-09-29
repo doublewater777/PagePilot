@@ -181,6 +181,26 @@ final class PagePilotNearbyRelayTests: XCTestCase {
         )
     }
 
+    func testFinalFreshLANRetryDoesNotLoopBackToNearby() {
+        XCTAssertEqual(
+            PagePilotRelayRoutingPolicy.initialStep(
+                candidateSource: nil,
+                hasNearbyTarget: true,
+                allowNearby: false
+            ),
+            .failNotFound
+        )
+
+        XCTAssertEqual(
+            PagePilotRelayRoutingPolicy.initialStep(
+                candidateSource: .fallback,
+                hasNearbyTarget: true,
+                allowNearby: false
+            ),
+            .lan
+        )
+    }
+
     func testBonjourLANFailureTransitionsNearbyThenFreshLAN() {
         XCTAssertEqual(
             PagePilotRelayRoutingPolicy.stepAfterLANFailure(hasNearbyTarget: true),
