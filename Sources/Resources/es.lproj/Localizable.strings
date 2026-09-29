@@ -825,7 +825,7 @@
 "ipad_watch_summary_almost" = "Casi llegamos";
 "ipad_watch_summary_almost_sub" = "Consulte la lista a continuación.";
 "ipad_watch_checklist_header" = "Lista de verificación";
-"ipad_watch_checklist_footer" = "La “prueba de iPhone” necesita que el iPhone esté en el mismo Wi‑Fi para contactar con este iPad. Al abrir esta página se ejecuta una prueba automáticamente.";
+"ipad_watch_checklist_footer" = "La “prueba de iPhone” puede llegar a este iPad por la misma red Wi‑Fi o mediante una conexión directa cercana. Al abrir esta página se ejecuta una prueba automáticamente.";
 "ipad_watch_check_wifi" = "Wi‑Fi";
 "ipad_watch_check_wifi_ok" = "Conectado";
 "ipad_watch_check_wifi_bad" = "No conectado: activa la conexión Wi‑Fi";
@@ -843,9 +843,9 @@
 "ipad_watch_next_header" = "¿Qué hacer a continuación?";
 "ipad_watch_next_wifi" = "Únete a la misma red Wi‑Fi que tu iPhone.";
 "ipad_watch_next_restart" = "Toca Volver a probar. Si aún falla, salga de PagePilot y ábralo nuevamente.";
-"ipad_watch_next_phone" = "En iPhone: Yo → Ver pasar página → elegir iPad, mantener PagePilot abierto, luego regresar aquí y tocar Volver a probar. La misma conexión Wi‑Fi es suficiente; no se requiere el mismo ID de Apple.";
+"ipad_watch_next_phone" = "En iPhone: Yo → Pasar página con el Watch → elija iPad, mantenga PagePilot abierto, vuelva aquí y toque Volver a probar. Se prefiere la misma red Wi‑Fi, pero la conexión directa cercana también funciona sin internet.";
 "ipad_watch_how_header" = "como funciona";
-"ipad_watch_how_body" = "Tu reloj habla con el iPhone; El iPhone llega a este iPad a través de Wi‑Fi. Esta pantalla prueba automáticamente el servicio local y espera una visita de prueba desde el iPhone.";
+"ipad_watch_how_body" = "El Watch se comunica con el iPhone. Cuando hay una red local compartida, el iPhone la usa para llegar a este iPad; si no hay Wi‑Fi compartido, intenta una conexión directa cercana. Esta pantalla prueba el relé y espera una visita de prueba del iPhone.";
 
 /* MARK: TXT Import */
 "txt_error_cannot_read" = "No se puede leer el archivo de texto.";

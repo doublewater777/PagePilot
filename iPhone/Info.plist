@@ -318,6 +318,7 @@
 	<array>
 		<string>_http._tcp</string>
 		<string>_pagepilot._tcp</string>
+		<string>_pagepilot-peer._tcp</string>
 		<string>_pagepilot-transfer._tcp</string>
 	</array>
 	<key>NSLocalNetworkUsageDescription</key>

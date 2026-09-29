@@ -825,7 +825,7 @@
 "ipad_watch_summary_almost" = "Fast geschafft";
 "ipad_watch_summary_almost_sub" = "Prüfen Sie die Liste unten.";
 "ipad_watch_checklist_header" = "Checkliste";
-"ipad_watch_checklist_footer" = "Der „iPhone-Test“ benötigt ein iPhone im selben WLAN, um dieses iPad zu kontaktieren. Beim Öffnen dieser Seite wird automatisch ein Test ausgeführt.";
+"ipad_watch_checklist_footer" = "Der „iPhone-Test“ kann dieses iPad über dasselbe WLAN oder eine direkte Verbindung in der Nähe erreichen. Beim Öffnen dieser Seite wird automatisch ein Test ausgeführt.";
 "ipad_watch_check_wifi" = "WLAN";
 "ipad_watch_check_wifi_ok" = "Verbunden";
 "ipad_watch_check_wifi_bad" = "Nicht verbunden – WLAN einschalten";
@@ -843,9 +843,9 @@
 "ipad_watch_next_header" = "Nächste Schritte";
 "ipad_watch_next_wifi" = "Treten Sie demselben WLAN wie Ihr iPhone bei.";
 "ipad_watch_next_restart" = "Tippen Sie auf „Erneut testen“. Wenn der Test weiterhin fehlschlägt, beenden Sie PagePilot und öffnen Sie die App erneut.";
-"ipad_watch_next_phone" = "Auf dem iPhone: Ich → Umblättern mit der Watch → iPad auswählen, PagePilot geöffnet lassen, dann hierher zurückkehren und auf „Erneut testen“ tippen. Dasselbe WLAN genügt – dieselbe Apple-ID ist nicht erforderlich.";
+"ipad_watch_next_phone" = "Auf dem iPhone: Ich → Umblättern mit der Watch → iPad auswählen, PagePilot geöffnet lassen, dann hierher zurückkehren und auf „Erneut testen“ tippen. Dasselbe WLAN wird bevorzugt; eine direkte Verbindung in der Nähe funktioniert auch ohne Internet.";
 "ipad_watch_how_header" = "Funktionsweise";
-"ipad_watch_how_body" = "Ihre Watch kommuniziert mit dem iPhone; das iPhone erreicht dieses iPad über WLAN. Dieser Bildschirm testet den lokalen Dienst aktiv selbst und wartet auf einen Testbesuch vom iPhone.";
+"ipad_watch_how_body" = "Ihre Watch kommuniziert mit dem iPhone. Wenn verfügbar, erreicht das iPhone dieses iPad über das lokale Netzwerk; ohne gemeinsames WLAN wird eine direkte Verbindung in der Nähe versucht. Dieser Bildschirm testet den Relay-Dienst und wartet auf einen Testbesuch vom iPhone.";
 
 /* MARK: TXT Import */
 "txt_error_cannot_read" = "Die Textdatei kann nicht gelesen werden.";

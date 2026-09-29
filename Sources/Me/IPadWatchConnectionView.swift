@@ -8,11 +8,10 @@ import Combine
 import SwiftUI
 
 /// iPad-side connection test for Watch page turn.
-/// Opens with an active probe: local service self-test + listen window for a real iPhone hit.
+/// Opens with an active probe: local service self-test + listen window for an iPhone hit
+/// over either the shared LAN or nearby peer-to-peer relay.
 struct IPadWatchConnectionView: View {
     @ObservedObject private var service = WatchPageTurnService.shared
-    @State private var localIPs: [String] = LocalNetworkInfo.ipv4Addresses()
-
     @State private var isProbing = false
     @State private var localProbeOK = false
     @State private var phoneProbeOK = false
@@ -20,8 +19,6 @@ struct IPadWatchConnectionView: View {
     @State private var probeTask: Task<Void, Never>?
 
     private let probeListenSeconds: TimeInterval = 12
-
-    private var hasWiFi: Bool { !localIPs.isEmpty }
 
     private var phoneHitDuringProbe: Bool {
         guard let started = probeStartedAt,
@@ -34,7 +31,7 @@ struct IPadWatchConnectionView: View {
     }
 
     private var allReady: Bool {
-        hasWiFi && localProbeOK && phoneOK
+        localProbeOK && phoneOK
     }
 
     var body: some View {
@@ -54,7 +51,6 @@ struct IPadWatchConnectionView: View {
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
             service.enableIPadRelay()
-            localIPs = LocalNetworkInfo.ipv4Addresses()
             startProbe()
         }
         .onDisappear {
@@ -106,13 +102,13 @@ struct IPadWatchConnectionView: View {
 
     private var summaryIcon: String {
         if allReady { return "checkmark.circle.fill" }
-        if hasWiFi && localProbeOK { return "antenna.radiowaves.left.and.right" }
+        if localProbeOK { return "antenna.radiowaves.left.and.right" }
         return "exclamationmark.circle.fill"
     }
 
     private var summaryColor: Color {
         if allReady { return AppColors.accentTeal }
-        if hasWiFi && localProbeOK { return AppColors.accentBlue }
+        if localProbeOK { return AppColors.accentBlue }
         return .orange
     }
 
@@ -122,9 +118,6 @@ struct IPadWatchConnectionView: View {
         }
         if allReady {
             return NSLocalizedString("ipad_watch_summary_ready", comment: "")
-        }
-        if !hasWiFi {
-            return NSLocalizedString("ipad_watch_summary_no_wifi", comment: "")
         }
         if !localProbeOK {
             return NSLocalizedString("ipad_watch_summary_service_fail", comment: "")
@@ -142,9 +135,6 @@ struct IPadWatchConnectionView: View {
         if allReady {
             return NSLocalizedString("ipad_watch_summary_ready_sub", comment: "")
         }
-        if !hasWiFi {
-            return NSLocalizedString("ipad_watch_summary_no_wifi_sub", comment: "")
-        }
         if !localProbeOK {
             return NSLocalizedString("ipad_watch_summary_service_fail_sub", comment: "")
         }
@@ -158,14 +148,6 @@ struct IPadWatchConnectionView: View {
 
     private var checklistSection: some View {
         Section {
-            checkRow(
-                ok: hasWiFi,
-                pending: false,
-                title: NSLocalizedString("ipad_watch_check_wifi", comment: ""),
-                detail: hasWiFi
-                    ? NSLocalizedString("ipad_watch_check_wifi_ok", comment: "")
-                    : NSLocalizedString("ipad_watch_check_wifi_bad", comment: "")
-            )
             checkRow(
                 ok: localProbeOK,
                 pending: isProbing && !localProbeOK,
@@ -200,12 +182,6 @@ struct IPadWatchConnectionView: View {
             return NSLocalizedString("ipad_watch_check_phone_testing", comment: "")
         }
         if phoneOK {
-            if let same = LocalNetworkInfo.likelySameSubnet(
-                localIPs: localIPs,
-                remoteAddress: service.lastLANClientAddress
-            ), !same {
-                return NSLocalizedString("ipad_watch_check_phone_diff_wifi", comment: "")
-            }
             return NSLocalizedString("ipad_watch_check_phone_ok", comment: "")
         }
         return NSLocalizedString("ipad_watch_check_phone_bad", comment: "")
@@ -240,9 +216,6 @@ struct IPadWatchConnectionView: View {
 
     private var nextStep: String? {
         if isProbing || allReady { return nil }
-        if !hasWiFi {
-            return NSLocalizedString("ipad_watch_next_wifi", comment: "")
-        }
         if !localProbeOK {
             return NSLocalizedString("ipad_watch_next_restart", comment: "")
         }
@@ -290,8 +263,6 @@ struct IPadWatchConnectionView: View {
         localProbeOK = false
         phoneProbeOK = false
         probeStartedAt = Date()
-        localIPs = LocalNetworkInfo.ipv4Addresses()
-
         WatchPageTurnService.shared.activate()
 
         probeTask = Task { @MainActor in
