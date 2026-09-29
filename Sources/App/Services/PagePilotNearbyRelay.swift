@@ -104,7 +104,7 @@ final class PagePilotNearbyRelay {
             self.peerActivityHandler = nil
             self.shouldAcceptRequest = nil
 
-            let connections = self.incomingConnections.values
+            let connections = Array(self.incomingConnections.values)
             self.incomingConnections.removeAll()
             connections.forEach { $0.cancel() }
         }
