@@ -68,6 +68,27 @@ final class PagePilotNearbyRelayTests: XCTestCase {
         XCTAssertThrowsError(try buffer.append(oversized))
     }
 
+    func testTargetHandshakeRejectsWrongOrMissingIPadIdentity() {
+        XCTAssertTrue(
+            PagePilotNearbyTargetValidationPolicy.matches(
+                requestedIdentifier: firstID.uppercased(),
+                localIdentifier: firstID
+            )
+        )
+        XCTAssertFalse(
+            PagePilotNearbyTargetValidationPolicy.matches(
+                requestedIdentifier: secondID,
+                localIdentifier: firstID
+            )
+        )
+        XCTAssertFalse(
+            PagePilotNearbyTargetValidationPolicy.matches(
+                requestedIdentifier: nil,
+                localIdentifier: firstID
+            )
+        )
+    }
+
     func testOnlyExactNearbyMethodPathPairsAreAccepted() {
         XCTAssertTrue(PagePilotNearbyRequestValidator.isValid(path: "status", method: "GET"))
         XCTAssertTrue(PagePilotNearbyRequestValidator.isValid(path: "command", method: "POST"))
