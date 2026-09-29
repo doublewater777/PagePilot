@@ -33,6 +33,13 @@ enum PagePilotRelayIdentity {
     }
 }
 
+enum PagePilotNearbyTargetValidationPolicy {
+    static func matches(requestedIdentifier: String?, localIdentifier: String) -> Bool {
+        guard let requestedIdentifier else { return false }
+        return requestedIdentifier.lowercased() == localIdentifier.lowercased()
+    }
+}
+
 enum PagePilotNearbyRequestValidator {
     static func isValid(path: String, method: String) -> Bool {
         (path == "status" && method == "GET")
