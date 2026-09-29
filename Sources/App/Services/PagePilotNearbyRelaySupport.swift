@@ -262,3 +262,25 @@ enum PagePilotRelayRoutingPolicy {
         hasLANFallback ? .lan : .failNotFound
     }
 }
+
+
+enum PagePilotNearbyPendingRequestAction: Equatable {
+    case proceed
+    case cancel
+}
+
+enum PagePilotNearbyPendingRequestPolicy {
+    static func action(hasProAccess: Bool) -> PagePilotNearbyPendingRequestAction {
+        hasProAccess ? .proceed : .cancel
+    }
+
+    static func shouldProceed(hasProAccess: Bool) -> Bool {
+        action(hasProAccess: hasProAccess) == .proceed
+    }
+}
+
+enum PagePilotNearbyListenerFailurePolicy {
+    static func shouldClearListener(callbackIsCurrent: Bool) -> Bool {
+        callbackIsCurrent
+    }
+}
