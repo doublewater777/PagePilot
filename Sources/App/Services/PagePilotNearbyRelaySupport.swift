@@ -242,12 +242,14 @@ enum PagePilotRelayRoutingStep: Equatable {
 enum PagePilotRelayRoutingPolicy {
     static func initialStep(
         candidateSource: PagePilotLANEndpointSource?,
-        hasNearbyTarget: Bool
+        hasNearbyTarget: Bool,
+        allowNearby: Bool = true
     ) -> PagePilotRelayRoutingStep {
         guard let candidateSource else {
-            return hasNearbyTarget ? .nearby : .failNotFound
+            return allowNearby && hasNearbyTarget ? .nearby : .failNotFound
         }
-        if PagePilotRelayTransportPolicy.shouldTryNearbyBeforeLAN(candidateSource),
+        if allowNearby,
+           PagePilotRelayTransportPolicy.shouldTryNearbyBeforeLAN(candidateSource),
            hasNearbyTarget {
             return .nearby
         }
