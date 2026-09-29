@@ -163,8 +163,10 @@ final class PagePilotNearbyRelay {
     }
 
     private func proxyToLocalRelay(_ requestObject: [String: Any], over connection: NWConnection) {
-        guard let targetIdentifier = requestObject["targetIdentifier"] as? String,
-              targetIdentifier.lowercased() == PagePilotRelayIdentity.localIdentifier() else {
+        guard PagePilotNearbyTargetValidationPolicy.matches(
+            requestedIdentifier: requestObject["targetIdentifier"] as? String,
+            localIdentifier: PagePilotRelayIdentity.localIdentifier()
+        ) else {
             send(
                 [
                     "status": "error",
