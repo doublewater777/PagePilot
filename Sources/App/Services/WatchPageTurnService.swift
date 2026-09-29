@@ -1082,23 +1082,28 @@ final class WatchPageTurnService: NSObject, ObservableObject {
                 ))
 
             case .nearby:
+                let fallback: (() -> Void)?
+                if let candidate {
+                    fallback = {
+                        self.performLANRelayRequest(
+                            candidate: candidate,
+                            path: path,
+                            method: method,
+                            body: body,
+                            retryAfterInvalidation: false,
+                            replyHandler: replyHandler
+                        )
+                    }
+                } else {
+                    fallback = nil
+                }
+
                 self.relayRequestToNearby(
                     targetIdentifier: nearbyTarget,
                     path: path,
                     method: method,
                     body: body,
-                    fallback: candidate.map { candidate in
-                        {
-                            self.performLANRelayRequest(
-                                candidate: candidate,
-                                path: path,
-                                method: method,
-                                body: body,
-                                retryAfterInvalidation: false,
-                                replyHandler: replyHandler
-                            )
-                        }
-                    },
+                    fallback: fallback,
                     replyHandler: replyHandler
                 )
 
