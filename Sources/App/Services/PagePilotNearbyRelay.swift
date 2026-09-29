@@ -79,7 +79,9 @@ final class PagePilotNearbyRelay {
                     case .failed(let error):
                         print("PagePilotNearbyRelay: listener failed: \(error)")
                         listener?.cancel()
-                        if self.listener === listener {
+                        if PagePilotNearbyListenerFailurePolicy.shouldClearListener(
+                            callbackIsCurrent: self.listener === listener
+                        ) {
                             self.listener = nil
                         }
                     default:
