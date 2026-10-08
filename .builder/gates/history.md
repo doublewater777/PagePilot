@@ -131,8 +131,8 @@ Loop-back: Investigate discovery and connection lifecycle if physical-device ver
 ## 2026-10-08 - 10-growth-channel (Persistent peer link)
 
 Cycle: 2026-10-08-nearby-ipad-selection
-Verdict: pass (pending Watch-wakes-backgrounded-iPhone check)
-Evidence: Cross-device LAN path removed; one persistent Network.framework peer-to-peer link. 348 iOS tests pass (21 new peer-link unit/integration tests, 30/30 integration runs stable). Simulator end-to-end passes 3/3. Physical iPhone 16 Pro + iPad 6th gen with no shared Wi-Fi: 73/73 turns over awdl0 (10–50 ms); across Wi-Fi join/leave 86/86 after viability handling. Hands-free regression via scripts/peer-link-soak.sh passes 10/10 on device.
+Verdict: pass (Watch-wakes-iPhone verified on simulators; real Watch pending)
+Evidence: Cross-device LAN path removed; one persistent Network.framework peer-to-peer link. 348 iOS tests pass (21 new peer-link unit/integration tests, 30/30 integration runs stable). Simulator end-to-end passes 3/3. Physical iPhone 16 Pro + iPad 6th gen with no shared Wi-Fi: 73/73 turns over awdl0 (10–50 ms); across Wi-Fi join/leave 86/86 after viability handling. Hands-free regression via scripts/peer-link-soak.sh passes 10/10 on device. Watch simulator drives the iPad through the iPhone in foreground, background and terminated states (scripts/watch-relay-sim-e2e.sh, 2/2 runs).
 Weakest assumption: A Watch command that wakes a backgrounded iPhone can rebuild the peer link quickly enough.
 Decision: Ship the persistent peer link; keep a presence browse running while an iPad is selected because iOS keeps AWDL up only while the app browses.
 Next stage: 10-growth-channel

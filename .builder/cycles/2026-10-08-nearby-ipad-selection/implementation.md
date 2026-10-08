@@ -26,3 +26,4 @@
   - `-PagePilotDebugPro`：StoreKit 刷新不会撤销 Pro，保证模拟器和真机自测稳定。
   - `-PagePilotPeerSoak [-PagePilotPeerSoakCount N]`：iPhone 自动连续翻页，日志写入 Documents/peer-soak.log。
   - `scripts/peer-link-soak.sh`：一键启动自测、拷回日志并汇总。
+- `scripts/watch-relay-sim-e2e.sh <iPhone> <iPad> <Watch>`：在模拟器上验证手表 → iPhone（前台/后台/已关闭）→ iPad 整条链路。iPad 选择直接写进偏好设置，手表按钮按控件 ID 定位，不依赖界面语言。`-PagePilotDebugPro` 也可以存进偏好设置，这样手表冷启动 iPhone 时调试版仍保持 Pro。

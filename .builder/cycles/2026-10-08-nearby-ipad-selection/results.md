@@ -43,4 +43,5 @@ iOS XCTest 日志：/Users/water/Library/Developer/MobileBuildMCP/workspaces/Pag
   - 常驻搜索之后：没连 Wi-Fi 网络时 73/73 成功，通常 10–50ms；全程含 Wi-Fi 连上/断开切换共 112 次，失败 1 次，失败出在断网那一刻的旧连接上。
   - 加 viability 处理后：86/86 成功，覆盖连上 Wi-Fi（切到 en0）和断开 Wi-Fi（2.2s 内回到 awdl0，补发的那次被 iPad 去重，没有重复翻页）。
   - `scripts/peer-link-soak.sh <iPhone> 10`：真机全程无人操作，10/10 通过。
-- 已确认的限制：两台设备的 Wi-Fi 开关都必须打开，awdl 依赖 Wi-Fi 硬件。iPad 应用需要在前台。iPhone 在后台时，链路会在下一次手表指令到来时重建。“手表唤醒后台 iPhone”这条路径还没在真机上验证过。
+- 已确认的限制：两台设备的 Wi-Fi 开关都必须打开，awdl 依赖 Wi-Fi 硬件。iPad 应用需要在前台。iPhone 在后台时，链路会在下一次手表指令到来时重建。“手表唤醒后台 iPhone”这条路径已在模拟器上验证（见下），真机加真手表还没验证过。
+- 手表链路（模拟器）：手表模拟器 Series 11 与 iPhone 17 Relay 配对，iPad mini Relay 打开书。用 `scripts/watch-relay-sim-e2e.sh` 测三种情况：iPhone 应用在前台、在后台、被关掉后由手表冷启动。每种情况都是手表点下一页、再点上一页，iPad 1/10 → 3/10 → 1/10，连续 2 轮全部通过，手表上正确显示书名和进度。三台模拟器共用 Mac 的网络，所以这项不验证 awdl，awdl 由 peer-link-soak 在真机上覆盖。
