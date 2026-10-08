@@ -49,9 +49,9 @@
 "onboarding_skip_watch" = "Not Now";
 "onboarding_ipad_handoff_title" = "Continue on Your iPad";
 "onboarding_ipad_handoff_subtitle" = "Your iPhone relays Apple Watch page turns to a nearby iPad.";
-"onboarding_ipad_handoff_step1" = "Open PagePilot on your iPad (same Wi-Fi as this iPhone)";
+"onboarding_ipad_handoff_step1" = "Open PagePilot on your iPad and keep Wi-Fi on (no shared network needed)";
 "onboarding_ipad_handoff_step2" = "Import or receive the book you want to read";
-"onboarding_ipad_handoff_step3" = "Open the book on iPad — Pro starts Watch relay automatically";
+"onboarding_ipad_handoff_step3" = "Open the book on iPad, then on iPhone choose it in Me → Apple Watch → Choose Nearby iPad";
 "onboarding_handoff_done" = "Done";
 "paywall_ipad_watch_title" = "Read on iPad. Turn Pages with Apple Watch.";
 "paywall_ipad_watch_subtitle" = "Unlock iPhone relay so Watch commands reach a nearby iPad Reader.";
@@ -821,11 +821,11 @@
 "ipad_watch_summary_service_fail" = "Local service failed";
 "ipad_watch_summary_service_fail_sub" = "This iPad isn’t ready to receive page turns. Tap Retest below.";
 "ipad_watch_summary_waiting_phone" = "No iPhone signal yet";
-"ipad_watch_summary_waiting_phone_sub" = "On iPhone, set Watch target to iPad and keep PagePilot open, then tap Retest here.";
+"ipad_watch_summary_waiting_phone_sub" = "On iPhone, open Me → Apple Watch → Choose Nearby iPad, select this iPad, and keep PagePilot open. Then tap Retest here.";
 "ipad_watch_summary_almost" = "Almost there";
 "ipad_watch_summary_almost_sub" = "Check the list below.";
 "ipad_watch_checklist_header" = "Checklist";
-"ipad_watch_checklist_footer" = "“iPhone test” can reach this iPad over the same Wi‑Fi or a nearby direct connection. Opening this page runs a test automatically.";
+"ipad_watch_checklist_footer" = "“iPhone test” reaches this iPad over a shared Wi‑Fi network or directly over peer-to-peer Wi‑Fi. Opening this page runs a test automatically.";
 "ipad_watch_check_wifi" = "Wi‑Fi";
 "ipad_watch_check_wifi_ok" = "Connected";
 "ipad_watch_check_wifi_bad" = "Not connected — turn on Wi‑Fi";
@@ -843,9 +843,9 @@
 "ipad_watch_next_header" = "What to do next";
 "ipad_watch_next_wifi" = "Join the same Wi‑Fi as your iPhone.";
 "ipad_watch_next_restart" = "Tap Retest. If it still fails, quit PagePilot and open it again.";
-"ipad_watch_next_phone" = "On iPhone: Me → Watch page turn → choose iPad, keep PagePilot open, then return here and tap Retest. Same Wi‑Fi is preferred, but nearby direct also works without internet.";
+"ipad_watch_next_phone" = "On iPhone: Me → Apple Watch → Choose Nearby iPad → select this iPad. Keep PagePilot open, then return here and tap Retest. A shared Wi-Fi network is not required.";
 "ipad_watch_how_header" = "How it works";
-"ipad_watch_how_body" = "Your Watch talks to iPhone; iPhone reaches this iPad over the local network when available, or directly nearby when there is no shared Wi‑Fi. This screen self-tests the relay and waits for a test visit from iPhone.";
+"ipad_watch_how_body" = "Your Watch talks to iPhone, and iPhone keeps a direct link to the iPad you chose. It uses a shared Wi‑Fi network when there is one and peer-to-peer Wi‑Fi when there isn’t, so keep Wi‑Fi turned on. This screen self-tests the link and waits for your iPhone.";
 
 /* MARK: TXT Import */
 "txt_error_cannot_read" = "Cannot read the text file.";
@@ -1010,3 +1010,18 @@
 "reading_pace_velocity_format" = "Recent pace: %@ per active minute";
 "reading_pace_finish_format" = "Approx. finish: %@";
 "reading_pace_estimate_basis" = "Estimate based on recent reading sessions. Your pace can change.";
+
+// Nearby iPad selection
+"nearby_ipad_choose" = "Choose Nearby iPad";
+"nearby_ipad_instructions" = "Keep PagePilot open on your iPad with Pro access on both devices. Keep Wi-Fi enabled; a shared Wi-Fi network is not required. Tap an iPad to connect.";
+"nearby_ipad_searching" = "Searching for nearby iPads…";
+"nearby_ipad_empty" = "No iPads found. Open PagePilot on your iPad, then search again.";
+"nearby_ipad_refresh" = "Search Again";
+"nearby_ipad_search_failed" = "Could not search. Check local network permission and try again.";
+"nearby_ipad_connect_failed" = "Could not connect. Keep PagePilot open on the iPad and check Pro access on both devices.";
+"nearby_ipad_pro_required" = "PagePilot Pro is required to connect an iPad.";
+"nearby_ipad_prev" = "Previous Page";
+"nearby_ipad_next" = "Next Page";
+"nearby_ipad_turn_failed" = "Page didn’t turn. Open a book on the iPad and keep PagePilot in the foreground.";
+"nearby_ipad_linked" = "Connected";
+"nearby_ipad_not_linked" = "Not connected";

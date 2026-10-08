@@ -49,9 +49,9 @@
 "onboarding_skip_watch" = "Pas maintenant";
 "onboarding_ipad_handoff_title" = "Continuez sur votre iPad";
 "onboarding_ipad_handoff_subtitle" = "Votre iPhone relaie les changements de page de l’Apple Watch vers un iPad à proximité.";
-"onboarding_ipad_handoff_step1" = "Ouvrez PagePilot sur votre iPad (sur le même Wi‑Fi que cet iPhone)";
+"onboarding_ipad_handoff_step1" = "Ouvrez PagePilot sur l’iPad et laissez le Wi-Fi activé (aucun réseau commun requis)";
 "onboarding_ipad_handoff_step2" = "Importez ou recevez le livre que vous souhaitez lire";
-"onboarding_ipad_handoff_step3" = "Ouvrez le livre sur l’iPad — Pro active automatiquement le relais de l’Apple Watch";
+"onboarding_ipad_handoff_step3" = "Ouvrez le livre sur l’iPad, puis choisissez-le sur l’iPhone dans Moi → Apple Watch → Choisir un iPad à proximité";
 "onboarding_handoff_done" = "Terminé";
 "paywall_ipad_watch_title" = "Lisez sur iPad. Tournez les pages avec l’Apple Watch.";
 "paywall_ipad_watch_subtitle" = "Déverrouillez le relais iPhone pour transmettre les commandes de l’Apple Watch au lecteur iPad à proximité.";
@@ -821,11 +821,11 @@
 "ipad_watch_summary_service_fail" = "Échec du service local";
 "ipad_watch_summary_service_fail_sub" = "Cet iPad n’est pas prêt à recevoir les changements de page. Touchez Retester ci-dessous.";
 "ipad_watch_summary_waiting_phone" = "Aucun signal de l’iPhone pour le moment";
-"ipad_watch_summary_waiting_phone_sub" = "Sur iPhone, choisissez l’iPad comme cible de l’Apple Watch et gardez PagePilot ouvert, puis touchez Retester ici.";
+"ipad_watch_summary_waiting_phone_sub" = "Sur iPhone, ouvrez Moi → Apple Watch → Choisir un iPad à proximité. Choisissez cet iPad et gardez PagePilot ouvert. Touchez ensuite Retester ici.";
 "ipad_watch_summary_almost" = "Presque terminé";
 "ipad_watch_summary_almost_sub" = "Consultez la liste ci-dessous.";
 "ipad_watch_checklist_header" = "Liste de vérification";
-"ipad_watch_checklist_footer" = "Le « test iPhone » peut atteindre cet iPad via le même réseau Wi‑Fi ou une connexion directe à proximité. L’ouverture de cette page lance automatiquement un test.";
+"ipad_watch_checklist_footer" = "Le « test iPhone » atteint cet iPad via un réseau Wi‑Fi commun ou directement en Wi‑Fi pair à pair. Ouvrir cette page lance un test automatiquement.";
 "ipad_watch_check_wifi" = "Wi‑Fi";
 "ipad_watch_check_wifi_ok" = "Connecté";
 "ipad_watch_check_wifi_bad" = "Non connecté — activez le Wi‑Fi";
@@ -843,9 +843,9 @@
 "ipad_watch_next_header" = "Que faire ensuite";
 "ipad_watch_next_wifi" = "Rejoignez le même réseau Wi‑Fi que votre iPhone.";
 "ipad_watch_next_restart" = "Touchez Retester. Si l’échec persiste, quittez PagePilot et ouvrez-le à nouveau.";
-"ipad_watch_next_phone" = "Sur iPhone : Moi → Changement de page avec l’Apple Watch → choisissez iPad, gardez PagePilot ouvert, revenez ici puis touchez Retester. Le même Wi‑Fi est privilégié, mais la connexion directe à proximité fonctionne aussi sans Internet.";
+"ipad_watch_next_phone" = "Sur iPhone : Moi → Apple Watch → Choisir un iPad à proximité → choisissez cet iPad. Gardez PagePilot ouvert et touchez Retester ici. Un réseau Wi-Fi commun n’est pas nécessaire.";
 "ipad_watch_how_header" = "Fonctionnement";
-"ipad_watch_how_body" = "Votre Apple Watch communique avec l’iPhone. Lorsqu’un réseau local commun est disponible, l’iPhone l’utilise pour atteindre cet iPad ; sinon, il tente une connexion directe à proximité. Cet écran teste le relais et attend une visite de test de l’iPhone.";
+"ipad_watch_how_body" = "Votre Watch communique avec l’iPhone, qui garde un lien direct avec l’iPad choisi. Il utilise un réseau Wi‑Fi commun s’il existe, sinon le Wi‑Fi pair à pair : laissez donc le Wi‑Fi activé. Cet écran teste le lien et attend votre iPhone.";
 
 /* MARK: TXT Import */
 "txt_error_cannot_read" = "Impossible de lire le fichier texte.";
@@ -1010,3 +1010,18 @@
 "reading_pace_velocity_format" = "Rythme récent : %@ par minute active";
 "reading_pace_finish_format" = "Fin approx. : %@";
 "reading_pace_estimate_basis" = "Estimation basée sur les sessions récentes. Votre rythme peut varier.";
+
+// Nearby iPad selection
+"nearby_ipad_choose" = "Choisir un iPad à proximité";
+"nearby_ipad_instructions" = "Gardez PagePilot ouvert sur l’iPad avec un accès Pro sur les deux appareils. Activez le Wi-Fi ; un réseau commun n’est pas nécessaire. Touchez un iPad pour le connecter.";
+"nearby_ipad_searching" = "Recherche d’iPad à proximité…";
+"nearby_ipad_empty" = "Aucun iPad trouvé. Ouvrez PagePilot sur l’iPad, puis relancez la recherche.";
+"nearby_ipad_refresh" = "Rechercher à nouveau";
+"nearby_ipad_search_failed" = "Recherche impossible. Vérifiez l’autorisation du réseau local et réessayez.";
+"nearby_ipad_connect_failed" = "Connexion impossible. Gardez PagePilot ouvert sur l’iPad et vérifiez l’accès Pro sur les deux appareils.";
+"nearby_ipad_pro_required" = "PagePilot Pro est nécessaire pour connecter un iPad.";
+"nearby_ipad_prev" = "Page précédente";
+"nearby_ipad_next" = "Page suivante";
+"nearby_ipad_turn_failed" = "La page n’a pas tourné. Ouvrez un livre sur l’iPad et gardez PagePilot au premier plan.";
+"nearby_ipad_linked" = "Connecté";
+"nearby_ipad_not_linked" = "Non connecté";

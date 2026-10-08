@@ -235,6 +235,14 @@ final class ProPurchaseManager: ObservableObject {
             return hasProAccess
         }
 
+        #if DEBUG
+        // Simulators and Xcode device runs have no App Store purchase; this
+        // keeps Pro on so automated iPad relay tests behave deterministically.
+        if ProcessInfo.processInfo.arguments.contains("-PagePilotDebugPro") {
+            hasPro = true
+        }
+        #endif
+
         let previous = hasProAccess
         await updateProAccess(hasPro)
         if hasPro, !previous {

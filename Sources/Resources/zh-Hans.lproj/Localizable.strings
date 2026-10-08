@@ -49,9 +49,9 @@
 "onboarding_skip_watch" = "暂时不用 Watch";
 "onboarding_ipad_handoff_title" = "接下来，在 iPad 上继续";
 "onboarding_ipad_handoff_subtitle" = "iPhone 会把 Apple Watch 的翻页指令转发给附近的 iPad。";
-"onboarding_ipad_handoff_step1" = "在 iPad 上打开 PagePilot（与这台 iPhone 同一 Wi-Fi）";
+"onboarding_ipad_handoff_step1" = "在 iPad 上打开 PagePilot，并保持 Wi-Fi 开启（无须连接同一网络）";
 "onboarding_ipad_handoff_step2" = "导入或接收你要阅读的书";
-"onboarding_ipad_handoff_step3" = "在 iPad 打开这本书 — 有 Pro 会自动开启 Watch 中继";
+"onboarding_ipad_handoff_step3" = "在 iPad 上打开这本书，然后在 iPhone 的「我 → Apple Watch → 选择附近的 iPad」中选择它";
 "onboarding_handoff_done" = "完成";
 "paywall_ipad_watch_title" = "在 iPad 上阅读，用 Apple Watch 翻页";
 "paywall_ipad_watch_subtitle" = "解锁 iPhone 中继，让 Watch 指令抵达附近的 iPad Reader。";
@@ -821,11 +821,11 @@
 "ipad_watch_summary_service_fail" = "本机服务未通过";
 "ipad_watch_summary_service_fail_sub" = "翻页接收服务暂时不可用，可点下方重新测试。";
 "ipad_watch_summary_waiting_phone" = "还没测到 iPhone";
-"ipad_watch_summary_waiting_phone_sub" = "请在 iPhone 将翻页目标设为 iPad，并打开 PagePilot；保持本页打开再点「重新测试」。";
+"ipad_watch_summary_waiting_phone_sub" = "请在 iPhone 打开「我 → Apple Watch → 选择附近的 iPad」，选择本机并保持 PagePilot 打开，然后在这里点「重新测试」。";
 "ipad_watch_summary_almost" = "还差一点点";
 "ipad_watch_summary_almost_sub" = "按下面清单检查一下即可。";
 "ipad_watch_checklist_header" = "连接清单";
-"ipad_watch_checklist_footer" = "「iPhone 测试」可通过同一 Wi‑Fi 或附近直连访问这台 iPad；进入本页会自动运行测试。";
+"ipad_watch_checklist_footer" = "「iPhone 测试」会经共同 Wi‑Fi 或点对点 Wi‑Fi 直连访问这台 iPad；进入本页会自动运行测试。";
 "ipad_watch_check_wifi" = "连上 Wi‑Fi";
 "ipad_watch_check_wifi_ok" = "已连接无线网络";
 "ipad_watch_check_wifi_bad" = "未检测到网络，请打开 Wi‑Fi";
@@ -843,9 +843,9 @@
 "ipad_watch_next_header" = "下一步";
 "ipad_watch_next_wifi" = "到控制中心连上与 iPhone 相同的 Wi‑Fi。";
 "ipad_watch_next_restart" = "点「重新测试」；若仍失败，退出 App 再打开一次。";
-"ipad_watch_next_phone" = "在 iPhone：我 → 手表翻页 → 目标选「iPad」，并保持 PagePilot 打开，然后回到本页点「重新测试」。同一 Wi‑Fi 优先；没有共同网络时也可使用附近直连，不需要互联网。";
+"ipad_watch_next_phone" = "在 iPhone：我 → Apple Watch → 选择附近的 iPad → 选择本机。保持 PagePilot 打开，然后回到本页点「重新测试」。无须连接同一个 Wi-Fi 网络。";
 "ipad_watch_how_header" = "这是怎么工作的";
-"ipad_watch_how_body" = "手表连着 iPhone；有共同局域网时，iPhone 优先经局域网访问这台 iPad；没有共同 Wi‑Fi 时会尝试附近直连。本页会自检中继服务，并等待 iPhone 的测试访问。";
+"ipad_watch_how_body" = "手表连着 iPhone，iPhone 与你选择的 iPad 保持一条直连。有共同 Wi‑Fi 时经由该网络，没有时使用点对点 Wi‑Fi，因此请保持 Wi‑Fi 开启。本页会自检连接，并等待 iPhone 连入。";
 
 /* MARK: TXT Import */
 "txt_error_cannot_read" = "无法读取文本文件。";
@@ -1010,3 +1010,18 @@
 "reading_pace_velocity_format" = "近期速度：每有效分钟 %@";
 "reading_pace_finish_format" = "预计完成时间：%@";
 "reading_pace_estimate_basis" = "根据近期阅读会话估算，实际速度可能变化。";
+
+// Nearby iPad selection
+"nearby_ipad_choose" = "选择附近的 iPad";
+"nearby_ipad_instructions" = "请在 iPad 上保持 PagePilot 打开，并确保两台设备都有 Pro 权限。保持 Wi-Fi 开启，无须连接同一个 Wi-Fi 网络。点击一台 iPad 进行连接。";
+"nearby_ipad_searching" = "正在搜索附近的 iPad…";
+"nearby_ipad_empty" = "未找到 iPad。请在 iPad 上打开 PagePilot，然后重新搜索。";
+"nearby_ipad_refresh" = "重新搜索";
+"nearby_ipad_search_failed" = "搜索失败，请检查本地网络权限后重试。";
+"nearby_ipad_connect_failed" = "连接失败，请保持 iPad 上的 PagePilot 打开，并检查两台设备的 Pro 权限。";
+"nearby_ipad_pro_required" = "连接 iPad 需要 PagePilot Pro。";
+"nearby_ipad_prev" = "上一页";
+"nearby_ipad_next" = "下一页";
+"nearby_ipad_turn_failed" = "未能翻页。请在 iPad 上打开一本书，并让 PagePilot 保持在前台。";
+"nearby_ipad_linked" = "已连接";
+"nearby_ipad_not_linked" = "未连接";

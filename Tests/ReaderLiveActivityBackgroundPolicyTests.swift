@@ -206,16 +206,25 @@ final class ReaderLiveActivityBackgroundPolicyTests: XCTestCase {
     func testWatchDirectAndIPadRelaySuccessPathsPublishMeasuredTurns() throws {
         let source = try Self.watchPageTurnServiceSource()
 
+        // Both paths run through handleCommand, which records the turn for
+        // the origin it was given (direct by default, iPadRelay from the link).
         XCTAssertEqual(
             Self.occurrenceCount(
-                of: "recordSuccessfulWatchPageTurn(origin: .direct)",
+                of: "recordSuccessfulWatchPageTurn(origin: origin)",
                 in: source
             ),
             1
         )
         XCTAssertEqual(
             Self.occurrenceCount(
-                of: "recordSuccessfulWatchPageTurn(origin: .iPadRelay)",
+                of: "origin: WatchPageTurnOrigin = .direct",
+                in: source
+            ),
+            1
+        )
+        XCTAssertEqual(
+            Self.occurrenceCount(
+                of: "handleCommand(command, origin: .iPadRelay",
                 in: source
             ),
             1

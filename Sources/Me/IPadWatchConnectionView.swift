@@ -8,8 +8,8 @@ import Combine
 import SwiftUI
 
 /// iPad-side connection test for Watch page turn.
-/// Opens with an active probe: local service self-test + listen window for an iPhone hit
-/// over either the shared LAN or nearby peer-to-peer relay.
+/// Opens with an active probe: local service self-test + listen window for an
+/// iPhone link, over a shared Wi-Fi network or peer-to-peer Wi-Fi.
 struct IPadWatchConnectionView: View {
     @ObservedObject private var service = WatchPageTurnService.shared
     @State private var isProbing = false
@@ -22,12 +22,17 @@ struct IPadWatchConnectionView: View {
 
     private var phoneHitDuringProbe: Bool {
         guard let started = probeStartedAt,
-              let remoteHit = service.lastRemoteLANHitAt else { return false }
+              let remoteHit = service.peerHostState.lastRequestAt else { return false }
         return remoteHit >= started
     }
 
+    /// An iPhone holds an open link to this iPad right now.
+    private var isPhoneLinked: Bool {
+        service.peerHostState.connectedPeerCount > 0
+    }
+
     private var phoneOK: Bool {
-        phoneProbeOK || phoneHitDuringProbe || service.isLANWatchConnected
+        phoneProbeOK || phoneHitDuringProbe || isPhoneLinked
     }
 
     private var allReady: Bool {
@@ -57,12 +62,12 @@ struct IPadWatchConnectionView: View {
             probeTask?.cancel()
             probeTask = nil
         }
-        .onChange(of: service.lastRemoteLANHitAt) { _, _ in
+        .onChange(of: service.peerHostState.lastRequestAt) { _, _ in
             if phoneHitDuringProbe {
                 phoneProbeOK = true
             }
         }
-        .onChange(of: service.isLANWatchConnected) { _, connected in
+        .onChange(of: isPhoneLinked) { _, connected in
             if connected, probeStartedAt != nil {
                 phoneProbeOK = true
             }
@@ -275,7 +280,7 @@ struct IPadWatchConnectionView: View {
             let deadline = Date().addingTimeInterval(probeListenSeconds)
             while Date() < deadline {
                 if Task.isCancelled { return }
-                if phoneHitDuringProbe || service.isLANWatchConnected {
+                if phoneHitDuringProbe || isPhoneLinked {
                     phoneProbeOK = true
                     break
                 }

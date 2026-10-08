@@ -48,3 +48,5 @@ Loop-back if failed: return to `03-narrow-wedge` and test narrower scenarios.
 ## Change Log
 
 - 2026-06-06: Created first launch distribution stage record.
+
+- 2026-10-08: Cycle `2026-10-08-nearby-ipad-selection` removes prior LAN association from first-use Watch-to-iPad setup through explicit nearby device selection, and replaces the LAN relay with one persistent peer-to-peer link; verified on physical devices without shared Wi-Fi.
