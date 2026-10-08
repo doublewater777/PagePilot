@@ -4,6 +4,7 @@ struct FeedbackView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var message = ""
     @State private var sendState: FeedbackSendState = .idle
+    @State private var isToastVisible = false
     @FocusState private var isMessageFocused: Bool
 
     private var messageLength: Int {
@@ -60,10 +61,7 @@ struct FeedbackView: View {
                         if sendState == .sending {
                             ProgressView().tint(.white)
                         } else {
-                            Label(
-                                NSLocalizedString(sendState == .sent ? "feedback_submitted" : "feedback_submit", comment: ""),
-                                systemImage: sendState == .sent ? "checkmark.circle.fill" : "paperplane.fill"
-                            )
+                            Label(NSLocalizedString("feedback_submit", comment: ""), systemImage: "paperplane.fill")
                         }
                     }
                     .frame(maxWidth: .infinity, minHeight: 32)
@@ -74,19 +72,6 @@ struct FeedbackView: View {
                     message.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
                     isMessageOverLimit
                 )
-
-                switch sendState {
-                case .sent:
-                    Label(NSLocalizedString("feedback_received", comment: ""), systemImage: "checkmark.circle.fill")
-                        .font(.caption)
-                        .foregroundStyle(.green)
-                case .failed(let error):
-                    Label(NSLocalizedString(error.localizationKey, comment: ""), systemImage: "exclamationmark.circle.fill")
-                        .font(.caption)
-                        .foregroundStyle(.red)
-                case .idle, .sending:
-                    EmptyView()
-                }
             }
             .frame(maxWidth: 600)
             .padding(16)
@@ -98,6 +83,37 @@ struct FeedbackView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(Color(uiColor: .systemGroupedBackground), for: .navigationBar)
         .toolbarBackground(.visible, for: .navigationBar)
+        .overlay(alignment: .bottom) {
+            if isToastVisible, let result = sendState.toastResult {
+                Label(NSLocalizedString(result.messageKey, comment: ""), systemImage: result.icon)
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
+                    .background(Color.black.opacity(0.8), in: Capsule())
+                    .frame(maxWidth: 560)
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 24)
+                    .allowsHitTesting(false)
+                    .transition(.opacity.combined(with: .move(edge: .bottom)))
+            }
+        }
+        .animation(.easeInOut(duration: 0.2), value: isToastVisible)
+        .task(id: sendState) {
+            guard let result = sendState.toastResult else {
+                isToastVisible = false
+                return
+            }
+            isToastVisible = true
+            UIAccessibility.post(notification: .announcement, argument: NSLocalizedString(result.messageKey, comment: ""))
+            do {
+                try await Task.sleep(for: .seconds(sendState == .sent ? 2 : 3))
+            } catch {
+                return
+            }
+            isToastVisible = false
+            if sendState == .sent { dismiss() }
+        }
     }
 
     private func submitFeedback() {
@@ -111,8 +127,6 @@ struct FeedbackView: View {
                 sendState = .sent
                 message = ""
                 UINotificationFeedbackGenerator().notificationOccurred(.success)
-                try? await Task.sleep(for: .milliseconds(1200))
-                dismiss()
             } catch let error as FeedbackSubmissionError {
                 sendState = .failed(error)
             } catch {
@@ -127,4 +141,12 @@ private enum FeedbackSendState: Equatable {
     case sending
     case sent
     case failed(FeedbackSubmissionError)
+
+    var toastResult: (messageKey: String, icon: String)? {
+        switch self {
+        case .sent: return ("feedback_received", "checkmark.circle.fill")
+        case .failed(let error): return (error.localizationKey, "exclamationmark.circle.fill")
+        case .idle, .sending: return nil
+        }
+    }
 }
