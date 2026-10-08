@@ -727,6 +727,14 @@
 "settings_tts_section" = "文字转语音";
 "settings_tts_voice" = "音色与语速";
 "settings_feedback_section" = "反馈";
+"feedback_message_placeholder" = "写下你的问题或建议";
+"feedback_message_too_long" = "反馈最多 2000 字";
+"feedback_submit" = "提交反馈";
+"feedback_submitted" = "已提交";
+"feedback_received" = "已收到，谢谢你的反馈";
+"feedback_network_failure" = "提交失败，请检查网络后重试";
+"feedback_rate_limited" = "提交有点频繁，请稍后再试";
+"feedback_rejected" = "暂时没能提交，请稍后重试";
 "settings_feedback_bug" = "报告 Bug";
 "settings_feedback_feature" = "功能建议";
 "settings_feedback_other" = "其他反馈";

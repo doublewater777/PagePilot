@@ -15,6 +15,7 @@ PagePilot has passed Apple's review and is ready for first-launch distribution. 
 ## Related Cycles
 
 - `2026-06-06-app-store-approval-launch`
+- `2026-10-08-in-app-feedback` — removes mail setup from reader feedback and routes submissions to a dedicated Feishu destination.
 
 ## Inputs
 

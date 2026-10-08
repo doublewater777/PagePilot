@@ -1,0 +1,22 @@
+{
+  "$schema": "https://static.cloudbase.net/cli/cloudbaserc.schema.json",
+  "version": "2.0",
+  "envId": "{{env.TCB_ENV_ID}}",
+  "region": "{{env.TCB_REGION}}",
+  "functionRoot": "./functions",
+  "functions": [
+    {
+      "name": "pagepilotFeedback",
+      "type": "HTTP",
+      "timeout": 10,
+      "runtime": "Nodejs18.15",
+      "memorySize": 256,
+      "installDependency": true,
+      "envVariables": {
+        "FEISHU_APP_ID": "{{env.FEISHU_APP_ID}}",
+        "FEISHU_APP_SECRET": "{{env.FEISHU_APP_SECRET}}",
+        "FEISHU_CHAT_ID": "{{env.PAGEPILOT_FEISHU_CHAT_ID}}"
+      }
+    }
+  ]
+}

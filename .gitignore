@@ -118,3 +118,8 @@ __pycache__/
 # ==========================================
 
 *.log
+
+# Feedback service credentials and dependencies
+cloudbase/.env
+cloudbase/node_modules/
+cloudbase/functions/*/node_modules/

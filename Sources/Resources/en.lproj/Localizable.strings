@@ -727,6 +727,14 @@
 "settings_tts_section" = "Text-to-Speech";
 "settings_tts_voice" = "Voice & Speed";
 "settings_feedback_section" = "Feedback";
+"feedback_message_placeholder" = "Write your question or suggestion";
+"feedback_message_too_long" = "Feedback is limited to 2000 characters";
+"feedback_submit" = "Submit Feedback";
+"feedback_submitted" = "Submitted";
+"feedback_received" = "Received. Thank you for your feedback";
+"feedback_network_failure" = "Submission failed. Check your connection and try again";
+"feedback_rate_limited" = "Too many submissions. Please try again later";
+"feedback_rejected" = "Unable to submit right now. Please try again later";
 "settings_feedback_bug" = "Report a Bug";
 "settings_feedback_feature" = "Request a Feature";
 "settings_feedback_other" = "Other Feedback";

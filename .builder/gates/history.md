@@ -137,3 +137,10 @@ Weakest assumption: A Watch command that wakes a backgrounded iPhone can rebuild
 Decision: Ship the persistent peer link; keep a presence browse running while an iPad is selected because iOS keeps AWDL up only while the app browses.
 Next stage: 10-growth-channel
 Loop-back: If Watch-from-pocket turns fail on device, add a background reconnect path before release.
+# 2026-10-08 In-App Feedback
+
+Cycle: `2026-10-08-in-app-feedback`.
+Stage: 10-growth-channel.
+Gate: pass for submission/delivery; narrow iPad window QA remains unverified.
+Decision: Use BeforeShow's interaction flow and a dedicated PagePilot feedback function and Feishu destination.
+Evidence: Backend 5/5 and iPhone 18 Pro Max focused tests 3/3 passed. iPhone submission return and iPad portrait/landscape verified. Production feedback `31664031-5f5c-45ba-a9cf-3d0b5075838a` returned `ok: true` and `notificationDelivered: true` on 2026-10-09.

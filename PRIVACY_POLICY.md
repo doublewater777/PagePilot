@@ -1,16 +1,16 @@
 # Privacy Policy
 
-**Last updated: May 8, 2026**
+**Last updated: October 9, 2026**
 
 Pan Yang ("we", "us", or "our") built PagePilot as a free, open-source application. This Privacy Policy explains how we handle information when you use our app.
 
 ## Information We Do NOT Collect
 
-PagePilot does **not** collect, store, or transmit any personal data to external servers. Specifically:
+PagePilot does not automatically collect personal data. If you choose to submit feedback, the information described below is sent to our feedback service. Specifically:
 
 - **No analytics or tracking**: We do not use any third-party analytics, crash reporting, or advertising SDKs.
 - **No account required**: The app does not require registration or sign-in.
-- **No personal data collection**: We do not collect your name, email, location, or any other personal information.
+- **No requested personal details**: We do not ask for your name, email, or location. Feedback includes only what you choose to write and the diagnostics described below.
 - **No usage data transmission**: Your reading habits, bookmarks, highlights, and preferences are never sent to any server.
 
 ## Data Stored Locally on Your Device
@@ -26,6 +26,10 @@ PagePilot stores the following data **locally on your device only**:
 ## Apple Watch
 
 The companion Apple Watch app communicates with the iPhone app locally via WatchConnectivity to send page turn commands. No data is transmitted to external servers.
+
+## Feedback
+
+When you submit feedback, PagePilot sends your message, app version, and operating system version to a dedicated feedback endpoint hosted on Tencent CloudBase. Feedback is stored there and forwarded to our private PagePilot feedback group in Feishu so we can investigate issues and suggestions. An app-instance identifier is used for rate limiting; only an hourly hash is stored in rate-limit records. Books, reading history, bookmarks, and notes are not attached to feedback.
 
 ## Third-Party Content
 

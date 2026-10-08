@@ -727,6 +727,14 @@
 "settings_tts_section" = "Synthèse vocale";
 "settings_tts_voice" = "Voix et vitesse";
 "settings_feedback_section" = "Commentaires";
+"feedback_message_placeholder" = "Écrivez votre question ou suggestion";
+"feedback_message_too_long" = "Les commentaires sont limités à 2000 caractères";
+"feedback_submit" = "Envoyer les commentaires";
+"feedback_submitted" = "Envoyé";
+"feedback_received" = "Reçu. Merci pour vos commentaires";
+"feedback_network_failure" = "Échec de l’envoi. Vérifiez votre connexion et réessayez";
+"feedback_rate_limited" = "Trop d’envois. Veuillez réessayer plus tard";
+"feedback_rejected" = "Envoi indisponible pour le moment. Veuillez réessayer plus tard";
 "settings_feedback_bug" = "Signaler un bug";
 "settings_feedback_feature" = "Demander une fonctionnalité";
 "settings_feedback_other" = "Autres commentaires";

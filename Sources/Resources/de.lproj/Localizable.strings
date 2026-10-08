@@ -727,6 +727,14 @@
 "settings_tts_section" = "Text-zu-Sprache";
 "settings_tts_voice" = "Stimme und Geschwindigkeit";
 "settings_feedback_section" = "Feedback";
+"feedback_message_placeholder" = "Schreibe deine Frage oder deinen Vorschlag";
+"feedback_message_too_long" = "Feedback ist auf 2000 Zeichen begrenzt";
+"feedback_submit" = "Feedback senden";
+"feedback_submitted" = "Gesendet";
+"feedback_received" = "Erhalten. Vielen Dank für dein Feedback";
+"feedback_network_failure" = "Senden fehlgeschlagen. Prüfe deine Verbindung und versuche es erneut";
+"feedback_rate_limited" = "Zu viele Nachrichten. Bitte versuche es später erneut";
+"feedback_rejected" = "Senden derzeit nicht möglich. Bitte versuche es später erneut";
 "settings_feedback_bug" = "Fehler melden";
 "settings_feedback_feature" = "Funktion vorschlagen";
 "settings_feedback_other" = "Sonstiges Feedback";

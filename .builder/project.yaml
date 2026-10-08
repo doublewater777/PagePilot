@@ -13,6 +13,12 @@ latest_gate:
   date: 2026-07-29
   loop_back_to:
 cycles:
+  - id: 2026-10-08-in-app-feedback
+    feature: In-app feedback with dedicated PagePilot Feishu delivery
+    status: completed
+    started_at: 2026-10-08
+    completed_at: 2026-10-09
+    linked_stage: 10-growth-channel
   - id: 2026-10-08-nearby-ipad-selection
     feature: Manual nearby iPad selection without prior LAN association
     status: active
