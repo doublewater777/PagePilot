@@ -49,9 +49,9 @@
 "onboarding_skip_watch" = "Ahora no";
 "onboarding_ipad_handoff_title" = "Continuar en tu iPad";
 "onboarding_ipad_handoff_subtitle" = "Su iPhone transmite la página de Apple Watch a un iPad cercano.";
-"onboarding_ipad_handoff_step1" = "Abre PagePilot en tu iPad (el mismo Wi‑Fi que este iPhone)";
+"onboarding_ipad_handoff_step1" = "Abre PagePilot en el iPad y mantén la Wi-Fi activada (no hace falta compartir red)";
 "onboarding_ipad_handoff_step2" = "Importa o recibe el libro que deseas leer";
-"onboarding_ipad_handoff_step3" = "Abra el libro en iPad: Pro inicia Watch Relay automáticamente";
+"onboarding_ipad_handoff_step3" = "Abre el libro en el iPad y luego elígelo en el iPhone en A mí → Apple Watch → Elegir un iPad cercano";
 "onboarding_handoff_done" = "Hecho";
 "paywall_ipad_watch_title" = "Leer en iPad. Pasa páginas con Apple Watch.";
 "paywall_ipad_watch_subtitle" = "Desbloquee el relé del iPhone para que los comandos del reloj lleguen a un lector de iPad cercano.";
@@ -756,7 +756,7 @@
 "tts_quality_default" = "Por defecto";
 
 /* MARK: Watch Settings */
-"settings_watch_section" = "reloj de manzana";
+"settings_watch_section" = "Apple Watch";
 "settings_watch_page_turn" = "Configuración de paso de página";
 "watch_settings_title" = "Ver pasar página";
 "watch_connection_status" = "reloj de manzana";
@@ -821,11 +821,11 @@
 "ipad_watch_summary_service_fail" = "El servicio local falló";
 "ipad_watch_summary_service_fail_sub" = "Este iPad no está listo para recibir cambios de página. Toque Volver a probar a continuación.";
 "ipad_watch_summary_waiting_phone" = "Aún no hay señal de iPhone";
-"ipad_watch_summary_waiting_phone_sub" = "En iPhone, configure Ver objetivo en iPad y mantenga abierto PagePilot, luego toque Volver a probar aquí.";
+"ipad_watch_summary_waiting_phone_sub" = "En iPhone, abre A mí → Apple Watch → Elegir un iPad cercano. Elige este iPad y mantén PagePilot abierto. Después, toca Volver a probar aquí.";
 "ipad_watch_summary_almost" = "Casi llegamos";
 "ipad_watch_summary_almost_sub" = "Consulte la lista a continuación.";
 "ipad_watch_checklist_header" = "Lista de verificación";
-"ipad_watch_checklist_footer" = "La “prueba de iPhone” puede llegar a este iPad por la misma red Wi‑Fi o mediante una conexión directa cercana. Al abrir esta página se ejecuta una prueba automáticamente.";
+"ipad_watch_checklist_footer" = "La “prueba del iPhone” llega a este iPad por una red Wi‑Fi compartida o directamente por Wi‑Fi punto a punto. Al abrir esta página se ejecuta una prueba automáticamente.";
 "ipad_watch_check_wifi" = "Wi‑Fi";
 "ipad_watch_check_wifi_ok" = "Conectado";
 "ipad_watch_check_wifi_bad" = "No conectado: activa la conexión Wi‑Fi";
@@ -843,9 +843,9 @@
 "ipad_watch_next_header" = "¿Qué hacer a continuación?";
 "ipad_watch_next_wifi" = "Únete a la misma red Wi‑Fi que tu iPhone.";
 "ipad_watch_next_restart" = "Toca Volver a probar. Si aún falla, salga de PagePilot y ábralo nuevamente.";
-"ipad_watch_next_phone" = "En iPhone: Yo → Pasar página con el Watch → elija iPad, mantenga PagePilot abierto, vuelva aquí y toque Volver a probar. Se prefiere la misma red Wi‑Fi, pero la conexión directa cercana también funciona sin internet.";
+"ipad_watch_next_phone" = "En iPhone: A mí → Apple Watch → Elegir un iPad cercano → elige este iPad. Mantén PagePilot abierto y toca Volver a probar aquí. No es necesario compartir la misma red Wi-Fi.";
 "ipad_watch_how_header" = "como funciona";
-"ipad_watch_how_body" = "El Watch se comunica con el iPhone. Cuando hay una red local compartida, el iPhone la usa para llegar a este iPad; si no hay Wi‑Fi compartido, intenta una conexión directa cercana. Esta pantalla prueba el relé y espera una visita de prueba del iPhone.";
+"ipad_watch_how_body" = "Tu Watch habla con el iPhone, y el iPhone mantiene un enlace directo con el iPad que elegiste. Usa una red Wi‑Fi compartida si la hay y Wi‑Fi punto a punto si no, así que mantén la Wi‑Fi activada. Esta pantalla comprueba el enlace y espera a tu iPhone.";
 
 /* MARK: TXT Import */
 "txt_error_cannot_read" = "No se puede leer el archivo de texto.";
@@ -1010,3 +1010,18 @@
 "reading_pace_velocity_format" = "Ritmo reciente: %@ por minuto activo";
 "reading_pace_finish_format" = "Fin aprox.: %@";
 "reading_pace_estimate_basis" = "Estimación basada en sesiones recientes. Tu ritmo puede cambiar.";
+
+// Nearby iPad selection
+"nearby_ipad_choose" = "Elegir un iPad cercano";
+"nearby_ipad_instructions" = "Mantén PagePilot abierto en el iPad con acceso Pro en ambos dispositivos. Activa el Wi-Fi; no es necesario compartir la misma red. Toca un iPad para conectarlo.";
+"nearby_ipad_searching" = "Buscando iPads cercanos…";
+"nearby_ipad_empty" = "No se encontraron iPads. Abre PagePilot en el iPad y vuelve a buscar.";
+"nearby_ipad_refresh" = "Buscar de nuevo";
+"nearby_ipad_search_failed" = "No se pudo buscar. Comprueba el permiso de red local e inténtalo de nuevo.";
+"nearby_ipad_connect_failed" = "No se pudo conectar. Mantén PagePilot abierto en el iPad y comprueba el acceso Pro en ambos dispositivos.";
+"nearby_ipad_pro_required" = "Se necesita PagePilot Pro para conectar un iPad.";
+"nearby_ipad_prev" = "Página anterior";
+"nearby_ipad_next" = "Página siguiente";
+"nearby_ipad_turn_failed" = "No se pasó la página. Abre un libro en el iPad y mantén PagePilot en primer plano.";
+"nearby_ipad_linked" = "Conectado";
+"nearby_ipad_not_linked" = "Sin conexión";

@@ -117,3 +117,23 @@ Weakest assumption: a dedicated value page raises Watch activation more than it 
 Decision: show one focused Watch value page before publication selection on iPhone; book selection is the final onboarding step directly into Reader; keep iPad direct to Reader.
 Next stage: 10-growth-channel
 Loop-back: Revisit if TestFlight cohort shows onboarding abandonment or users report friction before reaching the Reader.
+
+## 2026-10-08 - 10-growth-channel (Nearby iPad selection)
+
+Cycle: 2026-10-08-nearby-ipad-selection
+Verdict: pending
+Evidence: User chose manual selection. Full Debug app build passes after restoring missing Nearby target membership. Current iOS XCTest passes 48/48 on the dedicated PagePilot iPhone 17 Relay simulator; native harness passes 48 policy tests and 9 Network.framework integration checks. App launches to its home screen; iOS SDK typecheck and localization validation pass. Selection-page interactions, adaptive iPad UI, and physical AWDL verification remain pending because UI interaction tools are unavailable and Xcode MCP still rejects calls through its approval policy despite user authorization.
+Weakest assumption: Nearby discovery works reliably over AWDL without shared Wi-Fi.
+Decision: Implement explicit selection, preserve identity validation, and restrict LAN fallback to the selected device.
+Next stage: 10-growth-channel
+Loop-back: Investigate discovery and connection lifecycle if physical-device verification fails.
+
+## 2026-10-08 - 10-growth-channel (Persistent peer link)
+
+Cycle: 2026-10-08-nearby-ipad-selection
+Verdict: pass (Watch-wakes-iPhone verified on simulators; real Watch pending)
+Evidence: Cross-device LAN path removed; one persistent Network.framework peer-to-peer link. 348 iOS tests pass (21 new peer-link unit/integration tests, 30/30 integration runs stable). Simulator end-to-end passes 3/3. Physical iPhone 16 Pro + iPad 6th gen with no shared Wi-Fi: 73/73 turns over awdl0 (10–50 ms); across Wi-Fi join/leave 86/86 after viability handling. Hands-free regression via scripts/peer-link-soak.sh passes 10/10 on device. Watch simulator drives the iPad through the iPhone in foreground, background and terminated states (scripts/watch-relay-sim-e2e.sh, 2/2 runs).
+Weakest assumption: A Watch command that wakes a backgrounded iPhone can rebuild the peer link quickly enough.
+Decision: Ship the persistent peer link; keep a presence browse running while an iPad is selected because iOS keeps AWDL up only while the app browses.
+Next stage: 10-growth-channel
+Loop-back: If Watch-from-pocket turns fail on device, add a background reconnect path before release.

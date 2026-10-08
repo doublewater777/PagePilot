@@ -235,6 +235,17 @@ final class ProPurchaseManager: ObservableObject {
             return hasProAccess
         }
 
+        #if DEBUG
+        // Simulators and Xcode device runs have no App Store purchase; this
+        // keeps Pro on so automated iPad relay tests behave deterministically.
+        // Also read from stored defaults, so a cold launch by the Watch (which
+        // passes no launch arguments) keeps it: `defaults write <bundle> PagePilotDebugPro -bool YES`.
+        if ProcessInfo.processInfo.arguments.contains("-PagePilotDebugPro")
+            || defaults.bool(forKey: "PagePilotDebugPro") {
+            hasPro = true
+        }
+        #endif
+
         let previous = hasProAccess
         await updateProAccess(hasPro)
         if hasPro, !previous {
