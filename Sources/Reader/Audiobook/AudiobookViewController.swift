@@ -4,6 +4,7 @@
 //  available in the top-level LICENSE file of the project.
 //
 
+import AVFoundation
 import Combine
 import Foundation
 import MediaPlayer
@@ -66,7 +67,11 @@ class AudiobookViewController: ReaderViewController<AudioNavigator>, AudioNaviga
 
         let session = AVAudioSession.sharedInstance()
         try? session.setCategory(.playback, mode: .spokenAudio)
-        try? session.setActive(true)
+        if #available(iOS 27.0, *) {
+            session.activate(options: []) { _, _ in }
+        } else {
+            try? session.setActive(true)
+        }
         navigator.play()
         setupNowPlaying()
         setupCommandCenterControls()

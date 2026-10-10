@@ -91,7 +91,7 @@
       <CommandLineArguments>
       </CommandLineArguments>
       <StoreKitConfigurationFileReference
-         identifier = "../../../PagePilot.storekit">
+         identifier = "../PagePilot.storekit">
       </StoreKitConfigurationFileReference>
    </LaunchAction>
    <ProfileAction

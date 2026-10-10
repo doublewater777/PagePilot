@@ -1,3 +1,4 @@
+import AVFoundation
 import MediaPlayer
 import UIKit
 
@@ -37,6 +38,7 @@ final class VolumeKeyService: NSObject {
     private var volumeSlider: UISlider?
     private var anchorVolume: Float = 0.5
     private var isObserving = false
+    private var audioSessionGeneration = 0
 
     static let volumeKeyEnabledKey = "volume_key_turn_page"
     static let volumeKeyMappingKey = "volume_key_mapping"
@@ -77,17 +79,17 @@ final class VolumeKeyService: NSObject {
 
         let session = AVAudioSession.sharedInstance()
         try? session.setCategory(.playback, mode: .spokenAudio, options: .mixWithOthers)
-        try? session.setActive(true)
         session.addObserver(self, forKeyPath: #keyPath(AVAudioSession.outputVolume), options: .new, context: nil)
         isObserving = true
         anchorVolume = session.outputVolume
+        activateAudioSession(session)
     }
 
     private func teardown() {
         guard isObserving else { return }
         let session = AVAudioSession.sharedInstance()
         session.removeObserver(self, forKeyPath: #keyPath(AVAudioSession.outputVolume))
-        try? session.setActive(false)
+        deactivateAudioSession(session)
         volumeView?.removeFromSuperview()
         volumeView = nil
         volumeSlider = nil
@@ -126,6 +128,40 @@ final class VolumeKeyService: NSObject {
             isOtherAudioPlaying: AVAudioSession.sharedInstance().isOtherAudioPlaying,
             providerBehavior: provider?.volumeKeyBehavior ?? .controlVolume
         )
+    }
+
+    /// iOS 27 treats synchronous `setActive` on the main thread as a hang risk.
+    /// A later `register` can overlap an in-flight `deactivate`, so the completion
+    /// re-activates only when this service is still observing a newer session.
+    private func activateAudioSession(_ session: AVAudioSession) {
+        audioSessionGeneration += 1
+        let generation = audioSessionGeneration
+        if #available(iOS 27.0, *) {
+            session.activate(options: []) { [weak self] _, _ in
+                let volume = session.outputVolume
+                DispatchQueue.main.async {
+                    guard let self, self.audioSessionGeneration == generation else { return }
+                    self.anchorVolume = volume
+                }
+            }
+        } else {
+            try? session.setActive(true)
+            anchorVolume = session.outputVolume
+        }
+    }
+
+    private func deactivateAudioSession(_ session: AVAudioSession) {
+        let generation = audioSessionGeneration
+        if #available(iOS 27.0, *) {
+            session.deactivate(options: []) { [weak self] _, _ in
+                DispatchQueue.main.async {
+                    guard let self, self.isObserving, self.audioSessionGeneration != generation else { return }
+                    self.activateAudioSession(session)
+                }
+            }
+        } else {
+            try? session.setActive(false)
+        }
     }
 
     static var currentVolumeKeyMapping: VolumeKeyMapping {

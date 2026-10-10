@@ -1,7 +1,7 @@
 name: PagePilot
 options:
   bundleIdPrefix: org.readium
-  schemePathPrefix: ../../../
+  schemePathPrefix: ../
 fileGroups:
   - PagePilot.storekit
 packages:

@@ -225,7 +225,11 @@ final class TTSViewModel: ObservableObject, Loggable {
     private func activateAudioSession() {
         let session = AVAudioSession.sharedInstance()
         try? session.setCategory(.playback, mode: .spokenAudio)
-        try? session.setActive(true)
+        if #available(iOS 27.0, *) {
+            session.activate(options: []) { _, _ in }
+        } else {
+            try? session.setActive(true)
+        }
     }
 
     // MARK: - Now Playing
