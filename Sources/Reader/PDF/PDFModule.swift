@@ -31,7 +31,7 @@ final class PDFModule: ReaderFormatModule {
         readium: Readium
     ) async throws -> UIViewController {
         let preferencesStore = makePreferencesStore(books: books)
-        let viewController = try await PDFViewController(
+        let viewController = try PDFViewController(
             publication: publication,
             locator: locator,
             bookId: bookId,
@@ -39,8 +39,7 @@ final class PDFModule: ReaderFormatModule {
             bookmarks: bookmarks,
             highlights: highlights,
             initialPreferences: try await preferencesStore.preferences(for: bookId),
-            preferencesStore: preferencesStore,
-            httpServer: readium.httpServer
+            preferencesStore: preferencesStore
         )
         viewController.moduleDelegate = delegate
         return viewController

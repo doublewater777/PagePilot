@@ -87,8 +87,8 @@ class EPUBViewController: VisualReaderViewController<EPUBNavigatorViewController
                     configurable: navigator,
                     store: preferencesStore
                 ),
-                onClose: { [weak self] in
-                    self?.dismiss(animated: true)
+                onClose: {
+                    self.dismiss(animated: true)
                 }
             )
             let vc = UIHostingController(rootView: userPrefs)

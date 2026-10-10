@@ -375,7 +375,7 @@ final class TTSSettingsModel: ObservableObject {
         if let id = voiceId {
             voice = AVSpeechSynthesisVoice(identifier: id)
         } else {
-            voice = AVSpeechSynthesisVoice(language: Locale.current.languageCode)
+            voice = AVSpeechSynthesisVoice(language: Locale.current.language.languageCode?.identifier)
         }
         guard let v = voice else { return false }
         if #available(iOS 16.0, *) {

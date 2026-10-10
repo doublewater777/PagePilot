@@ -66,7 +66,7 @@ struct SearchView: View {
                         viewModel.selectSearchResultCell(locator: locator, index: index)
                     }
                 }
-                .onChange(of: viewVisible) { newValue in
+                .onChange(of: viewVisible) { _, newValue in
                     if newValue, let lastSelectedIndex = viewModel.selectedIndex {
                         proxy.scrollTo(lastSelectedIndex, anchor: .top)
                     }

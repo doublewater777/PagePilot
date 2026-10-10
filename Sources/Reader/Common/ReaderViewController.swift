@@ -210,6 +210,9 @@ private final class SummaryCardView: UIView {
         layer.shadowOpacity = 0.04
         layer.shadowRadius = 10
         layer.shadowOffset = CGSize(width: 0, height: 4)
+        registerForTraitChanges([UITraitUserInterfaceStyle.self]) { (self: Self, _: UITraitCollection) in
+            self.layer.borderColor = SummaryColors.cardBorder.cgColor
+        }
     }
 
     @available(*, unavailable)
@@ -217,10 +220,6 @@ private final class SummaryCardView: UIView {
         fatalError("init(coder:) has not been implemented")
     }
 
-    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
-        super.traitCollectionDidChange(previousTraitCollection)
-        layer.borderColor = SummaryColors.cardBorder.cgColor
-    }
 }
 
 private final class SummaryActionRowButton: UIButton {
@@ -289,16 +288,14 @@ private final class SummaryActionRowButton: UIButton {
             chevron.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -14),
             chevron.centerYAnchor.constraint(equalTo: centerYAnchor),
         ])
+        registerForTraitChanges([UITraitUserInterfaceStyle.self]) { (self: Self, _: UITraitCollection) in
+            self.layer.borderColor = SummaryColors.cardBorder.cgColor
+        }
     }
 
     @available(*, unavailable)
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
-    }
-
-    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
-        super.traitCollectionDidChange(previousTraitCollection)
-        layer.borderColor = SummaryColors.cardBorder.cgColor
     }
 
     override var isHighlighted: Bool {
@@ -787,7 +784,9 @@ enum ReadingSessionSummaryPresenter {
                 ))
                 summaryViewController?.dismiss(animated: true) { [weak host] in
                     guard let host else { return }
-                    presentInsight(book: nil, from: host)
+                    Task { @MainActor in
+                        presentInsight(book: nil, from: host)
+                    }
                 }
             }
             summaryViewController.onPredictionRequested = { [weak summaryViewController, weak host] in

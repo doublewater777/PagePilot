@@ -185,6 +185,10 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
         #endif
 
         updateNavigationBar(animated: false)
+        registerForTraitChanges([UITraitUserInterfaceStyle.self]) { (self: Self, previous: UITraitCollection) in
+            guard self.traitCollection.hasDifferentColorAppearance(comparedTo: previous) else { return }
+            self.applyChromeAppearance()
+        }
 
         addChild(navigator)
         navigator.view.frame = view.bounds
@@ -657,14 +661,6 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
     private func applyChromeAppearance() {
         view.backgroundColor = .systemBackground
         positionLabel.textColor = .secondaryLabel
-    }
-
-    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
-        super.traitCollectionDidChange(previousTraitCollection)
-        guard traitCollection.hasDifferentColorAppearance(comparedTo: previousTraitCollection) else {
-            return
-        }
-        applyChromeAppearance()
     }
 
     // MARK: - VisualNavigatorDelegate

@@ -114,6 +114,11 @@ class PublicationCollectionViewCell: UICollectionViewCell {
 
         // Configure premium card UI appearance (includes cover wrapping)
         setupCardAppearance()
+        registerForTraitChanges([UITraitUserInterfaceStyle.self]) { (self: Self, previous: UITraitCollection) in
+            if self.traitCollection.hasDifferentColorAppearance(comparedTo: previous) {
+                self.applyDynamicColors()
+            }
+        }
 
         // Dynamically instantiate helper UI components
         setupStatusLabel()
@@ -122,13 +127,6 @@ class PublicationCollectionViewCell: UICollectionViewCell {
 
         // Set dynamic colors for dark mode
         applyDynamicColors()
-    }
-
-    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
-        super.traitCollectionDidChange(previousTraitCollection)
-        if traitCollection.hasDifferentColorAppearance(comparedTo: previousTraitCollection) {
-            applyDynamicColors()
-        }
     }
 
     private func setupStatusLabel() {

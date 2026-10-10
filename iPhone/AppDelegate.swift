@@ -433,8 +433,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
                     weak var sheetController: UIViewController?
                     let wifiView = WiFiTransferView(
                         library: self.app.library.service,
-                        onPublicationImported: { [weak self] book in
-                            guard let self, let bookID = book.id?.rawValue else { return }
+                        onPublicationImported: { book in
+                            guard let bookID = book.id?.rawValue else { return }
                             let publication = OnboardingPublicationPresentation(
                                 bookID: bookID,
                                 title: book.title,
@@ -457,8 +457,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
                     let feedList = OPDSFeedListViewController(
                         feeds: self.app.opdsFeeds,
                         library: self.app.library.service,
-                        onPublicationImported: { [weak self] book in
-                            guard let self, let bookID = book.id?.rawValue else { return }
+                        onPublicationImported: { book in
+                            guard let bookID = book.id?.rawValue else { return }
                             let publication = OnboardingPublicationPresentation(
                                 bookID: bookID,
                                 title: book.title,

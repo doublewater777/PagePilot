@@ -280,7 +280,8 @@ enum MinimalEPUBPackager {
                 )
             }
 
-            for case let fileURL as URL in enumerator {
+            while let item = enumerator.nextObject() {
+                guard let fileURL = item as? URL else { continue }
                 let values = try fileURL.resourceValues(forKeys: resourceKeys)
                 guard values.isRegularFile == true else { continue }
                 let relative = relativePath(of: fileURL, to: sourceURL)

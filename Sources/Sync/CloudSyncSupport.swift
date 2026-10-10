@@ -160,12 +160,10 @@ struct CloudSyncMergePolicy {
 
 extension CKRecord {
     func encodedSystemFields() throws -> Data {
-        let data = NSMutableData()
-        let archiver = NSKeyedArchiver(forWritingWith: data)
-        archiver.requiresSecureCoding = true
+        let archiver = NSKeyedArchiver(requiringSecureCoding: true)
         encodeSystemFields(with: archiver)
         archiver.finishEncoding()
-        return data as Data
+        return archiver.encodedData
     }
 
     static func fromSystemFields(_ data: Data) throws -> CKRecord? {

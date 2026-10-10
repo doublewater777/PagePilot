@@ -284,8 +284,8 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
     }
 
     private func startPolling() {
-        DispatchQueue.main.async {
-            guard self.statusPollTimer == nil else { return }
+        DispatchQueue.main.async { [weak self] in
+            guard let self, self.statusPollTimer == nil else { return }
             self.statusPollTimer = Timer.scheduledTimer(withTimeInterval: 12.0, repeats: true) { [weak self] _ in
                 self?.pollStatus()
             }

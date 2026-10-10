@@ -40,7 +40,7 @@ final class EPUBModule: ReaderFormatModule {
             initialPreferences.theme = isDarkMode ? .dark : .light
         }
 
-        let epubViewController = try await EPUBViewController(
+        let epubViewController = try EPUBViewController(
             publication: publication,
             locator: locator,
             bookId: bookId,

@@ -31,7 +31,7 @@ final class AudiobookModule: ReaderFormatModule {
         readium: Readium
     ) async throws -> UIViewController {
         let preferencesStore = makePreferencesStore(books: books)
-        let viewController = try await AudiobookViewController(
+        let viewController = AudiobookViewController(
             publication: publication,
             locator: locator,
             bookId: bookId,

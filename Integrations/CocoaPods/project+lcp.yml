@@ -1,7 +1,7 @@
 name: PagePilot
 options:
   bundleIdPrefix: org.readium
-  schemePathPrefix: ../
+  schemePathPrefix: ../../
 fileGroups:
   - PagePilot.storekit
 packages:
@@ -13,6 +13,11 @@ packages:
     from: 3.0.1
 schemes:
   PagePilot:
+    preActions:
+      - name: Patch SPM watchOS platforms
+        settingsTarget: PagePilot
+        script: |
+          "${SRCROOT}/scripts/patch-spm-watchos-platforms.sh"
     build:
       targets:
         PagePilot: all
@@ -52,3 +57,10 @@ targets:
       INFOPLIST_FILE: WatchRemote/Info.plist
       PRODUCT_BUNDLE_IDENTIFIER: com.panyang.PagePilot.WatchRemote
       DEVELOPMENT_TEAM: ${RD_DEVELOPMENT_TEAM}
+      CODE_SIGN_STYLE: Manual
+      configs:
+        Debug:
+          CODE_SIGN_IDENTITY: Apple Development
+          PROVISIONING_PROFILE_SPECIFIER: PagePilot Watch Development
+        Release:
+          CODE_SIGN_STYLE: Automatic

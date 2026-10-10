@@ -203,7 +203,7 @@ final class ReadingSessionRepository {
         guard session.durationSeconds > 0 else { return nil }
 
         let id = try await db.write { db in
-            var session = session
+            let session = session
             try session.insert(db)
             return ReadingSession.Id(rawValue: db.lastInsertedRowID)
         }

@@ -264,7 +264,7 @@ final class PagePilotPeerHost {
         lastRequestAt = Date()
         publishState()
         handler(request) { [weak self, weak connection] payload in
-            self?.queue.async {
+            self?.queue.async { [weak self, weak connection] in
                 guard let self, let connection else { return }
                 self.send(PagePilotPeerResponse.success(id: request.id, payload: payload), on: connection)
             }
@@ -357,15 +357,15 @@ final class PagePilotPeerClient {
                 using: PagePilotPeerLinkConfiguration.parameters()
             )
             self.listBrowser = browser
-            browser.stateUpdateHandler = { [weak self, weak browser] state in
-                guard let self, self.listBrowser === browser else { return }
+            browser.stateUpdateHandler = { [weak client = self, weak browser] state in
+                guard let client, client.listBrowser === browser else { return }
                 if case .failed = state {
-                    self.finishListDiscovery(.failure(.unreachable))
+                    client.finishListDiscovery(.failure(.unreachable))
                 }
             }
-            browser.browseResultsChangedHandler = { [weak self, weak browser] results, _ in
-                guard let self, self.listBrowser === browser else { return }
-                self.listTargets.removeAll()
+            browser.browseResultsChangedHandler = { [weak client = self, weak browser] results, _ in
+                guard let client, client.listBrowser === browser else { return }
+                client.listTargets.removeAll()
                 for result in results {
                     guard case let .service(name, _, _, _) = result.endpoint else { continue }
                     var deviceName: String?
@@ -379,14 +379,14 @@ final class PagePilotPeerClient {
                         name: deviceName,
                         bookTitle: bookTitle
                     ) else { continue }
-                    self.listTargets[target.id] = target
-                    self.knownEndpoints[target.id] = result.endpoint
+                    client.listTargets[target.id] = target
+                    client.knownEndpoints[target.id] = result.endpoint
                 }
             }
-            let timeout = DispatchWorkItem { [weak self, weak browser] in
-                guard let self, self.listBrowser === browser else { return }
-                let targets = self.listTargets.values.sorted { $0.name < $1.name }
-                self.finishListDiscovery(.success(targets))
+            let timeout = DispatchWorkItem { [weak client = self, weak browser] in
+                guard let client, client.listBrowser === browser else { return }
+                let targets = client.listTargets.values.sorted { $0.name < $1.name }
+                client.finishListDiscovery(.success(targets))
             }
             self.listTimeout = timeout
             browser.start(queue: self.queue)

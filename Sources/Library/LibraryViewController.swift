@@ -168,6 +168,10 @@ class LibraryViewController: UIViewController, Loggable {
         setupSearchController()
 
         updateLocalizedContent()
+        registerForTraitChanges([UITraitUserInterfaceStyle.self]) { (self: Self, previous: UITraitCollection) in
+            guard self.traitCollection.hasDifferentColorAppearance(comparedTo: previous) else { return }
+            self.deleteToolbar?.layer.borderColor = UIColor.separator.cgColor
+        }
         view.backgroundColor = .systemGroupedBackground
         collectionView.backgroundColor = .systemGroupedBackground
         collectionView.alwaysBounceVertical = true
@@ -400,9 +404,9 @@ class LibraryViewController: UIViewController, Loggable {
                 switch (idx1, idx2) {
                 case let (i1?, i2?):
                     return i1 < i2
-                case (let i1?, nil):
+                case (_?, nil):
                     return true
-                case (nil, let i2?):
+                case (nil, _?):
                     return false
                 case (nil, nil):
                     return b1.created > b2.created
@@ -1343,12 +1347,10 @@ private class EmptyLibraryView: UIView {
         ])
         
         updateAppearance()
-    }
-    
-    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
-        super.traitCollectionDidChange(previousTraitCollection)
-        if traitCollection.hasDifferentColorAppearance(comparedTo: previousTraitCollection) {
-            updateAppearance()
+        registerForTraitChanges([UITraitUserInterfaceStyle.self]) { (self: Self, previous: UITraitCollection) in
+            if self.traitCollection.hasDifferentColorAppearance(comparedTo: previous) {
+                self.updateAppearance()
+            }
         }
     }
     
@@ -1383,15 +1385,6 @@ extension LibraryViewController: UISearchResultsUpdating {
     func updateSearchResults(for searchController: UISearchController) {
         searchText = searchController.searchBar.text ?? ""
         applyFilteringAndReload()
-    }
-}
-
-extension LibraryViewController {
-    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
-        super.traitCollectionDidChange(previousTraitCollection)
-        if traitCollection.hasDifferentColorAppearance(comparedTo: previousTraitCollection) {
-            deleteToolbar?.layer.borderColor = UIColor.separator.cgColor
-        }
     }
 }
 

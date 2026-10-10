@@ -96,8 +96,8 @@ class AudiobookViewController: ReaderViewController<AudioNavigator>, AudioNaviga
                     configurable: navigator,
                     store: preferencesStore
                 ),
-                onClose: { [weak self] in
-                    self?.dismiss(animated: true)
+                onClose: {
+                    self.dismiss(animated: true)
                 }
             )
             let vc = UIHostingController(rootView: userPrefs)
@@ -362,7 +362,7 @@ struct TimeSlider: View {
                 }
             }
         )
-        .onChange(of: time) { newValue in
+        .onChange(of: time) { _, newValue in
             if !isEditing {
                 progress = newValue / duration
             }

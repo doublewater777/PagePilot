@@ -14,8 +14,8 @@ final class ReviewPromptManager {
     private let defaults: UserDefaults
     private let appVersionProvider: () -> String
     private let readingStatsProvider: () -> TimeInterval
-    private let sceneProvider: () -> UIWindowScene?
-    private let reviewRequester: (UIWindowScene) -> Void
+    private let sceneProvider: @MainActor () -> UIWindowScene?
+    private let reviewRequester: @MainActor (UIWindowScene) -> Void
     private var pendingReviewVersion: String?
 
     init(
@@ -26,12 +26,12 @@ final class ReviewPromptManager {
         readingStatsProvider: @escaping () -> TimeInterval = {
             TimeInterval(ReadingStatsStore.shared.snapshot(for: .summary).totalSeconds)
         },
-        sceneProvider: @escaping () -> UIWindowScene? = {
+        sceneProvider: @escaping @MainActor () -> UIWindowScene? = {
             UIApplication.shared.connectedScenes.first(
                 where: { $0.activationState == .foregroundActive }
             ) as? UIWindowScene
         },
-        reviewRequester: @escaping (UIWindowScene) -> Void = {
+        reviewRequester: @escaping @MainActor (UIWindowScene) -> Void = {
             SKStoreReviewController.requestReview(in: $0)
         }
     ) {

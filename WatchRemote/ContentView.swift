@@ -70,7 +70,7 @@ struct ContentView: View {
             #endif
             connectivityManager.refreshConnectionStatus()
         }
-        .onChange(of: crownValue) { newValue in
+        .onChange(of: crownValue) { _, newValue in
             handleCrownRotation(newValue)
         }
     }

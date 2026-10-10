@@ -4,7 +4,7 @@ import UIKit
 import WebKit
 
 @MainActor
-final class ReaderTextSelectionMenuPresenter: NSObject, UIEditMenuInteractionDelegate {
+final class ReaderTextSelectionMenuPresenter: NSObject, @preconcurrency UIEditMenuInteractionDelegate {
     private weak var hostView: UIView?
     private weak var viewController: EPUBViewController?
     private var interaction: UIEditMenuInteraction?
@@ -23,7 +23,7 @@ final class ReaderTextSelectionMenuPresenter: NSObject, UIEditMenuInteractionDel
     }
 
     func present(selection: Selection) {
-        guard let hostView, let frame = selection.frame else { return }
+        guard hostView != nil, let frame = selection.frame else { return }
 
         let sourcePoint = CGPoint(x: frame.midX, y: frame.minY)
         let configuration = UIEditMenuConfiguration(identifier: nil, sourcePoint: sourcePoint)

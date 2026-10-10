@@ -515,7 +515,6 @@ final class CloudSyncStore {
 
     private func applyProgress(_ record: CKRecord) async throws -> Bool {
         guard let bookSyncID = record["bookSyncID"] as? String else { return false }
-        let syncID = record.recordID.recordName
         guard try await hasBook(syncID: bookSyncID) else {
             try await deferRemoteRecord(record)
             return false
@@ -714,7 +713,7 @@ final class CloudSyncStore {
                 return true
             }
 
-            var session = ReadingSession(
+            let session = ReadingSession(
                 sessionID: sessionID,
                 bookId: bookID,
                 startedAt: startedAt,
