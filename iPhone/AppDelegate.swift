@@ -32,6 +32,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         }
         #endif
         AppAppearancePreferences.configureLocalization()
+        RevenueCatConfiguration.configure()
         configureAudioSession()
         WatchPageTurnSettings.migrateDefaultTargetIfNeeded()
         do {

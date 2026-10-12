@@ -1,1 +1,2 @@
 ICLOUD_CONTAINER_ENVIRONMENT = Production
+#include "RevenueCat.xcconfig"

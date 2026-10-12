@@ -5,6 +5,9 @@ options:
 fileGroups:
   - PagePilot.storekit
 packages:
+  RevenueCat:
+    url: https://github.com/RevenueCat/purchases-ios-spm.git
+    exactVersion: 5.94.0
   Readium:
     url: https://github.com/readium/swift-toolkit.git
     VERSION
@@ -55,6 +58,7 @@ targets:
       - path: Shared
       - path: LiveActivityShared
     dependencies:
+      - package: RevenueCat
       - target: PagePilotWatch
       - target: PagePilotLiveActivity
       - package: R2LCPClient
@@ -78,6 +82,9 @@ targets:
       - package: Ink
       - package: ZIPFoundation
         product: ReadiumZIPFoundation
+    configFiles:
+      Debug: Integrations/SPM/CloudKit.Debug.xcconfig
+      Release: Integrations/SPM/CloudKit.Release.xcconfig
     settings:
       PRODUCT_BUNDLE_IDENTIFIER: com.panyang.PagePilot
       OTHER_SWIFT_FLAGS: -DLCP

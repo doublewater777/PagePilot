@@ -7,6 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		ACF000000000000000000001 /* RevenueCat in Frameworks */ = {isa = PBXBuildFile; productRef = ACF000000000000000000002 /* RevenueCat */; };
+		ACF000000000000000000003 /* ProEntitlementSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACF000000000000000000004 /* ProEntitlementSource.swift */; };
+		ACF000000000000000000005 /* ProStoreProduct.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACF000000000000000000006 /* ProStoreProduct.swift */; };
+		ACF000000000000000000007 /* ProPurchaseManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACF000000000000000000008 /* ProPurchaseManagerTests.swift */; };
 		01850820553A414A725E00A3 /* CloudSyncSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8529D746D38C6AB88946347D /* CloudSyncSupport.swift */; };
 		028A2542EBF1344183C10DF9 /* ContinueReadingSelectorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F7B3BBBC229C74F04221454 /* ContinueReadingSelectorTests.swift */; };
 		035A0D3C137D9D8C57BAB97D /* CloudSyncSupportTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23DFDAFADB283187AF23E49F /* CloudSyncSupportTests.swift */; };
@@ -266,6 +270,9 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		ACF000000000000000000004 /* ProEntitlementSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProEntitlementSource.swift; sourceTree = "<group>"; };
+		ACF000000000000000000006 /* ProStoreProduct.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProStoreProduct.swift; sourceTree = "<group>"; };
+		ACF000000000000000000008 /* ProPurchaseManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProPurchaseManagerTests.swift; sourceTree = "<group>"; };
 		00154042A71D67CF079A5975 /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = de; path = de.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		00B5FAB4697C0E879381F2BF /* QuickPositionJumpSessionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickPositionJumpSessionTests.swift; sourceTree = "<group>"; };
 		00C859D3B6781923356D08BC /* Readium.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Readium.swift; sourceTree = "<group>"; };
@@ -498,6 +505,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				ACF000000000000000000001 /* RevenueCat in Frameworks */,
 				0770E830103BBA269C86E6A6 /* ReadiumShared in Frameworks */,
 				BD0DE9C706B44EB9C9E1643D /* ReadiumStreamer in Frameworks */,
 				B2AC15D1430277BCF66B41A3 /* ReadiumNavigator in Frameworks */,
@@ -764,6 +772,7 @@
 				2EB123D9C6B0F4750155D106 /* OrphanedFilePolicyTests.swift */,
 				5059FC4CA8E99034407397E6 /* PagePilotPeerLinkTests.swift */,
 				564A1C630A9418621236167B /* PaywallSubscriptionCopyTests.swift */,
+				ACF000000000000000000008 /* ProPurchaseManagerTests.swift */,
 				ABEA8FC1756AAC1A0B4FA793 /* QuickPositionJumpPolicyTests.swift */,
 				00B5FAB4697C0E879381F2BF /* QuickPositionJumpSessionTests.swift */,
 				F8CB48566A6E5BE799D3C80A /* ReaderEditingActionsTests.swift */,
@@ -840,6 +849,8 @@
 				BCAC8F71F518B1AFEE314B4D /* Analytics.swift */,
 				F557F988BEA53B78DC59BEA6 /* NotesQuota.swift */,
 				31EE66AC5EDD18FEF3E2DBD7 /* ProPurchaseManager.swift */,
+				ACF000000000000000000004 /* ProEntitlementSource.swift */,
+				ACF000000000000000000006 /* ProStoreProduct.swift */,
 			);
 			path = Store;
 			sourceTree = "<group>";
@@ -1066,6 +1077,7 @@
 				21A5AE40384154638C752A1A /* SwiftSoup */,
 				BE1E2AF6B33E0B0D2DE30E40 /* Ink */,
 				0ECB189D1FB820E44C0A76FC /* ReadiumZIPFoundation */,
+				ACF000000000000000000002 /* RevenueCat */,
 			);
 			productName = PagePilot;
 			productReference = 3452D6003A30E50BFD72E39F /* PagePilot.app */;
@@ -1145,6 +1157,7 @@
 			mainGroup = FCE066E78280B33B8B1C6239;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
+				ACF000000000000000000009 /* XCRemoteSwiftPackageReference "purchases-ios-spm" */,
 				FE59F0C18677C77BC4E875EB /* XCRemoteSwiftPackageReference "GRDB.swift" */,
 				1829B11061C666F8A83E18BF /* XCRemoteSwiftPackageReference "Ink" */,
 				DADB9F880B25F1BABE369EF9 /* XCRemoteSwiftPackageReference "Kingfisher" */,
@@ -1274,6 +1287,8 @@
 				E3DB191DE6F9BFAE0ED6F7A2 /* PaywallSubscriptionCopy.swift in Sources */,
 				7A8C7F3E8B3E534D9BD642D6 /* PaywallView.swift in Sources */,
 				9D0C50EC4EF594B96870670B /* ProPurchaseManager.swift in Sources */,
+				ACF000000000000000000003 /* ProEntitlementSource.swift in Sources */,
+				ACF000000000000000000005 /* ProStoreProduct.swift in Sources */,
 				CEC59B3405B6C00D2093D75A /* Publication.swift in Sources */,
 				42CBB58D1961BEE54CCBFB67 /* PublicationCollectionViewCell.swift in Sources */,
 				6923E4F8BF42DC9055831948 /* PublicationMenuViewController.swift in Sources */,
@@ -1373,6 +1388,7 @@
 				60A28F8FE505117EFE788FA3 /* OrphanedFilePolicyTests.swift in Sources */,
 				24764F09E1163C2B05C97E11 /* PagePilotPeerLinkTests.swift in Sources */,
 				8F82458161412F42DFC03785 /* PaywallSubscriptionCopyTests.swift in Sources */,
+				ACF000000000000000000007 /* ProPurchaseManagerTests.swift in Sources */,
 				F043BE516A43D554709BD551 /* QuickPositionJumpPolicyTests.swift in Sources */,
 				8EFAB7D91CF2081BE63FB5FF /* QuickPositionJumpSessionTests.swift in Sources */,
 				0BB40644CC5EE846FE2F9E3F /* ReaderEditingActionsTests.swift in Sources */,
@@ -1887,6 +1903,11 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		ACF000000000000000000009 /* XCRemoteSwiftPackageReference "purchases-ios-spm" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/RevenueCat/purchases-ios-spm.git";
+			requirement = {kind = exactVersion; version = 5.94.0; };
+		};
 		0DE0538F1D6701C274268336 /* XCRemoteSwiftPackageReference "SwiftSoup" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/scinfu/SwiftSoup.git";
@@ -1946,6 +1967,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		ACF000000000000000000002 /* RevenueCat */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = ACF000000000000000000009 /* XCRemoteSwiftPackageReference "purchases-ios-spm" */;
+			productName = RevenueCat;
+		};
 		0ECB189D1FB820E44C0A76FC /* ReadiumZIPFoundation */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 61239C155DC69928783594E4 /* XCRemoteSwiftPackageReference "ZIPFoundation" */;

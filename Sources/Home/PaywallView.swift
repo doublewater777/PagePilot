@@ -5,7 +5,6 @@
 //
 
 import SafariServices
-import StoreKit
 import SwiftUI
 
 enum PaywallContext {
@@ -22,7 +21,7 @@ struct PaywallView: View {
     @State private var purchaseError: Error?
     @State private var showError = false
     @State private var showSuccess = false
-    @State private var products: [Product] = ProPurchaseManager.shared.products
+    @State private var products: [ProStoreProduct] = ProPurchaseManager.shared.products
     @State private var selectedProductID: String = ""
     @State private var isLoadingProducts = false
     @State private var productsLoadFailed = false
@@ -40,7 +39,7 @@ struct PaywallView: View {
         self.analyticsSource = analyticsSource
     }
 
-    private var selectedProduct: Product? {
+    private var selectedProduct: ProStoreProduct? {
         products.first(where: { $0.id == selectedProductID })
     }
 
@@ -276,7 +275,7 @@ struct PaywallView: View {
             } else {
                 // Fixed display order: yearly -> monthly -> lifetime
                 let ordered = products.sorted { a, b in
-                    let rank: (Product) -> Int = { p in
+                    let rank: (ProStoreProduct) -> Int = { p in
                         if p.id.contains("yearly") { return 0 }
                         if p.id.contains("monthly") { return 1 }
                         return 2
@@ -291,7 +290,7 @@ struct PaywallView: View {
     }
 
     @ViewBuilder
-    private func optionCard(for product: Product) -> some View {
+    private func optionCard(for product: ProStoreProduct) -> some View {
         let isSelected = selectedProductID == product.id
         let isMonthly = product.id.contains("monthly")
         let isYearly = product.id.contains("yearly")
@@ -585,14 +584,14 @@ struct PaywallView: View {
         .padding(.top, 0)
     }
 
-    private func displayPrice(for product: Product) -> String {
+    private func displayPrice(for product: ProStoreProduct) -> String {
         product.displayPrice
     }
 
-    private func localizedMonthlyPrice(for product: Product) -> String {
+    private func localizedMonthlyPrice(for product: ProStoreProduct) -> String {
         if product.id.contains("yearly") {
             let monthlyPrice = product.price / Decimal(12)
-            return monthlyPrice.formatted(product.priceFormatStyle)
+            return product.formattedPrice(monthlyPrice)
         } else if product.id.contains("monthly") {
             return product.displayPrice
         } else {
@@ -600,7 +599,7 @@ struct PaywallView: View {
         }
     }
 
-    private func yearlyPriceSubtext(for yearlyProduct: Product) -> String {
+    private func yearlyPriceSubtext(for yearlyProduct: ProStoreProduct) -> String {
         let formattedMonthly = localizedMonthlyPrice(for: yearlyProduct)
         guard
             let monthlyProduct = products.first(where: { $0.id == ProPurchaseManager.monthlyProductID }),
@@ -636,7 +635,7 @@ struct PaywallView: View {
                 try await Task.sleep(nanoseconds: 1_500_000_000)
                 dismiss()
             } catch let error as ProPurchaseError where error == .userCancelled {
-                Analytics.shared.log(.purchaseCancelled)
+                // Cancellation has already been recorded by the purchase manager.
             } catch let error as ProPurchaseError {
                 Analytics.shared.log(.purchaseFailed(error: String(describing: error)))
                 purchaseError = error
@@ -650,39 +649,21 @@ struct PaywallView: View {
         }
     }
 
-    private func isTrialEligible(_ product: Product) -> Bool {
-        freeTrialOffer(for: product) != nil && (trialEligibilityByProductID[product.id] ?? false)
+    private func isTrialEligible(_ product: ProStoreProduct) -> Bool {
+        product.trialPeriod != nil && (trialEligibilityByProductID[product.id] ?? false)
     }
 
     @MainActor
     private func refreshTrialEligibility() async {
-        var eligibility: [String: Bool] = [:]
-        for product in products {
-            if let subscription = product.subscription, freeTrialOffer(for: product) != nil {
-                eligibility[product.id] = await subscription.isEligibleForIntroOffer
-            } else {
-                eligibility[product.id] = false
-            }
-        }
-        trialEligibilityByProductID = eligibility
+        trialEligibilityByProductID = await ProPurchaseManager.shared.trialEligibility(for: products)
     }
 
-    private func freeTrialOffer(for product: Product) -> Product.SubscriptionOffer? {
-        guard let offer = product.subscription?.introductoryOffer, offer.paymentMode == .freeTrial else {
-            return nil
-        }
-        return offer
+    private func trialPeriod(for product: ProStoreProduct) -> PaywallTrialPeriod? {
+        product.trialPeriod
     }
 
-    private func trialPeriod(for product: Product) -> PaywallTrialPeriod? {
-        guard let offer = freeTrialOffer(for: product),
-              let unit = PaywallTrialPeriod.Unit(storeKitUnit: offer.period.unit) else { return nil }
-        return PaywallTrialPeriod(value: offer.period.value, unit: unit, periodCount: offer.periodCount)
-    }
-
-    private func billingPeriod(for product: Product) -> PaywallBillingPeriod? {
-        guard let period = product.subscription?.subscriptionPeriod else { return nil }
-        return PaywallBillingPeriod(storeKitPeriod: period)
+    private func billingPeriod(for product: ProStoreProduct) -> PaywallBillingPeriod? {
+        product.billingPeriod
     }
 
     @MainActor

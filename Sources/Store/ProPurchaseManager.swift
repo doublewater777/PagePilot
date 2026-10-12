@@ -4,8 +4,9 @@
 //  available in the top-level LICENSE file of the project.
 //
 
+import Combine
 import Foundation
-import StoreKit
+import UIKit
 
 enum ProPurchaseError: Error, LocalizedError {
     case productNotFound
@@ -37,18 +38,21 @@ enum ProPurchaseError: Error, LocalizedError {
 }
 
 final class ProPurchaseManager: ObservableObject {
-    static let shared = ProPurchaseManager()
+    static let shared = ProPurchaseManager(source: RevenueCatEntitlementSource())
 
     static let monthlyProductID = "com.panyang.PagePilot.pro.monthly"
     static let yearlyProductID = "com.panyang.PagePilot.pro.yearly"
     static let lifetimeProductID = "com.panyang.PagePilot.pro.lifetime"
 
-    private let defaults = UserDefaults.standard
+    private let defaults: UserDefaults
+    private let source: ProEntitlementSource
+    private let accessDidChange: @MainActor (Bool) -> Void
     private let proKey = "entitlements_isPro"
+    static let migrationKey = "revenuecat_synced_v1"
 
-    private var updateListenerTask: Task<Void, Never>?
     private var foregroundObserver: NSObjectProtocol?
-    private(set) var products: [Product] = []
+    private(set) var products: [ProStoreProduct] = []
+    @MainActor private var entitlementRefreshTask: Task<Bool, Never>?
 
     // MARK: - Access
 
@@ -59,26 +63,44 @@ final class ProPurchaseManager: ObservableObject {
 
     // MARK: - Init
 
-    private init() {
-        updateListenerTask = listenForTransactions()
-        setupForegroundObservation()
-
-        // A returning Pro user may launch before StoreKit finishes its network
-        // refresh (or while offline). Use the cached entitlement immediately so
-        // automatic iPad relay discovery/server startup is not delayed by the
-        // removed Page Turn Device setting.
-        if hasProAccess {
-            Task { @MainActor in
+    init(
+        source: ProEntitlementSource,
+        defaults: UserDefaults = .standard,
+        automaticallyStart: Bool = true,
+        accessDidChange: @escaping @MainActor (Bool) -> Void = { hasAccess in
+            if hasAccess {
                 WatchPageTurnService.shared.enableIPadRelay()
                 WatchPageTurnService.shared.prepareIPadRelay()
+            } else {
+                WatchPageTurnService.shared.disableIPadRelay()
+                WatchPageTurnService.shared.stopIPadRelayDiscovery()
+            }
+        }
+    ) {
+        self.source = source
+        self.defaults = defaults
+        self.accessDidChange = accessDidChange
+        guard automaticallyStart else { return }
+        source.startObserving { [weak self] hasPro in
+            guard let self, self.defaults.bool(forKey: Self.migrationKey) else { return }
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                await self.updateProAccess(hasPro)
+            }
+        }
+        setupForegroundObservation()
+
+        // Cached access keeps Pro available while RevenueCat refreshes or offline.
+        if hasProAccess {
+            Task { @MainActor in
+                accessDidChange(true)
             }
         }
 
-        Task { await loadProducts() }
+        Task { @MainActor in await loadProducts() }
     }
 
     deinit {
-        updateListenerTask?.cancel()
         if let observer = foregroundObserver {
             NotificationCenter.default.removeObserver(observer)
         }
@@ -87,76 +109,64 @@ final class ProPurchaseManager: ObservableObject {
     // MARK: - Products Loading
 
     @discardableResult
-    func loadProducts() async -> [Product] {
-        let productIDs = [Self.monthlyProductID, Self.yearlyProductID, Self.lifetimeProductID]
+    @MainActor
+    func loadProducts() async -> [ProStoreProduct] {
         do {
-            var fetchedProducts = try await Product.products(for: productIDs)
-            if fetchedProducts.isEmpty {
-                fetchedProducts = try await loadProductsIndividually(productIDs)
-            }
+            let fetchedProducts = try await source.loadProducts()
             let orderedIds = [Self.monthlyProductID, Self.yearlyProductID, Self.lifetimeProductID]
             self.products = fetchedProducts.sorted { p1, p2 in
                 let idx1 = orderedIds.firstIndex(of: p1.id) ?? 99
                 let idx2 = orderedIds.firstIndex(of: p2.id) ?? 99
                 return idx1 < idx2
             }
-            if self.products.isEmpty {
-                print("ProPurchaseManager: Product.products(for:) returned empty. bundleID=\(Bundle.main.bundleIdentifier ?? "unknown"), appStoreReceiptURL=\(Bundle.main.appStoreReceiptURL?.absoluteString ?? "nil"), requestedIDs=\(productIDs)")
-            } else {
-                print("ProPurchaseManager: loaded \(self.products.count) product(s): \(self.products.map { $0.id })")
-            }
+            print("ProPurchaseManager: loaded \(products.count) product(s): \(products.map { $0.id })")
         } catch {
-            print("ProPurchaseManager: Failed to load products: \(error), bundleID=\(Bundle.main.bundleIdentifier ?? "unknown"), requestedIDs=\(productIDs)")
+            print("ProPurchaseManager: Failed to load products: \(error)")
         }
         return products
     }
 
     // MARK: - Purchase
 
-    private func loadProductsIndividually(_ productIDs: [String]) async throws -> [Product] {
-        var fetchedProducts: [Product] = []
-        for productID in productIDs {
-            let products = try await Product.products(for: [productID])
-            if products.isEmpty {
-                print("ProPurchaseManager: no product returned for \(productID)")
-            }
-            fetchedProducts.append(contentsOf: products)
-        }
-        return fetchedProducts
+    func trialEligibility(for products: [ProStoreProduct]) async -> [String: Bool] {
+        await source.trialEligibility(for: products)
     }
 
-    func purchase(_ product: Product) async throws {
+    @MainActor
+    func purchase(_ product: ProStoreProduct) async throws {
+        guard !isProcessingPurchase else { throw ProPurchaseError.pending }
+        isProcessingPurchase = true
+        defer { isProcessingPurchase = false }
         Analytics.shared.log(.purchaseStarted)
-        let result = try await product.purchase()
-
-        switch result {
-        case .success(let verification):
-            let transaction = try checkVerified(verification)
-            await transaction.finish()
-            await syncCurrentEntitlements()
+        do {
+            let hasPro = try await source.purchase(product)
+            guard hasPro else { throw ProPurchaseError.verificationFailed }
+            defaults.set(true, forKey: Self.migrationKey)
+            await updateProAccess(hasPro)
             Analytics.shared.log(.purchaseSucceeded)
-
-        case .userCancelled:
+        } catch ProPurchaseError.userCancelled {
             Analytics.shared.log(.purchaseCancelled)
             throw ProPurchaseError.userCancelled
-
-        case .pending:
+        } catch ProPurchaseError.pending {
             Analytics.shared.log(.purchasePending)
             throw ProPurchaseError.pending
-
-        @unknown default:
-            Analytics.shared.log(.purchaseFailed(error: "unknown"))
-            throw ProPurchaseError.purchaseFailed
         }
     }
+
+    @MainActor private var isProcessingPurchase = false
 
     // MARK: - Restore
 
     @discardableResult
+    @MainActor
     func restorePurchases() async throws -> Bool {
+        guard !isProcessingPurchase else { throw ProPurchaseError.pending }
+        isProcessingPurchase = true
+        defer { isProcessingPurchase = false }
         do {
-            try await AppStore.sync()
-            let hasPro = await syncCurrentEntitlements()
+            let hasPro = try await source.restorePurchases()
+            defaults.set(true, forKey: Self.migrationKey)
+            await updateProAccess(hasPro)
             if hasPro {
                 Analytics.shared.log(.purchaseRestored)
             }
@@ -169,6 +179,7 @@ final class ProPurchaseManager: ObservableObject {
 
     // MARK: - Verification
 
+    @MainActor
     func verifyCurrentEntitlements() async {
         await syncCurrentEntitlements()
     }
@@ -189,95 +200,56 @@ final class ProPurchaseManager: ObservableObject {
 
     // MARK: - Helpers
 
-    private func listenForTransactions() -> Task<Void, Never> {
-        Task.detached(priority: .background) { [weak self] in
-            for await result in Transaction.updates {
-                guard let self = self else { return }
-                do {
-                    let transaction = try self.checkVerified(result)
-                    if Self.proProductIDs.contains(transaction.productID) {
-                        await self.syncCurrentEntitlements()
-                    }
-                    await transaction.finish()
-                } catch {
-                    print("Transaction update failed: \(error)")
-                }
-            }
-        }
-    }
-
-    private func checkVerified<T>(_ result: VerificationResult<T>) throws -> T {
-        switch result {
-        case .unverified(_, let error):
-            throw error
-        case .verified(let safe):
-            return safe
-        }
-    }
-
     @discardableResult
+    @MainActor
     private func syncCurrentEntitlements() async -> Bool {
-        var hasPro = false
-        do {
-            for await result in Transaction.currentEntitlements {
-                let transaction = try checkVerified(result)
-                guard Self.proProductIDs.contains(transaction.productID) else {
-                    continue
+        if let entitlementRefreshTask { return await entitlementRefreshTask.value }
+        let task = Task { @MainActor in
+            do {
+                let hasPro: Bool
+                if defaults.bool(forKey: Self.migrationKey) {
+                    hasPro = try await source.currentEntitlement()
+                } else {
+                    hasPro = try await source.syncPurchases()
+                    defaults.set(true, forKey: Self.migrationKey)
                 }
-
-                hasPro = true
-                break
+                await updateProAccess(hasPro)
+                return hasProAccess
+            } catch {
+                print("Entitlement sync failed (keeping current Pro state \(hasProAccess)): \(error)")
+                // DEBUG override must work even when the backend is unreachable.
+                if debugProEnabled { await updateProAccess(true) }
+                return hasProAccess
             }
-        } catch {
-            // Do not wipe a previously granted Pro flag on StoreKit failures —
-            // that would silently disable iPad Watch page turn and other Pro gates.
-            print("Entitlement sync failed (keeping current Pro state \(hasProAccess)): \(error)")
-            return hasProAccess
         }
+        entitlementRefreshTask = task
+        let result = await task.value
+        entitlementRefreshTask = nil
+        return result
+    }
 
+    private var debugProEnabled: Bool {
         #if DEBUG
-        // Simulators and Xcode device runs have no App Store purchase; this
-        // keeps Pro on so automated iPad relay tests behave deterministically.
-        // Also read from stored defaults, so a cold launch by the Watch (which
-        // passes no launch arguments) keeps it: `defaults write <bundle> PagePilotDebugPro -bool YES`.
-        if ProcessInfo.processInfo.arguments.contains("-PagePilotDebugPro")
-            || defaults.bool(forKey: "PagePilotDebugPro") {
-            hasPro = true
-        }
+        return ProcessInfo.processInfo.arguments.contains("-PagePilotDebugPro")
+            || defaults.bool(forKey: "PagePilotDebugPro")
+        #else
+        return false
         #endif
-
-        let previous = hasProAccess
-        await updateProAccess(hasPro)
-        if hasPro, !previous {
-            Analytics.shared.log(.proAccessGranted)
-        }
-        return hasPro
     }
 
     @MainActor
     private func updateProAccess(_ hasAccess: Bool) async {
+        let hasAccess = hasAccess || debugProEnabled
         let previous = defaults.bool(forKey: proKey)
         defaults.set(hasAccess, forKey: proKey)
         objectWillChange.send()
         if previous != hasAccess {
             NotificationCenter.default.post(name: .proAccessDidChange, object: hasAccess)
+            if hasAccess { Analytics.shared.log(.proAccessGranted) }
         }
 
-        // Automatic Watch routing no longer has a selected iPhone/iPad target.
-        // Re-assert relay readiness every time StoreKit confirms Pro so a
-        // returning Pro user does not depend on the removed controlTarget flag,
-        // and a foreground entitlement refresh repairs stale Bonjour state.
-        if hasAccess {
-            WatchPageTurnService.shared.enableIPadRelay()
-            WatchPageTurnService.shared.prepareIPadRelay()
-        } else {
-            // Revoke both halves of the automatic relay lifecycle. iPad stops
-            // advertising its server; iPhone stops Bonjour discovery and drops
-            // cached/pending endpoints so an in-flight discovery cannot send a
-            // request after entitlement has been revoked.
-            WatchPageTurnService.shared.disableIPadRelay()
-            WatchPageTurnService.shared.stopIPadRelayDiscovery()
-        }
+        // Re-assert relay readiness when RevenueCat confirms Pro.
+        accessDidChange(hasAccess)
     }
 }
 

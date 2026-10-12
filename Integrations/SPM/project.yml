@@ -5,6 +5,9 @@ options:
 fileGroups:
   - PagePilot.storekit
 packages:
+  RevenueCat:
+    url: https://github.com/RevenueCat/purchases-ios-spm.git
+    exactVersion: 5.94.0
   Readium:
     url: https://github.com/readium/swift-toolkit.git
     PACKAGE_VERSION
@@ -57,6 +60,7 @@ targets:
       - path: Shared
       - path: LiveActivityShared
     dependencies:
+      - package: RevenueCat
       - target: PagePilotWatch
       - target: PagePilotLiveActivity
       - package: Readium
