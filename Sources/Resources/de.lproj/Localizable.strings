@@ -51,7 +51,7 @@
 "onboarding_ipad_handoff_subtitle" = "Ihr iPhone leitet die Seitenwechsel der Apple Watch an ein iPad in der Nähe weiter.";
 "onboarding_ipad_handoff_step1" = "Öffne PagePilot auf dem iPad und lass WLAN eingeschaltet (kein gemeinsames Netzwerk nötig)";
 "onboarding_ipad_handoff_step2" = "Importieren oder empfangen Sie das Buch, das Sie lesen möchten";
-"onboarding_ipad_handoff_step3" = "Öffne das Buch auf dem iPad und wähle es dann auf dem iPhone unter Ich → Apple Watch → iPad in der Nähe auswählen";
+"onboarding_ipad_handoff_step3" = "Öffne das Buch auf dem iPad und wähle es dann auf dem iPhone unter Ich → Umblättern mit der Watch → iPad in der Nähe auswählen";
 "onboarding_handoff_done" = "Fertig";
 "paywall_ipad_watch_title" = "Auf dem iPad lesen. Mit der Apple Watch umblättern.";
 "paywall_ipad_watch_subtitle" = "Schalten Sie die iPhone-Weiterleitung frei, damit Watch-Befehle einen iPad-Reader in der Nähe erreichen.";
@@ -764,7 +764,6 @@
 "tts_quality_default" = "Standard";
 
 /* MARK: Watch Settings */
-"settings_watch_section" = "Apple Watch";
 "settings_watch_page_turn" = "Einstellungen zum Umblättern";
 "watch_settings_title" = "Umblättern mit der Watch";
 "watch_connection_status" = "Apple Watch";
@@ -817,43 +816,6 @@
 "watch_setup_step3_title" = "Buch öffnen und umblättern";
 "watch_setup_step3_body" = "Öffnen Sie ein Buch auf dem ausgewählten Gerät, öffnen Sie PagePilot auf der Watch und tippen oder drehen Sie anschließend die Digital Crown.";
 "watch_setup_done_button" = "Loslegen";
-"settings_ipad_watch_status" = "Verbindung zum Umblättern mit der Watch";
-"ipad_watch_status_title" = "Verbindung zum Umblättern mit der Watch";
-"ipad_watch_status_refresh" = "Aktualisieren";
-"ipad_watch_summary_probing" = "Verbindung wird getestet …";
-"ipad_watch_summary_probing_sub" = "Der Dienst dieses iPads wird geprüft; anschließend wird auf ein Signal vom iPhone gewartet.";
-"ipad_watch_summary_ready" = "Test bestanden";
-"ipad_watch_summary_ready_sub" = "Der lokale Dienst funktioniert und das iPhone hat dieses iPad erreicht. Öffnen Sie ein Buch, wenn Sie umblättern möchten.";
-"ipad_watch_summary_no_wifi" = "Noch nicht mit WLAN verbunden";
-"ipad_watch_summary_no_wifi_sub" = "Verbinden Sie dieses iPad mit demselben WLAN wie Ihr iPhone.";
-"ipad_watch_summary_service_fail" = "Lokaler Dienst fehlgeschlagen";
-"ipad_watch_summary_service_fail_sub" = "Dieses iPad ist noch nicht bereit, Seitenwechsel zu empfangen. Tippen Sie unten auf „Erneut testen“.";
-"ipad_watch_summary_waiting_phone" = "Noch kein iPhone-Signal";
-"ipad_watch_summary_waiting_phone_sub" = "Öffnen Sie auf dem iPhone Ich → Apple Watch → iPad in der Nähe auswählen. Wählen Sie dieses iPad und lassen Sie PagePilot geöffnet. Tippen Sie dann hier auf „Erneut testen“.";
-"ipad_watch_summary_almost" = "Fast geschafft";
-"ipad_watch_summary_almost_sub" = "Prüfen Sie die Liste unten.";
-"ipad_watch_checklist_header" = "Checkliste";
-"ipad_watch_checklist_footer" = "„iPhone-Test“ erreicht dieses iPad über ein gemeinsames WLAN oder direkt per Peer-to-Peer-WLAN. Beim Öffnen dieser Seite startet automatisch ein Test.";
-"ipad_watch_check_wifi" = "WLAN";
-"ipad_watch_check_wifi_ok" = "Verbunden";
-"ipad_watch_check_wifi_bad" = "Nicht verbunden – WLAN einschalten";
-"ipad_watch_check_ready" = "Test des lokalen Dienstes";
-"ipad_watch_check_ready_testing" = "Testsignal wird an dieses iPad gesendet …";
-"ipad_watch_check_ready_ok" = "Bestanden – bereit, Seitenwechsel zu empfangen";
-"ipad_watch_check_ready_bad" = "Fehlgeschlagen – erneut testen oder App neu starten";
-"ipad_watch_check_phone" = "iPhone-Test";
-"ipad_watch_check_phone_testing" = "Warten auf das iPhone … (etwa 10 Sekunden)";
-"ipad_watch_check_phone_ok" = "Testbesuch vom iPhone empfangen";
-"ipad_watch_check_phone_bad" = "Diesmal kein Besuch vom iPhone";
-"ipad_watch_check_phone_diff_wifi" = "Besuch empfangen, aber möglicherweise nicht aus demselben WLAN";
-"ipad_watch_probe_button" = "Erneut testen";
-"ipad_watch_probe_running" = "Wird getestet …";
-"ipad_watch_next_header" = "Nächste Schritte";
-"ipad_watch_next_wifi" = "Treten Sie demselben WLAN wie Ihr iPhone bei.";
-"ipad_watch_next_restart" = "Tippen Sie auf „Erneut testen“. Wenn der Test weiterhin fehlschlägt, beenden Sie PagePilot und öffnen Sie die App erneut.";
-"ipad_watch_next_phone" = "Auf dem iPhone: Ich → Apple Watch → iPad in der Nähe auswählen → dieses iPad auswählen. Lassen Sie PagePilot geöffnet und tippen Sie hier auf „Erneut testen“. Dasselbe WLAN-Netz ist nicht erforderlich.";
-"ipad_watch_how_header" = "Funktionsweise";
-"ipad_watch_how_body" = "Deine Watch spricht mit dem iPhone, und das iPhone hält eine direkte Verbindung zum gewählten iPad. Es nutzt ein gemeinsames WLAN, falls vorhanden, sonst Peer-to-Peer-WLAN – lass WLAN also eingeschaltet. Diese Seite prüft die Verbindung und wartet auf dein iPhone.";
 
 /* MARK: TXT Import */
 "txt_error_cannot_read" = "Die Textdatei kann nicht gelesen werden.";
@@ -1030,6 +992,35 @@
 "nearby_ipad_pro_required" = "Zum Verbinden eines iPad ist PagePilot Pro erforderlich.";
 "nearby_ipad_prev" = "Vorherige Seite";
 "nearby_ipad_next" = "Nächste Seite";
-"nearby_ipad_turn_failed" = "Seite wurde nicht umgeblättert. Öffne ein Buch auf dem iPad und lass PagePilot im Vordergrund.";
 "nearby_ipad_linked" = "Verbunden";
 "nearby_ipad_not_linked" = "Nicht verbunden";
+
+// Watch Page Turn screen
+"page_turn_recent_header" = "Letzte Seitenwechsel";
+"page_turn_recent_empty_phone" = "Blättere auf der Watch um – das Ergebnis erscheint sofort hier.";
+"page_turn_recent_empty_ipad" = "Blättere auf der Watch oder dem iPhone um – es erscheint sofort hier.";
+"page_turn_route_from_watch" = "Von der Watch";
+"page_turn_route_from_iphone" = "Vom iPhone";
+"page_turn_outcome_turned" = "Umgeblättert";
+"page_turn_outcome_not_turned" = "Nicht bewegt";
+"page_turn_outcome_reader_not_ready" = "Kein Buch offen";
+"page_turn_outcome_ipad_not_found" = "iPad nicht gefunden";
+"page_turn_outcome_unreachable" = "iPad nicht erreichbar";
+"page_turn_outcome_pro_required" = "Pro erforderlich";
+"page_turn_just_now" = "Gerade eben";
+"page_turn_chain_watch" = "Watch";
+"page_turn_chain_this_device" = "Dieses iPhone";
+"page_turn_chain_watch_closed" = "Nicht geöffnet";
+"page_turn_chain_watch_not_installed" = "Nicht installiert";
+"page_turn_chain_watch_unpaired" = "Nicht gekoppelt";
+"page_turn_chain_ipad_none" = "Nicht gewählt";
+"page_turn_ipad_section" = "Auf dem iPad umblättern";
+"ipad_page_turn_receiving" = "Empfängt Seitenwechsel";
+"ipad_page_turn_starting" = "Wird gestartet …";
+"ipad_page_turn_not_receiving" = "Empfängt keine Seitenwechsel";
+"ipad_page_turn_phone_linked" = "iPhone verbunden";
+"ipad_page_turn_phone_waiting" = "Noch kein iPhone verbunden";
+"ipad_page_turn_pro_required" = "Für Seitenwechsel von der Watch ist PagePilot Pro erforderlich.";
+"ipad_page_turn_hint" = "Öffne auf dem iPhone Ich → Umblättern mit der Watch → iPad in der Nähe auswählen und wähle dieses iPad. Lass WLAN eingeschaltet; ein gemeinsames Netzwerk ist nicht nötig.";
+"feedback_email_button" = "Per E-Mail schreiben";
+"feedback_email_hint" = "Antwort gewünscht oder Screenshots anhängen? Schreib uns an %@.";

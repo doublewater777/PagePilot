@@ -442,9 +442,16 @@ final class PagePilotPeerClient {
         kind: PagePilotPeerRequestKind,
         action: PageCommand? = nil,
         commandID: String? = nil,
+        source: PagePilotPeerRequestSource = .watch,
         completion: @escaping Completion
     ) {
-        let request = PagePilotPeerRequest(target: target, kind: kind, action: action, commandID: commandID)
+        let request = PagePilotPeerRequest(
+            target: target,
+            kind: kind,
+            action: action,
+            commandID: commandID,
+            source: source
+        )
         queue.async {
             self.perform(request, retriesLeft: 1, completion: completion)
         }

@@ -2,6 +2,8 @@ import SwiftUI
 
 struct FeedbackView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.openURL) private var openURL
+    @State private var isMailUnavailable = false
     @State private var message = ""
     @State private var sendState: FeedbackSendState = .idle
     @State private var isToastVisible = false
@@ -72,6 +74,8 @@ struct FeedbackView: View {
                     message.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
                     isMessageOverLimit
                 )
+
+                emailSection
             }
             .frame(maxWidth: 600)
             .padding(16)
@@ -113,6 +117,41 @@ struct FeedbackView: View {
             }
             isToastVisible = false
             if sendState == .sent { dismiss() }
+        }
+    }
+
+    /// Email suits replies and screenshots; it opens the user's default mail app.
+    private var emailSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(String(format: NSLocalizedString("feedback_email_hint", comment: ""), FeedbackEmail.address))
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+            Button {
+                composeEmail()
+            } label: {
+                Label(NSLocalizedString("feedback_email_button", comment: ""), systemImage: "envelope")
+                    .frame(maxWidth: .infinity, minHeight: 32)
+            }
+            .buttonStyle(.bordered)
+        }
+        .padding(.top, 8)
+        .alert(NSLocalizedString("settings_feedback_mail_error_title", comment: ""), isPresented: $isMailUnavailable) {
+            Button(NSLocalizedString("settings_feedback_copy_email", comment: "")) {
+                UIPasteboard.general.string = FeedbackEmail.address
+            }
+            Button(NSLocalizedString("cancel_button", comment: ""), role: .cancel) {}
+        } message: {
+            Text(String(format: NSLocalizedString("settings_feedback_mail_error_message", comment: ""), FeedbackEmail.address))
+        }
+    }
+
+    private func composeEmail() {
+        guard let url = FeedbackEmail.mailtoURL(message: message) else {
+            isMailUnavailable = true
+            return
+        }
+        openURL(url) { accepted in
+            if !accepted { isMailUnavailable = true }
         }
     }
 

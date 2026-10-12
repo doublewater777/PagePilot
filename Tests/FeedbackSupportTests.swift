@@ -25,4 +25,16 @@ final class FeedbackSupportTests: XCTestCase {
         }
         XCTAssertThrowsError(try builder.build(message: String(repeating: " ", count: 2000) + "a"))
     }
+
+    func testEmailLinkCarriesAddressSubjectMessageAndDeviceInfo() throws {
+        let url = try XCTUnwrap(FeedbackEmail.mailtoURL(message: "  翻页卡住了 & ?  "))
+        let components = try XCTUnwrap(URLComponents(url: url, resolvingAgainstBaseURL: false))
+        XCTAssertEqual(components.scheme, "mailto")
+        XCTAssertEqual(components.path, FeedbackEmail.address)
+        let items = Dictionary(uniqueKeysWithValues: (components.queryItems ?? []).map { ($0.name, $0.value ?? "") })
+        XCTAssertFalse(items["subject", default: ""].isEmpty)
+        let body = items["body", default: ""]
+        XCTAssertTrue(body.hasPrefix("翻页卡住了 & ?"))
+        XCTAssertTrue(body.contains("PagePilot"))
+    }
 }

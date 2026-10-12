@@ -51,7 +51,7 @@
 "onboarding_ipad_handoff_subtitle" = "Your iPhone relays Apple Watch page turns to a nearby iPad.";
 "onboarding_ipad_handoff_step1" = "Open PagePilot on your iPad and keep Wi-Fi on (no shared network needed)";
 "onboarding_ipad_handoff_step2" = "Import or receive the book you want to read";
-"onboarding_ipad_handoff_step3" = "Open the book on iPad, then on iPhone choose it in Me → Apple Watch → Choose Nearby iPad";
+"onboarding_ipad_handoff_step3" = "Open the book on iPad, then on iPhone choose it in Me → Watch Page Turn → Choose Nearby iPad";
 "onboarding_handoff_done" = "Done";
 "paywall_ipad_watch_title" = "Read on iPad. Turn Pages with Apple Watch.";
 "paywall_ipad_watch_subtitle" = "Unlock iPhone relay so Watch commands reach a nearby iPad Reader.";
@@ -764,7 +764,6 @@
 "tts_quality_default" = "Default";
 
 /* MARK: Watch Settings */
-"settings_watch_section" = "Apple Watch";
 "settings_watch_page_turn" = "Page Turn Settings";
 "watch_settings_title" = "Watch Page Turn";
 "watch_connection_status" = "Apple Watch";
@@ -817,43 +816,6 @@
 "watch_setup_step3_title" = "Open a book and turn pages";
 "watch_setup_step3_body" = "Open a book on the device you chose, open PagePilot on Watch, then tap or turn the Digital Crown.";
 "watch_setup_done_button" = "Get started";
-"settings_ipad_watch_status" = "Watch Page Turn Link";
-"ipad_watch_status_title" = "Watch Page Turn Link";
-"ipad_watch_status_refresh" = "Refresh";
-"ipad_watch_summary_probing" = "Testing connection…";
-"ipad_watch_summary_probing_sub" = "Checking this iPad’s service, then waiting for a signal from iPhone.";
-"ipad_watch_summary_ready" = "Test passed";
-"ipad_watch_summary_ready_sub" = "Local service is fine and iPhone reached this iPad. Open a book when you want to turn pages.";
-"ipad_watch_summary_no_wifi" = "Not on Wi‑Fi yet";
-"ipad_watch_summary_no_wifi_sub" = "Connect this iPad to the same Wi‑Fi as your iPhone.";
-"ipad_watch_summary_service_fail" = "Local service failed";
-"ipad_watch_summary_service_fail_sub" = "This iPad isn’t ready to receive page turns. Tap Retest below.";
-"ipad_watch_summary_waiting_phone" = "No iPhone signal yet";
-"ipad_watch_summary_waiting_phone_sub" = "On iPhone, open Me → Apple Watch → Choose Nearby iPad, select this iPad, and keep PagePilot open. Then tap Retest here.";
-"ipad_watch_summary_almost" = "Almost there";
-"ipad_watch_summary_almost_sub" = "Check the list below.";
-"ipad_watch_checklist_header" = "Checklist";
-"ipad_watch_checklist_footer" = "“iPhone test” reaches this iPad over a shared Wi‑Fi network or directly over peer-to-peer Wi‑Fi. Opening this page runs a test automatically.";
-"ipad_watch_check_wifi" = "Wi‑Fi";
-"ipad_watch_check_wifi_ok" = "Connected";
-"ipad_watch_check_wifi_bad" = "Not connected — turn on Wi‑Fi";
-"ipad_watch_check_ready" = "Local service test";
-"ipad_watch_check_ready_testing" = "Sending a test signal to this iPad…";
-"ipad_watch_check_ready_ok" = "Passed — ready to receive page turns";
-"ipad_watch_check_ready_bad" = "Failed — retest or restart the app";
-"ipad_watch_check_phone" = "iPhone test";
-"ipad_watch_check_phone_testing" = "Waiting for iPhone… (about 10 seconds)";
-"ipad_watch_check_phone_ok" = "Received a test visit from iPhone";
-"ipad_watch_check_phone_bad" = "No iPhone visit this time";
-"ipad_watch_check_phone_diff_wifi" = "Got a visit, but maybe not the same Wi‑Fi";
-"ipad_watch_probe_button" = "Retest";
-"ipad_watch_probe_running" = "Testing…";
-"ipad_watch_next_header" = "What to do next";
-"ipad_watch_next_wifi" = "Join the same Wi‑Fi as your iPhone.";
-"ipad_watch_next_restart" = "Tap Retest. If it still fails, quit PagePilot and open it again.";
-"ipad_watch_next_phone" = "On iPhone: Me → Apple Watch → Choose Nearby iPad → select this iPad. Keep PagePilot open, then return here and tap Retest. A shared Wi-Fi network is not required.";
-"ipad_watch_how_header" = "How it works";
-"ipad_watch_how_body" = "Your Watch talks to iPhone, and iPhone keeps a direct link to the iPad you chose. It uses a shared Wi‑Fi network when there is one and peer-to-peer Wi‑Fi when there isn’t, so keep Wi‑Fi turned on. This screen self-tests the link and waits for your iPhone.";
 
 /* MARK: TXT Import */
 "txt_error_cannot_read" = "Cannot read the text file.";
@@ -1030,6 +992,35 @@
 "nearby_ipad_pro_required" = "PagePilot Pro is required to connect an iPad.";
 "nearby_ipad_prev" = "Previous Page";
 "nearby_ipad_next" = "Next Page";
-"nearby_ipad_turn_failed" = "Page didn’t turn. Open a book on the iPad and keep PagePilot in the foreground.";
 "nearby_ipad_linked" = "Connected";
 "nearby_ipad_not_linked" = "Not connected";
+
+// Watch Page Turn screen
+"page_turn_recent_header" = "Recent Turns";
+"page_turn_recent_empty_phone" = "Turn a page on your Watch and the result shows up here right away.";
+"page_turn_recent_empty_ipad" = "Turn a page from your Watch or iPhone and it shows up here right away.";
+"page_turn_route_from_watch" = "From Watch";
+"page_turn_route_from_iphone" = "From iPhone";
+"page_turn_outcome_turned" = "Turned";
+"page_turn_outcome_not_turned" = "Didn’t move";
+"page_turn_outcome_reader_not_ready" = "No book open";
+"page_turn_outcome_ipad_not_found" = "iPad not found";
+"page_turn_outcome_unreachable" = "Can’t reach iPad";
+"page_turn_outcome_pro_required" = "Pro required";
+"page_turn_just_now" = "Just now";
+"page_turn_chain_watch" = "Watch";
+"page_turn_chain_this_device" = "This iPhone";
+"page_turn_chain_watch_closed" = "Not open";
+"page_turn_chain_watch_not_installed" = "Not installed";
+"page_turn_chain_watch_unpaired" = "Not paired";
+"page_turn_chain_ipad_none" = "Not chosen";
+"page_turn_ipad_section" = "Turn Pages on iPad";
+"ipad_page_turn_receiving" = "Receiving page turns";
+"ipad_page_turn_starting" = "Starting…";
+"ipad_page_turn_not_receiving" = "Not receiving page turns";
+"ipad_page_turn_phone_linked" = "iPhone connected";
+"ipad_page_turn_phone_waiting" = "No iPhone connected yet";
+"ipad_page_turn_pro_required" = "PagePilot Pro is required to receive page turns from your Watch.";
+"ipad_page_turn_hint" = "On iPhone, open Me → Watch Page Turn → Choose Nearby iPad and select this iPad. Keep Wi‑Fi on; a shared network isn’t required.";
+"feedback_email_button" = "Email Us";
+"feedback_email_hint" = "Want a reply or to attach screenshots? Email us at %@.";

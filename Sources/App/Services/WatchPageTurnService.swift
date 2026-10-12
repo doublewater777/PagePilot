@@ -54,6 +54,8 @@ final class WatchPageTurnService: NSObject, ObservableObject {
     @Published private(set) var peerHostState = PagePilotPeerHostState()
     /// iPhone: whether the link to the selected iPad is open right now.
     @Published private(set) var isIPadLinkConnected = false
+    /// Recent page turns from the Watch or the iPhone buttons, newest first.
+    @Published private(set) var activityLog = WatchPageTurnActivityLog()
 
     /// Weak reference to the currently active VisualNavigator
     weak var activeNavigator: VisualNavigator?
@@ -179,17 +181,6 @@ final class WatchPageTurnService: NSObject, ObservableObject {
         )
     }
 
-    /// iPad self-test: whether the host is advertising and accepting peers.
-    @MainActor
-    func runLocalStatusProbe() async -> Bool {
-        guard UIDevice.current.userInterfaceIdiom == .pad else { return false }
-        enableIPadRelay()
-        for _ in 0..<15 where !peerHostState.isListening {
-            try? await Task.sleep(nanoseconds: 200_000_000)
-        }
-        return peerHostState.isListening
-    }
-
     @MainActor
     private func handlePeerRequest(_ request: PagePilotPeerRequest, reply: @escaping ([String: Any]) -> Void) {
         switch request.kind {
@@ -212,8 +203,34 @@ final class WatchPageTurnService: NSObject, ObservableObject {
                 reply(payload)
                 return
             }
-            handleCommand(command, origin: .iPadRelay, completion: reply)
+            let source: WatchPageTurnActivity.Source = request.source == .iPhone ? .iPhone : .watch
+            handleCommand(command, origin: .iPadRelay) { [weak self] payload in
+                MainActor.assumeIsolated {
+                    self?.recordActivity(
+                        command, commandID: request.commandID, source: source, destination: .thisDevice, payload: payload
+                    )
+                }
+                reply(payload)
+            }
         }
+    }
+
+    @MainActor
+    private func recordActivity(
+        _ direction: PageCommand,
+        commandID: String?,
+        source: WatchPageTurnActivity.Source,
+        destination: WatchPageTurnActivity.Destination,
+        payload: [String: Any]
+    ) {
+        guard let outcome = WatchPageTurnOutcome(payload: payload),
+              WatchPageTurnActivityLog.shouldRecord(
+                destination: destination,
+                hasSelectedIPad: PagePilotNearbySelectionStore.selectedTarget() != nil
+              ) else { return }
+        activityLog.record(
+            commandID: commandID, direction: direction, source: source, destination: destination, outcome: outcome
+        )
     }
 
     private func shouldProcessCommand(id: String?) -> Bool {
@@ -276,7 +293,10 @@ final class WatchPageTurnService: NSObject, ObservableObject {
         }
         // Reaching the end of the book is not a failure; only an undelivered
         // command or a closed Reader is.
-        relayToSelectedIPad(.command, action: command) { payload in
+        relayToSelectedIPad(.command, action: command, source: .iPhone) { [weak self] payload in
+            MainActor.assumeIsolated {
+                self?.recordActivity(command, commandID: nil, source: .iPhone, destination: .iPad, payload: payload)
+            }
             completion(payload["ok"] as? Bool == true)
         }
     }
@@ -287,6 +307,7 @@ final class WatchPageTurnService: NSObject, ObservableObject {
         _ kind: PagePilotPeerRequestKind,
         action: PageCommand? = nil,
         commandID: String? = nil,
+        source: PagePilotPeerRequestSource = .watch,
         replyHandler: (([String: Any]) -> Void)? = nil
     ) {
         guard ProPurchaseManager.shared.hasProAccess else {
@@ -317,7 +338,8 @@ final class WatchPageTurnService: NSObject, ObservableObject {
             to: target.id,
             kind: kind,
             action: action,
-            commandID: kind == .command ? (commandID ?? UUID().uuidString) : nil
+            commandID: kind == .command ? (commandID ?? UUID().uuidString) : nil,
+            source: source
         ) { [weak self] result in
             guard let self else { return }
             switch result {
@@ -577,17 +599,35 @@ extension WatchPageTurnService: WCSessionDelegate {
 
             switch target {
             case .iPad where UIDevice.current.userInterfaceIdiom == .phone:
-                relayToSelectedIPad(.command, action: command, commandID: commandID, replyHandler: replyHandler)
+                relayToSelectedIPad(.command, action: command, commandID: commandID) { [weak self] payload in
+                    MainActor.assumeIsolated {
+                        self?.recordActivity(
+                            command, commandID: commandID, source: .watch, destination: .iPad, payload: payload
+                        )
+                    }
+                    replyHandler?(payload)
+                }
             case .iPhone where UIDevice.current.userInterfaceIdiom == .phone:
                 guard isReaderReady else {
-                    replyHandler?(errorPayload(
+                    let payload = errorPayload(
                         route: WatchPageTurnRoute.direct,
                         code: WatchPageTurnErrorCode.navigatorNotReady,
                         message: "reader is not ready"
-                    ))
+                    )
+                    MainActor.assumeIsolated {
+                        recordActivity(command, commandID: commandID, source: .watch, destination: .iPhone, payload: payload)
+                    }
+                    replyHandler?(payload)
                     return
                 }
-                handleCommand(command, completion: replyHandler)
+                handleCommand(command) { [weak self] payload in
+                    MainActor.assumeIsolated {
+                        self?.recordActivity(
+                            command, commandID: commandID, source: .watch, destination: .iPhone, payload: payload
+                        )
+                    }
+                    replyHandler?(payload)
+                }
             case .iPad where UIDevice.current.userInterfaceIdiom == .pad:
                 // LAN path is primary; WCSession on iPad is rare. Do not require Pro here —
                 // Pro is enforced on the iPhone relay entry point.

@@ -103,3 +103,28 @@ struct FeedbackSubmissionService {
         let code: String
     }
 }
+
+/// Email route for feedback that needs a reply or attachments.
+enum FeedbackEmail {
+    static let address = "return_panyang@163.com"
+
+    static func mailtoURL(message: String, bundle: Bundle = .main) -> URL? {
+        let version = bundle.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "?"
+        let build = bundle.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "?"
+        let device = UIDevice.current
+        let body = [
+            message.trimmingCharacters(in: .whitespacesAndNewlines),
+            "",
+            "—",
+            "\(NSLocalizedString("feedback_body_device_info", comment: "")): \(device.model), \(device.systemName) \(device.systemVersion), PagePilot \(version) (\(build))"
+        ].joined(separator: "\n")
+        var components = URLComponents()
+        components.scheme = "mailto"
+        components.path = address
+        components.queryItems = [
+            URLQueryItem(name: "subject", value: NSLocalizedString("feedback_subject_other", comment: "")),
+            URLQueryItem(name: "body", value: body)
+        ]
+        return components.url
+    }
+}

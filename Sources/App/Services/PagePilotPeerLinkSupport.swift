@@ -140,6 +140,12 @@ enum PagePilotPeerRequestKind: String, Equatable {
     case command
 }
 
+/// Who asked for a page turn, so the iPad can show where it came from.
+enum PagePilotPeerRequestSource: String, Equatable {
+    case watch
+    case iPhone = "iphone"
+}
+
 struct PagePilotPeerRequest: Equatable {
     let id: String
     let target: String
@@ -147,19 +153,22 @@ struct PagePilotPeerRequest: Equatable {
     let action: PageCommand?
     /// Stable across retries so the iPad turns the page at most once.
     let commandID: String?
+    let source: PagePilotPeerRequestSource
 
     init(
         id: String = UUID().uuidString,
         target: String,
         kind: PagePilotPeerRequestKind,
         action: PageCommand? = nil,
-        commandID: String? = nil
+        commandID: String? = nil,
+        source: PagePilotPeerRequestSource = .watch
     ) {
         self.id = id
         self.target = target.lowercased()
         self.kind = kind
         self.action = action
         self.commandID = commandID
+        self.source = source
     }
 
     init?(frameObject object: [String: Any]) {
@@ -170,11 +179,18 @@ struct PagePilotPeerRequest: Equatable {
         }
         let action = (object["action"] as? String).flatMap(PageCommand.init(rawValue:))
         if kind == .command, action == nil { return nil }
-        self.init(id: id, target: target, kind: kind, action: action, commandID: object["commandId"] as? String)
+        self.init(
+            id: id,
+            target: target,
+            kind: kind,
+            action: action,
+            commandID: object["commandId"] as? String,
+            source: (object["source"] as? String).flatMap(PagePilotPeerRequestSource.init(rawValue:)) ?? .watch
+        )
     }
 
     var frameObject: [String: Any] {
-        var object: [String: Any] = ["id": id, "target": target, "kind": kind.rawValue]
+        var object: [String: Any] = ["id": id, "target": target, "kind": kind.rawValue, "source": source.rawValue]
         if let action { object["action"] = action.rawValue }
         if let commandID { object["commandId"] = commandID }
         return object

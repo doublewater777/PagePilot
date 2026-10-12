@@ -4,323 +4,86 @@
 //  available in the top-level LICENSE file of the project.
 //
 
-import Combine
 import SwiftUI
 
-/// iPad-side connection test for Watch page turn.
-/// Opens with an active probe: local service self-test + listen window for an
-/// iPhone link, over a shared Wi-Fi network or peer-to-peer Wi-Fi.
+/// iPad side of Watch Page Turn: live state instead of a self-test. Shows
+/// whether this iPad is receiving, whether an iPhone holds a link right now,
+/// and the latest turns as they arrive.
 struct IPadWatchConnectionView: View {
     @ObservedObject private var service = WatchPageTurnService.shared
-    @State private var isProbing = false
-    @State private var localProbeOK = false
-    @State private var phoneProbeOK = false
-    @State private var probeStartedAt: Date?
-    @State private var probeTask: Task<Void, Never>?
+    @ObservedObject private var proPurchase = ProPurchaseManager.shared
 
-    private let probeListenSeconds: TimeInterval = 12
-
-    private var phoneHitDuringProbe: Bool {
-        guard let started = probeStartedAt,
-              let remoteHit = service.peerHostState.lastRequestAt else { return false }
-        return remoteHit >= started
+    private var isReceiving: Bool {
+        proPurchase.hasProAccess && service.peerHostState.isListening
     }
 
-    /// An iPhone holds an open link to this iPad right now.
     private var isPhoneLinked: Bool {
-        service.peerHostState.connectedPeerCount > 0
-    }
-
-    private var phoneOK: Bool {
-        phoneProbeOK || phoneHitDuringProbe || isPhoneLinked
-    }
-
-    private var allReady: Bool {
-        localProbeOK && phoneOK
+        isReceiving && service.peerHostState.connectedPeerCount > 0
     }
 
     var body: some View {
         List {
-            summarySection
-            checklistSection
-            testButtonSection
-            if let nextStep {
-                nextStepSection(nextStep)
-            }
-            howItWorksSection
+            statusSection
+            WatchPageTurnRecentSection(
+                entries: service.activityLog.entries,
+                emptyText: "page_turn_recent_empty_ipad"
+            )
         }
         .listStyle(.insetGrouped)
+        .frame(maxWidth: 700)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(.systemGroupedBackground))
-        .navigationTitle(NSLocalizedString("ipad_watch_status_title", comment: ""))
+        .navigationTitle(NSLocalizedString("watch_settings_title", comment: ""))
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
-            service.enableIPadRelay()
-            startProbe()
-        }
-        .onDisappear {
-            probeTask?.cancel()
-            probeTask = nil
-        }
-        .onChange(of: service.peerHostState.lastRequestAt) { _, _ in
-            if phoneHitDuringProbe {
-                phoneProbeOK = true
-            }
-        }
-        .onChange(of: isPhoneLinked) { _, connected in
-            if connected, probeStartedAt != nil {
-                phoneProbeOK = true
-            }
+            service.activate()
         }
     }
 
-    // MARK: - Summary
-
-    private var summarySection: some View {
+    private var statusSection: some View {
         Section {
             HStack(spacing: 14) {
-                Group {
-                    if isProbing {
-                        ProgressView()
-                            .controlSize(.regular)
-                    } else {
-                        Image(systemName: summaryIcon)
-                            .font(.system(size: 28, weight: .semibold))
-                            .foregroundStyle(summaryColor)
-                    }
-                }
-                .frame(width: 44, height: 44)
-
+                Image(systemName: statusIcon)
+                    .font(.system(size: 26, weight: .semibold))
+                    .foregroundStyle(isPhoneLinked ? AppColors.accentTeal : Color.secondary)
+                    .frame(width: 40, height: 40)
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(summaryTitle)
+                    Text(LocalizedStringKey(statusTitle))
                         .font(.headline)
-                    Text(summarySubtitle)
+                    Text(LocalizedStringKey(statusDetail))
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: 0)
             }
-            .padding(.vertical, 6)
-        }
-    }
-
-    private var summaryIcon: String {
-        if allReady { return "checkmark.circle.fill" }
-        if localProbeOK { return "antenna.radiowaves.left.and.right" }
-        return "exclamationmark.circle.fill"
-    }
-
-    private var summaryColor: Color {
-        if allReady { return AppColors.accentTeal }
-        if localProbeOK { return AppColors.accentBlue }
-        return .orange
-    }
-
-    private var summaryTitle: String {
-        if isProbing {
-            return NSLocalizedString("ipad_watch_summary_probing", comment: "")
-        }
-        if allReady {
-            return NSLocalizedString("ipad_watch_summary_ready", comment: "")
-        }
-        if !localProbeOK {
-            return NSLocalizedString("ipad_watch_summary_service_fail", comment: "")
-        }
-        if !phoneOK {
-            return NSLocalizedString("ipad_watch_summary_waiting_phone", comment: "")
-        }
-        return NSLocalizedString("ipad_watch_summary_almost", comment: "")
-    }
-
-    private var summarySubtitle: String {
-        if isProbing {
-            return NSLocalizedString("ipad_watch_summary_probing_sub", comment: "")
-        }
-        if allReady {
-            return NSLocalizedString("ipad_watch_summary_ready_sub", comment: "")
-        }
-        if !localProbeOK {
-            return NSLocalizedString("ipad_watch_summary_service_fail_sub", comment: "")
-        }
-        if !phoneOK {
-            return NSLocalizedString("ipad_watch_summary_waiting_phone_sub", comment: "")
-        }
-        return NSLocalizedString("ipad_watch_summary_almost_sub", comment: "")
-    }
-
-    // MARK: - Checklist
-
-    private var checklistSection: some View {
-        Section {
-            checkRow(
-                ok: localProbeOK,
-                pending: isProbing && !localProbeOK,
-                title: NSLocalizedString("ipad_watch_check_ready", comment: ""),
-                detail: localProbeDetail
-            )
-            checkRow(
-                ok: phoneOK,
-                pending: isProbing && localProbeOK && !phoneOK,
-                title: NSLocalizedString("ipad_watch_check_phone", comment: ""),
-                detail: phoneDetail
-            )
-        } header: {
-            Text(NSLocalizedString("ipad_watch_checklist_header", comment: ""))
-        } footer: {
-            Text(NSLocalizedString("ipad_watch_checklist_footer", comment: ""))
-        }
-    }
-
-    private var localProbeDetail: String {
-        if isProbing && !localProbeOK {
-            return NSLocalizedString("ipad_watch_check_ready_testing", comment: "")
-        }
-        if localProbeOK {
-            return NSLocalizedString("ipad_watch_check_ready_ok", comment: "")
-        }
-        return NSLocalizedString("ipad_watch_check_ready_bad", comment: "")
-    }
-
-    private var phoneDetail: String {
-        if isProbing && !phoneOK {
-            return NSLocalizedString("ipad_watch_check_phone_testing", comment: "")
-        }
-        if phoneOK {
-            return NSLocalizedString("ipad_watch_check_phone_ok", comment: "")
-        }
-        return NSLocalizedString("ipad_watch_check_phone_bad", comment: "")
-    }
-
-    // MARK: - Retest
-
-    private var testButtonSection: some View {
-        Section {
-            Button {
-                startProbe()
-            } label: {
-                HStack {
-                    Spacer()
-                    if isProbing {
-                        ProgressView()
-                            .padding(.trailing, 8)
-                        Text(NSLocalizedString("ipad_watch_probe_running", comment: ""))
-                    } else {
-                        Image(systemName: "waveform.path.ecg")
-                        Text(NSLocalizedString("ipad_watch_probe_button", comment: ""))
-                    }
-                    Spacer()
-                }
-                .font(.body.weight(.semibold))
-            }
-            .disabled(isProbing)
-        }
-    }
-
-    // MARK: - Next step
-
-    private var nextStep: String? {
-        if isProbing || allReady { return nil }
-        if !localProbeOK {
-            return NSLocalizedString("ipad_watch_next_restart", comment: "")
-        }
-        if !phoneOK {
-            return NSLocalizedString("ipad_watch_next_phone", comment: "")
-        }
-        return nil
-    }
-
-    private func nextStepSection(_ text: String) -> some View {
-        Section {
-            HStack(alignment: .top, spacing: 12) {
-                Image(systemName: "arrow.right.circle.fill")
-                    .font(.title3)
-                    .foregroundStyle(AppColors.accentBlue)
-                Text(text)
-                    .font(.subheadline)
-                    .foregroundStyle(.primary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
             .padding(.vertical, 4)
-        } header: {
-            Text(NSLocalizedString("ipad_watch_next_header", comment: ""))
-        }
-    }
+            .accessibilityElement(children: .combine)
 
-    // MARK: - How it works
-
-    private var howItWorksSection: some View {
-        Section {
-            Text(NSLocalizedString("ipad_watch_how_body", comment: ""))
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-        } header: {
-            Text(NSLocalizedString("ipad_watch_how_header", comment: ""))
-        }
-    }
-
-    // MARK: - Probe
-
-    private func startProbe() {
-        probeTask?.cancel()
-        isProbing = true
-        localProbeOK = false
-        phoneProbeOK = false
-        probeStartedAt = Date()
-        WatchPageTurnService.shared.activate()
-
-        probeTask = Task { @MainActor in
-            // 1) Active self-test against the local page-turn service.
-            let localOK = await WatchPageTurnService.shared.runLocalStatusProbe()
-            guard !Task.isCancelled else { return }
-            localProbeOK = localOK
-
-            // 2) Listen for a real remote (iPhone) hit during this probe window.
-            let deadline = Date().addingTimeInterval(probeListenSeconds)
-            while Date() < deadline {
-                if Task.isCancelled { return }
-                if phoneHitDuringProbe || isPhoneLinked {
-                    phoneProbeOK = true
-                    break
-                }
-                try? await Task.sleep(nanoseconds: 400_000_000)
-            }
-
-            if !Task.isCancelled {
-                isProbing = false
-            }
-        }
-    }
-
-    // MARK: - Rows
-
-    private func checkRow(ok: Bool, pending: Bool, title: String, detail: String) -> some View {
-        HStack(alignment: .top, spacing: 12) {
-            Group {
-                if pending {
-                    ProgressView()
-                        .controlSize(.small)
-                } else {
-                    Image(systemName: ok ? "checkmark.circle.fill" : "circle")
-                        .font(.title3)
-                        .foregroundStyle(ok ? AppColors.accentTeal : Color.secondary.opacity(0.45))
-                }
-            }
-            .frame(width: 22, height: 22)
-            .padding(.top, 1)
-
-            VStack(alignment: .leading, spacing: 3) {
-                Text(title)
-                    .font(.body.weight(.medium))
-                Text(detail)
+            if !proPurchase.hasProAccess {
+                Text(LocalizedStringKey("ipad_page_turn_pro_required"))
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            } else if !isPhoneLinked {
+                Text(LocalizedStringKey("ipad_page_turn_hint"))
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            Spacer(minLength: 0)
         }
-        .padding(.vertical, 2)
+    }
+
+    private var statusIcon: String {
+        if isPhoneLinked { return "checkmark.circle.fill" }
+        return isReceiving ? "antenna.radiowaves.left.and.right" : "pause.circle"
+    }
+
+    private var statusTitle: String {
+        guard proPurchase.hasProAccess else { return "ipad_page_turn_not_receiving" }
+        return isReceiving ? "ipad_page_turn_receiving" : "ipad_page_turn_starting"
+    }
+
+    private var statusDetail: String {
+        isPhoneLinked ? "ipad_page_turn_phone_linked" : "ipad_page_turn_phone_waiting"
     }
 }
 

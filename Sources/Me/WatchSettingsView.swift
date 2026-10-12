@@ -12,7 +12,6 @@ struct WatchSettingsView: View {
     @State private var doubleTapPageTurn: Bool
     @State private var selectedIPadName: String?
     @State private var isTurningPage = false
-    @State private var pageTurnFailed = false
     @ObservedObject private var proPurchase = ProPurchaseManager.shared
     @ObservedObject private var watchService = WatchPageTurnService.shared
 
@@ -23,7 +22,11 @@ struct WatchSettingsView: View {
 
     var body: some View {
         List {
-            watchStatusSection
+            deviceChainSection
+            WatchPageTurnRecentSection(
+                entries: watchService.activityLog.entries,
+                emptyText: "page_turn_recent_empty_phone"
+            )
             nearbyIPadSection
             doubleTapSection
         }
@@ -42,23 +45,81 @@ struct WatchSettingsView: View {
         }
     }
 
+    // MARK: - Device chain
+
+    /// Watch → iPhone → iPad at a glance; the Watch hint stays until it is ready.
+    private var deviceChainSection: some View {
+        Section {
+            HStack(alignment: .top, spacing: 0) {
+                PageTurnChainNode(
+                    systemImage: "applewatch",
+                    title: "page_turn_chain_watch",
+                    detail: watchChainDetail,
+                    isReady: watchService.watchAvailability == .ready
+                )
+                PageTurnChainConnector(isReady: watchService.watchAvailability == .ready)
+                PageTurnChainNode(
+                    systemImage: "iphone",
+                    title: "iPhone",
+                    detail: "page_turn_chain_this_device",
+                    isReady: true
+                )
+                PageTurnChainConnector(isReady: iPadReady)
+                PageTurnChainNode(
+                    systemImage: "ipad",
+                    title: LocalizedStringKey(selectedIPadName ?? "iPad"),
+                    detail: iPadChainDetail,
+                    isReady: iPadReady
+                )
+            }
+            .padding(.vertical, 6)
+
+            if watchService.watchAvailability != .ready {
+                Label(statusTitle, systemImage: statusIcon)
+                Text(statusDetail)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
+    private var iPadReady: Bool {
+        selectedIPadName != nil && proPurchase.hasProAccess && watchService.isIPadLinkConnected
+    }
+
+    private var watchChainDetail: LocalizedStringKey {
+        switch watchService.watchAvailability {
+        case .unsupported, .unpaired:
+            return "page_turn_chain_watch_unpaired"
+        case .appNotInstalled:
+            return "page_turn_chain_watch_not_installed"
+        case .unreachable:
+            return "page_turn_chain_watch_closed"
+        case .ready:
+            return "nearby_ipad_linked"
+        }
+    }
+
+    private var iPadChainDetail: LocalizedStringKey {
+        guard proPurchase.hasProAccess else { return "page_turn_outcome_pro_required" }
+        guard selectedIPadName != nil else { return "page_turn_chain_ipad_none" }
+        return watchService.isIPadLinkConnected ? "nearby_ipad_linked" : "nearby_ipad_not_linked"
+    }
+
+    // MARK: - iPad
+
     private var nearbyIPadSection: some View {
         Section {
             NavigationLink {
                 NearbyIPadSelectionView()
             } label: {
-                VStack(alignment: .leading, spacing: 4) {
+                HStack {
                     Label(LocalizedStringKey("nearby_ipad_choose"), systemImage: "ipad")
+                    Spacer()
                     if let selectedIPadName {
-                        HStack(spacing: 6) {
-                            Text(selectedIPadName)
-                            Text("·")
-                            Text(LocalizedStringKey(
-                                watchService.isIPadLinkConnected ? "nearby_ipad_linked" : "nearby_ipad_not_linked"
-                            ))
-                        }
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                        Text(selectedIPadName)
+                            .foregroundStyle(.secondary)
                     }
                 }
             }
@@ -70,12 +131,9 @@ struct WatchSettingsView: View {
                     pageTurnButton(.next, title: "nearby_ipad_next", systemImage: "chevron.right")
                 }
                 .buttonStyle(.bordered)
-                if pageTurnFailed {
-                    Text(LocalizedStringKey("nearby_ipad_turn_failed"))
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
             }
+        } header: {
+            Text(LocalizedStringKey("page_turn_ipad_section"))
         } footer: {
             Text(LocalizedStringKey("nearby_ipad_instructions"))
         }
@@ -84,10 +142,9 @@ struct WatchSettingsView: View {
     private func pageTurnButton(_ command: PageCommand, title: String, systemImage: String) -> some View {
         Button {
             isTurningPage = true
-            pageTurnFailed = false
-            watchService.turnSelectedIPadPage(command) { turned in
+            watchService.turnSelectedIPadPage(command) { _ in
+                // The result appears under Recent Turns.
                 isTurningPage = false
-                pageTurnFailed = !turned
             }
         } label: {
             Label(LocalizedStringKey(title), systemImage: systemImage)
@@ -96,17 +153,7 @@ struct WatchSettingsView: View {
         .disabled(isTurningPage)
     }
 
-    // MARK: - Status
-
-    private var watchStatusSection: some View {
-        Section {
-            Label(statusTitle, systemImage: statusIcon)
-            Text(statusDetail)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-    }
+    // MARK: - Watch status hint
 
     private var statusIcon: String {
         switch watchService.watchAvailability {
@@ -169,6 +216,152 @@ struct WatchSettingsView: View {
                 )
             }
         }
+    }
+}
+
+// MARK: - Device chain parts
+
+private struct PageTurnChainNode: View {
+    let systemImage: String
+    let title: LocalizedStringKey
+    let detail: LocalizedStringKey
+    let isReady: Bool
+
+    var body: some View {
+        VStack(spacing: 6) {
+            Image(systemName: systemImage)
+                .font(.title2)
+                .foregroundStyle(isReady ? AppColors.accentTeal : Color.secondary)
+                .frame(height: 30)
+            Text(title)
+                .font(.footnote.weight(.semibold))
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+            Text(detail)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+        }
+        .frame(maxWidth: .infinity)
+        .accessibilityElement(children: .combine)
+    }
+}
+
+private struct PageTurnChainConnector: View {
+    let isReady: Bool
+
+    var body: some View {
+        Capsule()
+            .fill(isReady ? AppColors.accentTeal : Color.secondary.opacity(0.3))
+            .frame(width: 24, height: 2)
+            .padding(.top, 14)
+            .accessibilityHidden(true)
+    }
+}
+
+// MARK: - Recent turns
+
+/// Live list of the latest page turns. Shared by the iPhone and iPad screens:
+/// the newest row flashes when it arrives, so a Watch tap is visibly confirmed.
+struct WatchPageTurnRecentSection: View {
+    let entries: [WatchPageTurnActivity]
+    let emptyText: LocalizedStringKey
+    @State private var highlightedID: UUID?
+
+    var body: some View {
+        Section {
+            if entries.isEmpty {
+                Text(emptyText)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            } else {
+                ForEach(entries) { entry in
+                    TimelineView(.periodic(from: .now, by: 1)) { context in
+                        row(entry, now: context.date)
+                    }
+                    .listRowBackground(
+                        highlightedID == entry.id
+                            ? AppColors.accentTeal.opacity(0.18)
+                            : Color(.secondarySystemGroupedBackground)
+                    )
+                }
+            }
+        } header: {
+            Text(LocalizedStringKey("page_turn_recent_header"))
+        }
+        .onChange(of: entries.first?.id) { _, newID in
+            guard let newID else { return }
+            withAnimation(.easeOut(duration: 0.15)) { highlightedID = newID }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+                guard highlightedID == newID else { return }
+                withAnimation(.easeOut(duration: 0.6)) { highlightedID = nil }
+            }
+        }
+    }
+
+    private func row(_ entry: WatchPageTurnActivity, now: Date) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: entry.direction == .next ? "chevron.right.circle.fill" : "chevron.left.circle.fill")
+                .font(.title3)
+                .foregroundStyle(entry.isSuccess ? AppColors.accentTeal : Color.orange)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(LocalizedStringKey(entry.direction == .next ? "nearby_ipad_next" : "nearby_ipad_prev"))
+                    .font(.body.weight(.medium))
+                Text(LocalizedStringKey(entry.source == .watch ? "page_turn_route_from_watch" : "page_turn_route_from_iphone"))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer(minLength: 8)
+            VStack(alignment: .trailing, spacing: 2) {
+                ForEach(entry.results, id: \.destination) { result in
+                    resultText(result)
+                }
+                Text(Self.relativeTime(entry.date, now: now))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .monospacedDigit()
+            }
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    /// "iPhone 未打开书" / "iPad 已翻页"; on the iPad itself just the outcome.
+    private func resultText(_ result: WatchPageTurnActivity.DeviceResult) -> some View {
+        let outcome = Text(LocalizedStringKey(Self.outcomeKey(result.outcome)))
+            .foregroundColor(result.outcome == .turned ? .primary : .orange)
+        let line: Text
+        switch result.destination {
+        case .iPhone: line = Text("iPhone ").foregroundColor(.secondary) + outcome
+        case .iPad: line = Text("iPad ").foregroundColor(.secondary) + outcome
+        case .thisDevice: line = outcome
+        }
+        return line.font(.subheadline)
+    }
+
+    static func outcomeKey(_ outcome: WatchPageTurnOutcome) -> String {
+        switch outcome {
+        case .turned: return "page_turn_outcome_turned"
+        case .notTurned: return "page_turn_outcome_not_turned"
+        case .readerNotReady: return "page_turn_outcome_reader_not_ready"
+        case .iPadNotFound: return "page_turn_outcome_ipad_not_found"
+        case .unreachable: return "page_turn_outcome_unreachable"
+        case .proRequired: return "page_turn_outcome_pro_required"
+        }
+    }
+
+    private static let relativeFormatter: RelativeDateTimeFormatter = {
+        let formatter = RelativeDateTimeFormatter()
+        formatter.unitsStyle = .short
+        formatter.locale = Locale(identifier: Bundle.main.preferredLocalizations.first ?? "en")
+        return formatter
+    }()
+
+    private static func relativeTime(_ date: Date, now: Date) -> String {
+        if now.timeIntervalSince(date) < 5 {
+            return NSLocalizedString("page_turn_just_now", comment: "")
+        }
+        return relativeFormatter.localizedString(for: date, relativeTo: now)
     }
 }
 

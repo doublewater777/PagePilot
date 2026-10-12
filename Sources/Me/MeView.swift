@@ -146,7 +146,7 @@ struct MeView: View {
                     MeRow(
                         icon: "applewatch",
                         iconColor: Color(uiColor: .label),
-                        title: NSLocalizedString("settings_watch_section", comment: "")
+                        title: NSLocalizedString("watch_settings_title", comment: "")
                     )
                 }
 
@@ -161,15 +161,15 @@ struct MeView: View {
                     )
                 }
             } else {
-                // iPad is the LAN receiver for Watch page turn — surface diagnostics here.
+                // iPad receives Watch page turns through the iPhone; same entry name as on iPhone.
                 NavigationLink {
                     LazyView(IPadWatchConnectionView())
                         .navigationBarTitleDisplayMode(.inline)
                 } label: {
                     MeRow(
-                        icon: "applewatch.radiowaves.left.and.right",
-                        iconColor: .blue,
-                        title: NSLocalizedString("settings_ipad_watch_status", comment: "")
+                        icon: "applewatch",
+                        iconColor: Color(uiColor: .label),
+                        title: NSLocalizedString("watch_settings_title", comment: "")
                     )
                 }
             }
