@@ -142,6 +142,8 @@ targets:
     deploymentTarget: "17.0"
     sources:
       - path: Tests
+      - path: PagePilot.storekit
+        buildPhase: resources
     dependencies:
       - target: PagePilot
     settings:

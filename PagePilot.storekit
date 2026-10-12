@@ -1,27 +1,35 @@
 {
   "identifier": "B4A4D182",
-  "environment": "Xcode",
-  "bundleId": "com.panyang.PagePilot",
+  "nonRenewingSubscriptions": [],
   "products": [
     {
       "type": "NonConsumable",
-      "id": "com.panyang.PagePilot.pro.lifetime",
-      "displayName": "Lifetime Pro",
-      "description": "Lifetime unlimited access to Pro features. Limited-time offer.",
+      "productID": "com.panyang.PagePilot.pro.lifetime",
+      "internalID": "C1D2E3F4",
+      "referenceName": "Lifetime Pro",
+      "familyShareable": false,
       "displayPrice": "6.99",
-      "locale": {
-        "zh-Hans": {
+      "localizations": [
+        {
+          "locale": "en_US",
+          "displayName": "Lifetime Pro",
+          "description": "Lifetime unlimited access to Pro features. Limited-time offer."
+        },
+        {
+          "locale": "zh_CN",
           "displayName": "终身会员",
           "description": "一次购买，终身使用 Pro 功能。限时优惠。"
         }
-      }
+      ]
     }
   ],
   "settings": {
-    "failTransactionsEnabled": false,
-    "interruptPurchasesEnabled": false,
-    "askToBuyEnabled": false,
-    "billingIssueEnabled": false
+    "_failTransactionsEnabled": false,
+    "_interruptedPurchasesEnabled": false,
+    "_askToBuyEnabled": false,
+    "_billingIssuesEnabled": false,
+    "_locale": "en_US",
+    "_storefront": "USA"
   },
   "subscriptionGroups": [
     {
@@ -95,6 +103,8 @@
       ]
     }
   ],
-  "introductoryOffers": [],
-  "promotionalOffers": []
+  "version": {
+    "major": 3,
+    "minor": 0
+  }
 }

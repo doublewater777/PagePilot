@@ -84,31 +84,39 @@ final class RevenueCatEntitlementSource: NSObject, ProEntitlementSource, Purchas
 
     func restorePurchases() async throws -> Bool {
         try requireConfiguration()
-        return Self.hasPro(in: try await Purchases.shared.restorePurchases())
+        return try await Self.validateEntitlement(Self.hasPro(in: try await Purchases.shared.restorePurchases()))
     }
 
     func currentEntitlement() async throws -> Bool {
         try requireConfiguration()
-        return Self.hasPro(in: try await Purchases.shared.customerInfo(fetchPolicy: .fetchCurrent))
+        return try await Self.validateEntitlement(Self.hasPro(in: try await Purchases.shared.customerInfo(fetchPolicy: .fetchCurrent)))
     }
 
     func syncPurchases() async throws -> Bool {
         try requireConfiguration()
-        let hasPro = Self.hasPro(in: try await Purchases.shared.syncPurchases())
+        return try await Self.validateEntitlement(Self.hasPro(in: try await Purchases.shared.syncPurchases()))
+    }
+
+    static func validateEntitlement(_ hasPro: Bool) async throws -> Bool {
         // RevenueCat owns purchasing and finishing. This read-only check protects
-        // existing subscribers if the RC product-to-entitlement mapping is missing.
-        if !hasPro {
-            for await result in StoreKit.Transaction.currentEntitlements {
-                switch result {
-                case .verified(let transaction):
-                    if ProPurchaseManager.proProductIDs.contains(transaction.productID) {
-                        throw ProPurchaseError.verificationFailed
-                    }
-                case .unverified(_, let error): throw error
-                }
-            }
+        // existing subscribers if RC has not yet recognized a valid Apple purchase.
+        if !hasPro, try await Self.hasVerifiedLegacyPurchase() {
+            throw ProPurchaseError.verificationFailed
         }
         return hasPro
+    }
+
+    static func hasVerifiedLegacyPurchase() async throws -> Bool {
+        for await result in StoreKit.Transaction.currentEntitlements {
+            switch result {
+            case .verified(let transaction):
+                if ProPurchaseManager.proProductIDs.contains(transaction.productID) {
+                    return true
+                }
+            case .unverified(_, let error): throw error
+            }
+        }
+        return false
     }
 
     private func requireConfiguration() throws {

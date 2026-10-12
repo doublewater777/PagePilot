@@ -85,7 +85,13 @@ final class ProPurchaseManager: ObservableObject {
             guard let self, self.defaults.bool(forKey: Self.migrationKey) else { return }
             Task { @MainActor [weak self] in
                 guard let self else { return }
-                await self.updateProAccess(hasPro)
+                if hasPro {
+                    await self.updateProAccess(true)
+                } else {
+                    // An empty delegate update is not proof that a valid Apple
+                    // purchase has expired. Reconfirm through the guarded source.
+                    await self.verifyCurrentEntitlements()
+                }
             }
         }
         setupForegroundObservation()

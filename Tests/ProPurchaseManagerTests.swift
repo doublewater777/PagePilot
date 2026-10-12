@@ -163,11 +163,24 @@ final class ProPurchaseManagerTests: XCTestCase {
         await Task.yield()
         XCTAssertTrue(manager.hasProAccess)
         await manager.verifyCurrentEntitlements()
+        source.hasPro = false
         source.onChange?(false)
-        // The callback applies updates on the main actor.
-        for _ in 0..<5 { await Task.yield() }
+        // Empty updates are confirmed before being applied on the main actor.
+        for _ in 0..<20 { await Task.yield() }
         XCTAssertFalse(manager.hasProAccess)
         XCTAssertEqual(accessChanges.last, false)
+    }
+
+    func testListenerKeepsProWhenEmptyUpdateCannotBeVerified() async {
+        defaults.set(true, forKey: "entitlements_isPro")
+        defaults.set(true, forKey: ProPurchaseManager.migrationKey)
+        source.error = ProPurchaseError.verificationFailed
+        let manager = makeManager(automaticallyStart: true)
+        source.onChange?(false)
+        for _ in 0..<20 { await Task.yield() }
+        XCTAssertEqual(source.refreshCount, 1)
+        XCTAssertTrue(manager.hasProAccess)
+        XCTAssertFalse(accessChanges.contains(false))
     }
 
     func testPublicKeyValidationRejectsSecretsAndUnexpandedSetting() {

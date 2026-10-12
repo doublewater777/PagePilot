@@ -11,6 +11,8 @@
 		ACF000000000000000000003 /* ProEntitlementSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACF000000000000000000004 /* ProEntitlementSource.swift */; };
 		ACF000000000000000000005 /* ProStoreProduct.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACF000000000000000000006 /* ProStoreProduct.swift */; };
 		ACF000000000000000000007 /* ProPurchaseManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACF000000000000000000008 /* ProPurchaseManagerTests.swift */; };
+		ACF00000000000000000000D /* ProStoreKitIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACF00000000000000000000A /* ProStoreKitIntegrationTests.swift */; };
+		ACF00000000000000000000B /* PagePilot.storekit in Resources */ = {isa = PBXBuildFile; fileRef = 798030BA2AA610DDFD7EFE9C /* PagePilot.storekit */; };
 		01850820553A414A725E00A3 /* CloudSyncSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8529D746D38C6AB88946347D /* CloudSyncSupport.swift */; };
 		028A2542EBF1344183C10DF9 /* ContinueReadingSelectorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F7B3BBBC229C74F04221454 /* ContinueReadingSelectorTests.swift */; };
 		035A0D3C137D9D8C57BAB97D /* CloudSyncSupportTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23DFDAFADB283187AF23E49F /* CloudSyncSupportTests.swift */; };
@@ -273,6 +275,7 @@
 		ACF000000000000000000004 /* ProEntitlementSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProEntitlementSource.swift; sourceTree = "<group>"; };
 		ACF000000000000000000006 /* ProStoreProduct.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProStoreProduct.swift; sourceTree = "<group>"; };
 		ACF000000000000000000008 /* ProPurchaseManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProPurchaseManagerTests.swift; sourceTree = "<group>"; };
+		ACF00000000000000000000A /* ProStoreKitIntegrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProStoreKitIntegrationTests.swift; sourceTree = "<group>"; };
 		00154042A71D67CF079A5975 /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = de; path = de.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		00B5FAB4697C0E879381F2BF /* QuickPositionJumpSessionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickPositionJumpSessionTests.swift; sourceTree = "<group>"; };
 		00C859D3B6781923356D08BC /* Readium.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Readium.swift; sourceTree = "<group>"; };
@@ -773,6 +776,7 @@
 				5059FC4CA8E99034407397E6 /* PagePilotPeerLinkTests.swift */,
 				564A1C630A9418621236167B /* PaywallSubscriptionCopyTests.swift */,
 				ACF000000000000000000008 /* ProPurchaseManagerTests.swift */,
+				ACF00000000000000000000A /* ProStoreKitIntegrationTests.swift */,
 				ABEA8FC1756AAC1A0B4FA793 /* QuickPositionJumpPolicyTests.swift */,
 				00B5FAB4697C0E879381F2BF /* QuickPositionJumpSessionTests.swift */,
 				F8CB48566A6E5BE799D3C80A /* ReaderEditingActionsTests.swift */,
@@ -1088,6 +1092,7 @@
 			buildConfigurationList = 0847A222463FFB9A36453B69 /* Build configuration list for PBXNativeTarget "PagePilotTests" */;
 			buildPhases = (
 				6EF625CBA91E54B1EFA299F2 /* Sources */,
+				ACF00000000000000000000C /* Resources */,
 			);
 			buildRules = (
 			);
@@ -1180,6 +1185,14 @@
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		ACF00000000000000000000C /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				ACF00000000000000000000B /* PagePilot.storekit in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		00FACE1A2432FBCB5CB5F014 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -1389,6 +1402,7 @@
 				24764F09E1163C2B05C97E11 /* PagePilotPeerLinkTests.swift in Sources */,
 				8F82458161412F42DFC03785 /* PaywallSubscriptionCopyTests.swift in Sources */,
 				ACF000000000000000000007 /* ProPurchaseManagerTests.swift in Sources */,
+				ACF00000000000000000000D /* ProStoreKitIntegrationTests.swift in Sources */,
 				F043BE516A43D554709BD551 /* QuickPositionJumpPolicyTests.swift in Sources */,
 				8EFAB7D91CF2081BE63FB5FF /* QuickPositionJumpSessionTests.swift in Sources */,
 				0BB40644CC5EE846FE2F9E3F /* ReaderEditingActionsTests.swift in Sources */,
