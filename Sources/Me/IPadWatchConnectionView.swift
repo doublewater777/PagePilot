@@ -10,6 +10,7 @@ import SwiftUI
 /// whether this iPad is receiving, whether an iPhone holds a link right now,
 /// and the latest turns as they arrive.
 struct IPadWatchConnectionView: View {
+    @State private var showPaywall = false
     @ObservedObject private var service = WatchPageTurnService.shared
     @ObservedObject private var proPurchase = ProPurchaseManager.shared
 
@@ -26,7 +27,11 @@ struct IPadWatchConnectionView: View {
             statusSection
             WatchPageTurnRecentSection(
                 entries: service.activityLog.entries,
-                emptyText: "page_turn_recent_empty_ipad"
+                emptyText: "page_turn_recent_empty_ipad",
+                onProRequested: {
+                    Analytics.shared.log(.paywallViewed(source: "ipad_watch_recent_pro_entry"))
+                    showPaywall = true
+                }
             )
         }
         .listStyle(.insetGrouped)
@@ -35,6 +40,9 @@ struct IPadWatchConnectionView: View {
         .background(Color(.systemGroupedBackground))
         .navigationTitle(NSLocalizedString("watch_settings_title", comment: ""))
         .navigationBarTitleDisplayMode(.inline)
+        .sheet(isPresented: $showPaywall) {
+            PaywallView(context: .iPadWatchRelay, analyticsSource: "ipad_watch_settings_upgrade")
+        }
         .onAppear {
             service.activate()
         }
@@ -60,9 +68,28 @@ struct IPadWatchConnectionView: View {
             .accessibilityElement(children: .combine)
 
             if !proPurchase.hasProAccess {
-                Text(LocalizedStringKey("ipad_page_turn_pro_required"))
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 10) {
+                    Text(LocalizedStringKey("ipad_page_turn_pro_required"))
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+
+                    Button {
+                        Analytics.shared.log(.paywallViewed(source: "ipad_watch_status_pro_button"))
+                        showPaywall = true
+                    } label: {
+                        HStack(spacing: 8) {
+                            Image(systemName: "crown.fill")
+                                .foregroundColor(.yellow)
+                            Text(NSLocalizedString("settings_upgrade_pro", comment: ""))
+                                .fontWeight(.semibold)
+                        }
+                        .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(AppColors.accentTeal)
+                    .padding(.top, 2)
+                }
+                .padding(.vertical, 4)
             } else if !isPhoneLinked {
                 Text(LocalizedStringKey("ipad_page_turn_hint"))
                     .font(.subheadline)

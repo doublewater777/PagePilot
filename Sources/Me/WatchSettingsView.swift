@@ -12,6 +12,7 @@ struct WatchSettingsView: View {
     @State private var doubleTapPageTurn: Bool
     @State private var selectedIPadName: String?
     @State private var isTurningPage = false
+    @State private var showPaywall = false
     @ObservedObject private var proPurchase = ProPurchaseManager.shared
     @ObservedObject private var watchService = WatchPageTurnService.shared
 
@@ -25,7 +26,11 @@ struct WatchSettingsView: View {
             deviceChainSection
             WatchPageTurnRecentSection(
                 entries: watchService.activityLog.entries,
-                emptyText: "page_turn_recent_empty_phone"
+                emptyText: "page_turn_recent_empty_phone",
+                onProRequested: {
+                    Analytics.shared.log(.paywallViewed(source: "watch_recent_turns_pro_entry"))
+                    showPaywall = true
+                }
             )
             nearbyIPadSection
             doubleTapSection
@@ -35,6 +40,9 @@ struct WatchSettingsView: View {
         .background(Color(.systemGroupedBackground))
         .navigationTitle(NSLocalizedString("watch_settings_title", comment: ""))
         .navigationBarTitleDisplayMode(.inline)
+        .sheet(isPresented: $showPaywall) {
+            PaywallView(context: .iPadWatchRelay, analyticsSource: "watch_settings_upgrade")
+        }
         .onAppear {
             watchService.activate()
             selectedIPadName = PagePilotNearbySelectionStore.selectedTarget()?.name
@@ -111,26 +119,49 @@ struct WatchSettingsView: View {
 
     private var nearbyIPadSection: some View {
         Section {
-            NavigationLink {
-                NearbyIPadSelectionView()
-            } label: {
-                HStack {
-                    Label(LocalizedStringKey("nearby_ipad_choose"), systemImage: "ipad")
-                    Spacer()
-                    if let selectedIPadName {
-                        Text(selectedIPadName)
-                            .foregroundStyle(.secondary)
+            if proPurchase.hasProAccess {
+                NavigationLink {
+                    NearbyIPadSelectionView()
+                } label: {
+                    HStack {
+                        Label(LocalizedStringKey("nearby_ipad_choose"), systemImage: "ipad")
+                        Spacer()
+                        if let selectedIPadName {
+                            Text(selectedIPadName)
+                                .foregroundStyle(.secondary)
+                        }
                     }
                 }
-            }
-            .disabled(!proPurchase.hasProAccess)
 
-            if selectedIPadName != nil, proPurchase.hasProAccess {
-                HStack(spacing: 12) {
-                    pageTurnButton(.prev, title: "nearby_ipad_prev", systemImage: "chevron.left")
-                    pageTurnButton(.next, title: "nearby_ipad_next", systemImage: "chevron.right")
+                if selectedIPadName != nil {
+                    HStack(spacing: 12) {
+                        pageTurnButton(.prev, title: "nearby_ipad_prev", systemImage: "chevron.left")
+                        pageTurnButton(.next, title: "nearby_ipad_next", systemImage: "chevron.right")
+                    }
+                    .buttonStyle(.bordered)
                 }
-                .buttonStyle(.bordered)
+            } else {
+                Button {
+                    Analytics.shared.log(.paywallViewed(source: "watch_settings_nearby_ipad_row"))
+                    showPaywall = true
+                } label: {
+                    HStack {
+                        Label(LocalizedStringKey("nearby_ipad_choose"), systemImage: "ipad")
+                            .foregroundStyle(.primary)
+                        Spacer()
+                        HStack(spacing: 4) {
+                            Image(systemName: "crown.fill")
+                                .font(.caption2)
+                                .foregroundColor(.yellow)
+                            Text(NSLocalizedString("settings_upgrade_pro", comment: ""))
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                            Image(systemName: "chevron.right")
+                                .font(.caption2)
+                                .foregroundStyle(.tertiary)
+                        }
+                    }
+                }
             }
         } header: {
             Text(LocalizedStringKey("page_turn_ipad_section"))
@@ -267,7 +298,9 @@ private struct PageTurnChainConnector: View {
 struct WatchPageTurnRecentSection: View {
     let entries: [WatchPageTurnActivity]
     let emptyText: LocalizedStringKey
+    var onProRequested: (() -> Void)? = nil
     @State private var highlightedID: UUID?
+    @State private var relativeClock = Date()
 
     var body: some View {
         Section {
@@ -277,20 +310,22 @@ struct WatchPageTurnRecentSection: View {
                     .foregroundStyle(.secondary)
             } else {
                 ForEach(entries) { entry in
-                    TimelineView(.periodic(from: .now, by: 1)) { context in
-                        row(entry, now: context.date)
-                    }
-                    .listRowBackground(
-                        highlightedID == entry.id
-                            ? AppColors.accentTeal.opacity(0.18)
-                            : Color(.secondarySystemGroupedBackground)
-                    )
+                    row(entry, now: relativeClock)
+                        .listRowBackground(
+                            highlightedID == entry.id
+                                ? AppColors.accentTeal.opacity(0.18)
+                                : Color(.secondarySystemGroupedBackground)
+                        )
                 }
             }
         } header: {
             Text(LocalizedStringKey("page_turn_recent_header"))
         }
+        .onReceive(Timer.publish(every: 15, on: .main, in: .common).autoconnect()) { date in
+            relativeClock = date
+        }
         .onChange(of: entries.first?.id) { _, newID in
+            relativeClock = Date()
             guard let newID else { return }
             withAnimation(.easeOut(duration: 0.15)) { highlightedID = newID }
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
@@ -301,10 +336,11 @@ struct WatchPageTurnRecentSection: View {
     }
 
     private func row(_ entry: WatchPageTurnActivity, now: Date) -> some View {
-        HStack(alignment: .top, spacing: 12) {
+        HStack(alignment: .center, spacing: 12) {
             Image(systemName: entry.direction == .next ? "chevron.right.circle.fill" : "chevron.left.circle.fill")
                 .font(.title3)
                 .foregroundStyle(entry.isSuccess ? AppColors.accentTeal : Color.orange)
+                .frame(width: 24, height: 24)
             VStack(alignment: .leading, spacing: 2) {
                 Text(LocalizedStringKey(entry.direction == .next ? "nearby_ipad_next" : "nearby_ipad_prev"))
                     .font(.body.weight(.medium))
@@ -328,15 +364,26 @@ struct WatchPageTurnRecentSection: View {
 
     /// "iPhone 未打开书" / "iPad 已翻页"; on the iPad itself just the outcome.
     private func resultText(_ result: WatchPageTurnActivity.DeviceResult) -> some View {
+        let isProReq = result.outcome == .proRequired
         let outcome = Text(LocalizedStringKey(Self.outcomeKey(result.outcome)))
-            .foregroundColor(result.outcome == .turned ? .primary : .orange)
+            .foregroundColor(result.outcome == .turned ? .primary : (isProReq ? AppColors.accentTeal : .orange))
+            .underline(isProReq, color: AppColors.accentTeal)
         let line: Text
         switch result.destination {
         case .iPhone: line = Text("iPhone ").foregroundColor(.secondary) + outcome
         case .iPad: line = Text("iPad ").foregroundColor(.secondary) + outcome
         case .thisDevice: line = outcome
         }
-        return line.font(.subheadline)
+        return Group {
+            if isProReq, let onProRequested {
+                Button(action: onProRequested) {
+                    line.font(.subheadline)
+                }
+                .buttonStyle(.plain)
+            } else {
+                line.font(.subheadline)
+            }
+        }
     }
 
     static func outcomeKey(_ outcome: WatchPageTurnOutcome) -> String {
@@ -358,7 +405,8 @@ struct WatchPageTurnRecentSection: View {
     }()
 
     private static func relativeTime(_ date: Date, now: Date) -> String {
-        if now.timeIntervalSince(date) < 5 {
+        let elapsed = max(0, now.timeIntervalSince(date))
+        if elapsed < 10 {
             return NSLocalizedString("page_turn_just_now", comment: "")
         }
         return relativeFormatter.localizedString(for: date, relativeTo: now)
