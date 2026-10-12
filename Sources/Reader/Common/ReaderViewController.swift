@@ -806,7 +806,10 @@ enum ReadingSessionSummaryPresenter {
                 }
             }
 
-            if let sheet = summaryViewController.sheetPresentationController {
+            if UIDevice.current.userInterfaceIdiom == .pad {
+                // On iPad, formSheet respects preferredContentSize and centers nicely.
+                // Do not apply iPhone-style detents or grabber on iPad.
+            } else if let sheet = summaryViewController.sheetPresentationController {
                 if #available(iOS 16.0, *) {
                     let compactDetent = UISheetPresentationController.Detent.custom(identifier: .init("compactSummary")) { _ in
                         420
@@ -837,10 +840,15 @@ enum ReadingSessionSummaryPresenter {
         let viewController = UIHostingController(
             rootView: ReadingSessionInsightSheet(book: book)
         )
-        viewController.modalPresentationStyle = .pageSheet
-        if let sheet = viewController.sheetPresentationController {
-            sheet.detents = [.large()]
-            sheet.prefersGrabberVisible = true
+        if UIDevice.current.userInterfaceIdiom == .pad {
+            viewController.modalPresentationStyle = .formSheet
+            viewController.preferredContentSize = CGSize(width: 560, height: 640)
+        } else {
+            viewController.modalPresentationStyle = .pageSheet
+            if let sheet = viewController.sheetPresentationController {
+                sheet.detents = [.large()]
+                sheet.prefersGrabberVisible = true
+            }
         }
         host.present(viewController, animated: true)
     }

@@ -1,5 +1,6 @@
 # AGENTS.md
 
+记得适配ipad
 
 use pagepilot iphone 18 pro simulator
 
