@@ -216,7 +216,7 @@ final class WatchPageTurnService: NSObject, ObservableObject {
     }
 
     @MainActor
-    private func recordActivity(
+    func recordActivity(
         _ direction: PageCommand,
         commandID: String?,
         source: WatchPageTurnActivity.Source,
@@ -226,6 +226,7 @@ final class WatchPageTurnService: NSObject, ObservableObject {
         guard let outcome = WatchPageTurnOutcome(payload: payload),
               WatchPageTurnActivityLog.shouldRecord(
                 destination: destination,
+                outcome: outcome,
                 hasSelectedIPad: PagePilotNearbySelectionStore.selectedTarget() != nil
               ) else { return }
         activityLog.record(
@@ -258,7 +259,6 @@ final class WatchPageTurnService: NSObject, ObservableObject {
     /// Opens the link to the selected iPad ahead of the first page turn.
     func prepareIPadRelay() {
         guard UIDevice.current.userInterfaceIdiom == .phone,
-              ProPurchaseManager.shared.hasProAccess,
               let target = PagePilotNearbySelectionStore.selectedTarget() else {
             return
         }
@@ -267,15 +267,13 @@ final class WatchPageTurnService: NSObject, ObservableObject {
 
     /// Verifies a user-chosen iPad and remembers it only if it answers.
     func connectNearbyIPad(_ target: PagePilotNearbyTarget, completion: @escaping (Bool) -> Void) {
-        guard UIDevice.current.userInterfaceIdiom == .phone,
-              ProPurchaseManager.shared.hasProAccess else {
+        guard UIDevice.current.userInterfaceIdiom == .phone else {
             completion(false)
             return
         }
         PagePilotPeerClient.shared.send(to: target.id, kind: .status) { result in
             guard case .success(let payload) = result,
-                  payload["ok"] as? Bool == true,
-                  ProPurchaseManager.shared.hasProAccess else {
+                  payload["ok"] as? Bool == true else {
                 completion(false)
                 return
             }

@@ -95,7 +95,7 @@ enum PagePilotRelayEntitlementAction: Equatable {
 enum PagePilotRelayEntitlementLifecyclePolicy {
     static func action(isIPad: Bool, hasProAccess: Bool) -> PagePilotRelayEntitlementAction {
         guard isIPad else { return .noOp }
-        return hasProAccess ? .start : .stop
+        return .start
     }
 }
 
@@ -223,7 +223,7 @@ enum PagePilotPeerHostValidation {
         hasProAccess: Bool
     ) -> PagePilotPeerError? {
         guard request.target == localIdentifier.lowercased() else { return .wrongTarget }
-        guard hasProAccess else { return .proRequired }
+        guard hasProAccess || request.kind == .status else { return .proRequired }
         return nil
     }
 }

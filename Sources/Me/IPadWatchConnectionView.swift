@@ -15,11 +15,11 @@ struct IPadWatchConnectionView: View {
     @ObservedObject private var proPurchase = ProPurchaseManager.shared
 
     private var isReceiving: Bool {
-        proPurchase.hasProAccess && service.peerHostState.isListening
+        service.peerHostState.isListening
     }
 
     private var isPhoneLinked: Bool {
-        isReceiving && service.peerHostState.connectedPeerCount > 0
+        service.peerHostState.connectedPeerCount > 0
     }
 
     var body: some View {

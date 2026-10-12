@@ -47,9 +47,7 @@ struct WatchSettingsView: View {
             watchService.activate()
             selectedIPadName = PagePilotNearbySelectionStore.selectedTarget()?.name
 
-            if proPurchase.hasProAccess {
-                WatchPageTurnService.shared.prepareIPadRelay()
-            }
+            WatchPageTurnService.shared.prepareIPadRelay()
         }
     }
 
@@ -119,50 +117,24 @@ struct WatchSettingsView: View {
 
     private var nearbyIPadSection: some View {
         Section {
-            if proPurchase.hasProAccess {
-                NavigationLink {
-                    NearbyIPadSelectionView()
-                } label: {
-                    HStack {
-                        Label(LocalizedStringKey("nearby_ipad_choose"), systemImage: "ipad")
-                        Spacer()
-                        if let selectedIPadName {
-                            Text(selectedIPadName)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                }
-
-                if selectedIPadName != nil {
-                    HStack(spacing: 12) {
-                        pageTurnButton(.prev, title: "nearby_ipad_prev", systemImage: "chevron.left")
-                        pageTurnButton(.next, title: "nearby_ipad_next", systemImage: "chevron.right")
-                    }
-                    .buttonStyle(.bordered)
-                }
-            } else {
-                Button {
-                    Analytics.shared.log(.paywallViewed(source: "watch_settings_nearby_ipad_row"))
-                    showPaywall = true
-                } label: {
-                    HStack {
-                        Label(LocalizedStringKey("nearby_ipad_choose"), systemImage: "ipad")
-                            .foregroundStyle(.primary)
-                        Spacer()
-                        HStack(spacing: 4) {
-                            Image(systemName: "crown.fill")
-                                .font(.caption2)
-                                .foregroundColor(.yellow)
-                            Text(NSLocalizedString("settings_upgrade_pro", comment: ""))
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
-                            Image(systemName: "chevron.right")
-                                .font(.caption2)
-                                .foregroundStyle(.tertiary)
-                        }
+            NavigationLink {
+                NearbyIPadSelectionView()
+            } label: {
+                HStack {
+                    Label(LocalizedStringKey("nearby_ipad_choose"), systemImage: "ipad")
+                    Spacer()
+                    if let selectedIPadName {
+                        Text(selectedIPadName)
+                            .foregroundStyle(.secondary)
                     }
                 }
             }
+
+            HStack(spacing: 12) {
+                pageTurnButton(.prev, title: "nearby_ipad_prev", systemImage: "chevron.left")
+                pageTurnButton(.next, title: "nearby_ipad_next", systemImage: "chevron.right")
+            }
+            .buttonStyle(.bordered)
         } header: {
             Text(LocalizedStringKey("page_turn_ipad_section"))
         } footer: {
@@ -176,6 +148,9 @@ struct WatchSettingsView: View {
             watchService.turnSelectedIPadPage(command) { _ in
                 // The result appears under Recent Turns.
                 isTurningPage = false
+                if !proPurchase.hasProAccess {
+                    showPaywall = true
+                }
             }
         } label: {
             Label(LocalizedStringKey(title), systemImage: systemImage)
@@ -377,7 +352,12 @@ struct WatchPageTurnRecentSection: View {
         return Group {
             if isProReq, let onProRequested {
                 Button(action: onProRequested) {
-                    line.font(.subheadline)
+                    HStack(spacing: 3) {
+                        line.font(.subheadline)
+                        Image(systemName: "crown.fill")
+                            .font(.system(size: 10))
+                            .foregroundColor(.yellow)
+                    }
                 }
                 .buttonStyle(.plain)
             } else {
@@ -479,10 +459,6 @@ private struct NearbyIPadSelectionView: View {
     }
 
     private func scan() {
-        guard ProPurchaseManager.shared.hasProAccess else {
-            errorKey = "nearby_ipad_pro_required"
-            return
-        }
         isScanning = true
         targets = []
         errorKey = nil

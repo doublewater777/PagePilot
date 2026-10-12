@@ -62,6 +62,7 @@ final class WatchPageTurnActivityTests: XCTestCase {
     func testIPadResultIsHiddenOnlyWhileNoIPadIsChosen() {
         XCTAssertFalse(WatchPageTurnActivityLog.shouldRecord(destination: .iPad, hasSelectedIPad: false))
         XCTAssertTrue(WatchPageTurnActivityLog.shouldRecord(destination: .iPad, hasSelectedIPad: true))
+        XCTAssertTrue(WatchPageTurnActivityLog.shouldRecord(destination: .iPad, outcome: .proRequired, hasSelectedIPad: false))
         XCTAssertTrue(WatchPageTurnActivityLog.shouldRecord(destination: .iPhone, hasSelectedIPad: false))
         XCTAssertTrue(WatchPageTurnActivityLog.shouldRecord(destination: .thisDevice, hasSelectedIPad: false))
     }

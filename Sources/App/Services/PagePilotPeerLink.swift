@@ -254,6 +254,18 @@ final class PagePilotPeerHost {
             hasProAccess: hasProAccess()
         ) {
             send(PagePilotPeerResponse.failure(id: request.id, error: rejection), on: connection)
+            if rejection == .proRequired, let action = request.action {
+                let source: WatchPageTurnActivity.Source = request.source == .iPhone ? .iPhone : .watch
+                DispatchQueue.main.async {
+                    WatchPageTurnService.shared.recordActivity(
+                        action,
+                        commandID: request.commandID,
+                        source: source,
+                        destination: .thisDevice,
+                        payload: ["ok": false, "errorCode": WatchPageTurnErrorCode.proRequired]
+                    )
+                }
+            }
             return
         }
         guard let handler else {

@@ -105,8 +105,16 @@ struct WatchPageTurnActivityLog: Equatable {
     }
 
     /// Every Watch tap is also sent to the iPad route; without a chosen iPad
-    /// that half has nothing to say.
-    static func shouldRecord(destination: WatchPageTurnActivity.Destination, hasSelectedIPad: Bool) -> Bool {
-        destination != .iPad || hasSelectedIPad
+    /// that half has nothing to say unless Pro is required, where we record it
+    /// to clearly indicate the feature requirement and guide the user to Pro.
+    static func shouldRecord(
+        destination: WatchPageTurnActivity.Destination,
+        outcome: WatchPageTurnOutcome? = nil,
+        hasSelectedIPad: Bool
+    ) -> Bool {
+        if outcome == .proRequired {
+            return true
+        }
+        return destination != .iPad || hasSelectedIPad
     }
 }
