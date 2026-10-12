@@ -6,8 +6,8 @@ const event = {
   appInstanceId: "test-instance",
   appSignature: "pagepilot-app-signature-v1",
   message: "  Reader suggestion  ",
-  appVersion: "1.0.22",
-  osVersion: "iOS 26"
+  appVersion: "1.0.23",
+  osVersion: "iOS 27"
 };
 
 function options(overrides = {}) {
@@ -29,7 +29,7 @@ test("stores and notifies PagePilot feedback with trimmed content", async () => 
   assert.equal(result.ok, true);
   assert.equal(result.notificationDelivered, true);
   assert.equal(stored.message, "Reader suggestion");
-  assert.equal(stored.appVersion, "1.0.22");
+  assert.equal(stored.appVersion, "1.0.23");
   assert.equal(stored.appInstanceId, undefined);
   assert.deepEqual(notified, stored);
 });

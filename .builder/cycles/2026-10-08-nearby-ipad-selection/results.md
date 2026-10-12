@@ -7,7 +7,7 @@
 - iOS SDK typecheck 覆盖当前中继、选择页及实际修改的连接/路由方法，通过。未改动的外部 app 依赖采用临时 stubs，因此不等于完整 app build。
 - 五种本地化校验和 git diff --check 通过。
 - MobileBuildMCP 完整 Debug app 构建通过。首次构建发现已提交项目漏掉 Nearby 源文件及测试引用；补齐 project.pbxproj 的 12 行引用后通过，保留原版本号、签名与 Readium revision 配置。
-- 独立 `PagePilot iPhone 17 Relay`（28A8B0FD-846E-469B-A6FD-F7AA6DE698C0，iOS 26.5）上运行当前 app 的 XCTest：31 项 Nearby + 17 项 LAN recovery，48 通过、0 失败、0 跳过。
+- 独立 `PagePilot iPhone 17 Relay`（28A8B0FD-846E-469B-A6FD-F7AA6DE698C0，iOS 27.0）上运行当前 app 的 XCTest：31 项 Nearby + 17 项 LAN recovery，48 通过、0 失败、0 跳过。
 - 独立模拟器成功启动，runtime UI snapshot 确认进入首页。启动参数使用现有 `-AutoDismissOnboarding` 和临时 UserDefaults argument-domain Pro 状态；这不是购买验证。组合启动及单独安装调用曾超时，后续单独 launch 成功。
 - 用户告知默认 iPhone 17 正被他人使用后，所有后续运行与测试均改到上述独立模拟器。此前一次默认实例的启动不作为 UI 验证证据。
 
@@ -21,7 +21,7 @@ iOS XCTest 日志：/Users/water/Library/Developer/MobileBuildMCP/workspaces/Pag
 
 ## 选择页模拟器实测（2026-10-08，第二轮）
 
-环境：`PagePilot iPhone 17 Relay` + `PagePilot iPad mini Relay`（均 iOS 26.5），当前工作区 Debug 构建，启动参数 `-AutoDismissOnboarding -entitlements_isPro YES`。用打包在 MobileBuildMCP 里的 AXe（`touch --down --up`）操作；`axe tap` 在该 runtime 上不生效。
+环境：`PagePilot iPhone 17 Relay` + `PagePilot iPad mini Relay`（均 iOS 27.0），当前工作区 Debug 构建，启动参数 `-AutoDismissOnboarding -entitlements_isPro YES`。用打包在 MobileBuildMCP 里的 AXe（`touch --down --up`）操作；`axe tap` 在该 runtime 上不生效。
 
 - 发现：列表同时显示 iPad 模拟器（设备名）和本机遗留的 manual-transport 夹具（“Study iPad · Dune”），搜索中按钮禁用、显示进度。证据 `evidence/sel2.png`。
 - 选择成功：点击 iPad mini 后约 1 秒自动返回，设置行显示所选设备名；iPad 诊断页显示“已收到 iPhone 的测试访问”。再次进入时所选设备带勾。证据 `evidence/reenter.png`。

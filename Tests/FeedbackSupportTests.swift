@@ -2,13 +2,13 @@ import XCTest
 @testable import PagePilot
 
 final class FeedbackSupportTests: XCTestCase {
-    private let builder = FeedbackPayloadBuilder(appVersion: "1.0.22", osVersion: "iOS 26")
+    private let builder = FeedbackPayloadBuilder(appVersion: "1.0.23", osVersion: "iOS 27")
 
     func testTrimsMessageAndIncludesDiagnostics() throws {
         let payload = try builder.build(message: " \n建议\n ")
         XCTAssertEqual(payload.message, "建议")
-        XCTAssertEqual(payload.appVersion, "1.0.22")
-        XCTAssertEqual(payload.osVersion, "iOS 26")
+        XCTAssertEqual(payload.appVersion, "1.0.23")
+        XCTAssertEqual(payload.osVersion, "iOS 27")
     }
 
     func testRejectsWhitespaceOnlyMessage() {
