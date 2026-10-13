@@ -54,10 +54,11 @@ targets:
       - path: WatchRemote
       - path: Shared
     settings:
-      INFOPLIST_FILE: WatchRemote/Info.plist
-      PRODUCT_BUNDLE_IDENTIFIER: com.panyang.PagePilot.WatchRemote
-      DEVELOPMENT_TEAM: ${RD_DEVELOPMENT_TEAM}
-      CODE_SIGN_STYLE: Manual
+      base:
+        INFOPLIST_FILE: WatchRemote/Info.plist
+        PRODUCT_BUNDLE_IDENTIFIER: com.panyang.PagePilot.WatchRemote
+        DEVELOPMENT_TEAM: ${RD_DEVELOPMENT_TEAM}
+        CODE_SIGN_STYLE: Manual
       configs:
         Debug:
           CODE_SIGN_IDENTITY: Apple Development
