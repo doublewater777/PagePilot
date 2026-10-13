@@ -191,7 +191,7 @@ final class PaywallSubscriptionCopyTests: XCTestCase {
 
         let lifetime = PaywallSubscriptionCopy.purchaseDisclosure(
             kind: .lifetime,
-            displayPrice: "$6.99",
+            displayPrice: "$29.99",
             isTrialEligible: false,
             trialPeriod: nil,
             billingPeriod: nil,

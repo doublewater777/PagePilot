@@ -50,7 +50,7 @@ final class ProStoreKitIntegrationTests: XCTestCase {
         XCTAssertEqual(yearly.subscription?.subscriptionPeriod.value, 1)
         XCTAssertEqual(yearly.subscription?.subscriptionPeriod.unit, .year)
         XCTAssertEqual(yearly.subscription?.introductoryOffer?.paymentMode, .freeTrial)
-        XCTAssertEqual(yearly.subscription?.introductoryOffer?.period.value, 3)
+        XCTAssertEqual(yearly.subscription?.introductoryOffer?.period.value, 7)
         XCTAssertEqual(yearly.subscription?.introductoryOffer?.period.unit, .day)
         XCTAssertEqual(lifetime.type, .nonConsumable)
     }

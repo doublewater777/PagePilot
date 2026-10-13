@@ -294,7 +294,6 @@ struct PaywallView: View {
         let isSelected = selectedProductID == product.id
         let isMonthly = product.id.contains("monthly")
         let isYearly = product.id.contains("yearly")
-        let isLifetime = product.id.contains("lifetime")
         
         let titleKey: String = {
             if isMonthly { return "paywall_option_monthly" }
@@ -323,9 +322,8 @@ struct PaywallView: View {
         let badgeText: String? = {
             if isYearly {
                 return NSLocalizedString("paywall_recommended_badge", comment: "")
-            } else {
-                return isLifetime ? NSLocalizedString("paywall_limited_badge", comment: "") : nil
             }
+            return nil
         }()
         
         Button(action: {
@@ -363,9 +361,9 @@ struct PaywallView: View {
                                 .padding(.vertical, 2)
                                 .background(
                                     LinearGradient(
-                                        colors: isLifetime 
-                                            ? [Color.orange, Color.red] 
-                                            : (isYearly ? [AppColors.accentTeal, AppColors.accentBlue] : [AppColors.accentBlue, AppColors.accentTeal]),
+                                        colors: isYearly
+                                            ? [AppColors.accentTeal, AppColors.accentBlue]
+                                            : [AppColors.accentBlue, AppColors.accentTeal],
                                         startPoint: .leading,
                                         endPoint: .trailing
                                     )

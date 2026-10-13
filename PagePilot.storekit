@@ -8,17 +8,17 @@
       "internalID": "C1D2E3F4",
       "referenceName": "Lifetime Pro",
       "familyShareable": false,
-      "displayPrice": "6.99",
+      "displayPrice": "29.99",
       "localizations": [
         {
           "locale": "en_US",
           "displayName": "Lifetime Pro",
-          "description": "Lifetime unlimited access to Pro features. Limited-time offer."
+          "description": "Lifetime unlimited access to Pro features."
         },
         {
           "locale": "zh_CN",
           "displayName": "终身会员",
-          "description": "一次购买，终身使用 Pro 功能。限时优惠。"
+          "description": "一次购买，终身使用 Pro 功能。"
         }
       ]
     }
@@ -97,7 +97,7 @@
             "internalID": "F4A5B6C7",
             "numberOfPeriods": 1,
             "paymentMode": "free",
-            "subscriptionPeriod": "P3D"
+            "subscriptionPeriod": "P7D"
           }
         }
       ]

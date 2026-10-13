@@ -379,7 +379,7 @@
 "paywall_feature_streak_subtitle" = "Ihren Rhythmus verfolgen";
 "paywall_feature_notes_title" = "Unbegrenzte Notizen";
 "paywall_feature_notes_subtitle" = "Keine Begrenzung für Markierungen";
-"paywall_assurance_trial" = "3 Tage kostenlos testen";
+"paywall_assurance_trial" = "7 Tage kostenlos testen";
 "paywall_assurance_cancel" = "Jederzeit kündbar";
 "paywall_trial_note" = "Das Probeabo verlängert sich nach Ablauf automatisch. Sie können jederzeit in den Einstellungen kündigen.";
 "paywall_one_time" = "Einmaliger Kauf, für immer Ihrer";
@@ -392,7 +392,7 @@
 "paywall_retry_button" = "Erneut versuchen";
 "paywall_error_title" = "Kauf fehlgeschlagen";
 "paywall_success_title" = "Pro freigeschaltet!";
-"paywall_trial_badge" = "3 Tage kostenlos testen";
+"paywall_trial_badge" = "7 Tage kostenlos testen";
 
 /* Settings Pro */
 "settings_pro_unlocked" = "PagePilot Pro";
@@ -421,16 +421,16 @@
 "paywall_price_monthly" = "$0.99";
 "paywall_price_yearly" = "$4.99";
 "paywall_price_yearly_monthly" = "$0.42";
-"paywall_price_lifetime" = "$6.99";
+"paywall_price_lifetime" = "$29.99";
 "paywall_price_monthly_sub" = "Wird monatlich verlängert";
 "paywall_price_yearly_sub" = "Nur %@/Monat, sparen Sie %@";
 "paywall_price_yearly_sub_no_savings" = "Nur %@/Monat";
-"paywall_price_lifetime_sub" = "Einmaliger Kauf, zeitlich begrenztes Angebot";
+"paywall_price_lifetime_sub" = "Einmaliger Kauf";
 "paywall_terms_of_use" = "Nutzungsbedingungen";
 "paywall_privacy_policy" = "Datenschutzrichtlinie";
 "paywall_recommended_badge" = "Empfohlen";
 "paywall_limited_badge" = "Begrenzt";
-"paywall_trial_eligible_label" = "3 Tage kostenlos";
+"paywall_trial_eligible_label" = "7 Tage kostenlos";
 "paywall_lifetime_sub" = "Einmaliger Kauf";
 "paywall_save_badge" = "16 % sparen";
 "paywall_trial_duration_day" = "%d Tag";
@@ -463,7 +463,7 @@
 "paywall_buy_button_ineligible" = "Fortfahren";
 "paywall_buy_button_lifetime" = "Lebenslangen Zugriff freischalten";
 "paywall_trial_duration_eligible_monthly" = "%@ kostenlos, danach %@";
-"paywall_trial_duration_eligible_yearly" = "3 Tage kostenlos, danach %@/Jahr";
+"paywall_trial_duration_eligible_yearly" = "7 Tage kostenlos, danach %@/Jahr";
 "paywall_trial_duration_ineligible_monthly" = "%@/Monat";
 "paywall_trial_duration_ineligible_yearly" = "%@/Jahr";
 "paywall_trial_duration_lifetime" = "%@ einmalig";
