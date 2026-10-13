@@ -167,7 +167,7 @@ final class WatchInstallReminderPolicyTests: XCTestCase {
     func testWatchSettingsIsStableRecoverySurfaceForAllWatchStates() throws {
         let source = try Self.watchSettingsSource()
 
-        let statusSection = try Self.requiredLine("private var watchStatusSection", in: source)
+        let statusSection = try Self.requiredLine("private var deviceChainSection", in: source)
         let availabilitySwitch = try Self.requiredLine(
             "switch watchService.watchAvailability",
             in: source,

@@ -83,16 +83,24 @@ final class PagePilotPeerLinkTests: XCTestCase {
     }
 
     func testHostAcceptsOnlyItsOwnIdentityWithPro() {
-        let request = PagePilotPeerRequest(target: firstID, kind: .status)
+        let status = PagePilotPeerRequest(target: firstID, kind: .status)
 
         XCTAssertNil(PagePilotPeerHostValidation.rejection(
-            for: request, localIdentifier: firstID.uppercased(), hasProAccess: true
+            for: status, localIdentifier: firstID.uppercased(), hasProAccess: true
+        ))
+        XCTAssertNil(PagePilotPeerHostValidation.rejection(
+            for: status, localIdentifier: firstID, hasProAccess: false
         ))
         XCTAssertEqual(PagePilotPeerHostValidation.rejection(
-            for: request, localIdentifier: secondID, hasProAccess: true
+            for: status, localIdentifier: secondID, hasProAccess: true
         ), .wrongTarget)
+
+        let command = PagePilotPeerRequest(target: firstID, kind: .command, action: .next)
+        XCTAssertNil(PagePilotPeerHostValidation.rejection(
+            for: command, localIdentifier: firstID, hasProAccess: true
+        ))
         XCTAssertEqual(PagePilotPeerHostValidation.rejection(
-            for: request, localIdentifier: firstID, hasProAccess: false
+            for: command, localIdentifier: firstID, hasProAccess: false
         ), .proRequired)
     }
 
@@ -173,10 +181,11 @@ final class PagePilotPeerLinkTests: XCTestCase {
         XCTAssertNil(PagePilotNearbySelectionStore.selectedTarget(defaults: defaults))
     }
 
-    func testIPadRelayEntitlementStartsAndStopsHostLifecycle() {
+    func testIPadRelayHostStaysAvailableWithoutPro() {
         XCTAssertEqual(PagePilotRelayEntitlementLifecyclePolicy.action(isIPad: true, hasProAccess: true), .start)
-        XCTAssertEqual(PagePilotRelayEntitlementLifecyclePolicy.action(isIPad: true, hasProAccess: false), .stop)
+        XCTAssertEqual(PagePilotRelayEntitlementLifecyclePolicy.action(isIPad: true, hasProAccess: false), .start)
         XCTAssertEqual(PagePilotRelayEntitlementLifecyclePolicy.action(isIPad: false, hasProAccess: true), .noOp)
+        XCTAssertEqual(PagePilotRelayEntitlementLifecyclePolicy.action(isIPad: false, hasProAccess: false), .noOp)
     }
 }
 
