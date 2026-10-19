@@ -421,7 +421,7 @@
 "paywall_price_monthly" = "$0.99";
 "paywall_price_yearly" = "$4.99";
 "paywall_price_yearly_monthly" = "$0.42";
-"paywall_price_lifetime" = "$29.99";
+"paywall_price_lifetime" = "$9.99";
 "paywall_price_monthly_sub" = "Se renueva mensualmente";
 "paywall_price_yearly_sub" = "Sólo %@/mes, ahorra %@";
 "paywall_price_yearly_sub_no_savings" = "Sólo %@/mes";
