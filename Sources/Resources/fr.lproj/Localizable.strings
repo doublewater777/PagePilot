@@ -1024,3 +1024,15 @@
 "ipad_page_turn_hint" = "Sur l’iPhone, ouvrez Moi → Changement de page avec l’Apple Watch → Choisir un iPad à proximité et choisissez cet iPad. Laissez le Wi‑Fi activé ; un réseau commun n’est pas nécessaire.";
 "feedback_email_button" = "Nous écrire par e-mail";
 "feedback_email_hint" = "Besoin d’une réponse ou de joindre des captures ? Écrivez-nous à %@.";
+
+/* Developer Testing & Pro Override */
+"settings_developer_testing_section" = "Tests et débogage";
+"settings_pro_status_switch" = "Changer le statut Pro";
+"pro_override_auto" = "Statut réel";
+"pro_override_forced_pro" = "Forcer Pro";
+"pro_override_forced_free" = "Forcer la version gratuite";
+"settings_open_paywall" = "Ouvrir l'écran d'achat Pro";
+"settings_reset_purchase_cache" = "Réinitialiser le cache d'achats";
+"settings_developer_testing_footer" = "Utilisé pour tester les achats sandbox et la rétention. Passez en 'Forcer la version gratuite' pour afficher les options d'achat.";
+"settings_developer_mode_enabled_title" = "Mode développeur activé";
+"settings_developer_mode_disabled_title" = "Mode développeur désactivé";

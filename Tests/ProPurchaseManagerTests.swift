@@ -243,6 +243,42 @@ final class ProPurchaseManagerTests: XCTestCase {
         XCTAssertEqual(accessChanges, [true])
     }
     #endif
+
+    func testOverrideForcedFreeHidesProEvenWhenPurchased() async {
+        defaults.set(true, forKey: "entitlements_isPro")
+        let manager = makeManager()
+        XCTAssertTrue(manager.hasProAccess)
+
+        manager.setOverrideMode(.forcedFree)
+        XCTAssertFalse(manager.hasProAccess)
+        XCTAssertEqual(accessChanges.last, false)
+
+        manager.setOverrideMode(.automatic)
+        XCTAssertTrue(manager.hasProAccess)
+        XCTAssertEqual(accessChanges.last, true)
+    }
+
+    func testOverrideForcedProUnlocksPro() async {
+        let manager = makeManager()
+        XCTAssertFalse(manager.hasProAccess)
+
+        manager.setOverrideMode(.forcedPro)
+        XCTAssertTrue(manager.hasProAccess)
+        XCTAssertEqual(accessChanges.last, true)
+    }
+
+    func testResetPurchaseCacheClearsLocalState() async {
+        defaults.set(true, forKey: "entitlements_isPro")
+        defaults.set(true, forKey: ProPurchaseManager.migrationKey)
+        let manager = makeManager()
+        manager.setOverrideMode(.forcedPro)
+        XCTAssertTrue(manager.hasProAccess)
+
+        manager.resetLocalPurchaseState()
+        XCTAssertFalse(manager.hasProAccess)
+        XCTAssertEqual(manager.overrideMode, .automatic)
+        XCTAssertFalse(defaults.bool(forKey: "entitlements_isPro"))
+    }
 }
 
 private final class TestSKProduct: SKProduct, @unchecked Sendable {

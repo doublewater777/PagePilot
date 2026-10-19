@@ -1024,3 +1024,15 @@
 "ipad_page_turn_hint" = "On iPhone, open Me → Watch Page Turn → Choose Nearby iPad and select this iPad. Keep Wi‑Fi on; a shared network isn’t required.";
 "feedback_email_button" = "Email Us";
 "feedback_email_hint" = "Want a reply or to attach screenshots? Email us at %@.";
+
+/* Developer Testing & Pro Override */
+"settings_developer_testing_section" = "Testing & Debugging";
+"settings_pro_status_switch" = "Pro Status Switch";
+"pro_override_auto" = "Actual Status";
+"pro_override_forced_pro" = "Force Pro";
+"pro_override_forced_free" = "Force Free Tier";
+"settings_open_paywall" = "Open Pro Paywall";
+"settings_reset_purchase_cache" = "Reset Local Purchase Cache";
+"settings_developer_testing_footer" = "Used to test sandbox purchases and retention flows. Switch to 'Force Free Tier' to show upgrade cards and test sandbox purchases.";
+"settings_developer_mode_enabled_title" = "Developer Mode Enabled";
+"settings_developer_mode_disabled_title" = "Developer Mode Disabled";

@@ -37,6 +37,25 @@ enum ProPurchaseError: Error, LocalizedError {
     }
 }
 
+enum ProAccessOverride: String, CaseIterable, Identifiable {
+    case automatic = "auto"
+    case forcedPro = "forced_pro"
+    case forcedFree = "forced_free"
+
+    var id: String { rawValue }
+
+    var localizedTitle: String {
+        switch self {
+        case .automatic:
+            return NSLocalizedString("pro_override_auto", comment: "")
+        case .forcedPro:
+            return NSLocalizedString("pro_override_forced_pro", comment: "")
+        case .forcedFree:
+            return NSLocalizedString("pro_override_forced_free", comment: "")
+        }
+    }
+}
+
 final class ProPurchaseManager: ObservableObject {
     static let shared = ProPurchaseManager(source: RevenueCatEntitlementSource())
 
@@ -48,17 +67,88 @@ final class ProPurchaseManager: ObservableObject {
     private let source: ProEntitlementSource
     private let accessDidChange: @MainActor (Bool) -> Void
     private let proKey = "entitlements_isPro"
+    private let overrideKey = "pagepilot_pro_access_override"
+    private let developerModeKey = "pagepilot_developer_mode_enabled"
     static let migrationKey = "revenuecat_synced_v1"
 
     private var foregroundObserver: NSObjectProtocol?
     private(set) var products: [ProStoreProduct] = []
     @MainActor private var entitlementRefreshTask: Task<Bool, Never>?
 
-    // MARK: - Access
+    // MARK: - Access & Developer Override
+
+    /// Override mode for development and testing.
+    var overrideMode: ProAccessOverride {
+        get {
+            guard let raw = defaults.string(forKey: overrideKey),
+                  let mode = ProAccessOverride(rawValue: raw) else {
+                return .automatic
+            }
+            return mode
+        }
+        set {
+            defaults.set(newValue.rawValue, forKey: overrideKey)
+            if Thread.isMainThread {
+                MainActor.assumeIsolated {
+                    notifyAccessChange()
+                }
+            } else {
+                Task { @MainActor [weak self] in
+                    self?.notifyAccessChange()
+                }
+            }
+        }
+    }
+
+    var isDeveloperModeEnabled: Bool {
+        get {
+            #if DEBUG
+            return true
+            #else
+            return defaults.bool(forKey: developerModeKey)
+            #endif
+        }
+        set {
+            defaults.set(newValue, forKey: developerModeKey)
+            objectWillChange.send()
+        }
+    }
+
+    func toggleDeveloperMode() {
+        isDeveloperModeEnabled.toggle()
+    }
+
+    @MainActor
+    func setOverrideMode(_ mode: ProAccessOverride) {
+        overrideMode = mode
+    }
+
+    @MainActor
+    func resetLocalPurchaseState() {
+        defaults.removeObject(forKey: proKey)
+        defaults.removeObject(forKey: Self.migrationKey)
+        defaults.removeObject(forKey: overrideKey)
+        notifyAccessChange()
+    }
+
+    @MainActor
+    private func notifyAccessChange() {
+        let currentAccess = hasProAccess
+        objectWillChange.send()
+        NotificationCenter.default.post(name: .proAccessDidChange, object: currentAccess)
+        accessDidChange(currentAccess)
+    }
 
     /// Whether the user has full Pro access.
     var hasProAccess: Bool {
-        defaults.bool(forKey: proKey)
+        switch overrideMode {
+        case .forcedPro:
+            return true
+        case .forcedFree:
+            return false
+        case .automatic:
+            return defaults.bool(forKey: proKey)
+        }
     }
 
     // MARK: - Init
@@ -148,6 +238,9 @@ final class ProPurchaseManager: ObservableObject {
             let hasPro = try await source.purchase(product)
             guard hasPro else { throw ProPurchaseError.verificationFailed }
             defaults.set(true, forKey: Self.migrationKey)
+            if overrideMode == .forcedFree {
+                defaults.removeObject(forKey: overrideKey)
+            }
             await updateProAccess(hasPro)
             Analytics.shared.log(.purchaseSucceeded)
         } catch ProPurchaseError.userCancelled {
@@ -172,6 +265,9 @@ final class ProPurchaseManager: ObservableObject {
         do {
             let hasPro = try await source.restorePurchases()
             defaults.set(true, forKey: Self.migrationKey)
+            if hasPro && overrideMode == .forcedFree {
+                defaults.removeObject(forKey: overrideKey)
+            }
             await updateProAccess(hasPro)
             if hasPro {
                 Analytics.shared.log(.purchaseRestored)
@@ -245,17 +341,18 @@ final class ProPurchaseManager: ObservableObject {
 
     @MainActor
     private func updateProAccess(_ hasAccess: Bool) async {
-        let hasAccess = hasAccess || debugProEnabled
-        let previous = defaults.bool(forKey: proKey)
-        defaults.set(hasAccess, forKey: proKey)
+        let previous = hasProAccess
+        let actualAccess = hasAccess || debugProEnabled
+        defaults.set(actualAccess, forKey: proKey)
+        let current = hasProAccess
         objectWillChange.send()
-        if previous != hasAccess {
-            NotificationCenter.default.post(name: .proAccessDidChange, object: hasAccess)
-            if hasAccess { Analytics.shared.log(.proAccessGranted) }
+        if previous != current {
+            NotificationCenter.default.post(name: .proAccessDidChange, object: current)
+            if current { Analytics.shared.log(.proAccessGranted) }
         }
 
         // Re-assert relay readiness when RevenueCat confirms Pro.
-        accessDidChange(hasAccess)
+        accessDidChange(current)
     }
 }
 

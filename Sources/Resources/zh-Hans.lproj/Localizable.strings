@@ -1024,3 +1024,15 @@
 "ipad_page_turn_hint" = "在 iPhone 上打开「我 → 手表翻页 → 选择附近的 iPad」，选中这台 iPad。保持 Wi‑Fi 开启，无须连接同一网络。";
 "feedback_email_button" = "发邮件给我们";
 "feedback_email_hint" = "需要回复或想附上截图？可以直接发邮件到 %@。";
+
+/* Developer Testing & Pro Override */
+"settings_developer_testing_section" = "测试与调试";
+"settings_pro_status_switch" = "会员状态切换";
+"pro_override_auto" = "跟随真实状态";
+"pro_override_forced_pro" = "强制 Pro 会员";
+"pro_override_forced_free" = "强制免费版（未付费）";
+"settings_open_paywall" = "打开 Pro 收银台";
+"settings_reset_purchase_cache" = "重置本地购买缓存";
+"settings_developer_testing_footer" = "用于在测试设备上调试沙盒购买与挽留流程。切换为“强制免费版”可展示升级入口并进行真实沙盒购买测试。";
+"settings_developer_mode_enabled_title" = "已启用开发者测试模式";
+"settings_developer_mode_disabled_title" = "已关闭开发者测试模式";

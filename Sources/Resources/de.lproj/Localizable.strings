@@ -1024,3 +1024,15 @@
 "ipad_page_turn_hint" = "Öffne auf dem iPhone Ich → Umblättern mit der Watch → iPad in der Nähe auswählen und wähle dieses iPad. Lass WLAN eingeschaltet; ein gemeinsames Netzwerk ist nicht nötig.";
 "feedback_email_button" = "Per E-Mail schreiben";
 "feedback_email_hint" = "Antwort gewünscht oder Screenshots anhängen? Schreib uns an %@.";
+
+/* Developer Testing & Pro Override */
+"settings_developer_testing_section" = "Testen & Debuggen";
+"settings_pro_status_switch" = "Pro-Status umschalten";
+"pro_override_auto" = "Tatsächlicher Status";
+"pro_override_forced_pro" = "Pro erzwingen";
+"pro_override_forced_free" = "Kostenlose Version erzwingen";
+"settings_open_paywall" = "Pro-Paywall öffnen";
+"settings_reset_purchase_cache" = "Lokalen Kauf-Cache zurücksetzen";
+"settings_developer_testing_footer" = "Wird zum Testen von Sandbox-Käufen und Kündigungsverhinderung verwendet. Zu 'Kostenlose Version erzwingen' wechseln, um Upgrade-Optionen zu testen.";
+"settings_developer_mode_enabled_title" = "Entwicklermodus aktiviert";
+"settings_developer_mode_disabled_title" = "Entwicklermodus deaktiviert";

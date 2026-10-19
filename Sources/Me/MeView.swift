@@ -27,6 +27,7 @@ struct MeView: View {
             controlAndSpeechSection
             appearanceSection
             supportAndAboutSection
+            debugSection
         }
         .listStyle(.insetGrouped)
         .scrollContentBackground(.hidden)
@@ -230,6 +231,63 @@ struct MeView: View {
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var debugSection: some View {
+        if proPurchase.isDeveloperModeEnabled {
+            Section {
+                Picker(
+                    selection: Binding(
+                        get: { proPurchase.overrideMode },
+                        set: { proPurchase.setOverrideMode($0) }
+                    )
+                ) {
+                    ForEach(ProAccessOverride.allCases) { mode in
+                        Text(mode.localizedTitle).tag(mode)
+                    }
+                } label: {
+                    MeRow(
+                        icon: "wrench.and.screwdriver.fill",
+                        iconColor: .purple,
+                        title: NSLocalizedString("settings_pro_status_switch", comment: "")
+                    )
+                }
+
+                Button(action: {
+                    paywallContext = .general
+                    showPaywall = true
+                }) {
+                    HStack {
+                        MeRow(
+                            icon: "cart.fill",
+                            iconColor: AppColors.accentTeal,
+                            title: NSLocalizedString("settings_open_paywall", comment: "")
+                        )
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(.tertiary)
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+
+                Button(role: .destructive, action: {
+                    proPurchase.resetLocalPurchaseState()
+                }) {
+                    MeRow(
+                        icon: "arrow.counterclockwise",
+                        iconColor: .red,
+                        title: NSLocalizedString("settings_reset_purchase_cache", comment: "")
+                    )
+                }
+            } header: {
+                Text(NSLocalizedString("settings_developer_testing_section", comment: ""))
+            } footer: {
+                Text(NSLocalizedString("settings_developer_testing_footer", comment: ""))
             }
         }
     }
@@ -794,6 +852,9 @@ struct LazyView<Content: View>: View {
 // MARK: - About Us Detail Page (二级页)
 private struct AboutDetailView: View {
     @State private var safariURL: IdentifiableURL?
+    @State private var versionTapCount = 0
+    @State private var showDeveloperModeAlert = false
+    @ObservedObject private var proPurchase = ProPurchaseManager.shared
 
     var body: some View {
         List {
@@ -808,6 +869,15 @@ private struct AboutDetailView: View {
                     Text("\(Bundle.main.appVersion) (\(Bundle.main.buildVersion))")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
+                }
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    versionTapCount += 1
+                    if versionTapCount >= 5 {
+                        versionTapCount = 0
+                        proPurchase.toggleDeveloperMode()
+                        showDeveloperModeAlert = true
+                    }
                 }
 
                 HStack {
@@ -868,6 +938,14 @@ private struct AboutDetailView: View {
         .background(Color(uiColor: .systemGroupedBackground))
         .sheet(item: $safariURL) { identifiableURL in
             SafariView(url: identifiableURL.url)
+        }
+        .alert(
+            proPurchase.isDeveloperModeEnabled
+                ? NSLocalizedString("settings_developer_mode_enabled_title", comment: "")
+                : NSLocalizedString("settings_developer_mode_disabled_title", comment: ""),
+            isPresented: $showDeveloperModeAlert
+        ) {
+            Button(NSLocalizedString("ok_button", comment: ""), role: .cancel) {}
         }
     }
 }
