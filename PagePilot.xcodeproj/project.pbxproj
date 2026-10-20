@@ -1705,13 +1705,13 @@
 			buildSettings = {
 				APS_ENVIRONMENT = production;
 				CODE_SIGN_STYLE = Manual;
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution";
-				"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = "iOS Team Store Provisioning Profile: com.panyang.PagePilot";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Distribution";
+				"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = "PagePilot App App Store 1.0.24";
 				"PROVISIONING_PROFILE_SPECIFIER[sdk=macosx*]" = "PagePilot Mac Catalyst App Store";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = iPhone/pagepilot.entitlements;
 				"CODE_SIGN_ENTITLEMENTS[sdk=macosx*]" = Mac/PagePilot.entitlements;
-				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Distribution";
 				SUPPORTS_MACCATALYST = YES;
 				DERIVE_MACCATALYST_PRODUCT_BUNDLE_IDENTIFIER = NO;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
@@ -1775,8 +1775,8 @@
 				SKIP_INSTALL = YES;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				CODE_SIGN_STYLE = Manual;
-				CODE_SIGN_IDENTITY = "iPhone Distribution";
-				PROVISIONING_PROFILE_SPECIFIER = "iOS Team Store Provisioning Profile: com.panyang.PagePilot.ReadingLiveActivity";
+				CODE_SIGN_IDENTITY = "Apple Distribution";
+				PROVISIONING_PROFILE_SPECIFIER = "PagePilot ReadingLiveActivity App Store 1.0.24";
 			};
 			name = Release;
 		};
@@ -1831,8 +1831,8 @@
 				SKIP_INSTALL = YES;
 				TARGETED_DEVICE_FAMILY = 4;
 				WATCHOS_DEPLOYMENT_TARGET = 10.0;
-				CODE_SIGN_IDENTITY = "iPhone Distribution";
-				PROVISIONING_PROFILE_SPECIFIER = "iOS Team Store Provisioning Profile: com.panyang.PagePilot.WatchRemote";
+				CODE_SIGN_IDENTITY = "Apple Distribution";
+				PROVISIONING_PROFILE_SPECIFIER = "PagePilot Watch App Store 1.0.24";
 			};
 			name = Release;
 		};

@@ -109,8 +109,8 @@ targets:
           APS_ENVIRONMENT: development
         Release:
           CODE_SIGN_STYLE: Manual
-          "CODE_SIGN_IDENTITY[sdk=iphoneos*]": iPhone Distribution
-          "PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]": "iOS Team Store Provisioning Profile: com.panyang.PagePilot"
+          "CODE_SIGN_IDENTITY[sdk=iphoneos*]": Apple Distribution
+          "PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]": "PagePilot App App Store 1.0.24"
           "CODE_SIGN_IDENTITY[sdk=macosx*]": Apple Distribution
           "PROVISIONING_PROFILE_SPECIFIER[sdk=macosx*]": PagePilot Mac Catalyst App Store
           APS_ENVIRONMENT: production
@@ -134,8 +134,8 @@ targets:
           CODE_SIGN_IDENTITY: Apple Development
           PROVISIONING_PROFILE_SPECIFIER: PagePilot Watch Development
         Release:
-          CODE_SIGN_IDENTITY: iPhone Distribution
-          PROVISIONING_PROFILE_SPECIFIER: "iOS Team Store Provisioning Profile: com.panyang.PagePilot.WatchRemote"
+          CODE_SIGN_IDENTITY: Apple Distribution
+          PROVISIONING_PROFILE_SPECIFIER: "PagePilot Watch App Store 1.0.24"
 
   PagePilotLiveActivity:
     type: app-extension
@@ -155,8 +155,8 @@ targets:
       configs:
         Release:
           CODE_SIGN_STYLE: Manual
-          CODE_SIGN_IDENTITY: iPhone Distribution
-          PROVISIONING_PROFILE_SPECIFIER: "iOS Team Store Provisioning Profile: com.panyang.PagePilot.ReadingLiveActivity"
+          CODE_SIGN_IDENTITY: Apple Distribution
+          PROVISIONING_PROFILE_SPECIFIER: "PagePilot ReadingLiveActivity App Store 1.0.24"
 
   PagePilotTests:
     type: bundle.unit-test
