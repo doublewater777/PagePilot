@@ -97,6 +97,7 @@ targets:
         DERIVE_MACCATALYST_PRODUCT_BUNDLE_IDENTIFIER: NO
         "CODE_SIGN_ENTITLEMENTS[sdk=macosx*]": Mac/PagePilot.entitlements
         "CODE_SIGN_IDENTITY[sdk=macosx*]": Apple Development
+        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.reference
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_NSLocalNetworkUsageDescription: PagePilot uses the local network to transfer books and connect to your iPad or Mac reader for Apple Watch page controls.
         INFOPLIST_KEY_NSSupportsLiveActivities: YES

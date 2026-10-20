@@ -1614,6 +1614,7 @@
 				INFOPLIST_FILE = iPhone/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = PagePilot;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.reference";
 				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = YES;
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "PagePilot uses the local network to transfer books and connect to your iPad or Mac reader for Apple Watch page controls.";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
@@ -1720,6 +1721,7 @@
 				INFOPLIST_FILE = iPhone/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = PagePilot;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.reference";
 				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = YES;
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "PagePilot uses the local network to transfer books and connect to your iPad or Mac reader for Apple Watch page controls.";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
