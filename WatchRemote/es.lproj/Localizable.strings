@@ -1,7 +1,7 @@
 /* Watch Remote */
 "watch.connected" = "Conectado";
 "watch.iphoneRelay" = "retransmisión de iPhone";
-"watch.ipadConnected" = "iPad conectado";
+"watch.ipadConnected" = "iPad / Mac conectado";
 "watch.iphoneConnected" = "iPhone conectado";
 "watch.notConnected" = "No conectado";
 "watch.status.connecting" = "Conectando con el iPhone…";
@@ -9,12 +9,12 @@
 "watch.previousPage" = "Anterior";
 "watch.nextPage" = "Siguiente";
 "watch.hint.openIPhone" = "Abra PagePilot en iPhone";
-"watch.hint.openIPad" = "Abra PagePilot en iPad";
+"watch.hint.openIPad" = "Abra PagePilot en iPad / Mac";
 "watch.hint.openBookIPhone" = "Abrir un libro en iPhone";
-"watch.hint.openBookIPad" = "Abrir un libro en iPad";
+"watch.hint.openBookIPad" = "Abrir un libro en iPad / Mac";
 "watch.error.sendFailed" = "No se pudo enviar. Intentar otra vez.";
-"watch.error.ipadNotFound" = "Abra PagePilot en iPad y mantenga ambos dispositivos en el mismo Wi‑Fi.";
-"watch.error.ipadTimeout" = "No puedo acceder al iPad. Verifique la conexión Wi‑Fi y mantenga abierto PagePilot.";
+"watch.error.ipadNotFound" = "Abra PagePilot en iPad / Mac y mantenga ambos dispositivos en el mismo Wi‑Fi.";
+"watch.error.ipadTimeout" = "No puedo acceder al iPad / Mac. Verifique la conexión Wi‑Fi y mantenga abierto PagePilot.";
 "watch.error.openIPhone" = "Abra PagePilot en iPhone";
 "watch.error.generic" = "No pude pasar la página. Intentar otra vez.";
-"watch.error.proRequired" = "El paso de página del iPad necesita PagePilot Pro en el iPhone.";
+"watch.error.proRequired" = "El paso de página del iPad / Mac necesita PagePilot Pro en el iPhone.";

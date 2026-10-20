@@ -62,6 +62,7 @@ final class VolumeKeyService: NSObject {
     }
 
     private func setupIfNeeded() {
+        guard !PagePilotReaderHost.isMac else { return }
         guard !isObserving else { return }
 
         let vv = MPVolumeView(frame: .zero)

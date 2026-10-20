@@ -157,6 +157,25 @@ final class PagePilotPeerLinkTests: XCTestCase {
         XCTAssertEqual(unnamed.bookTitle, "")
     }
 
+    func testMacReaderUsesCompatibleServiceAndPersistsItsPlatform() throws {
+        let suite = "PagePilotMacSelectionTests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let target = try XCTUnwrap(PagePilotNearbyTarget.from(
+            serviceName: PagePilotRelayIdentity.serviceName(for: firstID),
+            name: "Office Mac", bookTitle: "Dune", platform: "mac"
+        ))
+
+        XCTAssertEqual(target.systemImage, "desktopcomputer")
+        PagePilotNearbySelectionStore.remember(target, defaults: defaults)
+        XCTAssertEqual(PagePilotNearbySelectionStore.selectedTarget(defaults: defaults), target)
+
+        let oldSelection = Data("{\"id\":\"\(secondID)\",\"name\":\"iPad\",\"bookTitle\":\"\"}".utf8)
+        let legacy = try JSONDecoder().decode(PagePilotNearbyTarget.self, from: oldSelection)
+        XCTAssertNil(legacy.platform)
+        XCTAssertEqual(legacy.systemImage, "ipad")
+    }
+
     func testLegacyLANAssociationMigratesOnceAndExplicitSelectionWins() throws {
         let suite = "PagePilotNearbySelectionTests.\(UUID().uuidString)"
         let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
@@ -231,11 +250,12 @@ final class PagePilotPeerLinkIntegrationTests: XCTestCase {
     private func startHost(
         id: String,
         hasPro: Bool = true,
+        platform: String = "ipad",
         received: Received = Received()
     ) -> (PagePilotPeerHost, Received) {
         let host = PagePilotPeerHost(serviceType: serviceType, localIdentifier: { id }, restartDelay: 0.2)
         host.start(
-            advertisement: PagePilotPeerAdvertisement(name: "Test iPad \(id.prefix(4))", bookTitle: "Dune"),
+            advertisement: PagePilotPeerAdvertisement(name: "Test Reader \(id.prefix(4))", bookTitle: "Dune", platform: platform),
             hasProAccess: { hasPro },
             handler: { request, reply in
                 received.append(request.action?.rawValue ?? request.kind.rawValue)
@@ -267,9 +287,9 @@ final class PagePilotPeerLinkIntegrationTests: XCTestCase {
         return outcome
     }
 
-    func testListsAdvertisedIPadsWithNameAndBook() {
+    func testListsAdvertisedReadersWithNameBookAndPlatform() {
         startHost(id: firstID)
-        startHost(id: secondID)
+        startHost(id: secondID, platform: "mac")
         let client = makeClient(discoveryTimeout: 3)
 
         let done = expectation(description: "discovery")
@@ -282,6 +302,8 @@ final class PagePilotPeerLinkIntegrationTests: XCTestCase {
 
         XCTAssertTrue(Set(targets.map(\.id)).isSuperset(of: [firstID, secondID]))
         XCTAssertEqual(targets.first { $0.id == firstID }?.bookTitle, "Dune")
+        XCTAssertEqual(targets.first { $0.id == secondID }?.platform, "mac")
+        XCTAssertEqual(targets.first { $0.id == secondID }?.systemImage, "desktopcomputer")
     }
 
     func testPageTurnsReuseOneConnectionToTheSelectedIPad() throws {

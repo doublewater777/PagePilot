@@ -54,7 +54,7 @@
 "onboarding_ipad_handoff_step3" = "Ouvrez le livre sur l’iPad, puis choisissez-le sur l’iPhone dans Moi → Changement de page avec l’Apple Watch → Choisir un iPad à proximité";
 "onboarding_handoff_done" = "Terminé";
 "paywall_ipad_watch_title" = "Lisez sur iPad. Tournez les pages avec l’Apple Watch.";
-"paywall_ipad_watch_subtitle" = "Déverrouillez le relais iPhone pour transmettre les commandes de l’Apple Watch au lecteur iPad à proximité.";
+"paywall_ipad_watch_subtitle" = "Déverrouillez le relais iPhone pour transmettre les commandes de l’Apple Watch au lecteur iPad / Mac à proximité.";
 "onboarding_watch_skip" = "Pas maintenant";
 "onboarding_watch_intro_title" = "Tournez les pages avec la Digital Crown";
 "onboarding_watch_intro_subtitle" = "PagePilot pour iPhone et iPad : lisez au lit, au sport ou en voyage et tournez facilement les pages avec votre Apple Watch.";
@@ -363,15 +363,15 @@
 
 /* Paywall */
 "paywall_title" = "Lisez concentré, profitez davantage";
-"paywall_subtitle" = "Bibliothèque illimitée, changement de page sur iPad avec l’Apple Watch et statistiques approfondies pour lire plus librement.";
+"paywall_subtitle" = "Bibliothèque illimitée, changement de page sur iPad / Mac avec l’Apple Watch et statistiques approfondies pour lire plus librement.";
 "paywall_pro_badge" = "Recommandé à l’année";
 "paywall_feature_unlimited_books" = "Livres illimités (la version gratuite en conserve jusqu’à 10)";
-"paywall_feature_ipad_page_turn" = "Utilisez l’Apple Watch pour tourner les pages sur iPad";
+"paywall_feature_ipad_page_turn" = "Utilisez l’Apple Watch pour tourner les pages sur iPad / Mac";
 "paywall_feature_stats" = "Statistiques hebdomadaires, mensuelles et annuelles";
 "paywall_feature_streak" = "Suivi des séries de lecture";
 "paywall_feature_unlimited_title" = "Bibliothèque illimitée";
 "paywall_feature_unlimited_subtitle" = "Aucune limite de 10 livres";
-"paywall_feature_watch_title" = "Watch sur iPad";
+"paywall_feature_watch_title" = "Watch sur iPad / Mac";
 "paywall_feature_watch_subtitle" = "Le changement de page sur iPhone est gratuit";
 "paywall_feature_stats_title" = "Statistiques approfondies";
 "paywall_feature_stats_subtitle" = "Semaine, mois, année";
@@ -402,7 +402,7 @@
 "settings_pro_upgrade_body" = "Débloquez une bibliothèque illimitée, des statistiques approfondies, des notes illimitées et plus encore";
 "settings_pro_benefit_library" = "Bibliothèque illimitée";
 "settings_pro_benefit_stats" = "Statistiques approfondies";
-"settings_pro_benefit_watch" = "Watch sur iPad";
+"settings_pro_benefit_watch" = "Watch sur iPad / Mac";
 "settings_pro_benefit_notes" = "Notes illimitées";
 
 /* Purchase Errors */
@@ -774,7 +774,7 @@
 "watch_target_section" = "Appareil de changement de page";
 "watch_target_picker" = "Appareil de changement de page";
 "watch_target_footer" = "Par défaut, l’Apple Watch contrôle l’iPhone. Choisissez l’iPad lorsque vous y lisez un livre.";
-"watch_target_ipad" = "iPad";
+"watch_target_ipad" = "iPad / Mac";
 "watch_target_ipad_pro" = "%@ Pro";
 "watch_target_iphone" = "iPhone";
 "watch_input_mode_section" = "Mode de saisie";
@@ -982,14 +982,14 @@
 "reading_pace_estimate_basis" = "Estimation basée sur les sessions récentes. Votre rythme peut varier.";
 
 // Nearby iPad selection
-"nearby_ipad_choose" = "Choisir un iPad à proximité";
-"nearby_ipad_instructions" = "Gardez PagePilot ouvert sur l’iPad avec un accès Pro sur les deux appareils. Activez le Wi-Fi ; un réseau commun n’est pas nécessaire. Touchez un iPad pour le connecter.";
-"nearby_ipad_searching" = "Recherche d’iPad à proximité…";
-"nearby_ipad_empty" = "Aucun iPad trouvé. Ouvrez PagePilot sur l’iPad, puis relancez la recherche.";
+"nearby_ipad_choose" = "Choisir un iPad / Mac à proximité";
+"nearby_ipad_instructions" = "Ouvrez PagePilot sur l’iPad ou le Mac avec Pro sur les deux appareils et le même réseau Wi-Fi. Sur l’iPhone, ouvrez Moi → Changement de page avec l’Apple Watch, choisissez votre iPad / Mac à proximité, puis ouvrez un livre.";
+"nearby_ipad_searching" = "Recherche d’iPad / Mac à proximité…";
+"nearby_ipad_empty" = "Aucun iPad / Mac trouvé. Ouvrez PagePilot sur l’iPad ou le Mac, puis relancez la recherche.";
 "nearby_ipad_refresh" = "Rechercher à nouveau";
 "nearby_ipad_search_failed" = "Recherche impossible. Vérifiez l’autorisation du réseau local et réessayez.";
-"nearby_ipad_connect_failed" = "Connexion impossible. Gardez PagePilot ouvert sur l’iPad et vérifiez l’accès Pro sur les deux appareils.";
-"nearby_ipad_pro_required" = "PagePilot Pro est nécessaire pour connecter un iPad.";
+"nearby_ipad_connect_failed" = "Connexion impossible. Gardez PagePilot ouvert sur l’iPad / Mac et vérifiez l’accès Pro sur les deux appareils.";
+"nearby_ipad_pro_required" = "PagePilot Pro est nécessaire pour connecter un iPad / Mac.";
 "nearby_ipad_prev" = "Page précédente";
 "nearby_ipad_next" = "Page suivante";
 "nearby_ipad_linked" = "Connecté";
@@ -1014,14 +1014,14 @@
 "page_turn_chain_watch_not_installed" = "Non installée";
 "page_turn_chain_watch_unpaired" = "Non jumelée";
 "page_turn_chain_ipad_none" = "Non choisi";
-"page_turn_ipad_section" = "Tourner les pages sur l’iPad";
+"page_turn_ipad_section" = "Tourner les pages sur l’iPad / Mac";
 "ipad_page_turn_receiving" = "Réception des pages activée";
 "ipad_page_turn_starting" = "Démarrage…";
 "ipad_page_turn_not_receiving" = "Réception des pages désactivée";
 "ipad_page_turn_phone_linked" = "iPhone connecté";
 "ipad_page_turn_phone_waiting" = "Aucun iPhone connecté pour l’instant";
 "ipad_page_turn_pro_required" = "PagePilot Pro est nécessaire pour recevoir les pages tournées depuis la Watch.";
-"ipad_page_turn_hint" = "Sur l’iPhone, ouvrez Moi → Changement de page avec l’Apple Watch → Choisir un iPad à proximité et choisissez cet iPad. Laissez le Wi‑Fi activé ; un réseau commun n’est pas nécessaire.";
+"ipad_page_turn_hint" = "Ouvrez PagePilot sur l’iPad ou le Mac avec Pro sur les deux appareils et le même réseau Wi-Fi. Sur l’iPhone, ouvrez Moi → Changement de page avec l’Apple Watch, choisissez votre iPad / Mac à proximité, puis ouvrez un livre.";
 "feedback_email_button" = "Nous écrire par e-mail";
 "feedback_email_hint" = "Besoin d’une réponse ou de joindre des captures ? Écrivez-nous à %@.";
 

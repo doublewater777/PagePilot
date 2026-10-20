@@ -1,9 +1,25 @@
 import Foundation
 import UIKit
 
+/// Mac Catalyst and iPad both receive commands through the iPhone relay.
+enum PagePilotReaderHost {
+    static var isMac: Bool {
+        #if targetEnvironment(macCatalyst)
+        return true
+        #else
+        return ProcessInfo.processInfo.isiOSAppOnMac
+        #endif
+    }
+
+    static var isSupported: Bool {
+        isMac || UIDevice.current.userInterfaceIdiom == .pad
+    }
+}
+
 // MARK: - Identity
 
 enum PagePilotRelayIdentity {
+    // Keep the service prefix so existing iPhone clients can discover Mac readers.
     static let serviceNamePrefix = "PagePilot-iPad-"
     private static let identifierKey = "pagepilot_relay_identifier"
 
@@ -41,16 +57,20 @@ struct PagePilotNearbyTarget: Codable, Equatable, Identifiable {
     let id: String
     let name: String
     let bookTitle: String
+    var platform: String? = nil
 
-    static func from(serviceName: String, name: String?, bookTitle: String?) -> Self? {
+    var systemImage: String { platform == "mac" ? "desktopcomputer" : "ipad" }
+
+    static func from(serviceName: String, name: String?, bookTitle: String?, platform: String? = nil) -> Self? {
         guard let identifier = PagePilotRelayIdentity.identifier(fromServiceName: serviceName) else {
             return nil
         }
         let name = name?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         return Self(
             id: identifier,
-            name: name.isEmpty ? "iPad" : name,
-            bookTitle: bookTitle ?? ""
+            name: name.isEmpty ? (platform == "mac" ? "Mac" : "iPad") : name,
+            bookTitle: bookTitle ?? "",
+            platform: platform
         )
     }
 }

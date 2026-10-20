@@ -68,8 +68,18 @@ final class WatchPageTurnService: NSObject, ObservableObject {
     var isReaderReady: Bool {
         WatchReaderAvailabilityPolicy.isReady(
             hasNavigator: activeNavigator != nil,
-            applicationIsActive: UIApplication.shared.applicationState == .active
+            applicationIsActive: readerApplicationIsActive
         )
+    }
+
+    private var readerApplicationIsActive: Bool {
+        // A visible Mac reader remains controllable when another app has focus.
+        if PagePilotReaderHost.isMac {
+            return UIApplication.shared.connectedScenes.contains {
+                $0.activationState == .foregroundActive || $0.activationState == .foregroundInactive
+            }
+        }
+        return UIApplication.shared.applicationState == .active
     }
 
     private var session: WCSession?
@@ -116,7 +126,7 @@ final class WatchPageTurnService: NSObject, ObservableObject {
                 object: nil,
                 queue: .main
             ) { [weak self] _ in
-                if UIDevice.current.userInterfaceIdiom == .pad {
+                if PagePilotReaderHost.isSupported {
                     self?.enableIPadRelay()
                 } else {
                     self?.prepareIPadRelay()
@@ -131,7 +141,7 @@ final class WatchPageTurnService: NSObject, ObservableObject {
             session?.delegate = self
             session?.activate()
         }
-        if UIDevice.current.userInterfaceIdiom == .pad {
+        if PagePilotReaderHost.isSupported {
             enableIPadRelay()
         } else {
             prepareIPadRelay()
@@ -143,11 +153,11 @@ final class WatchPageTurnService: NSObject, ObservableObject {
 
     // MARK: - iPad host
 
-    /// Starts the iPad page-turn host when this device is an iPad with Pro.
-    /// Safe to call repeatedly; no-ops on iPhone or without Pro Access.
+    /// Advertises iPad and Mac readers. Commands enforce Pro access separately.
+    /// Safe to call repeatedly; no-ops on iPhone.
     func enableIPadRelay() {
         switch PagePilotRelayEntitlementLifecyclePolicy.action(
-            isIPad: UIDevice.current.userInterfaceIdiom == .pad,
+            isIPad: PagePilotReaderHost.isSupported,
             hasProAccess: ProPurchaseManager.shared.hasProAccess
         ) {
         case .start:
@@ -169,15 +179,16 @@ final class WatchPageTurnService: NSObject, ObservableObject {
 
     /// Stops iPad advertising when Pro access is no longer valid.
     func disableIPadRelay() {
-        guard UIDevice.current.userInterfaceIdiom == .pad else { return }
+        guard PagePilotReaderHost.isSupported else { return }
         recentCommandIDs.removeAll()
         PagePilotPeerHost.shared.stop()
     }
 
     private var currentAdvertisement: PagePilotPeerAdvertisement {
         PagePilotPeerAdvertisement(
-            name: UIDevice.current.name,
-            bookTitle: activeNavigator == nil ? "" : currentBookTitle
+            name: PagePilotReaderHost.isMac ? ProcessInfo.processInfo.hostName : UIDevice.current.name,
+            bookTitle: activeNavigator == nil ? "" : currentBookTitle,
+            platform: PagePilotReaderHost.isMac ? "mac" : "ipad"
         )
     }
 
@@ -312,7 +323,7 @@ final class WatchPageTurnService: NSObject, ObservableObject {
             replyHandler?(errorPayload(
                 route: WatchPageTurnRoute.iPhoneRelay,
                 code: WatchPageTurnErrorCode.proRequired,
-                message: "pro is required for iPad page turn"
+                message: "pro is required for remote page turn"
             ))
             return
         }
@@ -320,7 +331,7 @@ final class WatchPageTurnService: NSObject, ObservableObject {
             replyHandler?(errorPayload(
                 route: WatchPageTurnRoute.iPhoneRelay,
                 code: WatchPageTurnErrorCode.iPadNotFound,
-                message: "Select an iPad in iPhone Watch Page Turn settings first"
+                message: "Select an iPad or Mac in iPhone Watch Page Turn settings first"
             ))
             return
         }
@@ -348,7 +359,7 @@ final class WatchPageTurnService: NSObject, ObservableObject {
                 replyHandler?(self.errorPayload(
                     route: WatchPageTurnRoute.iPhoneRelay,
                     code: error.watchErrorCode,
-                    message: "iPad relay failed: \(error.rawValue)"
+                    message: "Reader relay failed: \(error.rawValue)"
                 ))
             }
             if backgroundTask != .invalid {
@@ -371,7 +382,7 @@ final class WatchPageTurnService: NSObject, ObservableObject {
 
         // Also (re)starts the host when Pro was granted after activate(), and
         // advertises the open book so the iPhone list can show it.
-        if UIDevice.current.userInterfaceIdiom == .pad {
+        if PagePilotReaderHost.isSupported {
             enableIPadRelay()
         }
     }
@@ -387,7 +398,7 @@ final class WatchPageTurnService: NSObject, ObservableObject {
         updateApplicationContextSafely(context)
         // Keep the host running so the iPhone link survives; commands return
         // NAVIGATOR_NOT_READY until another Reader opens.
-        if UIDevice.current.userInterfaceIdiom == .pad {
+        if PagePilotReaderHost.isSupported {
             PagePilotPeerHost.shared.update(advertisement: currentAdvertisement)
         }
     }
@@ -423,6 +434,7 @@ final class WatchPageTurnService: NSObject, ObservableObject {
     }
 
     private func updateApplicationContextSafely(_ context: [String: Any]) {
+        guard WCSession.isSupported() else { return }
         do {
             try WCSession.default.updateApplicationContext(context)
         } catch let error as WCError where error.code == .watchAppNotInstalled {
@@ -457,7 +469,7 @@ final class WatchPageTurnService: NSObject, ObservableObject {
             guard let navigator = self.activeNavigator,
                   WatchReaderAvailabilityPolicy.isReady(
                       hasNavigator: true,
-                      applicationIsActive: UIApplication.shared.applicationState == .active
+                      applicationIsActive: readerApplicationIsActive
                   ) else {
                 completion?(self.errorPayload(
                     route: WatchPageTurnRoute.direct,
@@ -490,7 +502,7 @@ final class WatchPageTurnService: NSObject, ObservableObject {
             "status": "ok",
             "ok": true,
             "route": route,
-            "target": UIDevice.current.userInterfaceIdiom == .pad ? "ipad" : "iphone",
+            "target": PagePilotReaderHost.isMac ? "mac" : (PagePilotReaderHost.isSupported ? "ipad" : "iphone"),
             "readerReady": isReaderReady,
             "bookTitle": currentBookTitle,
             "bookProgress": currentBookProgress,
@@ -579,7 +591,7 @@ extension WatchPageTurnService: WCSessionDelegate {
                 relayToSelectedIPad(.status, replyHandler: replyHandler)
             case .iPhone where UIDevice.current.userInterfaceIdiom == .phone:
                 replyHandler?(localStatusPayload(route: WatchPageTurnRoute.direct))
-            case .iPad where UIDevice.current.userInterfaceIdiom == .pad:
+            case .iPad where PagePilotReaderHost.isSupported:
                 // Watch is always paired to iPhone, but keep this path for completeness.
                 replyHandler?(localStatusPayload(route: WatchPageTurnRoute.direct))
             default:
@@ -626,7 +638,7 @@ extension WatchPageTurnService: WCSessionDelegate {
                     }
                     replyHandler?(payload)
                 }
-            case .iPad where UIDevice.current.userInterfaceIdiom == .pad:
+            case .iPad where PagePilotReaderHost.isSupported:
                 // LAN path is primary; WCSession on iPad is rare. Do not require Pro here —
                 // Pro is enforced on the iPhone relay entry point.
                 guard isReaderReady else {

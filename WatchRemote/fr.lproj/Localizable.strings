@@ -1,7 +1,7 @@
 /* Watch Remote */
 "watch.connected" = "Connectée";
 "watch.iphoneRelay" = "Relais iPhone";
-"watch.ipadConnected" = "iPad connecté";
+"watch.ipadConnected" = "iPad / Mac connecté";
 "watch.iphoneConnected" = "iPhone connecté";
 "watch.notConnected" = "Non connectée";
 "watch.status.connecting" = "Connexion à l’iPhone…";
@@ -9,12 +9,12 @@
 "watch.previousPage" = "Précédente";
 "watch.nextPage" = "Suivante";
 "watch.hint.openIPhone" = "Ouvrez PagePilot sur l’iPhone";
-"watch.hint.openIPad" = "Ouvrez PagePilot sur l’iPad";
+"watch.hint.openIPad" = "Ouvrez PagePilot sur l’iPad / Mac";
 "watch.hint.openBookIPhone" = "Ouvrez un livre sur l’iPhone";
-"watch.hint.openBookIPad" = "Ouvrez un livre sur l’iPad";
+"watch.hint.openBookIPad" = "Ouvrez un livre sur l’iPad / Mac";
 "watch.error.sendFailed" = "Envoi impossible. Réessayez.";
-"watch.error.ipadNotFound" = "Ouvrez PagePilot sur l’iPad et gardez les deux appareils sur le même réseau Wi‑Fi.";
-"watch.error.ipadTimeout" = "Impossible de joindre l’iPad. Vérifiez le Wi‑Fi et gardez PagePilot ouvert.";
+"watch.error.ipadNotFound" = "Ouvrez PagePilot sur l’iPad / Mac et gardez les deux appareils sur le même réseau Wi‑Fi.";
+"watch.error.ipadTimeout" = "Impossible de joindre l’iPad / Mac. Vérifiez le Wi‑Fi et gardez PagePilot ouvert.";
 "watch.error.openIPhone" = "Ouvrez PagePilot sur l’iPhone";
 "watch.error.generic" = "Impossible de tourner la page. Réessayez.";
-"watch.error.proRequired" = "Pour tourner les pages sur iPad, PagePilot Pro doit être installé sur l’iPhone.";
+"watch.error.proRequired" = "Pour tourner les pages sur iPad / Mac, PagePilot Pro doit être installé sur l’iPhone.";

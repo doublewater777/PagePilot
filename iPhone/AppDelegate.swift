@@ -167,7 +167,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         ])
         tabBarController.customizationIdentifier = "com.panyang.PagePilot.main"
 
-        if UIDevice.current.userInterfaceIdiom == .pad {
+        if PagePilotReaderHost.isSupported {
             tabBarController.mode = .tabSidebar
             tabBarController.sidebar.preferredLayout = .tile
         }
@@ -388,7 +388,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
                 return
             }
 
-            let platform: OnboardingFlow.Platform = UIDevice.current.userInterfaceIdiom == .pad
+            let platform: OnboardingFlow.Platform = PagePilotReaderHost.isSupported
                 ? .iPad
                 : .iPhone
             let progressStore = OnboardingProgressStore()
@@ -520,6 +520,9 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         StartupProfiler.shared.record("SceneDelegate willConnectTo Start")
         guard let windowScene = scene as? UIWindowScene else { return }
 
+        #if targetEnvironment(macCatalyst)
+        windowScene.sizeRestrictions?.minimumSize = CGSize(width: 600, height: 480)
+        #endif
         let rootViewController = appDelegate.makeRootViewController()
         let window = UIWindow(windowScene: windowScene)
         window.rootViewController = rootViewController

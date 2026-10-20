@@ -4,7 +4,9 @@
 //  available in the top-level LICENSE file of the project.
 //
 
+#if !targetEnvironment(macCatalyst)
 import ActivityKit
+#endif
 import Foundation
 
 @MainActor
@@ -28,6 +30,7 @@ protocol ReadingLiveActivityClient: AnyObject {
     ) async throws
 }
 
+#if !targetEnvironment(macCatalyst)
 @MainActor
 final class ActivityKitReadingLiveActivityClient: ReadingLiveActivityClient {
     enum ClientError: Error {
@@ -77,6 +80,23 @@ final class ActivityKitReadingLiveActivityClient: ReadingLiveActivityClient {
         Activity<ReadingLiveActivityAttributes>.activities.first { $0.id == id }
     }
 }
+
+#else
+/// Live Activities are an iPhone feature; Mac keeps the reader session only.
+@MainActor
+final class ActivityKitReadingLiveActivityClient: ReadingLiveActivityClient {
+    enum ClientError: Error { case unavailable }
+    var areActivitiesEnabled: Bool { false }
+    var activeActivityIDs: [String] { [] }
+
+    func request(attributes: ReadingLiveActivityAttributes, state: ReadingLiveActivityAttributes.ContentState) throws -> String {
+        throw ClientError.unavailable
+    }
+
+    func update(activityID: String, state: ReadingLiveActivityAttributes.ContentState) async throws {}
+    func end(activityID: String, state: ReadingLiveActivityAttributes.ContentState?) async throws {}
+}
+#endif
 
 @MainActor
 final class ReadingLiveActivityCoordinator {

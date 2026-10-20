@@ -373,7 +373,7 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
     }
 
     private func showOnboardingIPadHintIfNeeded() {
-        guard UIDevice.current.userInterfaceIdiom == .pad else { return }
+        guard PagePilotReaderHost.isSupported else { return }
         let store = OnboardingProgressStore()
         let flow = store.load(platform: .iPad)
         guard flow.platform == .iPad, flow.step == .reader else { return }

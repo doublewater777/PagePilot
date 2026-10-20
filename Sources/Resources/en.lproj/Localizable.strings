@@ -54,7 +54,7 @@
 "onboarding_ipad_handoff_step3" = "Open the book on iPad, then on iPhone choose it in Me → Watch Page Turn → Choose Nearby iPad";
 "onboarding_handoff_done" = "Done";
 "paywall_ipad_watch_title" = "Read on iPad. Turn Pages with Apple Watch.";
-"paywall_ipad_watch_subtitle" = "Unlock iPhone relay so Watch commands reach a nearby iPad Reader.";
+"paywall_ipad_watch_subtitle" = "Unlock iPhone relay so Watch commands reach a nearby iPad / Mac Reader.";
 "onboarding_watch_skip" = "Not Now";
 "onboarding_watch_intro_title" = "Turn pages, with the Digital Crown";
 "onboarding_watch_intro_subtitle" = "PagePilot is built for iPhone & iPad. Read in bed with your phone on a stand, at the gym, or on a train — turn pages effortlessly with your Apple Watch.";
@@ -363,15 +363,15 @@
 
 /* Paywall */
 "paywall_title" = "Focus Reading, Get More";
-"paywall_subtitle" = "Unlimited library, Watch-on-iPad page turns, and deeper stats for freer reading.";
+"paywall_subtitle" = "Unlimited library, Watch-on-iPad / Mac page turns, and deeper stats for freer reading.";
 "paywall_pro_badge" = "Yearly Recommended";
 "paywall_feature_unlimited_books" = "Unlimited books (free version keeps up to 10)";
-"paywall_feature_ipad_page_turn" = "Use Apple Watch to turn pages on iPad";
+"paywall_feature_ipad_page_turn" = "Use Apple Watch to turn pages on iPad / Mac";
 "paywall_feature_stats" = "Weekly, monthly & yearly stats";
 "paywall_feature_streak" = "Reading streak tracking";
 "paywall_feature_unlimited_title" = "Unlimited library";
 "paywall_feature_unlimited_subtitle" = "No 10-book limit";
-"paywall_feature_watch_title" = "Watch on iPad";
+"paywall_feature_watch_title" = "Watch on iPad / Mac";
 "paywall_feature_watch_subtitle" = "iPhone turns free";
 "paywall_feature_stats_title" = "Deep stats";
 "paywall_feature_stats_subtitle" = "Week, month, year";
@@ -402,7 +402,7 @@
 "settings_pro_upgrade_body" = "Unlock unlimited library, deeper stats, unlimited notes, and more";
 "settings_pro_benefit_library" = "Unlimited Library";
 "settings_pro_benefit_stats" = "Deep Stats";
-"settings_pro_benefit_watch" = "Watch on iPad";
+"settings_pro_benefit_watch" = "Watch on iPad / Mac";
 "settings_pro_benefit_notes" = "Unlimited Notes";
 
 /* Purchase Errors */
@@ -774,7 +774,7 @@
 "watch_target_section" = "Page Turn Device";
 "watch_target_picker" = "Page Turn Device";
 "watch_target_footer" = "Apple Watch controls iPhone by default. Switch to iPad when reading there.";
-"watch_target_ipad" = "iPad";
+"watch_target_ipad" = "iPad / Mac";
 "watch_target_ipad_pro" = "%@ Pro";
 "watch_target_iphone" = "iPhone";
 "watch_input_mode_section" = "Input Mode";
@@ -982,14 +982,14 @@
 "reading_pace_estimate_basis" = "Estimate based on recent reading sessions. Your pace can change.";
 
 // Nearby iPad selection
-"nearby_ipad_choose" = "Choose Nearby iPad";
-"nearby_ipad_instructions" = "Keep PagePilot open on your iPad with Pro access on both devices. Keep Wi-Fi enabled; a shared Wi-Fi network is not required. Tap an iPad to connect.";
-"nearby_ipad_searching" = "Searching for nearby iPads…";
-"nearby_ipad_empty" = "No iPads found. Open PagePilot on your iPad, then search again.";
+"nearby_ipad_choose" = "Choose Nearby iPad / Mac";
+"nearby_ipad_instructions" = "Open PagePilot on your iPad or Mac with Pro access on both devices and connect to the same Wi-Fi. On iPhone, open Me → Watch Page Turn → Choose Nearby iPad / Mac, select your reader, then open a book.";
+"nearby_ipad_searching" = "Searching for nearby iPads and Macs…";
+"nearby_ipad_empty" = "No readers found. Open PagePilot on your iPad or Mac, then search again.";
 "nearby_ipad_refresh" = "Search Again";
 "nearby_ipad_search_failed" = "Could not search. Check local network permission and try again.";
-"nearby_ipad_connect_failed" = "Could not connect. Keep PagePilot open on the iPad and check Pro access on both devices.";
-"nearby_ipad_pro_required" = "PagePilot Pro is required to connect an iPad.";
+"nearby_ipad_connect_failed" = "Could not connect. Keep PagePilot open on the iPad / Mac and check Pro access on both devices.";
+"nearby_ipad_pro_required" = "PagePilot Pro is required to connect an iPad / Mac.";
 "nearby_ipad_prev" = "Previous Page";
 "nearby_ipad_next" = "Next Page";
 "nearby_ipad_linked" = "Connected";
@@ -1014,14 +1014,14 @@
 "page_turn_chain_watch_not_installed" = "Not installed";
 "page_turn_chain_watch_unpaired" = "Not paired";
 "page_turn_chain_ipad_none" = "Not chosen";
-"page_turn_ipad_section" = "Turn Pages on iPad";
+"page_turn_ipad_section" = "Turn Pages on iPad / Mac";
 "ipad_page_turn_receiving" = "Receiving page turns";
 "ipad_page_turn_starting" = "Starting…";
 "ipad_page_turn_not_receiving" = "Not receiving page turns";
 "ipad_page_turn_phone_linked" = "iPhone connected";
 "ipad_page_turn_phone_waiting" = "No iPhone connected yet";
 "ipad_page_turn_pro_required" = "PagePilot Pro is required to receive page turns from your Watch.";
-"ipad_page_turn_hint" = "On iPhone, open Me → Watch Page Turn → Choose Nearby iPad and select this iPad. Keep Wi‑Fi on; a shared network isn’t required.";
+"ipad_page_turn_hint" = "Open PagePilot on your iPad or Mac with Pro access on both devices and connect to the same Wi-Fi. On iPhone, open Me → Watch Page Turn → Choose Nearby iPad / Mac, select your reader, then open a book.";
 "feedback_email_button" = "Email Us";
 "feedback_email_hint" = "Want a reply or to attach screenshots? Email us at %@.";
 

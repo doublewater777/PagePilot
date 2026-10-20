@@ -183,7 +183,7 @@ struct OnboardingIPadReaderHintView: View {
                 VStack(alignment: .leading, spacing: 3) {
                     Text("onboarding_ipad_reader_hint_title")
                         .font(.headline)
-                    Text("onboarding_ipad_reader_hint_detail")
+                    Text(LocalizedStringKey(PagePilotReaderHost.isMac ? "ipad_page_turn_hint" : "onboarding_ipad_reader_hint_detail"))
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }

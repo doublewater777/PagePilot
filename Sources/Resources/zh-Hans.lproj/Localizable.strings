@@ -54,7 +54,7 @@
 "onboarding_ipad_handoff_step3" = "在 iPad 上打开这本书，然后在 iPhone 的「我 → 手表翻页 → 选择附近的 iPad」中选择它";
 "onboarding_handoff_done" = "完成";
 "paywall_ipad_watch_title" = "在 iPad 上阅读，用 Apple Watch 翻页";
-"paywall_ipad_watch_subtitle" = "解锁 iPhone 中继，让 Watch 指令抵达附近的 iPad Reader。";
+"paywall_ipad_watch_subtitle" = "解锁 iPhone 中继，让 Watch 指令抵达附近的 iPad / Mac Reader。";
 "onboarding_watch_skip" = "暂时跳过";
 "onboarding_watch_intro_title" = "旋转表冠，让阅读自由翻篇";
 "onboarding_watch_intro_subtitle" = "PagePilot 专为 iPhone 与 iPad 打造。手机架在床头、在健身房跑步，或在小桌板前，都能用 Apple Watch 旋转表冠或轻点遥控翻页。";
@@ -363,15 +363,15 @@
 
 /* Paywall */
 "paywall_title" = "专注阅读，收获更多";
-"paywall_subtitle" = "无限书架、Watch 控制 iPad 与深度统计，让阅读更自由。";
+"paywall_subtitle" = "无限书架、Watch 控制 iPad / Mac 与深度统计，让阅读更自由。";
 "paywall_pro_badge" = "年会员主推";
 "paywall_feature_unlimited_books" = "无限添加书籍（普通版最多 10 本）";
-"paywall_feature_ipad_page_turn" = "Apple Watch 可控制 iPad 翻页";
+"paywall_feature_ipad_page_turn" = "Apple Watch 可控制 iPad / Mac 翻页";
 "paywall_feature_stats" = "周、月、年阅读统计";
 "paywall_feature_streak" = "连续阅读天数追踪";
 "paywall_feature_unlimited_title" = "无限书架";
 "paywall_feature_unlimited_subtitle" = "不再限制 10 本";
-"paywall_feature_watch_title" = "Watch 控制 iPad";
+"paywall_feature_watch_title" = "Watch 控制 iPad / Mac";
 "paywall_feature_watch_subtitle" = "iPhone 翻页免费";
 "paywall_feature_stats_title" = "深度统计";
 "paywall_feature_stats_subtitle" = "周月年趋势";
@@ -402,7 +402,7 @@
 "settings_pro_upgrade_body" = "解锁无限书架、深度统计、无限笔记和更多阅读能力";
 "settings_pro_benefit_library" = "无限书架";
 "settings_pro_benefit_stats" = "深度统计";
-"settings_pro_benefit_watch" = "Watch 控制 iPad";
+"settings_pro_benefit_watch" = "Watch 控制 iPad / Mac";
 "settings_pro_benefit_notes" = "无限笔记";
 
 /* Purchase Errors */
@@ -774,7 +774,7 @@
 "watch_target_section" = "翻页设备";
 "watch_target_picker" = "翻页设备";
 "watch_target_footer" = "默认控制 iPhone；在 iPad 阅读时再切换到 iPad。";
-"watch_target_ipad" = "iPad";
+"watch_target_ipad" = "iPad / Mac";
 "watch_target_ipad_pro" = "%@ Pro";
 "watch_target_iphone" = "iPhone";
 "watch_input_mode_section" = "操作方式";
@@ -982,14 +982,14 @@
 "reading_pace_estimate_basis" = "根据近期阅读会话估算，实际速度可能变化。";
 
 // Nearby iPad selection
-"nearby_ipad_choose" = "选择附近的 iPad";
-"nearby_ipad_instructions" = "请在 iPad 上保持 PagePilot 打开，并确保两台设备都有 Pro 权限。保持 Wi-Fi 开启，无须连接同一个 Wi-Fi 网络。点击一台 iPad 进行连接。";
-"nearby_ipad_searching" = "正在搜索附近的 iPad…";
-"nearby_ipad_empty" = "未找到 iPad。请在 iPad 上打开 PagePilot，然后重新搜索。";
+"nearby_ipad_choose" = "选择附近的 iPad / Mac";
+"nearby_ipad_instructions" = "在 iPad 或 Mac 上打开 PagePilot，确保两台设备都有 Pro 权限并连接同一 Wi-Fi。在 iPhone 的「我 → 手表翻页 → 选择附近的 iPad / Mac」中选中阅读设备，然后打开一本书。";
+"nearby_ipad_searching" = "正在搜索附近的 iPad / Mac…";
+"nearby_ipad_empty" = "未找到 iPad / Mac。请在 iPad 或 Mac 上打开 PagePilot，然后重新搜索。";
 "nearby_ipad_refresh" = "重新搜索";
 "nearby_ipad_search_failed" = "搜索失败，请检查本地网络权限后重试。";
-"nearby_ipad_connect_failed" = "连接失败，请保持 iPad 上的 PagePilot 打开，并检查两台设备的 Pro 权限。";
-"nearby_ipad_pro_required" = "连接 iPad 需要 PagePilot Pro。";
+"nearby_ipad_connect_failed" = "连接失败，请保持 iPad / Mac 上的 PagePilot 打开，并检查两台设备的 Pro 权限。";
+"nearby_ipad_pro_required" = "连接 iPad / Mac 需要 PagePilot Pro。";
 "nearby_ipad_prev" = "上一页";
 "nearby_ipad_next" = "下一页";
 "nearby_ipad_linked" = "已连接";
@@ -1014,14 +1014,14 @@
 "page_turn_chain_watch_not_installed" = "未安装";
 "page_turn_chain_watch_unpaired" = "未配对";
 "page_turn_chain_ipad_none" = "未选择";
-"page_turn_ipad_section" = "翻到 iPad";
+"page_turn_ipad_section" = "翻到 iPad / Mac";
 "ipad_page_turn_receiving" = "正在接收翻页";
 "ipad_page_turn_starting" = "正在启动…";
 "ipad_page_turn_not_receiving" = "未在接收翻页";
 "ipad_page_turn_phone_linked" = "已连接 iPhone";
 "ipad_page_turn_phone_waiting" = "还没有 iPhone 连接";
 "ipad_page_turn_pro_required" = "需要 PagePilot Pro 才能接收手表翻页。";
-"ipad_page_turn_hint" = "在 iPhone 上打开「我 → 手表翻页 → 选择附近的 iPad」，选中这台 iPad。保持 Wi‑Fi 开启，无须连接同一网络。";
+"ipad_page_turn_hint" = "在 iPad 或 Mac 上打开 PagePilot，确保两台设备都有 Pro 权限并连接同一 Wi-Fi。在 iPhone 的「我 → 手表翻页 → 选择附近的 iPad / Mac」中选中阅读设备，然后打开一本书。";
 "feedback_email_button" = "发邮件给我们";
 "feedback_email_hint" = "需要回复或想附上截图？可以直接发邮件到 %@。";
 

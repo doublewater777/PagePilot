@@ -29,11 +29,13 @@ enum PagePilotPeerLinkConfiguration {
 struct PagePilotPeerAdvertisement: Equatable {
     var name: String
     var bookTitle: String
+    var platform = "ipad"
 
     var txtRecord: NWTXTRecord {
         NWTXTRecord([
             "name": String(name.prefix(40)),
-            "book": String(bookTitle.prefix(40))
+            "book": String(bookTitle.prefix(40)),
+            "platform": platform
         ])
     }
 }
@@ -382,14 +384,17 @@ final class PagePilotPeerClient {
                     guard case let .service(name, _, _, _) = result.endpoint else { continue }
                     var deviceName: String?
                     var bookTitle: String?
+                    var platform: String?
                     if case .bonjour(let record) = result.metadata {
                         deviceName = record["name"]
                         bookTitle = record["book"]
+                        platform = record["platform"]
                     }
                     guard let target = PagePilotNearbyTarget.from(
                         serviceName: name,
                         name: deviceName,
-                        bookTitle: bookTitle
+                        bookTitle: bookTitle,
+                        platform: platform
                     ) else { continue }
                     client.listTargets[target.id] = target
                     client.knownEndpoints[target.id] = result.endpoint

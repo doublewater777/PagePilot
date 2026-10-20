@@ -19,7 +19,7 @@
 		0BB40644CC5EE846FE2F9E3F /* ReaderEditingActionsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8CB48566A6E5BE799D3C80A /* ReaderEditingActionsTests.swift */; };
 		0BE350D97BDD701300254B56 /* HomeModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 887713861EF2F9418AC144A2 /* HomeModule.swift */; };
 		0C18A503A41FD524CCAF7EE5 /* ReviewPromptManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9E54C5159982A5C4D4D9EE9 /* ReviewPromptManager.swift */; };
-		0E362E17B7DF64173074AA08 /* PagePilotLiveActivity.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 39BC5978F29B6DA3D93CEEAC /* PagePilotLiveActivity.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		0E362E17B7DF64173074AA08 /* PagePilotLiveActivity.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 39BC5978F29B6DA3D93CEEAC /* PagePilotLiveActivity.appex */; platformFilter = ios; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		0ED6F683EC27AD1153669A6C /* VolumeKeyDecisionPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1B31C7D21A4E5E27CFDC60B /* VolumeKeyDecisionPolicy.swift */; };
 		104BA34DD595B17FB70E76F5 /* PDFModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = A94A4DC16BE84E52279A3438 /* PDFModule.swift */; };
 		1181D557E29FA1B8F8BA5C36 /* ReadingSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B9E9D8AC6B9B741604CF33E /* ReadingSession.swift */; };
@@ -183,7 +183,7 @@
 		C8C96D29EC46198C88D3A3E9 /* ReadingReminderScheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6C3DBF450EAE0AD996E8CA1 /* ReadingReminderScheduler.swift */; };
 		CD0BAFE5B88B0DDBB7C911CF /* Toast.swift in Sources */ = {isa = PBXBuildFile; fileRef = C59A0A024F0BCF8919BFF5F9 /* Toast.swift */; };
 		CD762404DCDFC5B24F6C396F /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = CC25584B0B22BDE24D9A10C4 /* InfoPlist.strings */; };
-		CDE153446216AB997D9E4A72 /* PagePilotWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = D5B287F95A1282CF890CB098 /* PagePilotWatch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		CDE153446216AB997D9E4A72 /* PagePilotWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = D5B287F95A1282CF890CB098 /* PagePilotWatch.app */; platformFilter = ios; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		CEC59B3405B6C00D2093D75A /* Publication.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED9A3CF3A20BC327FDCB1A99 /* Publication.swift */; };
 		CED60C278606B642FF8CA765 /* Analytics.swift in Sources */ = {isa = PBXBuildFile; fileRef = BCAC8F71F518B1AFEE314B4D /* Analytics.swift */; };
 		CF42BED74FFA3AAB2FAED24C /* QuickPositionJumpPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91B40801496BC91B524225D7 /* QuickPositionJumpPolicy.swift */; };
@@ -1448,11 +1448,13 @@
 /* Begin PBXTargetDependency section */
 		83471A177E5164782960BFB1 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
+			platformFilter = ios;
 			target = BD5410D9566E7DFEBEBE9BC5 /* PagePilotWatch */;
 			targetProxy = DEE432E2C3D6EA2AFAF41363 /* PBXContainerItemProxy */;
 		};
 		BBD2DC813967C8CB09680946 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
+			platformFilter = ios;
 			target = 320F55E134D9FEBE35DAF208 /* PagePilotLiveActivity */;
 			targetProxy = 32C7E2BDB53A82D33DB5179C /* PBXContainerItemProxy */;
 		};
@@ -1598,16 +1600,22 @@
 			baseConfigurationReference = 6170E8620EED7FEC1EBC273C /* CloudKit.Debug.xcconfig */;
 			buildSettings = {
 				APS_ENVIRONMENT = development;
+				"CODE_SIGN_STYLE[sdk=macosx*]" = Manual;
+				"PROVISIONING_PROFILE_SPECIFIER[sdk=macosx*]" = "PagePilot Mac Catalyst Development";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = iPhone/pagepilot.entitlements;
+				"CODE_SIGN_ENTITLEMENTS[sdk=macosx*]" = Mac/PagePilot.entitlements;
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
+				SUPPORTS_MACCATALYST = YES;
+				DERIVE_MACCATALYST_PRODUCT_BUNDLE_IDENTIFIER = NO;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 49;
+				CURRENT_PROJECT_VERSION = 50;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = iPhone/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = PagePilot;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = YES;
-				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "PagePilot uses the local network to transfer books and connect to your iPad reader for Apple Watch page controls.";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "PagePilot uses the local network to transfer books and connect to your iPad or Mac reader for Apple Watch page controls.";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_UIRequiredDeviceCapabilities = arm64;
 				INFOPLIST_KEY_UIRequiresFullScreen = NO;
@@ -1618,7 +1626,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.23;
+				MARKETING_VERSION = 1.0.24;
 				PRODUCT_BUNDLE_IDENTIFIER = com.panyang.PagePilot;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -1696,16 +1704,24 @@
 			baseConfigurationReference = EAF192B7E056D384FBB9B494 /* CloudKit.Release.xcconfig */;
 			buildSettings = {
 				APS_ENVIRONMENT = production;
+				CODE_SIGN_STYLE = Manual;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution";
+				"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = "iOS Team Store Provisioning Profile: com.panyang.PagePilot";
+				"PROVISIONING_PROFILE_SPECIFIER[sdk=macosx*]" = "PagePilot Mac Catalyst App Store";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = iPhone/pagepilot.entitlements;
+				"CODE_SIGN_ENTITLEMENTS[sdk=macosx*]" = Mac/PagePilot.entitlements;
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
+				SUPPORTS_MACCATALYST = YES;
+				DERIVE_MACCATALYST_PRODUCT_BUNDLE_IDENTIFIER = NO;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 49;
+				CURRENT_PROJECT_VERSION = 50;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = iPhone/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = PagePilot;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = YES;
-				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "PagePilot uses the local network to transfer books and connect to your iPad reader for Apple Watch page controls.";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "PagePilot uses the local network to transfer books and connect to your iPad or Mac reader for Apple Watch page controls.";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_UIRequiredDeviceCapabilities = arm64;
 				INFOPLIST_KEY_UIRequiresFullScreen = NO;
@@ -1716,7 +1732,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.23;
+				MARKETING_VERSION = 1.0.24;
 				PRODUCT_BUNDLE_IDENTIFIER = com.panyang.PagePilot;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -1726,7 +1742,7 @@
 		4756EBF2B17E64AA1CB6FA93 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CURRENT_PROJECT_VERSION = 49;
+				CURRENT_PROJECT_VERSION = 50;
 				INFOPLIST_FILE = ReadingLiveActivity/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -1734,7 +1750,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.0.23;
+				MARKETING_VERSION = 1.0.24;
 				PRODUCT_BUNDLE_IDENTIFIER = com.panyang.PagePilot.ReadingLiveActivity;
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
@@ -1745,7 +1761,7 @@
 		491914B06B8D49E52D031C3C /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CURRENT_PROJECT_VERSION = 49;
+				CURRENT_PROJECT_VERSION = 50;
 				INFOPLIST_FILE = ReadingLiveActivity/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -1753,11 +1769,14 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.0.23;
+				MARKETING_VERSION = 1.0.24;
 				PRODUCT_BUNDLE_IDENTIFIER = com.panyang.PagePilot.ReadingLiveActivity;
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
 				TARGETED_DEVICE_FAMILY = "1,2";
+				CODE_SIGN_STYLE = Manual;
+				CODE_SIGN_IDENTITY = "iPhone Distribution";
+				PROVISIONING_PROFILE_SPECIFIER = "iOS Team Store Provisioning Profile: com.panyang.PagePilot.ReadingLiveActivity";
 			};
 			name = Release;
 		};
@@ -1767,10 +1786,10 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 49;
+				CURRENT_PROJECT_VERSION = 50;
 				DEVELOPMENT_TEAM = 29C8MS76CZ;
 				INFOPLIST_FILE = WatchRemote/Info.plist;
-				MARKETING_VERSION = 1.0.23;
+				MARKETING_VERSION = 1.0.24;
 				PRODUCT_BUNDLE_IDENTIFIER = com.panyang.PagePilot.WatchRemote;
 				PROVISIONING_PROFILE_SPECIFIER = "PagePilot Watch Development";
 				SDKROOT = watchos;
@@ -1802,16 +1821,18 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 49;
+				CODE_SIGN_STYLE = Manual;
+				CURRENT_PROJECT_VERSION = 50;
 				DEVELOPMENT_TEAM = 29C8MS76CZ;
 				INFOPLIST_FILE = WatchRemote/Info.plist;
-				MARKETING_VERSION = 1.0.23;
+				MARKETING_VERSION = 1.0.24;
 				PRODUCT_BUNDLE_IDENTIFIER = com.panyang.PagePilot.WatchRemote;
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
 				TARGETED_DEVICE_FAMILY = 4;
 				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+				CODE_SIGN_IDENTITY = "iPhone Distribution";
+				PROVISIONING_PROFILE_SPECIFIER = "iOS Team Store Provisioning Profile: com.panyang.PagePilot.WatchRemote";
 			};
 			name = Release;
 		};

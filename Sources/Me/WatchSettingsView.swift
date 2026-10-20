@@ -11,6 +11,7 @@ import SwiftUI
 struct WatchSettingsView: View {
     @State private var doubleTapPageTurn: Bool
     @State private var selectedIPadName: String?
+    @State private var selectedReaderIcon = "laptopcomputer.and.ipad"
     @State private var isTurningPage = false
     @State private var showPaywall = false
     @ObservedObject private var proPurchase = ProPurchaseManager.shared
@@ -45,7 +46,9 @@ struct WatchSettingsView: View {
         }
         .onAppear {
             watchService.activate()
-            selectedIPadName = PagePilotNearbySelectionStore.selectedTarget()?.name
+            let target = PagePilotNearbySelectionStore.selectedTarget()
+            selectedIPadName = target?.name
+            selectedReaderIcon = target?.systemImage ?? "laptopcomputer.and.ipad"
 
             WatchPageTurnService.shared.prepareIPadRelay()
         }
@@ -72,8 +75,8 @@ struct WatchSettingsView: View {
                 )
                 PageTurnChainConnector(isReady: iPadReady)
                 PageTurnChainNode(
-                    systemImage: "ipad",
-                    title: LocalizedStringKey(selectedIPadName ?? "iPad"),
+                    systemImage: selectedReaderIcon,
+                    title: LocalizedStringKey(selectedIPadName ?? "iPad / Mac"),
                     detail: iPadChainDetail,
                     isReady: iPadReady
                 )
@@ -121,7 +124,7 @@ struct WatchSettingsView: View {
                 NearbyIPadSelectionView()
             } label: {
                 HStack {
-                    Label(LocalizedStringKey("nearby_ipad_choose"), systemImage: "ipad")
+                    Label(LocalizedStringKey("nearby_ipad_choose"), systemImage: "laptopcomputer.and.ipad")
                     Spacer()
                     if let selectedIPadName {
                         Text(selectedIPadName)
@@ -346,7 +349,7 @@ struct WatchPageTurnRecentSection: View {
         let line: Text
         switch result.destination {
         case .iPhone: line = Text("iPhone ").foregroundColor(.secondary) + outcome
-        case .iPad: line = Text("iPad ").foregroundColor(.secondary) + outcome
+        case .iPad: line = Text((PagePilotNearbySelectionStore.selectedTarget()?.name ?? "iPad / Mac") + " ").foregroundColor(.secondary) + outcome
         case .thisDevice: line = outcome
         }
         return Group {

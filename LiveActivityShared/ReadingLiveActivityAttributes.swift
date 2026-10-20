@@ -4,10 +4,12 @@
 //  available in the top-level LICENSE file of the project.
 //
 
+#if !targetEnvironment(macCatalyst)
 import ActivityKit
+#endif
 import Foundation
 
-struct ReadingLiveActivityAttributes: ActivityAttributes {
+struct ReadingLiveActivityAttributes: Codable {
     struct ContentState: Codable, Hashable {
         let title: String
         let progression: Double
@@ -16,3 +18,7 @@ struct ReadingLiveActivityAttributes: ActivityAttributes {
     let sessionID: String
     let startedAt: Date
 }
+
+#if !targetEnvironment(macCatalyst)
+extension ReadingLiveActivityAttributes: ActivityAttributes {}
+#endif

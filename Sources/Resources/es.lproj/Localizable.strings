@@ -54,7 +54,7 @@
 "onboarding_ipad_handoff_step3" = "Abre el libro en el iPad y luego elígelo en el iPhone en A mí → Pasar página con el Watch → Elegir un iPad cercano";
 "onboarding_handoff_done" = "Hecho";
 "paywall_ipad_watch_title" = "Leer en iPad. Pasa páginas con Apple Watch.";
-"paywall_ipad_watch_subtitle" = "Desbloquee el relé del iPhone para que los comandos del reloj lleguen a un lector de iPad cercano.";
+"paywall_ipad_watch_subtitle" = "Desbloquee el relé del iPhone para que los comandos del reloj lleguen a un lector de iPad / Mac cercano.";
 "onboarding_watch_skip" = "Ahora no";
 "onboarding_watch_intro_title" = "Pasa páginas con la Digital Crown";
 "onboarding_watch_intro_subtitle" = "PagePilot para iPhone e iPad: lee en la cama, en el gimnasio o de viaje pasando páginas fácilmente desde tu Apple Watch.";
@@ -363,15 +363,15 @@
 
 /* Paywall */
 "paywall_title" = "Enfoque la lectura, obtenga más";
-"paywall_subtitle" = "Biblioteca ilimitada, cambios de página en el iPad y estadísticas más detalladas para una lectura más libre.";
+"paywall_subtitle" = "Biblioteca ilimitada, cambios de página en el iPad / Mac y estadísticas más detalladas para una lectura más libre.";
 "paywall_pro_badge" = "Recomendado anualmente";
 "paywall_feature_unlimited_books" = "Libros ilimitados (la versión gratuita mantiene hasta 10)";
-"paywall_feature_ipad_page_turn" = "Utilice Apple Watch para pasar páginas en iPad";
+"paywall_feature_ipad_page_turn" = "Utilice Apple Watch para pasar páginas en iPad / Mac";
 "paywall_feature_stats" = "Estadísticas semanales, mensuales y anuales";
 "paywall_feature_streak" = "Seguimiento de racha de lectura";
 "paywall_feature_unlimited_title" = "Biblioteca ilimitada";
 "paywall_feature_unlimited_subtitle" = "Sin límite de 10 libros";
-"paywall_feature_watch_title" = "Ver en iPad";
+"paywall_feature_watch_title" = "Ver en iPad / Mac";
 "paywall_feature_watch_subtitle" = "iPhone se vuelve libre";
 "paywall_feature_stats_title" = "Estadísticas profundas";
 "paywall_feature_stats_subtitle" = "Semana, mes, año";
@@ -402,7 +402,7 @@
 "settings_pro_upgrade_body" = "Desbloquea una biblioteca ilimitada, estadísticas más profundas, notas ilimitadas y más";
 "settings_pro_benefit_library" = "Biblioteca ilimitada";
 "settings_pro_benefit_stats" = "Estadísticas profundas";
-"settings_pro_benefit_watch" = "Ver en iPad";
+"settings_pro_benefit_watch" = "Ver en iPad / Mac";
 "settings_pro_benefit_notes" = "Notas ilimitadas";
 
 /* Purchase Errors */
@@ -774,7 +774,7 @@
 "watch_target_section" = "Dispositivo de cambio de página";
 "watch_target_picker" = "Dispositivo de cambio de página";
 "watch_target_footer" = "Apple Watch controla el iPhone de forma predeterminada. Cambie al iPad cuando lea allí.";
-"watch_target_ipad" = "iPad";
+"watch_target_ipad" = "iPad / Mac";
 "watch_target_ipad_pro" = "%@ Pro";
 "watch_target_iphone" = "iPhone";
 "watch_input_mode_section" = "Modo de entrada";
@@ -982,14 +982,14 @@
 "reading_pace_estimate_basis" = "Estimación basada en sesiones recientes. Tu ritmo puede cambiar.";
 
 // Nearby iPad selection
-"nearby_ipad_choose" = "Elegir un iPad cercano";
-"nearby_ipad_instructions" = "Mantén PagePilot abierto en el iPad con acceso Pro en ambos dispositivos. Activa el Wi-Fi; no es necesario compartir la misma red. Toca un iPad para conectarlo.";
-"nearby_ipad_searching" = "Buscando iPads cercanos…";
-"nearby_ipad_empty" = "No se encontraron iPads. Abre PagePilot en el iPad y vuelve a buscar.";
+"nearby_ipad_choose" = "Elegir un iPad / Mac cercano";
+"nearby_ipad_instructions" = "Abre PagePilot en el iPad o Mac con acceso Pro en ambos dispositivos y conéctalos a la misma red Wi-Fi. En el iPhone, abre A mí → Pasar página con el Watch, elige tu iPad / Mac cercano y abre un libro.";
+"nearby_ipad_searching" = "Buscando iPad / Mac cercanos…";
+"nearby_ipad_empty" = "No se encontraron iPad / Mac. Abre PagePilot en el iPad o Mac y vuelve a buscar.";
 "nearby_ipad_refresh" = "Buscar de nuevo";
 "nearby_ipad_search_failed" = "No se pudo buscar. Comprueba el permiso de red local e inténtalo de nuevo.";
-"nearby_ipad_connect_failed" = "No se pudo conectar. Mantén PagePilot abierto en el iPad y comprueba el acceso Pro en ambos dispositivos.";
-"nearby_ipad_pro_required" = "Se necesita PagePilot Pro para conectar un iPad.";
+"nearby_ipad_connect_failed" = "No se pudo conectar. Mantén PagePilot abierto en el iPad / Mac y comprueba el acceso Pro en ambos dispositivos.";
+"nearby_ipad_pro_required" = "Se necesita PagePilot Pro para conectar un iPad / Mac.";
 "nearby_ipad_prev" = "Página anterior";
 "nearby_ipad_next" = "Página siguiente";
 "nearby_ipad_linked" = "Conectado";
@@ -1014,14 +1014,14 @@
 "page_turn_chain_watch_not_installed" = "Sin instalar";
 "page_turn_chain_watch_unpaired" = "Sin enlazar";
 "page_turn_chain_ipad_none" = "Sin elegir";
-"page_turn_ipad_section" = "Pasar páginas en el iPad";
+"page_turn_ipad_section" = "Pasar páginas en el iPad / Mac";
 "ipad_page_turn_receiving" = "Recibiendo pasos de página";
 "ipad_page_turn_starting" = "Iniciando…";
 "ipad_page_turn_not_receiving" = "No recibe pasos de página";
 "ipad_page_turn_phone_linked" = "iPhone conectado";
 "ipad_page_turn_phone_waiting" = "Aún no hay ningún iPhone conectado";
 "ipad_page_turn_pro_required" = "Se necesita PagePilot Pro para recibir los pasos de página del Watch.";
-"ipad_page_turn_hint" = "En el iPhone, abre A mí → Pasar página con el Watch → Elegir un iPad cercano y elige este iPad. Mantén la Wi‑Fi activada; no hace falta compartir red.";
+"ipad_page_turn_hint" = "Abre PagePilot en el iPad o Mac con acceso Pro en ambos dispositivos y conéctalos a la misma red Wi-Fi. En el iPhone, abre A mí → Pasar página con el Watch, elige tu iPad / Mac cercano y abre un libro.";
 "feedback_email_button" = "Escríbenos por correo";
 "feedback_email_hint" = "¿Quieres respuesta o adjuntar capturas? Escríbenos a %@.";
 

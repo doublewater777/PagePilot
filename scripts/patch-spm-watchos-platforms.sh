@@ -53,3 +53,12 @@ patch_file "$checkouts/GRDB.swift/Package.swift"
 patch_file "$checkouts/SQLite.swift/Package.swift"
 patch_file "$checkouts/SQLite.swift/Tests/SPM/Package.swift"
 patch_file "$checkouts/ZIPFoundation/Package.swift"
+
+# Readium 3.9.0 imports Foundation's XMLDocument on Mac Catalyst as well as
+# ReadiumShared.XMLDocument. Qualify the protocol to avoid an ambiguous lookup.
+readium_parser="$checkouts/swift-toolkit/Sources/LCP/Content Protection/EncryptionParser.swift"
+if [ -f "$readium_parser" ] && grep -q 'ReadResult<XMLDocument>' "$readium_parser"; then
+  chmod u+w "$readium_parser"
+  sed -i '' 's/ReadResult<XMLDocument>/ReadResult<ReadiumShared.XMLDocument>/g' "$readium_parser"
+  echo "patched Readium XMLDocument lookup for Mac Catalyst"
+fi

@@ -1,7 +1,7 @@
 /* Watch Remote */
 "watch.connected" = "Connected";
 "watch.iphoneRelay" = "iPhone relay";
-"watch.ipadConnected" = "iPad Connected";
+"watch.ipadConnected" = "iPad / Mac Connected";
 "watch.iphoneConnected" = "iPhone Connected";
 "watch.notConnected" = "Not Connected";
 "watch.status.connecting" = "Connecting to iPhone…";
@@ -9,12 +9,12 @@
 "watch.previousPage" = "Previous";
 "watch.nextPage" = "Next";
 "watch.hint.openIPhone" = "Open PagePilot on iPhone";
-"watch.hint.openIPad" = "Open PagePilot on iPad";
+"watch.hint.openIPad" = "Open PagePilot on iPad / Mac";
 "watch.hint.openBookIPhone" = "Open a book on iPhone";
-"watch.hint.openBookIPad" = "Open a book on iPad";
+"watch.hint.openBookIPad" = "Open a book on iPad / Mac";
 "watch.error.sendFailed" = "Couldn't send. Try again.";
-"watch.error.ipadNotFound" = "Open PagePilot on iPad and keep both devices on the same Wi-Fi.";
-"watch.error.ipadTimeout" = "Can't reach iPad. Check Wi-Fi and keep PagePilot open.";
+"watch.error.ipadNotFound" = "Open PagePilot on iPad / Mac and keep both devices on the same Wi-Fi.";
+"watch.error.ipadTimeout" = "Can't reach iPad / Mac. Check Wi-Fi and keep PagePilot open.";
 "watch.error.openIPhone" = "Open PagePilot on iPhone";
 "watch.error.generic" = "Couldn't turn the page. Try again.";
-"watch.error.proRequired" = "iPad page turn needs PagePilot Pro on iPhone.";
+"watch.error.proRequired" = "iPad / Mac page turn needs PagePilot Pro on iPhone.";
