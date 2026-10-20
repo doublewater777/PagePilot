@@ -273,11 +273,11 @@ struct PaywallView: View {
                 }
                 .padding(.vertical, 20)
             } else {
-                // Fixed display order: yearly -> monthly -> lifetime
+                // Start with the lower-commitment plan; annual remains the savings option.
                 let ordered = products.sorted { a, b in
                     let rank: (ProStoreProduct) -> Int = { p in
-                        if p.id.contains("yearly") { return 0 }
-                        if p.id.contains("monthly") { return 1 }
+                        if p.id.contains("monthly") { return 0 }
+                        if p.id.contains("yearly") { return 1 }
                         return 2
                     }
                     return rank(a) < rank(b)
@@ -526,8 +526,8 @@ struct PaywallView: View {
     @MainActor
     private func selectDefaultProduct() {
         guard !products.isEmpty else { return }
-        if let yearly = products.first(where: { $0.id == ProPurchaseManager.yearlyProductID }) {
-            selectedProductID = yearly.id
+        if let monthly = products.first(where: { $0.id == ProPurchaseManager.monthlyProductID }) {
+            selectedProductID = monthly.id
         } else if let first = products.first {
             selectedProductID = first.id
         }

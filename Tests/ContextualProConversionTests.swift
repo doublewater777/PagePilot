@@ -88,6 +88,16 @@ final class ContextualProConversionTests: XCTestCase {
         XCTAssertTrue(source.contains(".paywallViewed(source: analyticsSource)"))
     }
 
+    func testPaywallDefaultsToMonthlyAndKeepsYearlyAsSavingsOption() throws {
+        let source = try Self.source(named: "Sources/Home/PaywallView.swift")
+
+        XCTAssertTrue(source.contains(#"if p.id.contains("monthly") { return 0 }"#))
+        XCTAssertTrue(source.contains(#"if p.id.contains("yearly") { return 1 }"#))
+        XCTAssertTrue(source.contains(
+            #"products.first(where: { $0.id == ProPurchaseManager.monthlyProductID })"#
+        ))
+    }
+
     func testRS7LocalizationKeysExistInEverySupportedAppLocale() throws {
         let paths = [
             "Sources/Resources/en.lproj/Localizable.strings",
