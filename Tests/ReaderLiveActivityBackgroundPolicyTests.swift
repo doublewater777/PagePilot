@@ -64,6 +64,53 @@ final class ReaderLiveActivityBackgroundPolicyTests: XCTestCase {
         XCTAssertGreaterThan(finishCall, disappearBoundary)
     }
 
+    func testMonotonicCheckpointTimeIgnoresWallClockAdjustment() throws {
+        let book = Book.Id(rawValue: 101)
+        var uptime = 100.0
+        var lifecycle = ReaderSessionLifecycle(bookId: book, systemUptime: { uptime })
+        let wallStart = Date(timeIntervalSince1970: 1_000)
+
+        XCTAssertNotNil(lifecycle.readerDidAppear(
+            at: wallStart,
+            progression: 0.2,
+            applicationIsActive: true
+        ))
+        uptime = 115.9
+        let checkpoint = try XCTUnwrap(lifecycle.currentCheckpoint())
+        XCTAssertEqual(checkpoint.elapsedSeconds, 15)
+        XCTAssertEqual(checkpoint.bookId, book)
+
+        // The user moved the system clock backwards. Duration must not.
+        uptime = 131.2
+        let finished = try XCTUnwrap(
+            lifecycle.readerWillDisappear(at: wallStart.addingTimeInterval(-3_600))
+        )
+        XCTAssertEqual(finished.elapsedSeconds, 31)
+        XCTAssertEqual(finished.sessionID, checkpoint.sessionID)
+        XCTAssertNil(lifecycle.currentCheckpoint())
+        XCTAssertNil(lifecycle.readerWillDisappear(at: wallStart))
+    }
+
+    func testBackgroundAndResumeReceiveDifferentCheckpointIDs() throws {
+        var uptime = 10.0
+        var lifecycle = ReaderSessionLifecycle(
+            bookId: Book.Id(rawValue: 102),
+            systemUptime: { uptime }
+        )
+        let start = Date(timeIntervalSince1970: 2_000)
+        _ = lifecycle.readerDidAppear(at: start, progression: 0.1, applicationIsActive: true)
+        uptime = 40
+        let first = try XCTUnwrap(lifecycle.applicationDidEnterBackground(at: start.addingTimeInterval(30)))
+        XCTAssertEqual(first.elapsedSeconds, 30)
+        XCTAssertNil(lifecycle.currentCheckpoint())
+
+        uptime = 200
+        _ = lifecycle.applicationDidBecomeActive(at: start.addingTimeInterval(100), progression: 0.3)
+        let second = try XCTUnwrap(lifecycle.currentCheckpoint())
+        XCTAssertNotEqual(second.sessionID, first.sessionID)
+        XCTAssertEqual(second.elapsedSeconds, 0)
+    }
+
     func testBackgroundForegroundCreatesTwoNonOverlappingSessions() throws {
         let bookId = Book.Id(rawValue: 11)
         var lifecycle = ReaderSessionLifecycle(bookId: bookId)
