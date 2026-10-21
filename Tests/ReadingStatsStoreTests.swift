@@ -181,6 +181,77 @@ final class ReadingStatsStoreTests: XCTestCase {
         XCTAssertEqual(collector?.currentValue, 3)
     }
 
+    func testCheckpointsAreIdempotentAndSurviveStoreRecreation() {
+        let book = Book.Id(rawValue: 1)
+        let startedAt = date(2026, 6, 4, 10, 0, 0)
+        let sessionID = "checkpoint-recovery-1"
+        let store = makeStore()
+
+        store.recordReadingCheckpoint(sessionID: sessionID, startedAt: startedAt, elapsedSeconds: 15, bookId: book)
+        store.recordReadingCheckpoint(sessionID: sessionID, startedAt: startedAt, elapsedSeconds: 15, bookId: book)
+        store.recordReadingCheckpoint(sessionID: sessionID, startedAt: startedAt, elapsedSeconds: 30, bookId: book)
+        store.recordReadingCheckpoint(sessionID: sessionID, startedAt: startedAt, elapsedSeconds: 12, bookId: book)
+
+        let original = store.snapshot(for: .day, referenceDate: startedAt)
+        XCTAssertEqual(original.totalSeconds, 30)
+        XCTAssertEqual(original.sessions, 1)
+        XCTAssertEqual(original.dailyStats.first?.bookSeconds?["1"], 30)
+
+        // Simulate a fresh launch: only already committed time can be restored.
+        let relaunched = makeStore()
+        relaunched.recordReadingCheckpoint(sessionID: sessionID, startedAt: startedAt, elapsedSeconds: 30, bookId: book)
+        XCTAssertEqual(relaunched.todayReadingSeconds(referenceDate: startedAt), 30)
+
+        relaunched.recordReadingCheckpoint(sessionID: sessionID, startedAt: startedAt, elapsedSeconds: 45, bookId: book)
+        XCTAssertEqual(relaunched.todayReadingSeconds(referenceDate: startedAt), 45)
+        XCTAssertEqual(relaunched.snapshot(for: .day, referenceDate: startedAt).sessions, 1)
+    }
+
+    func testCheckpointsSplitMidnightAndDoNotInflateSessionCount() {
+        let startedAt = date(2026, 6, 3, 23, 59, 30)
+        let book = Book.Id(rawValue: 2)
+        let store = makeStore()
+
+        store.recordReadingCheckpoint(sessionID: "midnight", startedAt: startedAt, elapsedSeconds: 20, bookId: book)
+        store.recordReadingCheckpoint(sessionID: "midnight", startedAt: startedAt, elapsedSeconds: 90, bookId: book)
+        store.recordReadingCheckpoint(sessionID: "midnight", startedAt: startedAt, elapsedSeconds: 120, bookId: book)
+
+        let yesterday = store.snapshot(for: .day, referenceDate: date(2026, 6, 3))
+        let today = store.snapshot(for: .day, referenceDate: date(2026, 6, 4))
+        XCTAssertEqual(yesterday.totalSeconds, 30)
+        XCTAssertEqual(today.totalSeconds, 90)
+        XCTAssertEqual(yesterday.sessions, 1)
+        XCTAssertEqual(today.sessions, 1)
+        XCTAssertEqual(yesterday.dailyStats.first?.hourlySeconds?[23], 30)
+        XCTAssertEqual(today.dailyStats.first?.hourlySeconds?[0], 90)
+    }
+
+    func testCheckpointSplitsAcrossHoursWithoutDoubleCountingDays() {
+        let startedAt = date(2026, 6, 4, 10, 59, 45)
+        let store = makeStore()
+        let book = Book.Id(rawValue: 3)
+
+        store.recordReadingCheckpoint(sessionID: "hourly", startedAt: startedAt, elapsedSeconds: 45, bookId: book)
+        store.recordReadingCheckpoint(sessionID: "hourly", startedAt: startedAt, elapsedSeconds: 75, bookId: book)
+
+        let stats = store.snapshot(for: .day, referenceDate: startedAt)
+        XCTAssertEqual(stats.totalSeconds, 75)
+        XCTAssertEqual(stats.sessions, 1)
+        XCTAssertEqual(stats.dailyStats.first?.hourlySeconds?[10], 15)
+        XCTAssertEqual(stats.dailyStats.first?.hourlySeconds?[11], 60)
+    }
+
+    func testExistingLegacyTotalsRemainAfterFirstCheckpoint() {
+        let startedAt = date(2026, 6, 4, 12, 0, 0)
+        let store = makeStore()
+
+        store.recordReadingSession(seconds: 120, bookId: Book.Id(rawValue: 4), date: startedAt)
+        store.recordReadingCheckpoint(sessionID: "new-session", startedAt: startedAt, elapsedSeconds: 15, bookId: Book.Id(rawValue: 4))
+        let snapshot = store.snapshot(for: .day, referenceDate: startedAt)
+        XCTAssertEqual(snapshot.totalSeconds, 135)
+        XCTAssertEqual(snapshot.sessions, 2)
+    }
+
     private func makeStore() -> ReadingStatsStore {
         ReadingStatsStore(defaults: defaults, calendar: calendar, storageURL: storageURL)
     }
