@@ -1,0 +1,9 @@
+Read on Mac in a dedicated reading window, with your bookshelf close at hand.
+
+• Browse a cover grid and filter books by reading, unread, or finished.
+• Open books in separate windows. Reopening the same book brings its existing window forward.
+• Turn EPUB and PDF pages with the mouse wheel, trackpad gestures, or the previous and next buttons.
+• Use keyboard shortcuts for page turning, the table of contents, search, and reading settings. Press Escape to close panels.
+• Keep reading controls and the page indicator clear of the text as you resize the window.
+
+Continuous scrolling remains available, and zoomed PDF pages keep their native panning behavior.

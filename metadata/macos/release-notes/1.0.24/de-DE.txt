@@ -1,0 +1,9 @@
+Lesen Sie auf dem Mac in einem eigenen Lesefenster und behalten Sie Ihre Bibliothek griffbereit.
+
+• Durchsuchen Sie das Coverraster und filtern Sie nach Büchern in Bearbeitung, ungelesenen oder abgeschlossenen Büchern.
+• Öffnen Sie Bücher in eigenen Fenstern. Wenn Sie dasselbe Buch erneut öffnen, erscheint das vorhandene Fenster.
+• Blättern Sie in EPUB und PDF mit dem Mausrad, Trackpad-Gesten oder den Tasten für die vorherige und nächste Seite.
+• Nutzen Sie Tastenkürzel zum Blättern, für Inhaltsverzeichnis, Suche und Leseeinstellungen. Escape schließt die Bedienfelder.
+• Bedienelemente und Seitenanzeige bleiben beim Ändern der Fenstergröße vom Text getrennt.
+
+Fortlaufendes Scrollen bleibt verfügbar. Vergrößerte PDF-Seiten lassen sich weiterhin wie gewohnt verschieben.

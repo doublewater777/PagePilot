@@ -1,0 +1,9 @@
+Lea en Mac en una ventana de lectura independiente y mantenga su biblioteca a mano.
+
+• Explore las portadas en cuadrícula y filtre los libros en lectura, sin leer o terminados.
+• Abra libros en ventanas independientes. Al abrir de nuevo el mismo libro, volverá a su ventana existente.
+• Pase las páginas de EPUB y PDF con la rueda del ratón, gestos del trackpad o los botones de página anterior y siguiente.
+• Use atajos para pasar páginas, consultar el índice, buscar en el libro y ajustar la lectura. Pulse Escape para cerrar los paneles.
+• Los controles y el indicador de página se mantienen separados del texto al cambiar el tamaño de la ventana.
+
+El desplazamiento continuo sigue disponible y los PDF ampliados conservan su desplazamiento nativo.

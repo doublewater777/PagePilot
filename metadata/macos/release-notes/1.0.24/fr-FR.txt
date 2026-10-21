@@ -1,0 +1,9 @@
+Lisez sur Mac dans une fenêtre de lecture indépendante, en gardant votre bibliothèque à portée de main.
+
+• Parcourez les couvertures en grille et filtrez les livres en cours, non lus ou terminés.
+• Ouvrez les livres dans des fenêtres indépendantes. Rouvrir un livre affiche sa fenêtre existante.
+• Tournez les pages EPUB et PDF avec la molette, les gestes du trackpad ou les boutons de page précédente et suivante.
+• Utilisez les raccourcis pour tourner les pages, afficher la table des matières, rechercher et régler la lecture. Échap ferme les panneaux.
+• Les commandes et l’indicateur de page restent séparés du texte lorsque vous redimensionnez la fenêtre.
+
+Le défilement continu reste disponible et les PDF agrandis conservent leur déplacement natif.
