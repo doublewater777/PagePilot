@@ -253,7 +253,7 @@ final class ReadingStatsStoreTests: XCTestCase {
     }
 
 
-    func testProcessKilledAtSecond44RestoresOnlyCommitted30Seconds() {
+    func testProcessKilledAtSecond44RestoresOnlyCommitted30Seconds() throws {
         let startedAt = date(2026, 6, 4, 12, 0, 0)
         let book = Book.Id(rawValue: 17)
         let store = makeStore()
@@ -269,7 +269,14 @@ final class ReadingStatsStoreTests: XCTestCase {
         }
         // No final commit at second 44: simulate a killed process by dropping
         // the original store and reading the same file from a fresh instance.
-        let restarted = makeStore()
+        // Snapshot the actual on-disk bytes into a fresh path to bypass the
+        // process-wide cache and exercise cold decoding after a simulated kill.
+        let recoveredFile = storageURL.deletingLastPathComponent()
+            .appendingPathComponent("recovered-stats.json")
+        try FileManager.default.copyItem(at: storageURL, to: recoveredFile)
+        let restarted = ReadingStatsStore(
+            defaults: defaults, calendar: calendar, storageURL: recoveredFile
+        )
         XCTAssertEqual(restarted.todayReadingSeconds(referenceDate: startedAt), 30)
         XCTAssertEqual(restarted.snapshot(for: .day, referenceDate: startedAt).sessions, 1)
         // An already committed cursor can be replayed without duplication.
