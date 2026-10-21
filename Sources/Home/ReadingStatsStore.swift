@@ -57,6 +57,8 @@ struct DailyReadingStat: Codable, Identifiable {
     var checkpointedSessionSeconds: [String: Int]?
     // A single reading session is counted once in each touched local day.
     var checkpointedSessionIDs: [String]?
+    // True wall-clock timestamp of the last committed monotonic checkpoint.
+    var checkpointedSessionObservedAt: [String: Date]?
 
     var id: String { dateKey }
 }
@@ -94,7 +96,7 @@ final class ReadingStatsStore {
     private let storageURL: URL
     private let decoder = JSONDecoder()
     private let encodeStats: ([String: DailyReadingStat]) throws -> Data
-    private let ioQueue = DispatchQueue(label: "PagePilot.ReadingStatsStore.IO", qos: .utility)
+    private static let ioQueue = DispatchQueue(label: "PagePilot.ReadingStatsStore.IO", qos: .utility)
     private let signposter = OSSignposter(subsystem: "PagePilot", category: "ReadingStatsStore")
 
     private enum Keys {
@@ -142,7 +144,7 @@ final class ReadingStatsStore {
         recordedAt: Date,
         bookId: Book.Id
     ) -> Bool {
-        ioQueue.sync {
+        Self.ioQueue.sync {
             commitCheckpoint(
                 sessionID: sessionID,
                 startedAt: startedAt,
@@ -163,7 +165,7 @@ final class ReadingStatsStore {
         bookId: Book.Id,
         completion: ((Bool) -> Void)? = nil
     ) {
-        ioQueue.async {
+        Self.ioQueue.async {
             let success = self.commitCheckpoint(
                 sessionID: sessionID,
                 startedAt: startedAt,
@@ -253,17 +255,22 @@ final class ReadingStatsStore {
         var cursors = anchor.checkpointedSessionSeconds ?? [:]
         cursors[sessionID] = elapsedSeconds
         anchor.checkpointedSessionSeconds = cursors
+        var observations = anchor.checkpointedSessionObservedAt ?? [:]
+        observations[sessionID] = recordedAt
+        anchor.checkpointedSessionObservedAt = observations
         statsByDate[anchorKey] = anchor
 
         guard save(statsByDate) else { return false }
-        NotificationCenter.default.post(name: .readingStatsDidChange, object: self)
+        DispatchQueue.main.async {
+            NotificationCenter.default.post(name: .readingStatsDidChange, object: self)
+        }
         return true
     }
 
     @discardableResult
     func recordReadingSession(seconds: Int, bookId: Book.Id, date: Date = Date()) -> Bool {
         guard seconds > 0 else { return true }
-        return ioQueue.sync {
+        return Self.ioQueue.sync {
             recordLegacyReadingSession(seconds: seconds, bookId: bookId, date: date)
         }
     }
@@ -293,12 +300,14 @@ final class ReadingStatsStore {
 
         statsByDate[key] = stat
         guard save(statsByDate) else { return false }
-        NotificationCenter.default.post(name: .readingStatsDidChange, object: self)
+        DispatchQueue.main.async {
+            NotificationCenter.default.post(name: .readingStatsDidChange, object: self)
+        }
         return true
     }
 
     func snapshot(for scope: ReadingStatsScope, referenceDate: Date = Date()) -> ReadingStatsSnapshot {
-        let allStats = ioQueue.sync { loadStatsByDate().values.sorted { $0.dateKey < $1.dateKey } }
+        let allStats = Self.ioQueue.sync { loadStatsByDate().values.sorted { $0.dateKey < $1.dateKey } }
         let filtered: [DailyReadingStat]
 
         switch scope {
@@ -319,7 +328,7 @@ final class ReadingStatsStore {
     }
 
     func todayReadingSeconds(referenceDate: Date = Date()) -> Int {
-        ioQueue.sync { loadStatsByDate()[dateKey(for: referenceDate)]?.seconds ?? 0 }
+        Self.ioQueue.sync { loadStatsByDate()[dateKey(for: referenceDate)]?.seconds ?? 0 }
     }
 
     private func makeSnapshot(from stats: [DailyReadingStat], streakSource: [DailyReadingStat], referenceDate: Date) -> ReadingStatsSnapshot {
