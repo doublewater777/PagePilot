@@ -1,4 +1,5 @@
 import XCTest
+import UIKit
 @testable import PagePilot
 
 final class ReadingStatsStoreTests: XCTestCase {
@@ -339,6 +340,47 @@ final class ReadingStatsStoreTests: XCTestCase {
         XCTAssertEqual(restarted.snapshot(for: .day, referenceDate: start).sessions, 1)
         XCTAssertTrue(restarted.retryPendingFinalCheckpoints())
         XCTAssertEqual(restarted.todayReadingSeconds(referenceDate: start), 44)
+    }
+
+    func testAppActivationRetriesFailedEndingAfterReaderIsGone() {
+        enum TemporaryError: Error { case unavailable }
+        let start = date(2026, 6, 4, 17, 0, 0)
+        let journal = storageURL.deletingLastPathComponent()
+            .appendingPathComponent("activation-recovery.json")
+        var failWrites = true
+        let store = ReadingStatsStore(
+            defaults: defaults,
+            calendar: calendar,
+            storageURL: storageURL,
+            finalRecoveryURL: journal,
+            encodeStats: { stats in
+                if failWrites { throw TemporaryError.unavailable }
+                return try JSONEncoder().encode(stats)
+            }
+        )
+        let failed = expectation(description: "final commit failed")
+        store.enqueueFinalReadingCheckpoint(
+            sessionID: "background-final", startedAt: start,
+            elapsedSeconds: 44, recordedAt: start.addingTimeInterval(44),
+            bookId: Book.Id(rawValue: 17)
+        ) { success in
+            XCTAssertFalse(success)
+            failed.fulfill()
+        }
+        wait(for: [failed], timeout: 10)
+        XCTAssertEqual(store.todayReadingSeconds(referenceDate: start), 0)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: journal.path))
+
+        // Reader has no active timer or final-session callback anymore.
+        // The persistent Store observes foreground activation itself.
+        failWrites = false
+        NotificationCenter.default.post(
+            name: UIApplication.didBecomeActiveNotification, object: nil
+        )
+        XCTAssertTrue(store.retryPendingFinalCheckpoints())
+        XCTAssertEqual(store.todayReadingSeconds(referenceDate: start), 44)
+        XCTAssertTrue(store.retryPendingFinalCheckpoints())
+        XCTAssertEqual(store.todayReadingSeconds(referenceDate: start), 44)
     }
 
     func testSuccessfulFinalCommitLeavesNoReplayableDelta() {
