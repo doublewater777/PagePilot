@@ -14,25 +14,57 @@ import UIKit
 struct ReaderSessionLifecycle {
     struct ActiveSession {
         let bookId: Book.Id
+        let sessionID: String
         let startedAt: Date
+        let startedUptime: TimeInterval
         let startProgression: Double
         var watchPageTurns: Int = 0
     }
 
     struct FinishedSession {
         let bookId: Book.Id
+        let sessionID: String
         let startedAt: Date
         let endedAt: Date
+        let elapsedSeconds: Int
         let startProgression: Double
         let watchPageTurns: Int
     }
 
+    struct Checkpoint {
+        let sessionID: String
+        let bookId: Book.Id
+        let startedAt: Date
+        let elapsedSeconds: Int
+    }
+
     private let bookId: Book.Id
+    private let systemUptime: () -> TimeInterval
     private(set) var isReaderVisible = false
     private var activeSession: ActiveSession?
 
-    init(bookId: Book.Id) {
+    init(
+        bookId: Book.Id,
+        systemUptime: @escaping () -> TimeInterval = { ProcessInfo.processInfo.systemUptime }
+    ) {
         self.bookId = bookId
+        self.systemUptime = systemUptime
+    }
+
+    func currentCheckpoint() -> Checkpoint? {
+        guard let session = activeSession else { return nil }
+        return Checkpoint(
+            sessionID: session.sessionID,
+            bookId: session.bookId,
+            startedAt: session.startedAt,
+            elapsedSeconds: elapsedSeconds(since: session)
+        )
+    }
+
+    private func elapsedSeconds(since session: ActiveSession) -> Int {
+        let elapsed = systemUptime() - session.startedUptime
+        guard elapsed.isFinite, elapsed > 0 else { return 0 }
+        return Int(min(elapsed.rounded(.down), Double(Int.max)))
     }
 
     mutating func readerDidAppear(
@@ -87,7 +119,9 @@ struct ReaderSessionLifecycle {
 
         let session = ActiveSession(
             bookId: bookId,
+            sessionID: UUID().uuidString.lowercased(),
             startedAt: startedAt,
+            startedUptime: systemUptime(),
             startProgression: progression
         )
         activeSession = session
@@ -100,8 +134,10 @@ struct ReaderSessionLifecycle {
 
         return FinishedSession(
             bookId: session.bookId,
+            sessionID: session.sessionID,
             startedAt: session.startedAt,
             endedAt: endedAt,
+            elapsedSeconds: elapsedSeconds(since: session),
             startProgression: session.startProgression,
             watchPageTurns: session.watchPageTurns
         )
@@ -947,6 +983,7 @@ class ReaderViewController<N: Navigator>: UIViewController,
     private let books: BookRepository
     private let bookmarks: BookmarkRepository
     private var readingSessionLifecycle: ReaderSessionLifecycle
+    private var readingCheckpointTimer: Timer?
 
     var supportsDetailedReadingSessions: Bool { false }
     private var suppressedReadingProgress: Locator?
@@ -980,6 +1017,7 @@ class ReaderViewController<N: Navigator>: UIViewController,
     }
 
     deinit {
+        readingCheckpointTimer?.invalidate()
         NotificationCenter.default.removeObserver(self)
     }
 
@@ -989,6 +1027,8 @@ class ReaderViewController<N: Navigator>: UIViewController,
         navigationItem.rightBarButtonItems = makeNavigationBarButtons()
         NotificationCenter.default.addObserver(self, selector: #selector(appDidEnterBackground), name: UIApplication.didEnterBackgroundNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(appDidBecomeActive), name: UIApplication.didBecomeActiveNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(sceneWillDeactivate(_:)), name: UIScene.willDeactivateNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(sceneDidActivate(_:)), name: UIScene.didActivateNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(watchPageTurnDidSucceed(_:)), name: .watchPageTurnDidSucceed, object: nil)
 
         #if targetEnvironment(macCatalyst)
@@ -1058,6 +1098,23 @@ class ReaderViewController<N: Navigator>: UIViewController,
             at: session.startedAt,
             progression: session.startProgression
         )
+        readingCheckpointTimer?.invalidate()
+        readingCheckpointTimer = Timer.scheduledTimer(withTimeInterval: 15, repeats: true) { [weak self] _ in
+            self?.persistReadingCheckpoint()
+        }
+        if let readingCheckpointTimer {
+            RunLoop.main.add(readingCheckpointTimer, forMode: .common)
+        }
+    }
+
+    private func persistReadingCheckpoint() {
+        guard let checkpoint = readingSessionLifecycle.currentCheckpoint() else { return }
+        ReadingStatsStore.shared.recordReadingCheckpoint(
+            sessionID: checkpoint.sessionID,
+            startedAt: checkpoint.startedAt,
+            elapsedSeconds: checkpoint.elapsedSeconds,
+            bookId: checkpoint.bookId
+        )
     }
 
     private func finishReadingSession(
@@ -1066,11 +1123,14 @@ class ReaderViewController<N: Navigator>: UIViewController,
     ) {
         guard let finishedSession else { return }
 
+        readingCheckpointTimer?.invalidate()
+        readingCheckpointTimer = nil
         WatchReadingSessionContext.end()
 
-        ReadingStatsStore.shared.recordReadingSession(
-            startDate: finishedSession.startedAt,
-            endDate: finishedSession.endedAt,
+        ReadingStatsStore.shared.recordReadingCheckpoint(
+            sessionID: finishedSession.sessionID,
+            startedAt: finishedSession.startedAt,
+            elapsedSeconds: finishedSession.elapsedSeconds,
             bookId: finishedSession.bookId
         )
 
@@ -1079,9 +1139,11 @@ class ReaderViewController<N: Navigator>: UIViewController,
             let endProgression = navigator.currentLocation?.locations.totalProgression
                 ?? finishedSession.startProgression
             let session = ReadingSession(
+                sessionID: finishedSession.sessionID,
                 bookId: finishedSession.bookId,
                 startedAt: finishedSession.startedAt,
                 endedAt: finishedSession.endedAt,
+                measuredDurationSeconds: finishedSession.elapsedSeconds,
                 startProgression: finishedSession.startProgression,
                 endProgression: endProgression,
                 watchPageTurns: finishedSession.watchPageTurns
@@ -1140,7 +1202,7 @@ class ReaderViewController<N: Navigator>: UIViewController,
         #if targetEnvironment(macCatalyst)
         return viewIfLoaded?.window?.isKeyWindow == true
         #else
-        return true
+        return viewIfLoaded?.window?.windowScene?.activationState == .foregroundActive
         #endif
     }
 
@@ -1161,6 +1223,18 @@ class ReaderViewController<N: Navigator>: UIViewController,
         appDidEnterBackground()
     }
     #endif
+
+    @objc private func sceneWillDeactivate(_ notification: Notification) {
+        guard let scene = notification.object as? UIScene,
+              scene === viewIfLoaded?.window?.windowScene else { return }
+        appDidEnterBackground()
+    }
+
+    @objc private func sceneDidActivate(_ notification: Notification) {
+        guard let scene = notification.object as? UIScene,
+              scene === viewIfLoaded?.window?.windowScene else { return }
+        appDidBecomeActive()
+    }
 
     @objc private func appDidEnterBackground() {
         // Backgrounding ends the active interval without changing visibility,
