@@ -132,12 +132,13 @@ final class ReadingStatsStore {
     ) {
         self.defaults = defaults
         self.calendar = calendar
-        self.storageURL = storageURL ?? Self.defaultStorageURL()
+        let resolvedStorageURL = storageURL ?? Self.defaultStorageURL()
+        self.storageURL = resolvedStorageURL
         self.finalRecoveryURL = finalRecoveryURL ?? (storageURL == nil
             ? Paths.library.url
                 .appendingPathComponent("ReadingStatsRecovery", isDirectory: true)
                 .appendingPathComponent("pending-final-v1.json")
-            : self.storageURL.deletingLastPathComponent()
+            : resolvedStorageURL.deletingLastPathComponent()
                 .appendingPathComponent("pending-final-v1.json"))
         self.encodeStats = encodeStats
         Self.ioQueue.async { [self] in
