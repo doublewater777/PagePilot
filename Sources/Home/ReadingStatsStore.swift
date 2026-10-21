@@ -88,18 +88,30 @@ struct ReadingStatsSnapshot {
     static let empty = ReadingStatsSnapshot()
 }
 
+private struct PendingFinalReadingCheckpoint: Codable {
+    let sessionID: String
+    let startedAt: Date
+    let elapsedSeconds: Int
+    let recordedAt: Date
+    let bookId: Book.Id
+}
+
 final class ReadingStatsStore {
     static let shared = ReadingStatsStore()
 
     private let defaults: UserDefaults
     private let calendar: Calendar
     private let storageURL: URL
+    private let finalRecoveryURL: URL
     private let decoder = JSONDecoder()
     private let encodeStats: ([String: DailyReadingStat]) throws -> Data
     private static let ioQueue = DispatchQueue(label: "PagePilot.ReadingStatsStore.IO", qos: .utility)
     // Accessed only on ioQueue. Stats screens reuse committed memory without
     // decoding the full JSON file after each 15-second checkpoint notification.
     private static var committedCache: [URL: [String: DailyReadingStat]] = [:]
+    // This is a best-effort in-process fallback when the recovery journal
+    // itself is temporarily unwritable. Only journaled entries survive restart.
+    private static var transientFinals: [URL: [String: PendingFinalReadingCheckpoint]] = [:]
     private let signposter = OSSignposter(subsystem: "PagePilot", category: "ReadingStatsStore")
 
     private enum Keys {
@@ -115,12 +127,22 @@ final class ReadingStatsStore {
             return calendar
         }(),
         storageURL: URL? = nil,
+        finalRecoveryURL: URL? = nil,
         encodeStats: @escaping ([String: DailyReadingStat]) throws -> Data = { try JSONEncoder().encode($0) }
     ) {
         self.defaults = defaults
         self.calendar = calendar
         self.storageURL = storageURL ?? Self.defaultStorageURL()
+        self.finalRecoveryURL = finalRecoveryURL ?? (storageURL == nil
+            ? Paths.library.url
+                .appendingPathComponent("ReadingStatsRecovery", isDirectory: true)
+                .appendingPathComponent("pending-final-v1.json")
+            : self.storageURL.deletingLastPathComponent()
+                .appendingPathComponent("pending-final-v1.json"))
         self.encodeStats = encodeStats
+        Self.ioQueue.async { [self] in
+            _ = replayPendingFinalCheckpoints()
+        }
     }
 
     func recordReadingSession(startDate: Date, endDate: Date = Date(), bookId: Book.Id) {
@@ -184,6 +206,126 @@ final class ReadingStatsStore {
                 DispatchQueue.main.async { completion(success) }
             }
         }
+    }
+
+    /// The final interval is journaled separately before attempting the main
+    /// aggregate write. Failed aggregate commits remain eligible for replay
+    /// on foreground activation and on the next process launch.
+    func enqueueFinalReadingCheckpoint(
+        sessionID: String,
+        startedAt: Date,
+        elapsedSeconds: Int,
+        recordedAt: Date,
+        bookId: Book.Id,
+        completion: @escaping (Bool) -> Void
+    ) {
+        Self.ioQueue.async {
+            let entry = PendingFinalReadingCheckpoint(
+                sessionID: sessionID,
+                startedAt: startedAt,
+                elapsedSeconds: elapsedSeconds,
+                recordedAt: recordedAt,
+                bookId: bookId
+            )
+            self.stagePendingFinalCheckpoint(entry)
+            let saved = self.commitCheckpoint(
+                sessionID: sessionID,
+                startedAt: startedAt,
+                elapsedSeconds: elapsedSeconds,
+                recordedAt: recordedAt,
+                bookId: bookId
+            )
+            if saved { self.removePendingFinalCheckpoint(sessionID: sessionID) }
+            DispatchQueue.main.async { completion(saved) }
+        }
+    }
+
+    /// Explicit retry on activation. The initializer also schedules a replay,
+    /// so entries from a previous process are recovered without opening Reader.
+    func enqueuePendingFinalCheckpointRetry() {
+        Self.ioQueue.async {
+            _ = self.replayPendingFinalCheckpoints()
+        }
+    }
+
+    /// Test seam: synchronously replay on the same queue as all writers.
+    @discardableResult
+    func retryPendingFinalCheckpoints() -> Bool {
+        Self.ioQueue.sync { replayPendingFinalCheckpoints() }
+    }
+
+    // The following helpers are called only from the process-wide IO queue.
+    private func readPendingFinalCheckpoints() -> [String: PendingFinalReadingCheckpoint] {
+        guard let data = try? Data(contentsOf: finalRecoveryURL),
+              let pending = try? decoder.decode([String: PendingFinalReadingCheckpoint].self, from: data)
+        else { return [:] }
+        return pending
+    }
+
+    @discardableResult
+    private func writePendingFinalCheckpoints(
+        _ pending: [String: PendingFinalReadingCheckpoint]
+    ) -> Bool {
+        do {
+            let data = try JSONEncoder().encode(pending)
+            try FileManager.default.createDirectory(
+                at: finalRecoveryURL.deletingLastPathComponent(),
+                withIntermediateDirectories: true
+            )
+            try data.write(to: finalRecoveryURL, options: [.atomic])
+            return true
+        } catch {
+            print("ReadingStatsStore: failed to persist final checkpoint journal: \(error)")
+            return false
+        }
+    }
+
+    private func stagePendingFinalCheckpoint(_ checkpoint: PendingFinalReadingCheckpoint) {
+        var pending = readPendingFinalCheckpoints()
+        pending[checkpoint.sessionID] = checkpoint
+        var transient = Self.transientFinals[finalRecoveryURL] ?? [:]
+        transient[checkpoint.sessionID] = checkpoint
+        Self.transientFinals[finalRecoveryURL] = transient
+        if writePendingFinalCheckpoints(pending) {
+            transient.removeValue(forKey: checkpoint.sessionID)
+            Self.transientFinals[finalRecoveryURL] = transient
+        }
+    }
+
+    private func removePendingFinalCheckpoint(sessionID: String) {
+        var pending = readPendingFinalCheckpoints()
+        guard pending[sessionID] != nil else {
+            Self.transientFinals[finalRecoveryURL]?.removeValue(forKey: sessionID)
+            return
+        }
+        pending.removeValue(forKey: sessionID)
+        if writePendingFinalCheckpoints(pending) {
+            Self.transientFinals[finalRecoveryURL]?.removeValue(forKey: sessionID)
+        }
+        // Failed deletion is harmless: replay is idempotent by sessionID/cursor.
+    }
+
+    private func replayPendingFinalCheckpoints() -> Bool {
+        var pending = readPendingFinalCheckpoints()
+        for (id, checkpoint) in Self.transientFinals[finalRecoveryURL] ?? [:] {
+            pending[id] = checkpoint
+        }
+        var allSaved = true
+        for checkpoint in pending.values.sorted(by: { $0.sessionID < $1.sessionID }) {
+            let saved = commitCheckpoint(
+                sessionID: checkpoint.sessionID,
+                startedAt: checkpoint.startedAt,
+                elapsedSeconds: checkpoint.elapsedSeconds,
+                recordedAt: checkpoint.recordedAt,
+                bookId: checkpoint.bookId
+            )
+            if saved {
+                removePendingFinalCheckpoint(sessionID: checkpoint.sessionID)
+            } else {
+                allSaved = false
+            }
+        }
+        return allSaved
     }
 
     private func commitCheckpoint(
