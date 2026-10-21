@@ -52,6 +52,8 @@ struct DailyReadingStat: Codable, Identifiable {
     var bookIds: [String]
     var bookSeconds: [String: Int]?
     var hourlySeconds: [Int: Int]? // Key: hour (0-23), Value: seconds read in that hour
+    // Stored atomically with daily totals so resumed checkpoints cannot be counted twice.
+    var checkpointedSessionSeconds: [String: Int]?
 
     var id: String { dateKey }
 }
@@ -122,6 +124,97 @@ final class ReadingStatsStore {
             recordReadingSession(seconds: seconds, bookId: bookId, date: segmentStart)
             segmentStart = segmentEnd
         }
+    }
+
+    /// Applies only the seconds not yet committed for this session. The checkpoint
+    /// cursor and all affected daily totals share one atomic JSON file write.
+    /// After a process crash the last committed cursor remains the recovery point.
+    func recordReadingCheckpoint(
+        sessionID: String,
+        startedAt: Date,
+        elapsedSeconds: Int,
+        bookId: Book.Id
+    ) {
+        guard !sessionID.isEmpty, elapsedSeconds > 0 else { return }
+
+        var statsByDate = loadStatsByDate()
+        let alreadyRecorded = statsByDate.values
+            .compactMap { $0.checkpointedSessionSeconds?[sessionID] }
+            .max() ?? 0
+        guard elapsedSeconds > alreadyRecorded else { return }
+
+        var cursor = alreadyRecorded
+        var newSessionDays = Set<String>()
+        while cursor < elapsedSeconds {
+            let segmentDate = startedAt.addingTimeInterval(TimeInterval(cursor))
+            let nextHour = calendar.dateInterval(of: .hour, for: segmentDate)?.end
+                ?? segmentDate.addingTimeInterval(3600)
+            let nextDay = calendar.date(
+                byAdding: .day,
+                value: 1,
+                to: calendar.startOfDay(for: segmentDate)
+            ) ?? segmentDate.addingTimeInterval(86400)
+            let boundary = min(nextHour, nextDay)
+            // Attribute whole measured seconds deterministically. In particular,
+            // fractions around midnight must never create or lose a second.
+            let boundaryOffset = max(
+                cursor + 1,
+                Int(ceil(boundary.timeIntervalSince(startedAt)))
+            )
+            let nextCursor = min(elapsedSeconds, boundaryOffset)
+            let delta = nextCursor - cursor
+            let key = dateKey(for: segmentDate)
+            var stat = statsByDate[key] ?? DailyReadingStat(
+                dateKey: key,
+                seconds: 0,
+                sessions: 0,
+                bookIds: [],
+                bookSeconds: [:],
+                hourlySeconds: [:]
+            )
+
+            let dayStart = calendar.startOfDay(for: segmentDate)
+            let firstOffsetOnDay = max(
+                0,
+                Int(ceil(max(startedAt, dayStart).timeIntervalSince(startedAt)))
+            )
+            if alreadyRecorded <= firstOffsetOnDay, newSessionDays.insert(key).inserted {
+                stat.sessions += 1
+            }
+
+            stat.seconds += delta
+            let bookKey = bookId.string
+            if !stat.bookIds.contains(bookKey) {
+                stat.bookIds.append(bookKey)
+            }
+            var perBook = stat.bookSeconds ?? [:]
+            perBook[bookKey, default: 0] += delta
+            stat.bookSeconds = perBook
+
+            let hour = calendar.component(.hour, from: segmentDate)
+            var perHour = stat.hourlySeconds ?? [:]
+            perHour[hour, default: 0] += delta
+            stat.hourlySeconds = perHour
+            statsByDate[key] = stat
+            cursor = nextCursor
+        }
+
+        let anchorKey = dateKey(for: startedAt)
+        var anchor = statsByDate[anchorKey] ?? DailyReadingStat(
+            dateKey: anchorKey,
+            seconds: 0,
+            sessions: 0,
+            bookIds: [],
+            bookSeconds: [:],
+            hourlySeconds: [:]
+        )
+        var committed = anchor.checkpointedSessionSeconds ?? [:]
+        committed[sessionID] = elapsedSeconds
+        anchor.checkpointedSessionSeconds = committed
+        statsByDate[anchorKey] = anchor
+
+        save(statsByDate)
+        NotificationCenter.default.post(name: .readingStatsDidChange, object: self)
     }
 
     func recordReadingSession(seconds: Int, bookId: Book.Id, date: Date = Date()) {
