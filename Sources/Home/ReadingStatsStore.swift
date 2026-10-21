@@ -97,6 +97,9 @@ final class ReadingStatsStore {
     private let decoder = JSONDecoder()
     private let encodeStats: ([String: DailyReadingStat]) throws -> Data
     private static let ioQueue = DispatchQueue(label: "PagePilot.ReadingStatsStore.IO", qos: .utility)
+    // Accessed only on ioQueue. Stats screens reuse committed memory without
+    // decoding the full JSON file after each 15-second checkpoint notification.
+    private static var committedCache: [URL: [String: DailyReadingStat]] = [:]
     private let signposter = OSSignposter(subsystem: "PagePilot", category: "ReadingStatsStore")
 
     private enum Keys {
@@ -484,6 +487,7 @@ final class ReadingStatsStore {
     }
 
     private func loadStatsByDate() -> [String: DailyReadingStat] {
+        if let cached = Self.committedCache[storageURL] { return cached }
         migrateUserDefaultsStatsIfNeeded()
 
         guard let data = try? Data(contentsOf: storageURL),
@@ -491,7 +495,7 @@ final class ReadingStatsStore {
         else {
             return [:]
         }
-
+        Self.committedCache[storageURL] = stats
         return stats
     }
 
@@ -504,6 +508,7 @@ final class ReadingStatsStore {
                 withIntermediateDirectories: true
             )
             try data.write(to: storageURL, options: [.atomic])
+            Self.committedCache[storageURL] = stats
             return true
         } catch {
             print("ReadingStatsStore: failed to save stats: \(error)")
@@ -535,7 +540,8 @@ final class ReadingStatsStore {
     }
 
     private func dateKey(for date: Date) -> String {
-        dateFormatter().string(from: date)
+        let parts = calendar.dateComponents([.year, .month, .day], from: date)
+        return String(format: "%04d-%02d-%02d", parts.year ?? 0, parts.month ?? 0, parts.day ?? 0)
     }
 
     private func date(from key: String) -> Date? {
