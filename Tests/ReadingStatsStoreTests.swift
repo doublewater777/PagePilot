@@ -290,6 +290,80 @@ final class ReadingStatsStoreTests: XCTestCase {
         XCTAssertEqual(restarted.todayReadingSeconds(referenceDate: startedAt), 30)
     }
 
+    func testFailedFinalCommitIsJournaledAndReplayedAfterRelaunch() throws {
+        let start = date(2026, 6, 4, 12, 0, 0)
+        let book = Book.Id(rawValue: 17)
+        let recoveryURL = storageURL.deletingLastPathComponent()
+            .appendingPathComponent("durable-pending.json")
+        let original = ReadingStatsStore(
+            defaults: defaults, calendar: calendar,
+            storageURL: storageURL, finalRecoveryURL: recoveryURL
+        )
+        XCTAssertTrue(original.recordReadingCheckpoint(
+            sessionID: "interrupted-final", startedAt: start,
+            elapsedSeconds: 30, recordedAt: start.addingTimeInterval(30),
+            bookId: book
+        ))
+
+        // Simulate temporary aggregate storage failure at second 44.
+        // The separate recovery journal must still be writable.
+        enum DiskError: Error { case fail }
+        let failing = ReadingStatsStore(
+            defaults: defaults, calendar: calendar,
+            storageURL: storageURL, finalRecoveryURL: recoveryURL,
+            encodeStats: { _ in throw DiskError.fail }
+        )
+        let finished = expectation(description: "final commit returned failure")
+        failing.enqueueFinalReadingCheckpoint(
+            sessionID: "interrupted-final", startedAt: start,
+            elapsedSeconds: 44, recordedAt: start.addingTimeInterval(44),
+            bookId: book
+        ) { saved in
+            XCTAssertFalse(saved)
+            finished.fulfill()
+        }
+        wait(for: [finished], timeout: 10)
+        XCTAssertEqual(original.todayReadingSeconds(referenceDate: start), 30)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: recoveryURL.path))
+
+        // A new store can replay the journal; no live Reader timer is needed.
+        let restoredURL = storageURL.deletingLastPathComponent()
+            .appendingPathComponent("restored-aggregate.json")
+        try FileManager.default.copyItem(at: storageURL, to: restoredURL)
+        let restarted = ReadingStatsStore(
+            defaults: defaults, calendar: calendar,
+            storageURL: restoredURL, finalRecoveryURL: recoveryURL
+        )
+        XCTAssertTrue(restarted.retryPendingFinalCheckpoints())
+        XCTAssertEqual(restarted.todayReadingSeconds(referenceDate: start), 44)
+        XCTAssertEqual(restarted.snapshot(for: .day, referenceDate: start).sessions, 1)
+        XCTAssertTrue(restarted.retryPendingFinalCheckpoints())
+        XCTAssertEqual(restarted.todayReadingSeconds(referenceDate: start), 44)
+    }
+
+    func testSuccessfulFinalCommitLeavesNoReplayableDelta() {
+        let start = date(2026, 6, 4, 14, 0, 0)
+        let recoveryURL = storageURL.deletingLastPathComponent()
+            .appendingPathComponent("successful-final.json")
+        let store = ReadingStatsStore(
+            defaults: defaults, calendar: calendar,
+            storageURL: storageURL, finalRecoveryURL: recoveryURL
+        )
+        let completed = expectation(description: "durable final commit")
+        store.enqueueFinalReadingCheckpoint(
+            sessionID: "finish-once", startedAt: start,
+            elapsedSeconds: 44, recordedAt: start.addingTimeInterval(44),
+            bookId: Book.Id(rawValue: 5)
+        ) { saved in
+            XCTAssertTrue(saved)
+            completed.fulfill()
+        }
+        wait(for: [completed], timeout: 10)
+        XCTAssertTrue(store.retryPendingFinalCheckpoints())
+        XCTAssertEqual(store.todayReadingSeconds(referenceDate: start), 44)
+        XCTAssertEqual(store.snapshot(for: .day, referenceDate: start).sessions, 1)
+    }
+
     func testConcurrentWritersNeverLoseSecondsOrCursors() {
         let start = date(2026, 6, 4, 13, 0, 0)
         let store = makeStore()
