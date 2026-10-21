@@ -5,6 +5,7 @@
 //
 
 import Foundation
+import UIKit
 import os
 
 extension Notification.Name {
@@ -104,6 +105,7 @@ final class ReadingStatsStore {
     private let storageURL: URL
     private let finalRecoveryURL: URL
     private let decoder = JSONDecoder()
+    private var foregroundObserver: NSObjectProtocol?
     private let encodeStats: ([String: DailyReadingStat]) throws -> Data
     private static let ioQueue = DispatchQueue(label: "PagePilot.ReadingStatsStore.IO", qos: .utility)
     // Accessed only on ioQueue. Stats screens reuse committed memory without
@@ -141,8 +143,21 @@ final class ReadingStatsStore {
             : resolvedStorageURL.deletingLastPathComponent()
                 .appendingPathComponent("pending-final-v1.json"))
         self.encodeStats = encodeStats
+        foregroundObserver = NotificationCenter.default.addObserver(
+            forName: UIApplication.didBecomeActiveNotification,
+            object: nil,
+            queue: nil
+        ) { [weak self] _ in
+            self?.enqueuePendingFinalCheckpointRetry()
+        }
         Self.ioQueue.async { [self] in
             _ = replayPendingFinalCheckpoints()
+        }
+    }
+
+    deinit {
+        if let foregroundObserver {
+            NotificationCenter.default.removeObserver(foregroundObserver)
         }
     }
 
