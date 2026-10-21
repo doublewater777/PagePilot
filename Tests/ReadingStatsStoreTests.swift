@@ -1,4 +1,5 @@
 import XCTest
+import UIKit
 @testable import PagePilot
 
 final class ReadingStatsStoreTests: XCTestCase {
@@ -179,6 +180,527 @@ final class ReadingStatsStoreTests: XCTestCase {
         XCTAssertEqual(collector?.isUnlocked, true)
         XCTAssertEqual(collector?.progress, 1.0)
         XCTAssertEqual(collector?.currentValue, 3)
+    }
+
+    func testCheckpointsAreIdempotentAndSurviveStoreRecreation() {
+        let book = Book.Id(rawValue: 1)
+        let startedAt = date(2026, 6, 4, 10, 0, 0)
+        let sessionID = "checkpoint-recovery-1"
+        let store = makeStore()
+
+        store.recordReadingCheckpoint(sessionID: sessionID, startedAt: startedAt, elapsedSeconds: 15, recordedAt: startedAt.addingTimeInterval(15), bookId: book)
+        store.recordReadingCheckpoint(sessionID: sessionID, startedAt: startedAt, elapsedSeconds: 15, recordedAt: startedAt.addingTimeInterval(15), bookId: book)
+        store.recordReadingCheckpoint(sessionID: sessionID, startedAt: startedAt, elapsedSeconds: 30, recordedAt: startedAt.addingTimeInterval(30), bookId: book)
+        store.recordReadingCheckpoint(sessionID: sessionID, startedAt: startedAt, elapsedSeconds: 12, recordedAt: startedAt.addingTimeInterval(12), bookId: book)
+
+        let original = store.snapshot(for: .day, referenceDate: startedAt)
+        XCTAssertEqual(original.totalSeconds, 30)
+        XCTAssertEqual(original.sessions, 1)
+        XCTAssertEqual(original.dailyStats.first?.bookSeconds?["1"], 30)
+
+        // Simulate a fresh launch: only already committed time can be restored.
+        let relaunched = makeStore()
+        relaunched.recordReadingCheckpoint(sessionID: sessionID, startedAt: startedAt, elapsedSeconds: 30, recordedAt: startedAt.addingTimeInterval(30), bookId: book)
+        XCTAssertEqual(relaunched.todayReadingSeconds(referenceDate: startedAt), 30)
+
+        relaunched.recordReadingCheckpoint(sessionID: sessionID, startedAt: startedAt, elapsedSeconds: 45, recordedAt: startedAt.addingTimeInterval(45), bookId: book)
+        XCTAssertEqual(relaunched.todayReadingSeconds(referenceDate: startedAt), 45)
+        XCTAssertEqual(relaunched.snapshot(for: .day, referenceDate: startedAt).sessions, 1)
+    }
+
+    func testCheckpointsSplitMidnightAndDoNotInflateSessionCount() {
+        let startedAt = date(2026, 6, 3, 23, 59, 30)
+        let book = Book.Id(rawValue: 2)
+        let store = makeStore()
+
+        store.recordReadingCheckpoint(sessionID: "midnight", startedAt: startedAt, elapsedSeconds: 20, recordedAt: startedAt.addingTimeInterval(20), bookId: book)
+        store.recordReadingCheckpoint(sessionID: "midnight", startedAt: startedAt, elapsedSeconds: 90, recordedAt: startedAt.addingTimeInterval(90), bookId: book)
+        store.recordReadingCheckpoint(sessionID: "midnight", startedAt: startedAt, elapsedSeconds: 120, recordedAt: startedAt.addingTimeInterval(120), bookId: book)
+
+        let yesterday = store.snapshot(for: .day, referenceDate: date(2026, 6, 3))
+        let today = store.snapshot(for: .day, referenceDate: date(2026, 6, 4))
+        XCTAssertEqual(yesterday.totalSeconds, 30)
+        XCTAssertEqual(today.totalSeconds, 90)
+        XCTAssertEqual(yesterday.sessions, 1)
+        XCTAssertEqual(today.sessions, 1)
+        XCTAssertEqual(yesterday.dailyStats.first?.hourlySeconds?[23], 30)
+        XCTAssertEqual(today.dailyStats.first?.hourlySeconds?[0], 90)
+    }
+
+    func testCheckpointSplitsAcrossHoursWithoutDoubleCountingDays() {
+        let startedAt = date(2026, 6, 4, 10, 59, 45)
+        let store = makeStore()
+        let book = Book.Id(rawValue: 3)
+
+        store.recordReadingCheckpoint(sessionID: "hourly", startedAt: startedAt, elapsedSeconds: 45, recordedAt: startedAt.addingTimeInterval(45), bookId: book)
+        store.recordReadingCheckpoint(sessionID: "hourly", startedAt: startedAt, elapsedSeconds: 75, recordedAt: startedAt.addingTimeInterval(75), bookId: book)
+
+        let stats = store.snapshot(for: .day, referenceDate: startedAt)
+        XCTAssertEqual(stats.totalSeconds, 75)
+        XCTAssertEqual(stats.sessions, 1)
+        XCTAssertEqual(stats.dailyStats.first?.hourlySeconds?[10], 15)
+        XCTAssertEqual(stats.dailyStats.first?.hourlySeconds?[11], 60)
+    }
+
+    func testExistingLegacyTotalsRemainAfterFirstCheckpoint() {
+        let startedAt = date(2026, 6, 4, 12, 0, 0)
+        let store = makeStore()
+
+        store.recordReadingSession(seconds: 120, bookId: Book.Id(rawValue: 4), date: startedAt)
+        store.recordReadingCheckpoint(sessionID: "new-session", startedAt: startedAt, elapsedSeconds: 15, recordedAt: startedAt.addingTimeInterval(15), bookId: Book.Id(rawValue: 4))
+        let snapshot = store.snapshot(for: .day, referenceDate: startedAt)
+        XCTAssertEqual(snapshot.totalSeconds, 135)
+        XCTAssertEqual(snapshot.sessions, 2)
+    }
+
+
+    func testProcessKilledAtSecond44RestoresOnlyCommitted30Seconds() throws {
+        let startedAt = date(2026, 6, 4, 12, 0, 0)
+        let book = Book.Id(rawValue: 17)
+        let store = makeStore()
+
+        for elapsed in [15, 30] {
+            XCTAssertTrue(store.recordReadingCheckpoint(
+                sessionID: "interrupted",
+                startedAt: startedAt,
+                elapsedSeconds: elapsed,
+                recordedAt: startedAt.addingTimeInterval(TimeInterval(elapsed)),
+                bookId: book
+            ))
+        }
+        // No final commit at second 44: simulate a killed process by dropping
+        // the original store and reading the same file from a fresh instance.
+        // Snapshot the actual on-disk bytes into a fresh path to bypass the
+        // process-wide cache and exercise cold decoding after a simulated kill.
+        let recoveredFile = storageURL.deletingLastPathComponent()
+            .appendingPathComponent("recovered-stats.json")
+        try FileManager.default.copyItem(at: storageURL, to: recoveredFile)
+        let restarted = ReadingStatsStore(
+            defaults: defaults, calendar: calendar, storageURL: recoveredFile
+        )
+        XCTAssertEqual(restarted.todayReadingSeconds(referenceDate: startedAt), 30)
+        XCTAssertEqual(restarted.snapshot(for: .day, referenceDate: startedAt).sessions, 1)
+        // An already committed cursor can be replayed without duplication.
+        XCTAssertTrue(restarted.recordReadingCheckpoint(
+            sessionID: "interrupted",
+            startedAt: startedAt,
+            elapsedSeconds: 30,
+            recordedAt: startedAt.addingTimeInterval(30),
+            bookId: book
+        ))
+        XCTAssertEqual(restarted.todayReadingSeconds(referenceDate: startedAt), 30)
+    }
+
+    func testFailedFinalCommitIsJournaledAndReplayedAfterRelaunch() throws {
+        let start = date(2026, 6, 4, 12, 0, 0)
+        let book = Book.Id(rawValue: 17)
+        let recoveryURL = storageURL.deletingLastPathComponent()
+            .appendingPathComponent("durable-pending.json")
+        let original = ReadingStatsStore(
+            defaults: defaults, calendar: calendar,
+            storageURL: storageURL, finalRecoveryURL: recoveryURL
+        )
+        XCTAssertTrue(original.recordReadingCheckpoint(
+            sessionID: "interrupted-final", startedAt: start,
+            elapsedSeconds: 30, recordedAt: start.addingTimeInterval(30),
+            bookId: book
+        ))
+
+        // Simulate temporary aggregate storage failure at second 44.
+        // The separate recovery journal must still be writable.
+        enum DiskError: Error { case fail }
+        let failing = ReadingStatsStore(
+            defaults: defaults, calendar: calendar,
+            storageURL: storageURL, finalRecoveryURL: recoveryURL,
+            encodeStats: { _ in throw DiskError.fail }
+        )
+        let finished = expectation(description: "final commit returned failure")
+        failing.enqueueFinalReadingCheckpoint(
+            sessionID: "interrupted-final", startedAt: start,
+            elapsedSeconds: 44, recordedAt: start.addingTimeInterval(44),
+            bookId: book
+        ) { result in
+            XCTAssertFalse(result.aggregateSaved)
+            XCTAssertTrue(result.recoveryJournalSaved)
+            XCTAssertTrue(result.isRecoverable)
+            finished.fulfill()
+        }
+        wait(for: [finished], timeout: 10)
+        XCTAssertEqual(original.todayReadingSeconds(referenceDate: start), 30)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: recoveryURL.path))
+
+        // A new store can replay the journal; no live Reader timer is needed.
+        let restoredURL = storageURL.deletingLastPathComponent()
+            .appendingPathComponent("restored-aggregate.json")
+        try FileManager.default.copyItem(at: storageURL, to: restoredURL)
+        let restarted = ReadingStatsStore(
+            defaults: defaults, calendar: calendar,
+            storageURL: restoredURL, finalRecoveryURL: recoveryURL
+        )
+        XCTAssertTrue(restarted.retryPendingFinalCheckpoints())
+        XCTAssertEqual(restarted.todayReadingSeconds(referenceDate: start), 44)
+        XCTAssertEqual(restarted.snapshot(for: .day, referenceDate: start).sessions, 1)
+        XCTAssertTrue(restarted.retryPendingFinalCheckpoints())
+        XCTAssertEqual(restarted.todayReadingSeconds(referenceDate: start), 44)
+    }
+
+    func testAppActivationRetriesFailedEndingAfterReaderIsGone() {
+        enum TemporaryError: Error { case unavailable }
+        let start = date(2026, 6, 4, 17, 0, 0)
+        let journal = storageURL.deletingLastPathComponent()
+            .appendingPathComponent("activation-recovery.json")
+        var failWrites = true
+        let store = ReadingStatsStore(
+            defaults: defaults,
+            calendar: calendar,
+            storageURL: storageURL,
+            finalRecoveryURL: journal,
+            encodeStats: { stats in
+                if failWrites { throw TemporaryError.unavailable }
+                return try JSONEncoder().encode(stats)
+            }
+        )
+        let failed = expectation(description: "final commit failed")
+        store.enqueueFinalReadingCheckpoint(
+            sessionID: "background-final", startedAt: start,
+            elapsedSeconds: 44, recordedAt: start.addingTimeInterval(44),
+            bookId: Book.Id(rawValue: 17)
+        ) { result in
+            XCTAssertFalse(result.aggregateSaved)
+            XCTAssertTrue(result.recoveryJournalSaved)
+            failed.fulfill()
+        }
+        wait(for: [failed], timeout: 10)
+        XCTAssertEqual(store.todayReadingSeconds(referenceDate: start), 0)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: journal.path))
+
+        // Reader has no active timer or final-session callback anymore.
+        // The persistent Store observes foreground activation itself.
+        failWrites = false
+        NotificationCenter.default.post(
+            name: UIApplication.didBecomeActiveNotification, object: nil
+        )
+        XCTAssertTrue(store.retryPendingFinalCheckpoints())
+        XCTAssertEqual(store.todayReadingSeconds(referenceDate: start), 44)
+        XCTAssertTrue(store.retryPendingFinalCheckpoints())
+        XCTAssertEqual(store.todayReadingSeconds(referenceDate: start), 44)
+    }
+
+    func testCorruptRecoveryJournalIsNotOverwrittenByNewFinalSession() throws {
+        let start = date(2026, 6, 4, 16, 0, 0)
+        let journal = storageURL.deletingLastPathComponent()
+            .appendingPathComponent("corrupt-recovery.json")
+        try FileManager.default.createDirectory(
+            at: journal.deletingLastPathComponent(), withIntermediateDirectories: true
+        )
+        let original = Data(#"{ "interrupted": {"sessionID": "unreadable""#.utf8)
+        try original.write(to: journal, options: .atomic)
+
+        let store = ReadingStatsStore(
+            defaults: defaults, calendar: calendar,
+            storageURL: storageURL, finalRecoveryURL: journal
+        )
+        let completed = expectation(description: "final aggregate can still save")
+        store.enqueueFinalReadingCheckpoint(
+            sessionID: "later-session",
+            startedAt: start, elapsedSeconds: 44,
+            recordedAt: start.addingTimeInterval(44),
+            bookId: Book.Id(rawValue: 18)
+        ) { result in
+            XCTAssertTrue(result.aggregateSaved)
+            XCTAssertFalse(result.recoveryJournalSaved)
+            XCTAssertTrue(result.isRecoverable)
+            completed.fulfill()
+        }
+        wait(for: [completed], timeout: 10)
+
+        // Neither staging nor cleanup may replace an existing corrupt journal.
+        XCTAssertEqual(try Data(contentsOf: journal), original)
+        XCTAssertFalse(store.retryPendingFinalCheckpoints())
+        XCTAssertEqual(store.todayReadingSeconds(referenceDate: start), 44)
+        XCTAssertEqual(try Data(contentsOf: journal), original)
+    }
+
+    func testWhenJournalAndAggregateBothFailResultReportsNoDurability() throws {
+        enum SyntheticFailure: Error { case unavailable }
+        let start = date(2026, 6, 4, 18, 0, 0)
+        let journal = storageURL.deletingLastPathComponent()
+            .appendingPathComponent("unreadable-recovery.json")
+        try FileManager.default.createDirectory(
+            at: journal.deletingLastPathComponent(), withIntermediateDirectories: true
+        )
+        let corrupt = Data("not a valid recovery record".utf8)
+        try corrupt.write(to: journal, options: .atomic)
+
+        let failing = ReadingStatsStore(
+            defaults: defaults, calendar: calendar,
+            storageURL: storageURL, finalRecoveryURL: journal,
+            encodeStats: { _ in throw SyntheticFailure.unavailable }
+        )
+        let completed = expectation(description: "both durable paths unavailable")
+        failing.enqueueFinalReadingCheckpoint(
+            sessionID: "memory-only-session", startedAt: start,
+            elapsedSeconds: 44, recordedAt: start.addingTimeInterval(44),
+            bookId: Book.Id(rawValue: 19)
+        ) { result in
+            XCTAssertFalse(result.aggregateSaved)
+            XCTAssertFalse(result.recoveryJournalSaved)
+            XCTAssertFalse(result.isRecoverable)
+            completed.fulfill()
+        }
+        wait(for: [completed], timeout: 10)
+        XCTAssertEqual(try Data(contentsOf: journal), corrupt)
+        XCTAssertEqual(failing.todayReadingSeconds(referenceDate: start), 0)
+
+        // A same-process retry can recover transient data even while the
+        // original corrupt journal is preserved byte-for-byte.
+        let recovered = ReadingStatsStore(
+            defaults: defaults, calendar: calendar,
+            storageURL: storageURL, finalRecoveryURL: journal
+        )
+        XCTAssertFalse(recovered.retryPendingFinalCheckpoints())
+        XCTAssertEqual(recovered.todayReadingSeconds(referenceDate: start), 44)
+        XCTAssertEqual(try Data(contentsOf: journal), corrupt)
+    }
+
+    func testSuccessfulFinalCommitLeavesNoReplayableDelta() {
+        let start = date(2026, 6, 4, 14, 0, 0)
+        let recoveryURL = storageURL.deletingLastPathComponent()
+            .appendingPathComponent("successful-final.json")
+        let store = ReadingStatsStore(
+            defaults: defaults, calendar: calendar,
+            storageURL: storageURL, finalRecoveryURL: recoveryURL
+        )
+        let completed = expectation(description: "durable final commit")
+        store.enqueueFinalReadingCheckpoint(
+            sessionID: "finish-once", startedAt: start,
+            elapsedSeconds: 44, recordedAt: start.addingTimeInterval(44),
+            bookId: Book.Id(rawValue: 5)
+        ) { result in
+            XCTAssertTrue(result.aggregateSaved)
+            XCTAssertTrue(result.recoveryJournalSaved)
+            XCTAssertTrue(result.isRecoverable)
+            completed.fulfill()
+        }
+        wait(for: [completed], timeout: 10)
+        XCTAssertTrue(store.retryPendingFinalCheckpoints())
+        XCTAssertEqual(store.todayReadingSeconds(referenceDate: start), 44)
+        XCTAssertEqual(store.snapshot(for: .day, referenceDate: start).sessions, 1)
+    }
+
+    func testConcurrentWritersNeverLoseSecondsOrCursors() {
+        let start = date(2026, 6, 4, 13, 0, 0)
+        let store = makeStore()
+        let first = Book.Id(rawValue: 11)
+        let second = Book.Id(rawValue: 12)
+        let group = DispatchGroup()
+        let workQueue = DispatchQueue(label: "ReadingStatsStoreTests.concurrent", attributes: .concurrent)
+
+        for id in 0..<2 {
+            group.enter()
+            workQueue.async {
+                for elapsed in [15, 30, 45, 60] {
+                    let success = store.recordReadingCheckpoint(
+                        sessionID: "concurrent-\(id)",
+                        startedAt: start,
+                        elapsedSeconds: elapsed,
+                        recordedAt: start.addingTimeInterval(TimeInterval(elapsed)),
+                        bookId: id == 0 ? first : second
+                    )
+                    XCTAssertTrue(success)
+                }
+                group.leave()
+            }
+        }
+        group.wait()
+        XCTAssertEqual(store.todayReadingSeconds(referenceDate: start), 120)
+        let day = store.snapshot(for: .day, referenceDate: start)
+        XCTAssertEqual(day.sessions, 2)
+        XCTAssertEqual(day.dailyStats.first?.bookSeconds?["11"], 60)
+        XCTAssertEqual(day.dailyStats.first?.bookSeconds?["12"], 60)
+
+        // Even independent instances share a process-wide single writer.
+        let secondInstance = makeStore()
+        XCTAssertTrue(secondInstance.recordReadingCheckpoint(
+            sessionID: "concurrent-0", startedAt: start, elapsedSeconds: 75,
+            recordedAt: start.addingTimeInterval(75), bookId: first
+        ))
+        XCTAssertEqual(store.todayReadingSeconds(referenceDate: start), 135)
+    }
+
+    func testQueuedCheckpointEncodesOffMainAndDeliversResultOnMain() {
+        let encoded = expectation(description: "encoded on worker")
+        let completed = expectation(description: "completion on UI")
+        let start = date(2026, 6, 4, 11, 0, 0)
+        let store = ReadingStatsStore(
+            defaults: defaults, calendar: calendar, storageURL: storageURL,
+            encodeStats: { stats in
+                XCTAssertFalse(Thread.isMainThread)
+                encoded.fulfill()
+                return try JSONEncoder().encode(stats)
+            }
+        )
+        store.enqueueReadingCheckpoint(
+            sessionID: "background-queue",
+            startedAt: start,
+            elapsedSeconds: 15,
+            recordedAt: start.addingTimeInterval(15),
+            bookId: Book.Id(rawValue: 3)
+        ) { success in
+            XCTAssertTrue(Thread.isMainThread)
+            XCTAssertTrue(success)
+            completed.fulfill()
+        }
+        wait(for: [encoded, completed], timeout: 10)
+        XCTAssertEqual(store.todayReadingSeconds(referenceDate: start), 15)
+    }
+
+    func testTwoStoreInstancesSerializeWritesToSameFile() {
+        let start = date(2026, 6, 4, 14, 0, 0)
+        let first = makeStore()
+        let second = makeStore()
+        let group = DispatchGroup()
+        group.enter()
+        DispatchQueue.global(qos: .userInitiated).async {
+            for elapsed in [15, 30, 45, 60] {
+                XCTAssertTrue(first.recordReadingCheckpoint(
+                    sessionID: "first-instance",
+                    startedAt: start,
+                    elapsedSeconds: elapsed,
+                    recordedAt: start.addingTimeInterval(TimeInterval(elapsed)),
+                    bookId: Book.Id(rawValue: 3)
+                ))
+            }
+            group.leave()
+        }
+        group.enter()
+        DispatchQueue.global(qos: .userInitiated).async {
+            for elapsed in [15, 30, 45, 60] {
+                XCTAssertTrue(second.recordReadingCheckpoint(
+                    sessionID: "second-instance",
+                    startedAt: start,
+                    elapsedSeconds: elapsed,
+                    recordedAt: start.addingTimeInterval(TimeInterval(elapsed)),
+                    bookId: Book.Id(rawValue: 4)
+                ))
+            }
+            group.leave()
+        }
+        group.wait()
+        XCTAssertEqual(makeStore().todayReadingSeconds(referenceDate: start), 120)
+    }
+
+    func testFailedWriteCanBeRetriedWithoutAdvancingCursor() throws {
+        let root = storageURL.deletingLastPathComponent()
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        // A directory cannot be atomically replaced by a JSON file.
+        try FileManager.default.createDirectory(at: storageURL, withIntermediateDirectories: true)
+        let start = date(2026, 6, 4, 12, 0, 0)
+        let store = makeStore()
+        XCTAssertFalse(store.recordReadingCheckpoint(
+            sessionID: "retry", startedAt: start, elapsedSeconds: 15,
+            recordedAt: start.addingTimeInterval(15), bookId: Book.Id(rawValue: 5)
+        ))
+        XCTAssertEqual(store.todayReadingSeconds(referenceDate: start), 0)
+        try FileManager.default.removeItem(at: storageURL)
+        XCTAssertTrue(store.recordReadingCheckpoint(
+            sessionID: "retry", startedAt: start, elapsedSeconds: 15,
+            recordedAt: start.addingTimeInterval(15), bookId: Book.Id(rawValue: 5)
+        ))
+        XCTAssertEqual(store.todayReadingSeconds(referenceDate: start), 15)
+    }
+
+    func testEncoderFailureDoesNotEmitStoredCursor() {
+        enum SyntheticEncodingError: Error { case rejected }
+        let start = date(2026, 6, 4, 12, 0, 0)
+        let failing = ReadingStatsStore(
+            defaults: defaults, calendar: calendar, storageURL: storageURL,
+            encodeStats: { _ in throw SyntheticEncodingError.rejected }
+        )
+        XCTAssertFalse(failing.recordReadingCheckpoint(
+            sessionID: "encode", startedAt: start, elapsedSeconds: 15,
+            recordedAt: start.addingTimeInterval(15), bookId: Book.Id(rawValue: 5)
+        ))
+        XCTAssertEqual(makeStore().todayReadingSeconds(referenceDate: start), 0)
+        XCTAssertTrue(makeStore().recordReadingCheckpoint(
+            sessionID: "encode", startedAt: start, elapsedSeconds: 15,
+            recordedAt: start.addingTimeInterval(15), bookId: Book.Id(rawValue: 5)
+        ))
+        XCTAssertEqual(makeStore().todayReadingSeconds(referenceDate: start), 15)
+    }
+
+    func testClockMovesBackwardsAcrossMidnightWithoutFabricatedNextDay() {
+        let start = date(2026, 6, 4, 23, 59, 50)
+        let store = makeStore()
+        let book = Book.Id(rawValue: 1)
+        // After 20 monotonic seconds, the wall clock is an hour earlier.
+        XCTAssertTrue(store.recordReadingCheckpoint(
+            sessionID: "backwards", startedAt: start, elapsedSeconds: 20,
+            recordedAt: date(2026, 6, 4, 23, 0, 10), bookId: book
+        ))
+        XCTAssertEqual(store.snapshot(for: .day, referenceDate: date(2026, 6, 4)).totalSeconds, 20)
+        XCTAssertEqual(store.snapshot(for: .day, referenceDate: date(2026, 6, 5)).totalSeconds, 0)
+        XCTAssertEqual(store.snapshot(for: .day, referenceDate: start).sessions, 1)
+    }
+
+    func testClockMovesForwardAcrossMidnightUsingObservedCheckpointDay() {
+        let start = date(2026, 6, 4, 23, 0, 50)
+        let store = makeStore()
+        // At 20s, the sampled wall time is 00:01:10 after a +1h jump.
+        XCTAssertTrue(store.recordReadingCheckpoint(
+            sessionID: "forwards", startedAt: start, elapsedSeconds: 20,
+            recordedAt: date(2026, 6, 5, 0, 1, 10), bookId: Book.Id(rawValue: 1)
+        ))
+        XCTAssertEqual(store.snapshot(for: .day, referenceDate: date(2026, 6, 4)).totalSeconds, 0)
+        XCTAssertEqual(store.snapshot(for: .day, referenceDate: date(2026, 6, 5)).totalSeconds, 20)
+    }
+
+    func testRepeatedCrossMidnightCheckpointKeepsOnlyOneSessionPerDay() {
+        let start = date(2026, 6, 3, 23, 59, 45)
+        let store = makeStore()
+        for elapsed in [10, 20, 30, 40, 45, 45, 60] {
+            XCTAssertTrue(store.recordReadingCheckpoint(
+                sessionID: "multi-midnight", startedAt: start, elapsedSeconds: elapsed,
+                recordedAt: start.addingTimeInterval(TimeInterval(elapsed)),
+                bookId: Book.Id(rawValue: 1)
+            ))
+        }
+        XCTAssertEqual(store.snapshot(for: .day, referenceDate: date(2026, 6, 3)).totalSeconds, 15)
+        XCTAssertEqual(store.snapshot(for: .day, referenceDate: date(2026, 6, 4)).totalSeconds, 45)
+        XCTAssertEqual(store.snapshot(for: .day, referenceDate: date(2026, 6, 3)).sessions, 1)
+        XCTAssertEqual(store.snapshot(for: .day, referenceDate: date(2026, 6, 4)).sessions, 1)
+    }
+
+    func testDaylightSavingTransitionsAndNonHourOffsetZone() {
+        let book = Book.Id(rawValue: 5)
+        for zoneName in ["America/Los_Angeles", "Asia/Kathmandu"] {
+            var configured = Calendar(identifier: .gregorian)
+            configured.timeZone = TimeZone(identifier: zoneName)!
+            let path = FileManager.default.temporaryDirectory
+                .appendingPathComponent("ReadingStatsDST-\(UUID().uuidString).json")
+            defer { try? FileManager.default.removeItem(at: path) }
+            let store = ReadingStatsStore(defaults: defaults, calendar: configured, storageURL: path)
+            let transitions: [Date]
+            if zoneName == "America/Los_Angeles" {
+                transitions = [
+                    ISO8601DateFormatter().date(from: "2026-03-08T09:59:30Z")!,
+                    ISO8601DateFormatter().date(from: "2026-11-01T08:59:30Z")!
+                ]
+            } else {
+                transitions = [ISO8601DateFormatter().date(from: "2026-06-04T18:14:30Z")!]
+            }
+            for (index, start) in transitions.enumerated() {
+                let id = "transition-\(index)"
+                for elapsed in [30, 60, 90, 120] {
+                    XCTAssertTrue(store.recordReadingCheckpoint(
+                        sessionID: id, startedAt: start, elapsedSeconds: elapsed,
+                        recordedAt: start.addingTimeInterval(TimeInterval(elapsed)), bookId: book
+                    ))
+                }
+            }
+            XCTAssertEqual(store.snapshot(for: .summary).totalSeconds, transitions.count * 120)
+            XCTAssertEqual(store.snapshot(for: .summary).sessions, transitions.count + (zoneName == "Asia/Kathmandu" ? 1 : 0))
+        }
     }
 
     private func makeStore() -> ReadingStatsStore {

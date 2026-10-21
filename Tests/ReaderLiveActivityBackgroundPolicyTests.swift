@@ -64,6 +64,164 @@ final class ReaderLiveActivityBackgroundPolicyTests: XCTestCase {
         XCTAssertGreaterThan(finishCall, disappearBoundary)
     }
 
+    func testMonotonicCheckpointTimeIgnoresWallClockAdjustment() throws {
+        let book = Book.Id(rawValue: 101)
+        var uptime = 100.0
+        var lifecycle = ReaderSessionLifecycle(bookId: book, systemUptime: { uptime })
+        let wallStart = Date(timeIntervalSince1970: 1_000)
+
+        XCTAssertNotNil(lifecycle.readerDidAppear(
+            at: wallStart,
+            progression: 0.2,
+            applicationIsActive: true
+        ))
+        uptime = 115.9
+        let checkpoint = try XCTUnwrap(lifecycle.currentCheckpoint())
+        XCTAssertEqual(checkpoint.elapsedSeconds, 15)
+        XCTAssertEqual(checkpoint.bookId, book)
+
+        // The user moved the system clock backwards. Duration must not.
+        uptime = 131.2
+        let finished = try XCTUnwrap(
+            lifecycle.readerWillDisappear(at: wallStart.addingTimeInterval(-3_600))
+        )
+        XCTAssertEqual(finished.elapsedSeconds, 31)
+        XCTAssertEqual(finished.sessionID, checkpoint.sessionID)
+        XCTAssertNil(lifecycle.currentCheckpoint())
+        XCTAssertNil(lifecycle.readerWillDisappear(at: wallStart))
+    }
+
+    func testDetailedSessionUsesMonotonicDurationWhenWallClockMoves() {
+        let startedAt = Date(timeIntervalSince1970: 10_000)
+        let session = ReadingSession(
+            sessionID: "clock-adjusted",
+            bookId: Book.Id(rawValue: 101),
+            startedAt: startedAt,
+            endedAt: startedAt.addingTimeInterval(-3_000),
+            measuredDurationSeconds: 31,
+            startProgression: 0.1,
+            endProgression: 0.2,
+            watchPageTurns: 0
+        )
+        XCTAssertEqual(session.durationSeconds, 31)
+        XCTAssertEqual(session.endedAt, startedAt.addingTimeInterval(-3_000))
+    }
+
+    func testBackgroundAndResumeReceiveDifferentCheckpointIDs() throws {
+        var uptime = 10.0
+        var lifecycle = ReaderSessionLifecycle(
+            bookId: Book.Id(rawValue: 102),
+            systemUptime: { uptime }
+        )
+        let start = Date(timeIntervalSince1970: 2_000)
+        _ = lifecycle.readerDidAppear(at: start, progression: 0.1, applicationIsActive: true)
+        uptime = 40
+        let first = try XCTUnwrap(lifecycle.applicationDidEnterBackground(at: start.addingTimeInterval(30)))
+        XCTAssertEqual(first.elapsedSeconds, 30)
+        XCTAssertNil(lifecycle.currentCheckpoint())
+
+        uptime = 200
+        _ = lifecycle.applicationDidBecomeActive(at: start.addingTimeInterval(100), progression: 0.3)
+        let second = try XCTUnwrap(lifecycle.currentCheckpoint())
+        XCTAssertNotEqual(second.sessionID, first.sessionID)
+        XCTAssertEqual(second.elapsedSeconds, 0)
+    }
+
+    func testSceneRoutingOnlyAcceptsMatchingWindowIdentity() {
+        let sceneA = NSObject()
+        let sceneB = NSObject()
+        XCTAssertTrue(ReaderSceneRouting.matches(eventScene: sceneA, readerScene: sceneA))
+        XCTAssertFalse(ReaderSceneRouting.matches(eventScene: sceneA, readerScene: sceneB))
+        XCTAssertFalse(ReaderSceneRouting.matches(eventScene: nil, readerScene: sceneA))
+        XCTAssertFalse(ReaderSceneRouting.matches(eventScene: sceneB, readerScene: nil))
+    }
+
+    func testDuplicateAppAndSceneLifecycleEventsAreIdempotent() throws {
+        var clock = 10.0
+        let firstStart = Date(timeIntervalSince1970: 1000)
+        var lifecycle = ReaderSessionLifecycle(
+            bookId: Book.Id(rawValue: 99),
+            systemUptime: { clock }
+        )
+        _ = lifecycle.readerDidAppear(
+            at: firstStart, progression: 0.1, applicationIsActive: true
+        )
+        clock = 40
+        XCTAssertNotNil(lifecycle.applicationDidEnterBackground(at: firstStart.addingTimeInterval(30)))
+        XCTAssertNil(lifecycle.applicationDidEnterBackground(at: firstStart.addingTimeInterval(30)))
+        XCTAssertNil(lifecycle.currentCheckpoint())
+
+        clock = 100
+        XCTAssertNotNil(lifecycle.applicationDidBecomeActive(
+            at: firstStart.addingTimeInterval(90), progression: 0.1
+        ))
+        XCTAssertNil(lifecycle.applicationDidBecomeActive(
+            at: firstStart.addingTimeInterval(90), progression: 0.1
+        ))
+        clock = 110
+        XCTAssertEqual(lifecycle.currentCheckpoint()?.elapsedSeconds, 10)
+    }
+
+    func testBackgroundTaskExpirationAndCompletionCanEndOnlyOnce() {
+        let endGate = ReadingBackgroundTaskEndGate()
+        let lock = NSLock()
+        var claimedCount = 0
+
+        // Concurrent callers model an iOS expiration callback racing the
+        // normal successful final-checkpoint completion callback.
+        DispatchQueue.concurrentPerform(iterations: 32) { _ in
+            if endGate.claimEnd() {
+                lock.lock()
+                claimedCount += 1
+                lock.unlock()
+            }
+        }
+
+        XCTAssertEqual(claimedCount, 1)
+        XCTAssertFalse(endGate.claimEnd())
+    }
+
+    func testBackgroundTaskEndsOnMainAndUsesEndGate() throws {
+        let source = try Self.readerViewControllerSource()
+        XCTAssertTrue(source.contains("guard endGate.claimEnd() else { return }"))
+        XCTAssertTrue(source.contains("if Thread.isMainThread"))
+        XCTAssertTrue(source.contains("DispatchQueue.main.async {"))
+        XCTAssertTrue(source.contains("UIApplication.shared.endBackgroundTask(current)"))
+    }
+
+    func testFinalCheckpointGetsBackgroundExecutionAndFrozenProgress() throws {
+        let source = try Self.readerViewControllerSource()
+        let begin = try XCTUnwrap(source.range(of: "private func finishReadingSession("))
+        let snapshot = try XCTUnwrap(
+            source.range(of: "let detailedSession: ReadingSession?", range: begin.lowerBound..<source.endIndex)
+        )
+        let backgroundLease = try XCTUnwrap(
+            source.range(of: "let backgroundTask = ReadingFinalCheckpointBackgroundTask()",
+                         range: snapshot.lowerBound..<source.endIndex)
+        )
+        let finalEnqueue = try XCTUnwrap(
+            source.range(of: "enqueueFinalReadingCheckpoint(", range: backgroundLease.lowerBound..<source.endIndex)
+        )
+        let callback = try XCTUnwrap(
+            source.range(of: "private func presentReadingSessionFeedback(",
+                         range: finalEnqueue.lowerBound..<source.endIndex)
+        )
+        let nextMethod = try XCTUnwrap(
+            source.range(of: "var isReadingWindowActive: Bool",
+                         range: callback.lowerBound..<source.endIndex)
+        )
+        XCTAssertTrue(source[snapshot.lowerBound..<finalEnqueue.lowerBound].contains(
+            "navigator.currentLocation?.locations.totalProgression"
+        ))
+        XCTAssertFalse(source[callback.lowerBound..<nextMethod.lowerBound].contains(
+            "navigator.currentLocation"
+        ))
+        XCTAssertTrue(source[finalEnqueue.lowerBound..<callback.lowerBound].contains(
+            "backgroundTask.end()"
+        ))
+        XCTAssertTrue(source.contains("enqueuePendingFinalCheckpointRetry()"))
+    }
+
     func testBackgroundForegroundCreatesTwoNonOverlappingSessions() throws {
         let bookId = Book.Id(rawValue: 11)
         var lifecycle = ReaderSessionLifecycle(bookId: bookId)

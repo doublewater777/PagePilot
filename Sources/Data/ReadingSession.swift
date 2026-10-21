@@ -33,6 +33,7 @@ struct ReadingSession: Codable, FetchableRecord, PersistableRecord {
         bookId: Book.Id,
         startedAt: Date,
         endedAt: Date,
+        measuredDurationSeconds: Int? = nil,
         startProgression: Double,
         endProgression: Double,
         watchPageTurns: Int,
@@ -43,7 +44,9 @@ struct ReadingSession: Codable, FetchableRecord, PersistableRecord {
         self.bookId = bookId
         self.startedAt = startedAt
         self.endedAt = endedAt
-        durationSeconds = max(0, Int(endedAt.timeIntervalSince(startedAt).rounded()))
+        // The wall clock records when the interval ended, while an injected
+        // monotonic duration prevents clock adjustments from changing its length.
+        durationSeconds = max(0, measuredDurationSeconds ?? Int(endedAt.timeIntervalSince(startedAt).rounded()))
         self.startProgression = Self.clampProgress(startProgression)
         self.endProgression = Self.clampProgress(endProgression)
         self.watchPageTurns = max(0, watchPageTurns)

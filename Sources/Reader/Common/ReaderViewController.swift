@@ -11,28 +11,113 @@ import SafariServices
 import SwiftUI
 import UIKit
 
+enum ReaderSceneRouting {
+    static func matches(eventScene: AnyObject?, readerScene: AnyObject?) -> Bool {
+        guard let eventScene, let readerScene else { return false }
+        return eventScene === readerScene
+    }
+}
+
+/// Shared by expiration and completion: only one caller owns the end action.
+final class ReadingBackgroundTaskEndGate {
+    private let lock = NSLock()
+    private var hasEnded = false
+
+    func claimEnd() -> Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        guard !hasEnded else { return false }
+        hasEnded = true
+        return true
+    }
+}
+
+/// A finite iOS background execution lease for the final checkpoint.
+private final class ReadingFinalCheckpointBackgroundTask {
+    private var identifier: UIBackgroundTaskIdentifier = .invalid
+    private let endGate = ReadingBackgroundTaskEndGate()
+
+    init() {
+        identifier = UIApplication.shared.beginBackgroundTask(
+            withName: "PagePilot Final Reading Checkpoint"
+        ) { [weak self] in
+            // Expiration may arrive off-main and race the completion callback.
+            self?.end()
+        }
+    }
+
+    func end() {
+        // Only the winning caller reads the identifier, and all UIKit ending
+        // is delivered on the main thread. A losing caller cannot end twice.
+        guard endGate.claimEnd() else { return }
+        let current = identifier
+        guard current != .invalid else { return }
+        if Thread.isMainThread {
+            UIApplication.shared.endBackgroundTask(current)
+        } else {
+            DispatchQueue.main.async {
+                UIApplication.shared.endBackgroundTask(current)
+            }
+        }
+    }
+
+    deinit { end() }
+}
+
 struct ReaderSessionLifecycle {
     struct ActiveSession {
         let bookId: Book.Id
+        let sessionID: String
         let startedAt: Date
+        let startedUptime: TimeInterval
         let startProgression: Double
         var watchPageTurns: Int = 0
     }
 
     struct FinishedSession {
         let bookId: Book.Id
+        let sessionID: String
         let startedAt: Date
         let endedAt: Date
+        let elapsedSeconds: Int
         let startProgression: Double
         let watchPageTurns: Int
     }
 
+    struct Checkpoint {
+        let sessionID: String
+        let bookId: Book.Id
+        let startedAt: Date
+        let elapsedSeconds: Int
+    }
+
     private let bookId: Book.Id
+    private let systemUptime: () -> TimeInterval
     private(set) var isReaderVisible = false
     private var activeSession: ActiveSession?
 
-    init(bookId: Book.Id) {
+    init(
+        bookId: Book.Id,
+        systemUptime: @escaping () -> TimeInterval = { ProcessInfo.processInfo.systemUptime }
+    ) {
         self.bookId = bookId
+        self.systemUptime = systemUptime
+    }
+
+    func currentCheckpoint() -> Checkpoint? {
+        guard let session = activeSession else { return nil }
+        return Checkpoint(
+            sessionID: session.sessionID,
+            bookId: session.bookId,
+            startedAt: session.startedAt,
+            elapsedSeconds: elapsedSeconds(since: session)
+        )
+    }
+
+    private func elapsedSeconds(since session: ActiveSession) -> Int {
+        let elapsed = systemUptime() - session.startedUptime
+        guard elapsed.isFinite, elapsed > 0 else { return 0 }
+        return Int(min(elapsed.rounded(.down), Double(Int.max)))
     }
 
     mutating func readerDidAppear(
@@ -87,7 +172,9 @@ struct ReaderSessionLifecycle {
 
         let session = ActiveSession(
             bookId: bookId,
+            sessionID: UUID().uuidString.lowercased(),
             startedAt: startedAt,
+            startedUptime: systemUptime(),
             startProgression: progression
         )
         activeSession = session
@@ -100,8 +187,10 @@ struct ReaderSessionLifecycle {
 
         return FinishedSession(
             bookId: session.bookId,
+            sessionID: session.sessionID,
             startedAt: session.startedAt,
             endedAt: endedAt,
+            elapsedSeconds: elapsedSeconds(since: session),
             startProgression: session.startProgression,
             watchPageTurns: session.watchPageTurns
         )
@@ -947,6 +1036,7 @@ class ReaderViewController<N: Navigator>: UIViewController,
     private let books: BookRepository
     private let bookmarks: BookmarkRepository
     private var readingSessionLifecycle: ReaderSessionLifecycle
+    private var readingCheckpointTimer: Timer?
 
     var supportsDetailedReadingSessions: Bool { false }
     private var suppressedReadingProgress: Locator?
@@ -980,6 +1070,7 @@ class ReaderViewController<N: Navigator>: UIViewController,
     }
 
     deinit {
+        readingCheckpointTimer?.invalidate()
         NotificationCenter.default.removeObserver(self)
     }
 
@@ -989,6 +1080,9 @@ class ReaderViewController<N: Navigator>: UIViewController,
         navigationItem.rightBarButtonItems = makeNavigationBarButtons()
         NotificationCenter.default.addObserver(self, selector: #selector(appDidEnterBackground), name: UIApplication.didEnterBackgroundNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(appDidBecomeActive), name: UIApplication.didBecomeActiveNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(sceneWillDeactivate(_:)), name: UIScene.willDeactivateNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(sceneDidActivate(_:)), name: UIScene.didActivateNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(systemTimeDidChange), name: UIApplication.significantTimeChangeNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(watchPageTurnDidSucceed(_:)), name: .watchPageTurnDidSucceed, object: nil)
 
         #if targetEnvironment(macCatalyst)
@@ -1058,6 +1152,35 @@ class ReaderViewController<N: Navigator>: UIViewController,
             at: session.startedAt,
             progression: session.startProgression
         )
+        readingCheckpointTimer?.invalidate()
+        readingCheckpointTimer = Timer(timeInterval: 15, repeats: true) { [weak self] _ in
+            self?.persistReadingCheckpoint()
+        }
+        if let readingCheckpointTimer {
+            RunLoop.main.add(readingCheckpointTimer, forMode: .common)
+        }
+    }
+
+    private func persistReadingCheckpoint() {
+        guard let checkpoint = readingSessionLifecycle.currentCheckpoint() else { return }
+        let observedAt = Date()
+        ReadingStatsStore.shared.enqueueReadingCheckpoint(
+            sessionID: checkpoint.sessionID,
+            startedAt: checkpoint.startedAt,
+            elapsedSeconds: checkpoint.elapsedSeconds,
+            recordedAt: observedAt,
+            bookId: checkpoint.bookId
+        ) { success in
+            if !success {
+                print("ReaderViewController: reading checkpoint persistence failed; retry on next tick")
+            }
+        }
+    }
+
+    @objc private func systemTimeDidChange() {
+        // Refresh the wall-clock anchor promptly rather than extrapolating
+        // local dates from the session's original startedAt timestamp.
+        persistReadingCheckpoint()
     }
 
     private func finishReadingSession(
@@ -1066,39 +1189,70 @@ class ReaderViewController<N: Navigator>: UIViewController,
     ) {
         guard let finishedSession else { return }
 
+        readingCheckpointTimer?.invalidate()
+        readingCheckpointTimer = nil
         WatchReadingSessionContext.end()
 
-        ReadingStatsStore.shared.recordReadingSession(
-            startDate: finishedSession.startedAt,
-            endDate: finishedSession.endedAt,
-            bookId: finishedSession.bookId
-        )
-
-        var detailedSession: ReadingSession?
-        if supportsDetailedReadingSessions {
-            let endProgression = navigator.currentLocation?.locations.totalProgression
-                ?? finishedSession.startProgression
-            let session = ReadingSession(
+        // Freeze all Reader/Navigator facts before crossing the async boundary.
+        // The navigator may move or disappear before disk persistence finishes.
+        let detailedSession: ReadingSession? = supportsDetailedReadingSessions
+            ? ReadingSession(
+                sessionID: finishedSession.sessionID,
                 bookId: finishedSession.bookId,
                 startedAt: finishedSession.startedAt,
                 endedAt: finishedSession.endedAt,
+                measuredDurationSeconds: finishedSession.elapsedSeconds,
                 startProgression: finishedSession.startProgression,
-                endProgression: endProgression,
+                endProgression: navigator.currentLocation?.locations.totalProgression
+                    ?? finishedSession.startProgression,
                 watchPageTurns: finishedSession.watchPageTurns
             )
-            detailedSession = session
+            : nil
 
-            if session.durationSeconds > 0 {
-                Task {
-                    do {
-                        try await AppModule.shared?.readingSessions.add(session)
-                    } catch {
-                        print("ReaderViewController: failed to save reading session: \(error)")
-                    }
+        if let detailedSession, detailedSession.durationSeconds > 0 {
+            Task {
+                do {
+                    try await AppModule.shared?.readingSessions.add(detailedSession)
+                } catch {
+                    print("ReaderViewController: failed to save reading session: \(error)")
                 }
             }
         }
 
+        let recordedAt = Date()
+        // Begin before enqueueing: a normal background DispatchQueue alone
+        // does not have an iOS background execution allowance.
+        let backgroundTask = ReadingFinalCheckpointBackgroundTask()
+        ReadingStatsStore.shared.enqueueFinalReadingCheckpoint(
+            sessionID: finishedSession.sessionID,
+            startedAt: finishedSession.startedAt,
+            elapsedSeconds: finishedSession.elapsedSeconds,
+            recordedAt: recordedAt,
+            bookId: finishedSession.bookId
+        ) { [weak self, backgroundTask] result in
+            backgroundTask.end()
+            if !result.aggregateSaved {
+                if result.recoveryJournalSaved {
+                    print("ReaderViewController: final checkpoint safely journaled; awaiting replay")
+                } else {
+                    // Neither durable path succeeded. Only earlier committed
+                    // checkpoints are guaranteed to survive process termination.
+                    print("ReaderViewController: final checkpoint not durable; retry is memory-only")
+                }
+            }
+            self?.presentReadingSessionFeedback(
+                finishedSession,
+                detailedSession: detailedSession,
+                isVisibleReaderExit: isVisibleReaderExit
+            )
+        }
+    }
+
+    private func presentReadingSessionFeedback(
+        _ finishedSession: ReaderSessionLifecycle.FinishedSession,
+        detailedSession: ReadingSession?,
+        isVisibleReaderExit: Bool
+    ) {
         let todaySeconds = ReadingStatsStore.shared.todayReadingSeconds()
         let goalMinutes = ReadingPreferences.dailyGoalMinutes
         let goalReached = ReadingGoalPolicy.goalReached(
@@ -1140,7 +1294,7 @@ class ReaderViewController<N: Navigator>: UIViewController,
         #if targetEnvironment(macCatalyst)
         return viewIfLoaded?.window?.isKeyWindow == true
         #else
-        return true
+        return viewIfLoaded?.window?.windowScene?.activationState == .foregroundActive
         #endif
     }
 
@@ -1162,6 +1316,24 @@ class ReaderViewController<N: Navigator>: UIViewController,
     }
     #endif
 
+    @objc private func sceneWillDeactivate(_ notification: Notification) {
+        guard let scene = notification.object as? UIScene,
+              ReaderSceneRouting.matches(
+                  eventScene: scene,
+                  readerScene: viewIfLoaded?.window?.windowScene
+              ) else { return }
+        appDidEnterBackground()
+    }
+
+    @objc private func sceneDidActivate(_ notification: Notification) {
+        guard let scene = notification.object as? UIScene,
+              ReaderSceneRouting.matches(
+                  eventScene: scene,
+                  readerScene: viewIfLoaded?.window?.windowScene
+              ) else { return }
+        appDidBecomeActive()
+    }
+
     @objc private func appDidEnterBackground() {
         // Backgrounding ends the active interval without changing visibility,
         // so didBecomeActive can start a fresh interval only if this Reader
@@ -1176,6 +1348,7 @@ class ReaderViewController<N: Navigator>: UIViewController,
     /// willEnterForeground fires while the app is still .inactive, so the
     /// restart must wait for didBecomeActive.
     @objc private func appDidBecomeActive() {
+        ReadingStatsStore.shared.enqueuePendingFinalCheckpointRetry()
         guard isReadingWindowActive else { return }
         beginReadingSession(
             readingSessionLifecycle.applicationDidBecomeActive(

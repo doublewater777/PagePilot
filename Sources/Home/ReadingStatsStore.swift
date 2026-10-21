@@ -5,6 +5,8 @@
 //
 
 import Foundation
+import UIKit
+import os
 
 extension Notification.Name {
     static let readingStatsDidChange = Notification.Name("readingStatsDidChange")
@@ -52,6 +54,12 @@ struct DailyReadingStat: Codable, Identifiable {
     var bookIds: [String]
     var bookSeconds: [String: Int]?
     var hourlySeconds: [Int: Int]? // Key: hour (0-23), Value: seconds read in that hour
+    // Stored atomically with daily totals so resumed checkpoints cannot be counted twice.
+    var checkpointedSessionSeconds: [String: Int]?
+    // A single reading session is counted once in each touched local day.
+    var checkpointedSessionIDs: [String]?
+    // True wall-clock timestamp of the last committed monotonic checkpoint.
+    var checkpointedSessionObservedAt: [String: Date]?
 
     var id: String { dateKey }
 }
@@ -81,14 +89,41 @@ struct ReadingStatsSnapshot {
     static let empty = ReadingStatsSnapshot()
 }
 
+private struct PendingFinalReadingCheckpoint: Codable {
+    let sessionID: String
+    let startedAt: Date
+    let elapsedSeconds: Int
+    let recordedAt: Date
+    let bookId: Book.Id
+}
+
+/// A queued final write is not necessarily durable. Aggregate persistence and
+/// the independent recovery journal have separate outcomes.
+struct FinalReadingCheckpointResult {
+    let aggregateSaved: Bool
+    let recoveryJournalSaved: Bool
+
+    var isRecoverable: Bool { aggregateSaved || recoveryJournalSaved }
+}
+
 final class ReadingStatsStore {
     static let shared = ReadingStatsStore()
 
     private let defaults: UserDefaults
     private let calendar: Calendar
     private let storageURL: URL
-    private let encoder = JSONEncoder()
+    private let finalRecoveryURL: URL
     private let decoder = JSONDecoder()
+    private var foregroundObserver: NSObjectProtocol?
+    private let encodeStats: ([String: DailyReadingStat]) throws -> Data
+    private static let ioQueue = DispatchQueue(label: "PagePilot.ReadingStatsStore.IO", qos: .utility)
+    // Accessed only on ioQueue. Stats screens reuse committed memory without
+    // decoding the full JSON file after each 15-second checkpoint notification.
+    private static var committedCache: [URL: [String: DailyReadingStat]] = [:]
+    // This is a best-effort in-process fallback when the recovery journal
+    // itself is temporarily unwritable. Only journaled entries survive restart.
+    private static var transientFinals: [URL: [String: PendingFinalReadingCheckpoint]] = [:]
+    private let signposter = OSSignposter(subsystem: "PagePilot", category: "ReadingStatsStore")
 
     private enum Keys {
         static let dailyStats = "readingStats_dailyStats"
@@ -97,17 +132,42 @@ final class ReadingStatsStore {
 
     init(
         defaults: UserDefaults = .standard,
-        calendar: Calendar = Calendar(identifier: .gregorian),
-        storageURL: URL? = nil
+        calendar: Calendar = {
+            var calendar = Calendar(identifier: .gregorian)
+            calendar.timeZone = .autoupdatingCurrent
+            return calendar
+        }(),
+        storageURL: URL? = nil,
+        finalRecoveryURL: URL? = nil,
+        encodeStats: @escaping ([String: DailyReadingStat]) throws -> Data = { try JSONEncoder().encode($0) }
     ) {
         self.defaults = defaults
-        var cal = calendar
-        if cal.identifier != .gregorian {
-            cal = Calendar(identifier: .gregorian)
+        self.calendar = calendar
+        let resolvedStorageURL = storageURL ?? Self.defaultStorageURL()
+        self.storageURL = resolvedStorageURL
+        self.finalRecoveryURL = finalRecoveryURL ?? (storageURL == nil
+            ? Paths.library.url
+                .appendingPathComponent("ReadingStatsRecovery", isDirectory: true)
+                .appendingPathComponent("pending-final-v1.json")
+            : resolvedStorageURL.deletingLastPathComponent()
+                .appendingPathComponent("pending-final-v1.json"))
+        self.encodeStats = encodeStats
+        foregroundObserver = NotificationCenter.default.addObserver(
+            forName: UIApplication.didBecomeActiveNotification,
+            object: nil,
+            queue: nil
+        ) { [weak self] _ in
+            self?.enqueuePendingFinalCheckpointRetry()
         }
-        cal.timeZone = .current
-        self.calendar = cal
-        self.storageURL = storageURL ?? Self.defaultStorageURL()
+        Self.ioQueue.async { [self] in
+            _ = replayPendingFinalCheckpoints()
+        }
+    }
+
+    deinit {
+        if let foregroundObserver {
+            NotificationCenter.default.removeObserver(foregroundObserver)
+        }
     }
 
     func recordReadingSession(startDate: Date, endDate: Date = Date(), bookId: Book.Id) {
@@ -124,9 +184,301 @@ final class ReadingStatsStore {
         }
     }
 
-    func recordReadingSession(seconds: Int, bookId: Book.Id, date: Date = Date()) {
-        guard seconds > 0 else { return }
+    /// A checkpoint records a monotonic elapsed cursor and an independently
+    /// sampled wall-clock time. Only the new interval is attributed to the
+    /// calendar. Repeated/decreasing cursors are no-ops.
+    ///
+    /// Returns false if the atomic write failed; the committed cursor is then
+    /// unchanged and the entire interval can safely be retried.
+    @discardableResult
+    func recordReadingCheckpoint(
+        sessionID: String,
+        startedAt: Date,
+        elapsedSeconds: Int,
+        recordedAt: Date,
+        bookId: Book.Id
+    ) -> Bool {
+        Self.ioQueue.sync {
+            commitCheckpoint(
+                sessionID: sessionID,
+                startedAt: startedAt,
+                elapsedSeconds: elapsedSeconds,
+                recordedAt: recordedAt,
+                bookId: bookId
+            )
+        }
+    }
 
+    /// The Reader always uses this asynchronous entrypoint, ensuring JSON
+    /// decoding, calendar aggregation and atomic writes never run on its UI timer.
+    func enqueueReadingCheckpoint(
+        sessionID: String,
+        startedAt: Date,
+        elapsedSeconds: Int,
+        recordedAt: Date,
+        bookId: Book.Id,
+        completion: ((Bool) -> Void)? = nil
+    ) {
+        Self.ioQueue.async {
+            let success = self.commitCheckpoint(
+                sessionID: sessionID,
+                startedAt: startedAt,
+                elapsedSeconds: elapsedSeconds,
+                recordedAt: recordedAt,
+                bookId: bookId
+            )
+            if let completion {
+                DispatchQueue.main.async { completion(success) }
+            }
+        }
+    }
+
+    /// The final interval is journaled separately before attempting the main
+    /// aggregate write. Failed aggregate commits remain eligible for replay
+    /// on foreground activation and on the next process launch.
+    func enqueueFinalReadingCheckpoint(
+        sessionID: String,
+        startedAt: Date,
+        elapsedSeconds: Int,
+        recordedAt: Date,
+        bookId: Book.Id,
+        completion: @escaping (FinalReadingCheckpointResult) -> Void
+    ) {
+        Self.ioQueue.async {
+            let entry = PendingFinalReadingCheckpoint(
+                sessionID: sessionID,
+                startedAt: startedAt,
+                elapsedSeconds: elapsedSeconds,
+                recordedAt: recordedAt,
+                bookId: bookId
+            )
+            let journalSaved = self.stagePendingFinalCheckpoint(entry)
+            let aggregateSaved = self.commitCheckpoint(
+                sessionID: sessionID,
+                startedAt: startedAt,
+                elapsedSeconds: elapsedSeconds,
+                recordedAt: recordedAt,
+                bookId: bookId
+            )
+            if aggregateSaved { self.removePendingFinalCheckpoint(sessionID: sessionID) }
+            let result = FinalReadingCheckpointResult(
+                aggregateSaved: aggregateSaved,
+                recoveryJournalSaved: journalSaved
+            )
+            DispatchQueue.main.async { completion(result) }
+        }
+    }
+
+    /// Explicit retry on activation. The initializer also schedules a replay,
+    /// so entries from a previous process are recovered without opening Reader.
+    func enqueuePendingFinalCheckpointRetry() {
+        Self.ioQueue.async {
+            _ = self.replayPendingFinalCheckpoints()
+        }
+    }
+
+    /// Test seam: synchronously replay on the same queue as all writers.
+    @discardableResult
+    func retryPendingFinalCheckpoints() -> Bool {
+        Self.ioQueue.sync { replayPendingFinalCheckpoints() }
+    }
+
+    // The following helpers are called only from the process-wide IO queue.
+    private func readPendingFinalCheckpoints() throws -> [String: PendingFinalReadingCheckpoint] {
+        // Only a genuinely absent journal means "no pending entries".
+        // Existing but unreadable/corrupt journals must never be overwritten.
+        guard FileManager.default.fileExists(atPath: finalRecoveryURL.path) else {
+            return [:]
+        }
+        let data = try Data(contentsOf: finalRecoveryURL)
+        return try decoder.decode([String: PendingFinalReadingCheckpoint].self, from: data)
+    }
+
+    @discardableResult
+    private func writePendingFinalCheckpoints(
+        _ pending: [String: PendingFinalReadingCheckpoint]
+    ) -> Bool {
+        do {
+            let data = try JSONEncoder().encode(pending)
+            try FileManager.default.createDirectory(
+                at: finalRecoveryURL.deletingLastPathComponent(),
+                withIntermediateDirectories: true
+            )
+            try data.write(to: finalRecoveryURL, options: [.atomic])
+            return true
+        } catch {
+            print("ReadingStatsStore: failed to persist final checkpoint journal: \(error)")
+            return false
+        }
+    }
+
+    @discardableResult
+    private func stagePendingFinalCheckpoint(_ checkpoint: PendingFinalReadingCheckpoint) -> Bool {
+        var transient = Self.transientFinals[finalRecoveryURL] ?? [:]
+        transient[checkpoint.sessionID] = checkpoint
+        Self.transientFinals[finalRecoveryURL] = transient
+
+        do {
+            var pending = try readPendingFinalCheckpoints()
+            pending[checkpoint.sessionID] = checkpoint
+            guard writePendingFinalCheckpoints(pending) else { return false }
+            transient.removeValue(forKey: checkpoint.sessionID)
+            Self.transientFinals[finalRecoveryURL] = transient
+            return true
+        } catch {
+            // Preserve the original journal byte-for-byte. The new entry only
+            // remains in memory until the existing journal becomes readable.
+            print("ReadingStatsStore: recovery journal unavailable; not overwriting: \(error)")
+            return false
+        }
+    }
+
+    private func removePendingFinalCheckpoint(sessionID: String) {
+        // A successfully aggregated entry no longer needs the in-memory copy.
+        Self.transientFinals[finalRecoveryURL]?.removeValue(forKey: sessionID)
+        do {
+            var pending = try readPendingFinalCheckpoints()
+            guard pending[sessionID] != nil else { return }
+            pending.removeValue(forKey: sessionID)
+            // Failed cleanup is harmless: replay deduplicates committed cursors.
+            _ = writePendingFinalCheckpoints(pending)
+        } catch {
+            print("ReadingStatsStore: preserving unreadable recovery journal: \(error)")
+        }
+    }
+
+    private func replayPendingFinalCheckpoints() -> Bool {
+        let durable: [String: PendingFinalReadingCheckpoint]
+        let journalReadable: Bool
+        do {
+            durable = try readPendingFinalCheckpoints()
+            journalReadable = true
+        } catch {
+            print("ReadingStatsStore: cannot decode recovery journal; preserved for repair: \(error)")
+            // A corrupt on-disk journal remains untouched. In-process pending
+            // finals may still safely retry against the idempotent aggregate.
+            durable = [:]
+            journalReadable = false
+        }
+        var pending = durable
+        for (id, checkpoint) in Self.transientFinals[finalRecoveryURL] ?? [:] {
+            pending[id] = checkpoint
+        }
+        var allSaved = journalReadable
+        for checkpoint in pending.values.sorted(by: { $0.sessionID < $1.sessionID }) {
+            let saved = commitCheckpoint(
+                sessionID: checkpoint.sessionID,
+                startedAt: checkpoint.startedAt,
+                elapsedSeconds: checkpoint.elapsedSeconds,
+                recordedAt: checkpoint.recordedAt,
+                bookId: checkpoint.bookId
+            )
+            if saved {
+                removePendingFinalCheckpoint(sessionID: checkpoint.sessionID)
+            } else {
+                allSaved = false
+            }
+        }
+        return allSaved
+    }
+
+    private func commitCheckpoint(
+        sessionID: String,
+        startedAt: Date,
+        elapsedSeconds: Int,
+        recordedAt: Date,
+        bookId: Book.Id
+    ) -> Bool {
+        guard !sessionID.isEmpty, elapsedSeconds > 0 else { return true }
+        let interval = signposter.beginInterval("CheckpointPersist")
+        defer { signposter.endInterval("CheckpointPersist", interval) }
+
+        var statsByDate = loadStatsByDate()
+        let existingAnchor = statsByDate.first {
+            $0.value.checkpointedSessionSeconds?[sessionID] != nil
+        }?.key
+        let committed = statsByDate.values.compactMap {
+            $0.checkpointedSessionSeconds?[sessionID]
+        }.max() ?? 0
+        guard elapsedSeconds > committed else { return true }
+
+        let delta = elapsedSeconds - committed
+        // Anchor THIS delta at the observed wall time. startedAt + uptime
+        // would incorrectly assign days if the system clock changed.
+        let intervalStart = recordedAt.addingTimeInterval(-Double(delta))
+        var offset = 0
+        while offset < delta {
+            let segmentDate = intervalStart.addingTimeInterval(TimeInterval(offset))
+            let hourEnd = calendar.dateInterval(of: .hour, for: segmentDate)?.end
+                ?? segmentDate.addingTimeInterval(3600)
+            let dayEnd = calendar.dateInterval(of: .day, for: segmentDate)?.end
+                ?? segmentDate.addingTimeInterval(86400)
+            let boundary = min(hourEnd, dayEnd)
+            // Always advance even in unusual calendar transitions.
+            let endOffset = min(delta, max(offset + 1, Int(ceil(boundary.timeIntervalSince(intervalStart)))))
+            let seconds = endOffset - offset
+            let key = dateKey(for: segmentDate)
+            var stat = statsByDate[key] ?? DailyReadingStat(
+                dateKey: key,
+                seconds: 0,
+                sessions: 0,
+                bookIds: [],
+                bookSeconds: [:],
+                hourlySeconds: [:]
+            )
+            var ids = stat.checkpointedSessionIDs ?? []
+            if !ids.contains(sessionID) {
+                ids.append(sessionID)
+                stat.sessions += 1
+            }
+            stat.checkpointedSessionIDs = ids
+
+            stat.seconds += seconds
+            let bookKey = bookId.string
+            if !stat.bookIds.contains(bookKey) { stat.bookIds.append(bookKey) }
+            var perBook = stat.bookSeconds ?? [:]
+            perBook[bookKey, default: 0] += seconds
+            stat.bookSeconds = perBook
+
+            // Repeated autumn hours intentionally share the same 0...23
+            // bucket, matching the existing 24-column hourly chart.
+            let hour = calendar.component(.hour, from: segmentDate)
+            var perHour = stat.hourlySeconds ?? [:]
+            perHour[hour, default: 0] += seconds
+            stat.hourlySeconds = perHour
+            statsByDate[key] = stat
+            offset = endOffset
+        }
+
+        let anchorKey = existingAnchor ?? dateKey(for: startedAt)
+        var anchor = statsByDate[anchorKey] ?? DailyReadingStat(
+            dateKey: anchorKey, seconds: 0, sessions: 0, bookIds: [],
+            bookSeconds: [:], hourlySeconds: [:]
+        )
+        var cursors = anchor.checkpointedSessionSeconds ?? [:]
+        cursors[sessionID] = elapsedSeconds
+        anchor.checkpointedSessionSeconds = cursors
+        var observations = anchor.checkpointedSessionObservedAt ?? [:]
+        observations[sessionID] = recordedAt
+        anchor.checkpointedSessionObservedAt = observations
+        statsByDate[anchorKey] = anchor
+
+        guard save(statsByDate) else { return false }
+        DispatchQueue.main.async {
+            NotificationCenter.default.post(name: .readingStatsDidChange, object: self)
+        }
+        return true
+    }
+
+    @discardableResult
+    func recordReadingSession(seconds: Int, bookId: Book.Id, date: Date = Date()) -> Bool {
+        guard seconds > 0 else { return true }
+        return Self.ioQueue.sync {
+            recordLegacyReadingSession(seconds: seconds, bookId: bookId, date: date)
+        }
+    }
+
+    private func recordLegacyReadingSession(seconds: Int, bookId: Book.Id, date: Date) -> Bool {
         var statsByDate = loadStatsByDate()
         let key = dateKey(for: date)
         var stat = statsByDate[key] ?? DailyReadingStat(dateKey: key, seconds: 0, sessions: 0, bookIds: [], bookSeconds: [:], hourlySeconds: [:])
@@ -150,13 +502,15 @@ final class ReadingStatsStore {
         stat.hourlySeconds = hSeconds
 
         statsByDate[key] = stat
-        save(statsByDate)
-
-        NotificationCenter.default.post(name: .readingStatsDidChange, object: self)
+        guard save(statsByDate) else { return false }
+        DispatchQueue.main.async {
+            NotificationCenter.default.post(name: .readingStatsDidChange, object: self)
+        }
+        return true
     }
 
     func snapshot(for scope: ReadingStatsScope, referenceDate: Date = Date()) -> ReadingStatsSnapshot {
-        let allStats = loadStatsByDate().values.sorted { $0.dateKey < $1.dateKey }
+        let allStats = Self.ioQueue.sync { loadStatsByDate().values.sorted { $0.dateKey < $1.dateKey } }
         let filtered: [DailyReadingStat]
 
         switch scope {
@@ -177,7 +531,7 @@ final class ReadingStatsStore {
     }
 
     func todayReadingSeconds(referenceDate: Date = Date()) -> Int {
-        loadStatsByDate()[dateKey(for: referenceDate)]?.seconds ?? 0
+        Self.ioQueue.sync { loadStatsByDate()[dateKey(for: referenceDate)]?.seconds ?? 0 }
     }
 
     private func makeSnapshot(from stats: [DailyReadingStat], streakSource: [DailyReadingStat], referenceDate: Date) -> ReadingStatsSnapshot {
@@ -333,6 +687,7 @@ final class ReadingStatsStore {
     }
 
     private func loadStatsByDate() -> [String: DailyReadingStat] {
+        if let cached = Self.committedCache[storageURL] { return cached }
         migrateUserDefaultsStatsIfNeeded()
 
         guard let data = try? Data(contentsOf: storageURL),
@@ -340,20 +695,24 @@ final class ReadingStatsStore {
         else {
             return [:]
         }
-
+        Self.committedCache[storageURL] = stats
         return stats
     }
 
-    private func save(_ stats: [String: DailyReadingStat]) {
-        guard let data = try? encoder.encode(stats) else { return }
+    @discardableResult
+    private func save(_ stats: [String: DailyReadingStat]) -> Bool {
         do {
+            let data = try encodeStats(stats)
             try FileManager.default.createDirectory(
                 at: storageURL.deletingLastPathComponent(),
                 withIntermediateDirectories: true
             )
             try data.write(to: storageURL, options: [.atomic])
+            Self.committedCache[storageURL] = stats
+            return true
         } catch {
             print("ReadingStatsStore: failed to save stats: \(error)")
+            return false
         }
     }
 
@@ -381,21 +740,22 @@ final class ReadingStatsStore {
     }
 
     private func dateKey(for date: Date) -> String {
-        Self.dateFormatter.string(from: calendar.startOfDay(for: date))
+        let parts = calendar.dateComponents([.year, .month, .day], from: date)
+        return String(format: "%04d-%02d-%02d", parts.year ?? 0, parts.month ?? 0, parts.day ?? 0)
     }
 
     private func date(from key: String) -> Date? {
-        Self.dateFormatter.date(from: key)
+        dateFormatter().date(from: key)
     }
 
-    private static let dateFormatter: DateFormatter = {
+    private func dateFormatter() -> DateFormatter {
         let formatter = DateFormatter()
-        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.calendar = calendar
         formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.timeZone = .current
+        formatter.timeZone = calendar.timeZone
         formatter.dateFormat = "yyyy-MM-dd"
         return formatter
-    }()
+    }
 
     private static func defaultStorageURL() -> URL {
         Paths.library.url
