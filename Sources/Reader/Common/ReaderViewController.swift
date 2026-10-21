@@ -18,25 +18,47 @@ enum ReaderSceneRouting {
     }
 }
 
+/// Shared by expiration and completion: only one caller owns the end action.
+final class ReadingBackgroundTaskEndGate {
+    private let lock = NSLock()
+    private var hasEnded = false
+
+    func claimEnd() -> Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        guard !hasEnded else { return false }
+        hasEnded = true
+        return true
+    }
+}
+
 /// A finite iOS background execution lease for the final checkpoint.
 private final class ReadingFinalCheckpointBackgroundTask {
     private var identifier: UIBackgroundTaskIdentifier = .invalid
+    private let endGate = ReadingBackgroundTaskEndGate()
 
     init() {
         identifier = UIApplication.shared.beginBackgroundTask(
             withName: "PagePilot Final Reading Checkpoint"
         ) { [weak self] in
-            // The system may expire the lease before a storage write finishes.
-            // The durable recovery journal is replayed on next activation.
+            // Expiration may arrive off-main and race the completion callback.
             self?.end()
         }
     }
 
     func end() {
-        guard identifier != .invalid else { return }
+        // Only the winning caller reads the identifier, and all UIKit ending
+        // is delivered on the main thread. A losing caller cannot end twice.
+        guard endGate.claimEnd() else { return }
         let current = identifier
-        identifier = .invalid
-        UIApplication.shared.endBackgroundTask(current)
+        guard current != .invalid else { return }
+        if Thread.isMainThread {
+            UIApplication.shared.endBackgroundTask(current)
+        } else {
+            DispatchQueue.main.async {
+                UIApplication.shared.endBackgroundTask(current)
+            }
+        }
     }
 
     deinit { end() }
