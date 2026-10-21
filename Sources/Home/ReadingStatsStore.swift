@@ -109,7 +109,11 @@ final class ReadingStatsStore {
 
     init(
         defaults: UserDefaults = .standard,
-        calendar: Calendar = .autoupdatingCurrent,
+        calendar: Calendar = {
+            var calendar = Calendar(identifier: .gregorian)
+            calendar.timeZone = .autoupdatingCurrent
+            return calendar
+        }(),
         storageURL: URL? = nil,
         encodeStats: @escaping ([String: DailyReadingStat]) throws -> Data = { try JSONEncoder().encode($0) }
     ) {
