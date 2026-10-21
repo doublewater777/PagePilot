@@ -349,19 +349,22 @@ final class ReadingStatsStore {
 
     private func replayPendingFinalCheckpoints() -> Bool {
         let durable: [String: PendingFinalReadingCheckpoint]
+        let journalReadable: Bool
         do {
             durable = try readPendingFinalCheckpoints()
+            journalReadable = true
         } catch {
             print("ReadingStatsStore: cannot decode recovery journal; preserved for repair: \(error)")
-            // Never rewrite an unreadable existing journal, even if a transient
-            // entry can be safely committed to the daily aggregate.
-            return false
+            // A corrupt on-disk journal remains untouched. In-process pending
+            // finals may still safely retry against the idempotent aggregate.
+            durable = [:]
+            journalReadable = false
         }
         var pending = durable
         for (id, checkpoint) in Self.transientFinals[finalRecoveryURL] ?? [:] {
             pending[id] = checkpoint
         }
-        var allSaved = true
+        var allSaved = journalReadable
         for checkpoint in pending.values.sorted(by: { $0.sessionID < $1.sessionID }) {
             let saved = commitCheckpoint(
                 sessionID: checkpoint.sessionID,
