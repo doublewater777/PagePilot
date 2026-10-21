@@ -1632,7 +1632,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.24;
+				MARKETING_VERSION = 1.0.25;
 				PRODUCT_BUNDLE_IDENTIFIER = com.panyang.PagePilot;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -1740,7 +1740,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.24;
+				MARKETING_VERSION = 1.0.25;
 				PRODUCT_BUNDLE_IDENTIFIER = com.panyang.PagePilot;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -1758,7 +1758,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.0.24;
+				MARKETING_VERSION = 1.0.25;
 				PRODUCT_BUNDLE_IDENTIFIER = com.panyang.PagePilot.ReadingLiveActivity;
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
@@ -1777,7 +1777,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.0.24;
+				MARKETING_VERSION = 1.0.25;
 				PRODUCT_BUNDLE_IDENTIFIER = com.panyang.PagePilot.ReadingLiveActivity;
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
@@ -1797,7 +1797,7 @@
 				CURRENT_PROJECT_VERSION = 53;
 				DEVELOPMENT_TEAM = 29C8MS76CZ;
 				INFOPLIST_FILE = WatchRemote/Info.plist;
-				MARKETING_VERSION = 1.0.24;
+				MARKETING_VERSION = 1.0.25;
 				PRODUCT_BUNDLE_IDENTIFIER = com.panyang.PagePilot.WatchRemote;
 				PROVISIONING_PROFILE_SPECIFIER = "PagePilot Watch Development";
 				SDKROOT = watchos;
@@ -1833,7 +1833,7 @@
 				CURRENT_PROJECT_VERSION = 53;
 				DEVELOPMENT_TEAM = 29C8MS76CZ;
 				INFOPLIST_FILE = WatchRemote/Info.plist;
-				MARKETING_VERSION = 1.0.24;
+				MARKETING_VERSION = 1.0.25;
 				PRODUCT_BUNDLE_IDENTIFIER = com.panyang.PagePilot.WatchRemote;
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
