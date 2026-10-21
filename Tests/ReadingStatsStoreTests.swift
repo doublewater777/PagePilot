@@ -319,8 +319,10 @@ final class ReadingStatsStoreTests: XCTestCase {
             sessionID: "interrupted-final", startedAt: start,
             elapsedSeconds: 44, recordedAt: start.addingTimeInterval(44),
             bookId: book
-        ) { saved in
-            XCTAssertFalse(saved)
+        ) { result in
+            XCTAssertFalse(result.aggregateSaved)
+            XCTAssertTrue(result.recoveryJournalSaved)
+            XCTAssertTrue(result.isRecoverable)
             finished.fulfill()
         }
         wait(for: [finished], timeout: 10)
@@ -363,8 +365,9 @@ final class ReadingStatsStoreTests: XCTestCase {
             sessionID: "background-final", startedAt: start,
             elapsedSeconds: 44, recordedAt: start.addingTimeInterval(44),
             bookId: Book.Id(rawValue: 17)
-        ) { success in
-            XCTAssertFalse(success)
+        ) { result in
+            XCTAssertFalse(result.aggregateSaved)
+            XCTAssertTrue(result.recoveryJournalSaved)
             failed.fulfill()
         }
         wait(for: [failed], timeout: 10)
@@ -383,6 +386,73 @@ final class ReadingStatsStoreTests: XCTestCase {
         XCTAssertEqual(store.todayReadingSeconds(referenceDate: start), 44)
     }
 
+    func testCorruptRecoveryJournalIsNotOverwrittenByNewFinalSession() throws {
+        let start = date(2026, 6, 4, 16, 0, 0)
+        let journal = storageURL.deletingLastPathComponent()
+            .appendingPathComponent("corrupt-recovery.json")
+        try FileManager.default.createDirectory(
+            at: journal.deletingLastPathComponent(), withIntermediateDirectories: true
+        )
+        let original = Data(#"{ "interrupted": {"sessionID": "unreadable""#.utf8)
+        try original.write(to: journal, options: .atomic)
+
+        let store = ReadingStatsStore(
+            defaults: defaults, calendar: calendar,
+            storageURL: storageURL, finalRecoveryURL: journal
+        )
+        let completed = expectation(description: "final aggregate can still save")
+        store.enqueueFinalReadingCheckpoint(
+            sessionID: "later-session",
+            startedAt: start, elapsedSeconds: 44,
+            recordedAt: start.addingTimeInterval(44),
+            bookId: Book.Id(rawValue: 18)
+        ) { result in
+            XCTAssertTrue(result.aggregateSaved)
+            XCTAssertFalse(result.recoveryJournalSaved)
+            XCTAssertTrue(result.isRecoverable)
+            completed.fulfill()
+        }
+        wait(for: [completed], timeout: 10)
+
+        // Neither staging nor cleanup may replace an existing corrupt journal.
+        XCTAssertEqual(try Data(contentsOf: journal), original)
+        XCTAssertFalse(store.retryPendingFinalCheckpoints())
+        XCTAssertEqual(store.todayReadingSeconds(referenceDate: start), 44)
+        XCTAssertEqual(try Data(contentsOf: journal), original)
+    }
+
+    func testWhenJournalAndAggregateBothFailResultReportsNoDurability() throws {
+        enum SyntheticFailure: Error { case unavailable }
+        let start = date(2026, 6, 4, 18, 0, 0)
+        let journal = storageURL.deletingLastPathComponent()
+            .appendingPathComponent("unreadable-recovery.json")
+        try FileManager.default.createDirectory(
+            at: journal.deletingLastPathComponent(), withIntermediateDirectories: true
+        )
+        let corrupt = Data("not a valid recovery record".utf8)
+        try corrupt.write(to: journal, options: .atomic)
+
+        let failing = ReadingStatsStore(
+            defaults: defaults, calendar: calendar,
+            storageURL: storageURL, finalRecoveryURL: journal,
+            encodeStats: { _ in throw SyntheticFailure.unavailable }
+        )
+        let completed = expectation(description: "both durable paths unavailable")
+        failing.enqueueFinalReadingCheckpoint(
+            sessionID: "memory-only-session", startedAt: start,
+            elapsedSeconds: 44, recordedAt: start.addingTimeInterval(44),
+            bookId: Book.Id(rawValue: 19)
+        ) { result in
+            XCTAssertFalse(result.aggregateSaved)
+            XCTAssertFalse(result.recoveryJournalSaved)
+            XCTAssertFalse(result.isRecoverable)
+            completed.fulfill()
+        }
+        wait(for: [completed], timeout: 10)
+        XCTAssertEqual(try Data(contentsOf: journal), corrupt)
+        XCTAssertEqual(failing.todayReadingSeconds(referenceDate: start), 0)
+    }
+
     func testSuccessfulFinalCommitLeavesNoReplayableDelta() {
         let start = date(2026, 6, 4, 14, 0, 0)
         let recoveryURL = storageURL.deletingLastPathComponent()
@@ -396,8 +466,10 @@ final class ReadingStatsStoreTests: XCTestCase {
             sessionID: "finish-once", startedAt: start,
             elapsedSeconds: 44, recordedAt: start.addingTimeInterval(44),
             bookId: Book.Id(rawValue: 5)
-        ) { saved in
-            XCTAssertTrue(saved)
+        ) { result in
+            XCTAssertTrue(result.aggregateSaved)
+            XCTAssertTrue(result.recoveryJournalSaved)
+            XCTAssertTrue(result.isRecoverable)
             completed.fulfill()
         }
         wait(for: [completed], timeout: 10)
