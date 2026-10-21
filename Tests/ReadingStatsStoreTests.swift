@@ -439,12 +439,12 @@ final class ReadingStatsStoreTests: XCTestCase {
     }
 
     func testClockMovesForwardAcrossMidnightUsingObservedCheckpointDay() {
-        let start = date(2026, 6, 4, 22, 59, 50)
+        let start = date(2026, 6, 4, 23, 0, 50)
         let store = makeStore()
-        // At 20s, the real wall clock is 00:00:10 after a +1h jump.
+        // At 20s, the sampled wall time is 00:01:10 after a +1h jump.
         XCTAssertTrue(store.recordReadingCheckpoint(
             sessionID: "forwards", startedAt: start, elapsedSeconds: 20,
-            recordedAt: date(2026, 6, 5, 0, 0, 10), bookId: Book.Id(rawValue: 1)
+            recordedAt: date(2026, 6, 5, 0, 1, 10), bookId: Book.Id(rawValue: 1)
         ))
         XCTAssertEqual(store.snapshot(for: .day, referenceDate: date(2026, 6, 4)).totalSeconds, 0)
         XCTAssertEqual(store.snapshot(for: .day, referenceDate: date(2026, 6, 5)).totalSeconds, 20)
