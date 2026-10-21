@@ -91,6 +91,22 @@ final class ReaderLiveActivityBackgroundPolicyTests: XCTestCase {
         XCTAssertNil(lifecycle.readerWillDisappear(at: wallStart))
     }
 
+    func testDetailedSessionUsesMonotonicDurationWhenWallClockMoves() {
+        let startedAt = Date(timeIntervalSince1970: 10_000)
+        let session = ReadingSession(
+            sessionID: "clock-adjusted",
+            bookId: Book.Id(rawValue: 101),
+            startedAt: startedAt,
+            endedAt: startedAt.addingTimeInterval(-3_000),
+            measuredDurationSeconds: 31,
+            startProgression: 0.1,
+            endProgression: 0.2,
+            watchPageTurns: 0
+        )
+        XCTAssertEqual(session.durationSeconds, 31)
+        XCTAssertEqual(session.endedAt, startedAt.addingTimeInterval(-3_000))
+    }
+
     func testBackgroundAndResumeReceiveDifferentCheckpointIDs() throws {
         var uptime = 10.0
         var lifecycle = ReaderSessionLifecycle(
