@@ -162,6 +162,39 @@ final class ReaderLiveActivityBackgroundPolicyTests: XCTestCase {
         XCTAssertEqual(lifecycle.currentCheckpoint()?.elapsedSeconds, 10)
     }
 
+    func testFinalCheckpointGetsBackgroundExecutionAndFrozenProgress() throws {
+        let source = try Self.readerViewControllerSource()
+        let begin = try XCTUnwrap(source.range(of: "private func finishReadingSession("))
+        let snapshot = try XCTUnwrap(
+            source.range(of: "let detailedSession: ReadingSession?", range: begin.lowerBound..<source.endIndex)
+        )
+        let backgroundLease = try XCTUnwrap(
+            source.range(of: "let backgroundTask = ReadingFinalCheckpointBackgroundTask()",
+                         range: snapshot.lowerBound..<source.endIndex)
+        )
+        let finalEnqueue = try XCTUnwrap(
+            source.range(of: "enqueueFinalReadingCheckpoint(", range: backgroundLease.lowerBound..<source.endIndex)
+        )
+        let callback = try XCTUnwrap(
+            source.range(of: "private func presentReadingSessionFeedback(",
+                         range: finalEnqueue.lowerBound..<source.endIndex)
+        )
+        let nextMethod = try XCTUnwrap(
+            source.range(of: "var isReadingWindowActive: Bool",
+                         range: callback.lowerBound..<source.endIndex)
+        )
+        XCTAssertTrue(source[snapshot.lowerBound..<finalEnqueue.lowerBound].contains(
+            "navigator.currentLocation?.locations.totalProgression"
+        ))
+        XCTAssertFalse(source[callback.lowerBound..<nextMethod.lowerBound].contains(
+            "navigator.currentLocation"
+        ))
+        XCTAssertTrue(source[finalEnqueue.lowerBound..<callback.lowerBound].contains(
+            "backgroundTask.end()"
+        ))
+        XCTAssertTrue(source.contains("enqueuePendingFinalCheckpointRetry()"))
+    }
+
     func testBackgroundForegroundCreatesTwoNonOverlappingSessions() throws {
         let bookId = Book.Id(rawValue: 11)
         var lifecycle = ReaderSessionLifecycle(bookId: bookId)
