@@ -1099,7 +1099,7 @@ class ReaderViewController<N: Navigator>: UIViewController,
             progression: session.startProgression
         )
         readingCheckpointTimer?.invalidate()
-        readingCheckpointTimer = Timer.scheduledTimer(withTimeInterval: 15, repeats: true) { [weak self] _ in
+        readingCheckpointTimer = Timer(timeInterval: 15, repeats: true) { [weak self] _ in
             self?.persistReadingCheckpoint()
         }
         if let readingCheckpointTimer {
