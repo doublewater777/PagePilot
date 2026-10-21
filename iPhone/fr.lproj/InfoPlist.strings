@@ -1,4 +1,4 @@
-/* InfoPlist.strings - English (Base) */
+/* InfoPlist.strings - French */
 
 /* NSLocalNetworkUsageDescription */
-"NSLocalNetworkUsageDescription" = "PagePilot utilise le réseau local pour trouver et connecter votre lecteur iPad.";
+"NSLocalNetworkUsageDescription" = "PagePilot utilise le réseau local pour transférer des livres et se connecter à votre lecteur iPad afin de contrôler le changement de page avec l’Apple Watch.";
