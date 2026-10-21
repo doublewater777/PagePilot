@@ -451,6 +451,16 @@ final class ReadingStatsStoreTests: XCTestCase {
         wait(for: [completed], timeout: 10)
         XCTAssertEqual(try Data(contentsOf: journal), corrupt)
         XCTAssertEqual(failing.todayReadingSeconds(referenceDate: start), 0)
+
+        // A same-process retry can recover transient data even while the
+        // original corrupt journal is preserved byte-for-byte.
+        let recovered = ReadingStatsStore(
+            defaults: defaults, calendar: calendar,
+            storageURL: storageURL, finalRecoveryURL: journal
+        )
+        XCTAssertFalse(recovered.retryPendingFinalCheckpoints())
+        XCTAssertEqual(recovered.todayReadingSeconds(referenceDate: start), 44)
+        XCTAssertEqual(try Data(contentsOf: journal), corrupt)
     }
 
     func testSuccessfulFinalCommitLeavesNoReplayableDelta() {
