@@ -97,6 +97,15 @@ private struct PendingFinalReadingCheckpoint: Codable {
     let bookId: Book.Id
 }
 
+/// A queued final write is not necessarily durable. Aggregate persistence and
+/// the independent recovery journal have separate outcomes.
+struct FinalReadingCheckpointResult {
+    let aggregateSaved: Bool
+    let recoveryJournalSaved: Bool
+
+    var isRecoverable: Bool { aggregateSaved || recoveryJournalSaved }
+}
+
 final class ReadingStatsStore {
     static let shared = ReadingStatsStore()
 
@@ -233,7 +242,7 @@ final class ReadingStatsStore {
         elapsedSeconds: Int,
         recordedAt: Date,
         bookId: Book.Id,
-        completion: @escaping (Bool) -> Void
+        completion: @escaping (FinalReadingCheckpointResult) -> Void
     ) {
         Self.ioQueue.async {
             let entry = PendingFinalReadingCheckpoint(
@@ -243,16 +252,20 @@ final class ReadingStatsStore {
                 recordedAt: recordedAt,
                 bookId: bookId
             )
-            self.stagePendingFinalCheckpoint(entry)
-            let saved = self.commitCheckpoint(
+            let journalSaved = self.stagePendingFinalCheckpoint(entry)
+            let aggregateSaved = self.commitCheckpoint(
                 sessionID: sessionID,
                 startedAt: startedAt,
                 elapsedSeconds: elapsedSeconds,
                 recordedAt: recordedAt,
                 bookId: bookId
             )
-            if saved { self.removePendingFinalCheckpoint(sessionID: sessionID) }
-            DispatchQueue.main.async { completion(saved) }
+            if aggregateSaved { self.removePendingFinalCheckpoint(sessionID: sessionID) }
+            let result = FinalReadingCheckpointResult(
+                aggregateSaved: aggregateSaved,
+                recoveryJournalSaved: journalSaved
+            )
+            DispatchQueue.main.async { completion(result) }
         }
     }
 
@@ -271,11 +284,14 @@ final class ReadingStatsStore {
     }
 
     // The following helpers are called only from the process-wide IO queue.
-    private func readPendingFinalCheckpoints() -> [String: PendingFinalReadingCheckpoint] {
-        guard let data = try? Data(contentsOf: finalRecoveryURL),
-              let pending = try? decoder.decode([String: PendingFinalReadingCheckpoint].self, from: data)
-        else { return [:] }
-        return pending
+    private func readPendingFinalCheckpoints() throws -> [String: PendingFinalReadingCheckpoint] {
+        // Only a genuinely absent journal means "no pending entries".
+        // Existing but unreadable/corrupt journals must never be overwritten.
+        guard FileManager.default.fileExists(atPath: finalRecoveryURL.path) else {
+            return [:]
+        }
+        let data = try Data(contentsOf: finalRecoveryURL)
+        return try decoder.decode([String: PendingFinalReadingCheckpoint].self, from: data)
     }
 
     @discardableResult
@@ -296,33 +312,52 @@ final class ReadingStatsStore {
         }
     }
 
-    private func stagePendingFinalCheckpoint(_ checkpoint: PendingFinalReadingCheckpoint) {
-        var pending = readPendingFinalCheckpoints()
-        pending[checkpoint.sessionID] = checkpoint
+    @discardableResult
+    private func stagePendingFinalCheckpoint(_ checkpoint: PendingFinalReadingCheckpoint) -> Bool {
         var transient = Self.transientFinals[finalRecoveryURL] ?? [:]
         transient[checkpoint.sessionID] = checkpoint
         Self.transientFinals[finalRecoveryURL] = transient
-        if writePendingFinalCheckpoints(pending) {
+
+        do {
+            var pending = try readPendingFinalCheckpoints()
+            pending[checkpoint.sessionID] = checkpoint
+            guard writePendingFinalCheckpoints(pending) else { return false }
             transient.removeValue(forKey: checkpoint.sessionID)
             Self.transientFinals[finalRecoveryURL] = transient
+            return true
+        } catch {
+            // Preserve the original journal byte-for-byte. The new entry only
+            // remains in memory until the existing journal becomes readable.
+            print("ReadingStatsStore: recovery journal unavailable; not overwriting: \(error)")
+            return false
         }
     }
 
     private func removePendingFinalCheckpoint(sessionID: String) {
-        var pending = readPendingFinalCheckpoints()
-        guard pending[sessionID] != nil else {
-            Self.transientFinals[finalRecoveryURL]?.removeValue(forKey: sessionID)
-            return
+        // A successfully aggregated entry no longer needs the in-memory copy.
+        Self.transientFinals[finalRecoveryURL]?.removeValue(forKey: sessionID)
+        do {
+            var pending = try readPendingFinalCheckpoints()
+            guard pending[sessionID] != nil else { return }
+            pending.removeValue(forKey: sessionID)
+            // Failed cleanup is harmless: replay deduplicates committed cursors.
+            _ = writePendingFinalCheckpoints(pending)
+        } catch {
+            print("ReadingStatsStore: preserving unreadable recovery journal: \(error)")
         }
-        pending.removeValue(forKey: sessionID)
-        if writePendingFinalCheckpoints(pending) {
-            Self.transientFinals[finalRecoveryURL]?.removeValue(forKey: sessionID)
-        }
-        // Failed deletion is harmless: replay is idempotent by sessionID/cursor.
     }
 
     private func replayPendingFinalCheckpoints() -> Bool {
-        var pending = readPendingFinalCheckpoints()
+        let durable: [String: PendingFinalReadingCheckpoint]
+        do {
+            durable = try readPendingFinalCheckpoints()
+        } catch {
+            print("ReadingStatsStore: cannot decode recovery journal; preserved for repair: \(error)")
+            // Never rewrite an unreadable existing journal, even if a transient
+            // entry can be safely committed to the daily aggregate.
+            return false
+        }
+        var pending = durable
         for (id, checkpoint) in Self.transientFinals[finalRecoveryURL] ?? [:] {
             pending[id] = checkpoint
         }
