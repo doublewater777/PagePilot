@@ -60,6 +60,52 @@ struct WatchInstallReminderStore {
 class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewController<N>, VisualNavigatorDelegate, ReaderPositionIndicatorProviding {
     override var supportsDetailedReadingSessions: Bool { true }
 
+    // MARK: - Keyboard shortcuts (Mac Catalyst)
+
+    /// Appends a text-to-speech toggle on top of the reader-wide shortcuts
+    /// declared in ReaderViewController.
+    override var keyCommands: [UIKeyCommand]? {
+        let commands = (super.keyCommands ?? []) + [
+            // Esc: close any presented sheet, otherwise toggle the reader chrome.
+            UIKeyCommand(
+                title: NSLocalizedString("sc_reader_dismiss", comment: "Keyboard shortcut: dismiss sheet or toggle chrome"),
+                action: #selector(readerEscape),
+                input: UIKeyCommand.inputEscape
+            ),
+            UIKeyCommand(
+                title: NSLocalizedString("sc_toggle_tts", comment: "Keyboard shortcut: toggle text-to-speech"),
+                action: #selector(toggleTTS),
+                input: "t",
+                modifierFlags: [.command, .shift]
+            ),
+        ]
+        #if targetEnvironment(macCatalyst)
+        for command in commands where command.modifierFlags.contains(.command) || command.input == UIKeyCommand.inputEscape {
+            command.wantsPriorityOverSystemBehavior = true
+        }
+        #endif
+        return commands
+    }
+
+    @objc private func readerEscape() {
+        // If a modal sheet (outline / preferences / search) is presented, close it.
+        if let presented = presentedViewController {
+            presented.dismiss(animated: true)
+            return
+        }
+        // Otherwise toggle the reader navigation chrome (toolbar / navbar).
+        toggleNavigationBar()
+    }
+
+    @objc private func toggleTTS() {
+        guard let ttsViewModel else { return }
+        if ttsViewModel.state.isPlaying {
+            ttsViewModel.stop()
+        } else {
+            ttsViewModel.start()
+        }
+    }
+
     private lazy var positionLabel = UILabel()
 
     var positionIndicatorView: UIView {
@@ -71,6 +117,10 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
     private var positionCount: Int?
     private var positions: [Locator] = []
     private var directionalNavigationAdapter: DirectionalNavigationAdapter?
+    #if targetEnvironment(macCatalyst)
+    private var scrollPageTurnController: MacScrollPageTurnController?
+    private var isTurningPageWithScroll = false
+    #endif
     private var quickPositionJumpController: QuickPositionJumpInteractionController?
     private var wasTTSPlayingBeforeQuickPositionJump = false
     private var quickPositionJumpSuppressionToken: UUID?
@@ -144,6 +194,36 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
         //
         // Bind it to the navigator before adding your own observers to prevent
         // triggering your actions when turning pages.
+        #if targetEnvironment(macCatalyst)
+        // Readium consumes presses in its own first responder. Handle app
+        // commands through its input observer rather than the outer responder.
+        navigator.addObserver(.key { [weak self] event in
+            guard let self, self.presentedViewController == nil else { return false }
+            if event.key == .escape, event.modifiers.isEmpty {
+                self.readerEscape()
+                return true
+            }
+            if event.key == .space, event.modifiers == .shift {
+                _ = await self.navigator.goBackward(options: NavigatorGoOptions(animated: true))
+                return true
+            }
+            guard case let .character(character) = event.key else { return false }
+            let key = character.lowercased()
+            switch (key, event.modifiers) {
+            case ("o", [.command, .shift]): self.presentOutline()
+            case ("f", .command): self.showSearchUI()
+            case ("d", .command): self.bookmarkCurrentPosition()
+            case ("p", [.command, .shift]): self.presentUserPreferences()
+            case ("t", [.command, .shift]): self.toggleTTS()
+            case ("1", .command), ("2", .command), ("3", .command):
+                guard let tab = Int(key) else { return false }
+                (UIApplication.shared.delegate as? AppDelegate)?.selectMainTab(tab - 1)
+            default: return false
+            }
+            return true
+        })
+        #endif
+
         let adapter = DirectionalNavigationAdapter(
             pointerPolicy: .init(types: [.mouse, .touch])
         )
@@ -191,10 +271,21 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
         }
 
         addChild(navigator)
+        #if !targetEnvironment(macCatalyst)
         navigator.view.frame = view.bounds
         navigator.view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        #endif
         view.addSubview(navigator.view)
         navigator.didMove(toParent: self)
+        #if targetEnvironment(macCatalyst)
+        navigator.view.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            navigator.view.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            navigator.view.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
+            navigator.view.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
+            navigator.view.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -32),
+        ])
+        #endif
 
         positionLabel.translatesAutoresizingMaskIntoConstraints = false
         positionLabel.font = .systemFont(ofSize: 12)
@@ -210,6 +301,10 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
                 constant: -QuickPositionJumpPolicy.positionIndicatorBottomSpacing
             ),
         ])
+        #if targetEnvironment(macCatalyst)
+        setupPageTurnButtons()
+        setupScrollPageTurning()
+        #endif
 
         let quickPositionJumpController = QuickPositionJumpInteractionController(
             hostView: view,
@@ -490,6 +585,11 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
     }
 
     /// Retries navigation until the navigator accepts the locator or times out.
+    override func navigateToReadingLocation(_ locator: Locator) {
+        guard let visualNavigator = navigator as? VisualNavigator else { return }
+        Task { await navigateToLocator(locator, on: visualNavigator) }
+    }
+
     private func navigateToLocator(_ locator: Locator, on navigator: VisualNavigator) async {
         for _ in 0 ..< 30 {
             if await navigator.go(to: locator, options: NavigatorGoOptions(animated: false)) {
@@ -584,7 +684,7 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
 
-        if let visualNavigator = navigator as? VisualNavigator {
+        if isReadingWindowActive, let visualNavigator = navigator as? VisualNavigator {
             WatchPageTurnService.shared.registerNavigator(visualNavigator, publication: publication)
         }
 
@@ -598,6 +698,13 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
             guard self?.quickPositionJumpController?.isActive != true,
                   let navigator = self?.navigator as? VisualNavigator else { return }
             Task { await navigator.goBackward(options: NavigatorGoOptions(animated: false)) }
+        }
+    }
+
+    override func readingWindowDidActivate() {
+        super.readingWindowDidActivate()
+        if isReadingWindowActive, let visualNavigator = navigator as? VisualNavigator {
+            WatchPageTurnService.shared.registerNavigator(visualNavigator, publication: publication)
         }
     }
 
@@ -621,9 +728,81 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
         super.viewWillTransition(to: size, with: coordinator)
     }
 
+    #if targetEnvironment(macCatalyst)
+    private func setupScrollPageTurning() {
+        scrollPageTurnController = MacScrollPageTurnController(
+            view: navigator.view,
+            canTurn: { [weak self] in
+                guard let self, let visualNavigator = self.navigator as? VisualNavigator else { return false }
+                if let pdfView = (self.navigator as? PDFNavigatorViewController)?.pdfView,
+                   pdfView.scaleFactor > pdfView.minScaleFactor * 1.01 {
+                    return false
+                }
+                return !visualNavigator.presentation.scroll
+                    && self.presentedViewController == nil
+                    && self.quickPositionJumpController?.isActive != true
+            },
+            onTurn: { [weak self] translation in
+                guard let self, !self.isTurningPageWithScroll,
+                      let visualNavigator = self.navigator as? VisualNavigator
+                else { return }
+                self.isTurningPageWithScroll = true
+                Task {
+                    defer { self.isTurningPageWithScroll = false }
+                    let options = NavigatorGoOptions(animated: true)
+                    if abs(translation.x) > abs(translation.y) {
+                        if translation.x < 0 {
+                            _ = await visualNavigator.goRight(options: options)
+                        } else {
+                            _ = await visualNavigator.goLeft(options: options)
+                        }
+                    } else if translation.y < 0 {
+                        _ = await self.navigator.goForward(options: options)
+                    } else {
+                        _ = await self.navigator.goBackward(options: options)
+                    }
+                }
+            }
+        )
+    }
+
+    private func setupPageTurnButtons() {
+        for forward in [false, true] {
+            let button = UIButton(type: .system)
+            let title = NSLocalizedString(forward ? "sc_next_page" : "sc_prev_page", comment: "")
+            button.setImage(UIImage(systemName: forward ? "chevron.forward" : "chevron.backward"), for: .normal)
+            button.accessibilityLabel = title
+            button.addInteraction(UIToolTipInteraction(defaultToolTip: title))
+            button.addAction(UIAction { [weak self] _ in
+                guard let self,
+                      self.presentedViewController == nil,
+                      self.quickPositionJumpController?.isActive != true
+                else { return }
+                Task {
+                    if forward {
+                        _ = await self.navigator.goForward(options: NavigatorGoOptions(animated: true))
+                    } else {
+                        _ = await self.navigator.goBackward(options: NavigatorGoOptions(animated: true))
+                    }
+                }
+            }, for: .primaryActionTriggered)
+            button.translatesAutoresizingMaskIntoConstraints = false
+            view.addSubview(button)
+            NSLayoutConstraint.activate([
+                button.widthAnchor.constraint(equalToConstant: 28),
+                button.heightAnchor.constraint(equalToConstant: 28),
+                button.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -2),
+                forward
+                    ? button.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -20)
+                    : button.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 20),
+            ])
+        }
+    }
+    #endif
+
     // MARK: - Navigation bar
 
-    private var navigationBarHidden: Bool = true {
+    private var navigationBarHidden: Bool = !PagePilotReaderHost.isMac {
         didSet {
             updateNavigationBar()
         }
@@ -705,6 +884,7 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
     }
 
     private func publishWatchProgress(_ locator: Locator) {
+        guard isReadingWindowActive else { return }
         WatchPageTurnService.shared.updateProgress(
             title: publication.metadata.title ?? "",
             progression: locator.locations.totalProgression
@@ -899,5 +1079,90 @@ extension VisualReaderViewController: VolumeKeyBehaviorProvider {
             return .controlVolume
         }
         return .turnPage
+    }
+}
+
+#if targetEnvironment(macCatalyst)
+/// Keeps pointer scrolling separate from Readium's touch and text-selection gestures.
+@MainActor
+private final class MacScrollPageTurnController: NSObject, UIGestureRecognizerDelegate {
+    private let canTurn: () -> Bool
+    private let onTurn: (CGPoint) -> Void
+    private let wheel = UIPanGestureRecognizer()
+    private let trackpad = UIPanGestureRecognizer()
+    private var trackpadSession = TrackpadPageTurnSession()
+    private var lastWheelTurn: TimeInterval = 0
+
+    init(view: UIView, canTurn: @escaping () -> Bool, onTurn: @escaping (CGPoint) -> Void) {
+        self.canTurn = canTurn
+        self.onTurn = onTurn
+        super.init()
+        wheel.allowedScrollTypesMask = .discrete
+        trackpad.allowedScrollTypesMask = .continuous
+        for gesture in [wheel, trackpad] {
+            gesture.allowedTouchTypes = []
+            gesture.delegate = self
+            gesture.addTarget(self, action: #selector(handleScroll(_:)))
+            view.addGestureRecognizer(gesture)
+        }
+    }
+
+    func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+        canTurn()
+    }
+
+    func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldBeRequiredToFailBy otherGestureRecognizer: UIGestureRecognizer) -> Bool {
+        otherGestureRecognizer is UIPanGestureRecognizer
+            && otherGestureRecognizer !== wheel && otherGestureRecognizer !== trackpad
+    }
+
+    @objc private func handleScroll(_ gesture: UIPanGestureRecognizer) {
+        let translation = gesture.translation(in: gesture.view)
+        if gesture === trackpad {
+            if let turn = trackpadSession.update(
+                state: canTurn() ? gesture.state : .cancelled,
+                translation: translation
+            ) {
+                onTurn(turn)
+            }
+            return
+        }
+        guard [.began, .changed, .ended].contains(gesture.state), canTurn(),
+              max(abs(translation.x), abs(translation.y)) >= 12
+        else { return }
+        // Limit a fast wheel burst without losing subsequent deliberate turns.
+        let now = ProcessInfo.processInfo.systemUptime
+        guard now - lastWheelTurn >= 0.25 else { return }
+        lastWheelTurn = now
+        gesture.setTranslation(.zero, in: gesture.view)
+        onTurn(translation)
+    }
+}
+#endif
+
+/// A continuous two-finger swipe may turn once, including its final displacement.
+struct TrackpadPageTurnSession {
+    private var isActive = false
+    private var didTurn = false
+
+    mutating func update(state: UIGestureRecognizer.State, translation: CGPoint) -> CGPoint? {
+        switch state {
+        case .began:
+            isActive = true
+            didTurn = false
+        case .changed, .ended:
+            break
+        default:
+            isActive = false
+            return nil
+        }
+        defer {
+            if state == .ended { isActive = false }
+        }
+        guard isActive, !didTurn, max(abs(translation.x), abs(translation.y)) >= 48 else {
+            return nil
+        }
+        didTurn = true
+        return translation
     }
 }

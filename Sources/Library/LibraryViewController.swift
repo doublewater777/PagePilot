@@ -21,6 +21,66 @@ protocol LibraryViewControllerFactory {
 class LibraryViewController: UIViewController, Loggable {
     private var books: [Book] = []
 
+    enum ReadingFilter: String, CaseIterable {
+        case all, reading, unread, finished
+        var title: String { NSLocalizedString("library_filter_" + rawValue, comment: "Reading status") }
+        var symbol: String {
+            switch self {
+            case .all: return "books.vertical"
+            case .reading: return "book"
+            case .unread: return "book.closed"
+            case .finished: return "checkmark.circle"
+            }
+        }
+    }
+    private var readingFilter: ReadingFilter = .all
+
+    func setReadingFilter(_ filter: ReadingFilter) {
+        readingFilter = filter
+        loadViewIfNeeded()
+        title = filter.title
+        applyFilteringAndReload()
+    }
+
+    // MARK: - Keyboard shortcuts (Mac Catalyst)
+
+    /// Library-scoped shortcuts: import a book and focus the search field.
+    override var keyCommands: [UIKeyCommand]? {
+        let commands = [
+            UIKeyCommand(
+                title: NSLocalizedString("sc_import_book", comment: "Keyboard shortcut: import a book"),
+                action: #selector(addBookFromDevice),
+                input: "o",
+                modifierFlags: .command
+            ),
+            UIKeyCommand(
+                title: NSLocalizedString("sc_focus_search", comment: "Keyboard shortcut: focus search"),
+                action: #selector(focusSearch),
+                input: "f",
+                modifierFlags: .command
+            ),
+        ]
+        #if targetEnvironment(macCatalyst)
+        for command in commands { command.wantsPriorityOverSystemBehavior = true }
+        #endif
+        return commands
+    }
+
+    #if targetEnvironment(macCatalyst)
+    override var canBecomeFirstResponder: Bool { true }
+
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        if !searchController.isActive { becomeFirstResponder() }
+    }
+    #endif
+
+    @objc private func focusSearch() {
+        guard let searchController else { return }
+        searchController.isActive = true
+        searchController.searchBar.becomeFirstResponder()
+    }
+
     weak var lastFlippedCell: PublicationCollectionViewCell?
 
     var library: LibraryService!
@@ -80,8 +140,12 @@ class LibraryViewController: UIViewController, Loggable {
     
     var currentViewMode: ViewMode {
         get {
+            #if targetEnvironment(macCatalyst)
+            return .grid
+            #else
             let saved = UserDefaults.standard.string(forKey: "LibraryViewMode") ?? ""
             return ViewMode(rawValue: saved) ?? .grid
+            #endif
         }
         set {
             UserDefaults.standard.set(newValue.rawValue, forKey: "LibraryViewMode")
@@ -122,6 +186,7 @@ class LibraryViewController: UIViewController, Loggable {
             self?.toggleEditingMode()
         }
         
+        #if !targetEnvironment(macCatalyst)
         let gridModeAction = UIAction(title: NSLocalizedString("library_view_mode_grid", comment: ""), image: UIImage(systemName: "square.grid.2x2"), state: currentViewMode == .grid ? .on : .off) { [weak self] _ in
             self?.setViewMode(.grid)
         }
@@ -129,6 +194,7 @@ class LibraryViewController: UIViewController, Loggable {
             self?.setViewMode(.list)
         }
         let viewModeMenu = UIMenu(title: NSLocalizedString("library_view_mode_title", comment: ""), image: UIImage(systemName: "square.grid.2x2"), children: [gridModeAction, listModeAction])
+        #endif
         
         let recentReadAction = UIAction(title: NSLocalizedString("library_sort_recent_read", comment: ""), image: UIImage(systemName: "book"), state: currentSortMode == .recentRead ? .on : .off) { [weak self] _ in
             self?.setSortMode(.recentRead)
@@ -144,7 +210,12 @@ class LibraryViewController: UIViewController, Loggable {
         }
         let sortMenu = UIMenu(title: NSLocalizedString("library_sort_title_menu", comment: ""), image: UIImage(systemName: "arrow.up.arrow.down"), children: [recentReadAction, titleAction, authorAction, recentImportedAction])
         
-        let inlineMenu = UIMenu(title: "", image: nil, identifier: nil, options: .displayInline, children: [viewModeMenu, sortMenu])
+        #if targetEnvironment(macCatalyst)
+        let menuItems = [sortMenu]
+        #else
+        let menuItems = [viewModeMenu, sortMenu]
+        #endif
+        let inlineMenu = UIMenu(title: "", image: nil, identifier: nil, options: .displayInline, children: menuItems)
         return UIMenu(title: "", children: [selectAction, inlineMenu])
     }
 
@@ -245,7 +316,11 @@ class LibraryViewController: UIViewController, Loggable {
     }
 
     func updateLocalizedContent() {
+        #if targetEnvironment(macCatalyst)
+        title = readingFilter.title
+        #else
         title = NSLocalizedString("library_title", comment: "")
+        #endif
         collectionView?.accessibilityLabel = NSLocalizedString("library_a11y_label", comment: "Accessibility label for the library collection view")
         searchController?.searchBar.placeholder = NSLocalizedString("library_search_placeholder", comment: "")
         updateNavigationBarButtons()
@@ -299,7 +374,11 @@ class LibraryViewController: UIViewController, Loggable {
         if isEditingBooks {
             navigationItem.rightBarButtonItems = [makeCancelButton()]
         } else {
+            #if targetEnvironment(macCatalyst)
+            navigationItem.rightBarButtonItems = [makeAddBookButton(), makeSelectButton()]
+            #else
             navigationItem.rightBarButtonItems = [makeSelectButton(), makeAddBookButton()]
+            #endif
         }
     }
 
@@ -379,6 +458,16 @@ class LibraryViewController: UIViewController, Loggable {
         var filteredBooks = latestDBBooks
         #endif
         
+        #if targetEnvironment(macCatalyst)
+        filteredBooks = filteredBooks.filter {
+            switch readingFilter {
+            case .all: return true
+            case .reading: return $0.progression > 0 && $0.progression < 0.99
+            case .unread: return $0.progression <= 0
+            case .finished: return $0.progression >= 0.99
+            }
+        }
+        #endif
         let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         if !query.isEmpty {
             filteredBooks = filteredBooks.filter { book in
@@ -586,6 +675,9 @@ class LibraryViewController: UIViewController, Loggable {
         guard let numberPerRow = deviceLayoutNumberPerRow[.current] else { return }
 
         guard let flowLayout = collectionView.collectionViewLayout as? UICollectionViewFlowLayout else { return }
+        #if targetEnvironment(macCatalyst)
+        collectionView.contentInset = UIEdgeInsets(top: 24, left: 28, bottom: 28, right: 28)
+        #endif
         let contentWidth = collectionView.bounds.width - collectionView.adjustedContentInset.left - collectionView.adjustedContentInset.right
 
         let minimumSpacing = CGFloat(18)
@@ -726,7 +818,17 @@ extension LibraryViewController: UIDocumentPickerDelegate {
 extension LibraryViewController: UICollectionViewDelegateFlowLayout, UICollectionViewDataSource {
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         if books.isEmpty {
+            #if targetEnvironment(macCatalyst)
+            if readingFilter != .all || !searchText.isEmpty {
+                var configuration = UIContentUnavailableConfiguration.search()
+                configuration.secondaryText = readingFilter.title
+                collectionView.backgroundView = UIContentUnavailableView(configuration: configuration)
+            } else {
+                collectionView.backgroundView = makeEmptyLibraryView()
+            }
+            #else
             collectionView.backgroundView = makeEmptyLibraryView()
+            #endif
         } else {
             collectionView.backgroundView = nil
         }
@@ -1011,6 +1113,33 @@ extension LibraryViewController: UICollectionViewDelegateFlowLayout, UICollectio
 }
 
 extension LibraryViewController: PublicationCollectionViewCellDelegate {
+    #if targetEnvironment(macCatalyst)
+    func collectionView(_ collectionView: UICollectionView, contextMenuConfigurationForItemAt indexPath: IndexPath, point: CGPoint) -> UIContextMenuConfiguration? {
+        guard !isEditingBooks else { return nil }
+        let bookID = books[indexPath.item].id
+        return UIContextMenuConfiguration(identifier: nil, previewProvider: nil) { [weak self] _ in
+            guard let self else { return nil }
+            return UIMenu(children: [
+                UIAction(title: NSLocalizedString("mac_open_book", comment: ""), image: UIImage(systemName: "book")) { [weak self] _ in
+                    guard let self, let index = self.books.firstIndex(where: { $0.id == bookID }) else { return }
+                    let path = IndexPath(item: index, section: 0)
+                    self.collectionView(collectionView, didSelectItemAt: path)
+                },
+                UIAction(title: NSLocalizedString("metadata_button", comment: ""), image: UIImage(systemName: "info.circle")) { [weak self] _ in
+                    guard let self, let index = self.books.firstIndex(where: { $0.id == bookID }) else { return }
+                    let path = IndexPath(item: index, section: 0)
+                    self.presentMetadata(forCellAt: path)
+                },
+                UIAction(title: NSLocalizedString("remove_button", comment: ""), image: UIImage(systemName: "trash"), attributes: .destructive) { [weak self] _ in
+                    guard let self, let index = self.books.firstIndex(where: { $0.id == bookID }) else { return }
+                    let path = IndexPath(item: index, section: 0)
+                    self.removePublicationFromLibrary(forCellAt: path)
+                }
+            ])
+        }
+    }
+    #endif
+
     func removePublicationFromLibrary(forCellAt indexPath: IndexPath) {
         let book = books[indexPath.item]
 

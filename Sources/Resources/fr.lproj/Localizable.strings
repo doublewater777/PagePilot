@@ -1036,3 +1036,26 @@
 "settings_developer_testing_footer" = "Utilisé pour tester les achats sandbox et la rétention. Passez en 'Forcer la version gratuite' pour afficher les options d'achat.";
 "settings_developer_mode_enabled_title" = "Mode développeur activé";
 "settings_developer_mode_disabled_title" = "Mode développeur désactivé";
+
+/* MARK: Keyboard shortcuts (Mac Catalyst) */
+"sc_go_home" = "Aller à l’accueil";
+"sc_go_library" = "Aller à la bibliothèque";
+"sc_go_me" = "Aller à Moi";
+"sc_open_settings" = "Ouvrir les réglages";
+"sc_import_book" = "Importer un livre";
+"sc_focus_search" = "Rechercher";
+"sc_prev_page" = "Page précédente";
+"sc_next_page" = "Page suivante";
+"sc_outline" = "Table des matières";
+"sc_search_book" = "Rechercher dans le livre";
+"sc_bookmark" = "Ajouter un signet";
+"sc_reader_preferences" = "Préférences de lecture";
+"sc_reader_dismiss" = "Fermer ou masquer";
+"sc_toggle_tts" = "Activer/désactiver la lecture";
+
+/* Library reading status */
+"library_filter_all" = "Tous les livres";
+"library_filter_reading" = "En cours";
+"library_filter_unread" = "Non lus";
+"library_filter_finished" = "Terminés";
+"mac_open_book" = "Ouvrir dans une fenêtre de lecture";

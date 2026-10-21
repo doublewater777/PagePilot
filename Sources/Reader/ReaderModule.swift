@@ -54,6 +54,12 @@ final class ReaderModule: ReaderModuleAPI {
     }
 
     func presentPublication(publication: Publication, book: Book, in navigationController: UINavigationController) {
+        #if targetEnvironment(macCatalyst)
+        if !(navigationController.view.window?.windowScene?.delegate is MacReaderSceneDelegate) {
+            MacReaderSceneDelegate.open(book, from: navigationController)
+            return
+        }
+        #endif
         Task {
             guard let delegate = delegate, let bookId = book.id else {
                 fatalError("Reader delegate not set")
@@ -64,7 +70,12 @@ final class ReaderModule: ReaderModuleAPI {
                 backItem.title = ""
                 viewController.navigationItem.backBarButtonItem = backItem
                 viewController.hidesBottomBarWhenPushed = true
+                #if targetEnvironment(macCatalyst)
+                viewController.title = book.title
+                navigationController.setViewControllers([viewController], animated: false)
+                #else
                 navigationController.pushViewController(viewController, animated: true)
+                #endif
 
                 if let session = MicroReadingLaunchStore.consume(for: bookId) {
                     MicroReadingSessionPresenter.attach(session, to: viewController)
@@ -124,7 +135,9 @@ extension ReaderModule: ReaderFormatModuleDelegate {
         let outlineAdapter = factory.make(publication: publication, bookId: bookId, bookmarks: bookmarks, highlights: highlights)
         let outlineLocatorPublisher = outlineAdapter.1
 
-        viewController.present(UINavigationController(rootViewController: outlineAdapter.0), animated: true)
+        let navigation = UINavigationController(rootViewController: outlineAdapter.0)
+        navigation.configureReaderPanelKeyboard()
+        viewController.present(navigation, animated: true)
 
         return outlineLocatorPublisher
     }

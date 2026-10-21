@@ -1036,3 +1036,26 @@
 "settings_developer_testing_footer" = "Wird zum Testen von Sandbox-Käufen und Kündigungsverhinderung verwendet. Zu 'Kostenlose Version erzwingen' wechseln, um Upgrade-Optionen zu testen.";
 "settings_developer_mode_enabled_title" = "Entwicklermodus aktiviert";
 "settings_developer_mode_disabled_title" = "Entwicklermodus deaktiviert";
+
+/* MARK: Keyboard shortcuts (Mac Catalyst) */
+"sc_go_home" = "Zur Startseite";
+"sc_go_library" = "Zum Bücherregal";
+"sc_go_me" = "Zu „Ich“";
+"sc_open_settings" = "Einstellungen öffnen";
+"sc_import_book" = "Buch importieren";
+"sc_focus_search" = "Suchen";
+"sc_prev_page" = "Vorherige Seite";
+"sc_next_page" = "Nächste Seite";
+"sc_outline" = "Inhaltsverzeichnis";
+"sc_search_book" = "Im Buch suchen";
+"sc_bookmark" = "Lesezeichen hinzufügen";
+"sc_reader_preferences" = "Lese-Einstellungen";
+"sc_reader_dismiss" = "Schließen oder ausblenden";
+"sc_toggle_tts" = "Vorlesen ein/aus";
+
+/* Library reading status */
+"library_filter_all" = "Alle Bücher";
+"library_filter_reading" = "In Arbeit";
+"library_filter_unread" = "Ungelesen";
+"library_filter_finished" = "Beendet";
+"mac_open_book" = "Im Lesefenster öffnen";

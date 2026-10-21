@@ -209,6 +209,7 @@
 		EF447A9F19FF5B9DD99759FC /* CloudSyncService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45066B18A53C3031085116BB /* CloudSyncService.swift */; };
 		F00823C37FCA888C32B92636 /* LibraryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 816C66669DBD1ABF9F20EB7B /* LibraryService.swift */; };
 		F043BE516A43D554709BD551 /* QuickPositionJumpPolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABEA8FC1756AAC1A0B4FA793 /* QuickPositionJumpPolicyTests.swift */; };
+		A72A68F1462E4F49B8A3D701 /* TrackpadPageTurnSessionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A72A68F1462E4F49B8A3D702 /* TrackpadPageTurnSessionTests.swift */; };
 		F0F783E64CE2CB1B7F7B520D /* ReadingStatsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 023D4D02D0CF64A9CD096FA1 /* ReadingStatsStore.swift */; };
 		F178C6EF6B0CE8D923153EAB /* ReaderError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5558B74DD2891D2133578053 /* ReaderError.swift */; };
 		F23701A5F3BE21354471474A /* WatchInstallReminderPolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89DD1A363A6B3DBC0531934A /* WatchInstallReminderPolicyTests.swift */; };
@@ -436,6 +437,7 @@
 		A7935C1E83615EA20E5F727D /* TTSViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TTSViewModel.swift; sourceTree = "<group>"; };
 		A94A4DC16BE84E52279A3438 /* PDFModule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDFModule.swift; sourceTree = "<group>"; };
 		ABEA8FC1756AAC1A0B4FA793 /* QuickPositionJumpPolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickPositionJumpPolicyTests.swift; sourceTree = "<group>"; };
+		A72A68F1462E4F49B8A3D702 /* TrackpadPageTurnSessionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackpadPageTurnSessionTests.swift; sourceTree = "<group>"; };
 		ACF000000000000000000004 /* ProEntitlementSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProEntitlementSource.swift; sourceTree = "<group>"; };
 		ACF000000000000000000006 /* ProStoreProduct.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProStoreProduct.swift; sourceTree = "<group>"; };
 		ACF000000000000000000008 /* ProPurchaseManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProPurchaseManagerTests.swift; sourceTree = "<group>"; };
@@ -783,6 +785,7 @@
 				ACF000000000000000000008 /* ProPurchaseManagerTests.swift */,
 				ACF00000000000000000000A /* ProStoreKitIntegrationTests.swift */,
 				ABEA8FC1756AAC1A0B4FA793 /* QuickPositionJumpPolicyTests.swift */,
+				A72A68F1462E4F49B8A3D702 /* TrackpadPageTurnSessionTests.swift */,
 				00B5FAB4697C0E879381F2BF /* QuickPositionJumpSessionTests.swift */,
 				F8CB48566A6E5BE799D3C80A /* ReaderEditingActionsTests.swift */,
 				2A9F18DA8D0D293CE4AD35D2 /* ReaderLiveActivityBackgroundPolicyTests.swift */,
@@ -1412,6 +1415,7 @@
 				ACF000000000000000000007 /* ProPurchaseManagerTests.swift in Sources */,
 				ACF00000000000000000000D /* ProStoreKitIntegrationTests.swift in Sources */,
 				F043BE516A43D554709BD551 /* QuickPositionJumpPolicyTests.swift in Sources */,
+				A72A68F1462E4F49B8A3D701 /* TrackpadPageTurnSessionTests.swift in Sources */,
 				8EFAB7D91CF2081BE63FB5FF /* QuickPositionJumpSessionTests.swift in Sources */,
 				0BB40644CC5EE846FE2F9E3F /* ReaderEditingActionsTests.swift in Sources */,
 				61841B0BB94FD212F13AB1B7 /* ReaderLiveActivityBackgroundPolicyTests.swift in Sources */,
@@ -1609,9 +1613,10 @@
 				SUPPORTS_MACCATALYST = YES;
 				DERIVE_MACCATALYST_PRODUCT_BUNDLE_IDENTIFIER = NO;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 52;
+				CURRENT_PROJECT_VERSION = 53;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = iPhone/Info.plist;
+				"INFOPLIST_FILE[sdk=macosx*]" = Mac/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = PagePilot;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.reference";
@@ -1716,9 +1721,10 @@
 				SUPPORTS_MACCATALYST = YES;
 				DERIVE_MACCATALYST_PRODUCT_BUNDLE_IDENTIFIER = NO;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 52;
+				CURRENT_PROJECT_VERSION = 53;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = iPhone/Info.plist;
+				"INFOPLIST_FILE[sdk=macosx*]" = Mac/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = PagePilot;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.reference";
@@ -1744,7 +1750,7 @@
 		4756EBF2B17E64AA1CB6FA93 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CURRENT_PROJECT_VERSION = 52;
+				CURRENT_PROJECT_VERSION = 53;
 				INFOPLIST_FILE = ReadingLiveActivity/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -1763,7 +1769,7 @@
 		491914B06B8D49E52D031C3C /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CURRENT_PROJECT_VERSION = 52;
+				CURRENT_PROJECT_VERSION = 53;
 				INFOPLIST_FILE = ReadingLiveActivity/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -1788,7 +1794,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 52;
+				CURRENT_PROJECT_VERSION = 53;
 				DEVELOPMENT_TEAM = 29C8MS76CZ;
 				INFOPLIST_FILE = WatchRemote/Info.plist;
 				MARKETING_VERSION = 1.0.24;
@@ -1824,7 +1830,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 52;
+				CURRENT_PROJECT_VERSION = 53;
 				DEVELOPMENT_TEAM = 29C8MS76CZ;
 				INFOPLIST_FILE = WatchRemote/Info.plist;
 				MARKETING_VERSION = 1.0.24;

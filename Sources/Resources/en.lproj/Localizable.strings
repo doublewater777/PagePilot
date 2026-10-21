@@ -1036,3 +1036,26 @@
 "settings_developer_testing_footer" = "Used to test sandbox purchases and retention flows. Switch to 'Force Free Tier' to show upgrade cards and test sandbox purchases.";
 "settings_developer_mode_enabled_title" = "Developer Mode Enabled";
 "settings_developer_mode_disabled_title" = "Developer Mode Disabled";
+
+/* MARK: Keyboard shortcuts (Mac Catalyst) */
+"sc_go_home" = "Go to Home";
+"sc_go_library" = "Go to Bookshelf";
+"sc_go_me" = "Go to Me";
+"sc_open_settings" = "Open Settings";
+"sc_import_book" = "Import Book";
+"sc_focus_search" = "Search";
+"sc_prev_page" = "Previous Page";
+"sc_next_page" = "Next Page";
+"sc_outline" = "Table of Contents";
+"sc_search_book" = "Search in Book";
+"sc_bookmark" = "Add Bookmark";
+"sc_reader_preferences" = "Reading Preferences";
+"sc_reader_dismiss" = "Close or Hide Controls";
+"sc_toggle_tts" = "Toggle Text to Speech";
+
+/* Library reading status */
+"library_filter_all" = "All Books";
+"library_filter_reading" = "Reading";
+"library_filter_unread" = "Unread";
+"library_filter_finished" = "Finished";
+"mac_open_book" = "Open in Reading Window";

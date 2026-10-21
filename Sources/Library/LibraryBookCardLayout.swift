@@ -14,7 +14,11 @@ extension LibraryViewController {
         // the column count to adapt to iPad Split View and Stage Manager.
         static let preferredGridCardWidth: CGFloat = 176
         static let minimumGridColumns = 2
+        #if targetEnvironment(macCatalyst)
+        static let maximumGridColumns = 12
+        #else
         static let maximumGridColumns = 8
+        #endif
 
         // The metadata stack can contain a two-line title, author and reading
         // status. 56 pt was too short once the status row was added.

@@ -1036,3 +1036,26 @@
 "settings_developer_testing_footer" = "用于在测试设备上调试沙盒购买与挽留流程。切换为“强制免费版”可展示升级入口并进行真实沙盒购买测试。";
 "settings_developer_mode_enabled_title" = "已启用开发者测试模式";
 "settings_developer_mode_disabled_title" = "已关闭开发者测试模式";
+
+/* MARK: Keyboard shortcuts (Mac Catalyst) */
+"sc_go_home" = "前往首页";
+"sc_go_library" = "前往书架";
+"sc_go_me" = "前往我的";
+"sc_open_settings" = "打开设置";
+"sc_import_book" = "导入书籍";
+"sc_focus_search" = "搜索";
+"sc_prev_page" = "上一页";
+"sc_next_page" = "下一页";
+"sc_outline" = "目录";
+"sc_search_book" = "书中搜索";
+"sc_bookmark" = "添加书签";
+"sc_reader_preferences" = "阅读设置";
+"sc_reader_dismiss" = "关闭或隐藏控件";
+"sc_toggle_tts" = "开关语音朗读";
+
+/* Library reading status */
+"library_filter_all" = "全部图书";
+"library_filter_reading" = "正在阅读";
+"library_filter_unread" = "未读";
+"library_filter_finished" = "已读完";
+"mac_open_book" = "在阅读窗口中打开";

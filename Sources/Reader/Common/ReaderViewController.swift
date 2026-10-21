@@ -854,11 +854,92 @@ enum ReadingSessionSummaryPresenter {
     }
 }
 
+@MainActor
+protocol ReaderLocationRouting: AnyObject {
+    func navigateToReadingLocation(_ locator: Locator)
+}
+
 /// Base class for all reader view controllers.
 class ReaderViewController<N: Navigator>: UIViewController,
-    NavigatorDelegate, UIPopoverPresentationControllerDelegate, Loggable
+    NavigatorDelegate, UIPopoverPresentationControllerDelegate, Loggable, ReaderLocationRouting
 {
     weak var moduleDelegate: ReaderFormatModuleDelegate?
+
+    func navigateToReadingLocation(_ locator: Locator) {
+        Task { await navigator.go(to: locator, options: NavigatorGoOptions(animated: false)) }
+    }
+
+    // MARK: - Keyboard shortcuts (Mac Catalyst)
+
+    /// Reader-wide shortcuts: page navigation, outline, search, bookmark,
+    /// preferences, and dismiss/exit. `VisualReaderViewController` appends
+    /// TTS on top of these.
+    override var keyCommands: [UIKeyCommand]? {
+        let commands: [UIKeyCommand] = [
+            // Previous / next page (also Space and Shift-Space).
+            UIKeyCommand(
+                title: NSLocalizedString("sc_prev_page", comment: "Keyboard shortcut: previous page"),
+                action: #selector(goToPreviousPage),
+                input: UIKeyCommand.inputLeftArrow
+            ),
+            UIKeyCommand(
+                title: NSLocalizedString("sc_next_page", comment: "Keyboard shortcut: next page"),
+                action: #selector(goToNextPage),
+                input: UIKeyCommand.inputRightArrow
+            ),
+            UIKeyCommand(
+                action: #selector(goToPreviousPage),
+                input: " ",
+                modifierFlags: .shift
+            ),
+            UIKeyCommand(
+                action: #selector(goToNextPage),
+                input: " "
+            ),
+            // Table of contents.
+            UIKeyCommand(
+                title: NSLocalizedString("sc_outline", comment: "Keyboard shortcut: table of contents"),
+                action: #selector(presentOutline),
+                input: PagePilotReaderHost.isMac ? "o" : "t",
+                modifierFlags: PagePilotReaderHost.isMac ? [.command, .shift] : .command
+            ),
+            // Search within the book.
+            UIKeyCommand(
+                title: NSLocalizedString("sc_search_book", comment: "Keyboard shortcut: search in book"),
+                action: #selector(showSearchUI),
+                input: "f",
+                modifierFlags: .command
+            ),
+            // Bookmark current position.
+            UIKeyCommand(
+                title: NSLocalizedString("sc_bookmark", comment: "Keyboard shortcut: add bookmark"),
+                action: #selector(bookmarkCurrentPosition),
+                input: "d",
+                modifierFlags: .command
+            ),
+            // Reading preferences (font, theme, etc.).
+            UIKeyCommand(
+                title: NSLocalizedString("sc_reader_preferences", comment: "Keyboard shortcut: reading preferences"),
+                action: #selector(presentUserPreferences),
+                input: PagePilotReaderHost.isMac ? "p" : ",",
+                modifierFlags: PagePilotReaderHost.isMac ? [.command, .shift] : .command
+            ),
+        ]
+        #if targetEnvironment(macCatalyst)
+        for command in commands where command.modifierFlags.contains(.command) {
+            command.wantsPriorityOverSystemBehavior = true
+        }
+        #endif
+        return commands
+    }
+
+    @objc private func goToPreviousPage() {
+        Task { await navigator.goBackward(options: NavigatorGoOptions(animated: true)) }
+    }
+
+    @objc private func goToNextPage() {
+        Task { await navigator.goForward(options: NavigatorGoOptions(animated: true)) }
+    }
 
     let navigator: N
     let publication: Publication
@@ -910,6 +991,10 @@ class ReaderViewController<N: Navigator>: UIViewController,
         NotificationCenter.default.addObserver(self, selector: #selector(appDidBecomeActive), name: UIApplication.didBecomeActiveNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(watchPageTurnDidSucceed(_:)), name: .watchPageTurnDidSucceed, object: nil)
 
+        #if targetEnvironment(macCatalyst)
+        NotificationCenter.default.addObserver(self, selector: #selector(readerWindowDidBecomeKey(_:)), name: UIWindow.didBecomeKeyNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(readerWindowDidResignKey(_:)), name: UIWindow.didResignKeyNotification, object: nil)
+        #endif
         LastReadBooks.record(id: bookId.rawValue)
     }
 
@@ -925,7 +1010,7 @@ class ReaderViewController<N: Navigator>: UIViewController,
             readingSessionLifecycle.readerDidAppear(
                 at: Date(),
                 progression: currentReadingProgression,
-                applicationIsActive: UIApplication.shared.applicationState == .active
+                applicationIsActive: UIApplication.shared.applicationState == .active && isReadingWindowActive
             )
         )
         MicroReadingSessionPresenter.readerDidAppear(self)
@@ -1051,6 +1136,32 @@ class ReaderViewController<N: Navigator>: UIViewController,
         }
     }
 
+    var isReadingWindowActive: Bool {
+        #if targetEnvironment(macCatalyst)
+        return viewIfLoaded?.window?.isKeyWindow == true
+        #else
+        return true
+        #endif
+    }
+
+    func readingWindowDidActivate() {
+        appDidBecomeActive()
+    }
+
+    #if targetEnvironment(macCatalyst)
+    @objc private func readerWindowDidBecomeKey(_ notification: Notification) {
+        guard let window = notification.object as? UIWindow,
+              window === viewIfLoaded?.window else { return }
+        readingWindowDidActivate()
+    }
+
+    @objc private func readerWindowDidResignKey(_ notification: Notification) {
+        guard let window = notification.object as? UIWindow,
+              window === viewIfLoaded?.window else { return }
+        appDidEnterBackground()
+    }
+    #endif
+
     @objc private func appDidEnterBackground() {
         // Backgrounding ends the active interval without changing visibility,
         // so didBecomeActive can start a fresh interval only if this Reader
@@ -1065,6 +1176,7 @@ class ReaderViewController<N: Navigator>: UIViewController,
     /// willEnterForeground fires while the app is still .inactive, so the
     /// restart must wait for didBecomeActive.
     @objc private func appDidBecomeActive() {
+        guard isReadingWindowActive else { return }
         beginReadingSession(
             readingSessionLifecycle.applicationDidBecomeActive(
                 at: Date(),
@@ -1074,6 +1186,7 @@ class ReaderViewController<N: Navigator>: UIViewController,
     }
 
     @objc private func watchPageTurnDidSucceed(_ notification: Notification) {
+        guard isReadingWindowActive else { return }
         guard let origin = notification.object as? WatchPageTurnOrigin else { return }
         readingSessionLifecycle.recordSuccessfulWatchPageTurn(origin: origin)
     }
@@ -1099,6 +1212,12 @@ class ReaderViewController<N: Navigator>: UIViewController,
             buttons.append(UIBarButtonItem(image: UIImage(systemName: "magnifyingglass"), style: .plain, target: self, action: #selector(showSearchUI)))
         }
 
+        let labels = ["sc_outline", "sc_reader_preferences"]
+        for (button, key) in zip(buttons.prefix(2), labels) {
+            button.accessibilityLabel = NSLocalizedString(key, comment: "")
+        }
+        buttons.first(where: { $0.action == #selector(bookmarkCurrentPosition) })?.accessibilityLabel = NSLocalizedString("sc_bookmark", comment: "")
+        buttons.first(where: { $0.action == #selector(showSearchUI) })?.accessibilityLabel = NSLocalizedString("sc_search_book", comment: "")
         return buttons
     }
 
@@ -1240,6 +1359,7 @@ class ReaderViewController<N: Navigator>: UIViewController,
         let searchView = SearchView(viewModel: searchViewModel!)
         let vc = UIHostingController(rootView: searchView)
         vc.modalPresentationStyle = .pageSheet
+        vc.configureReaderPanelKeyboard()
         present(vc, animated: true, completion: nil)
         searchViewController = vc
     }
@@ -1258,5 +1378,20 @@ class ReaderViewController<N: Navigator>: UIViewController,
     /// Prevent the popOver to be presented fullscreen on iPhones.
     func adaptivePresentationStyle(for controller: UIPresentationController, traitCollection: UITraitCollection) -> UIModalPresentationStyle {
         .none
+    }
+}
+
+
+extension UIViewController {
+    func configureReaderPanelKeyboard() {
+        #if targetEnvironment(macCatalyst)
+        let command = UIKeyCommand(title: NSLocalizedString("cancel_button", comment: ""), action: #selector(dismissReaderPanel), input: UIKeyCommand.inputEscape)
+        command.wantsPriorityOverSystemBehavior = true
+        addKeyCommand(command)
+        #endif
+    }
+
+    @objc private func dismissReaderPanel() {
+        dismiss(animated: true)
     }
 }

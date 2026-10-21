@@ -59,6 +59,7 @@ final class PDFViewController: VisualReaderViewController<PDFNavigatorViewContro
             )
             let vc = UIHostingController(rootView: userPrefs)
             vc.modalPresentationStyle = .formSheet
+            vc.configureReaderPanelKeyboard()
             present(vc, animated: true)
             } catch {
                 moduleDelegate?.presentError(UserError(error), from: self)

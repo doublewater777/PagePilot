@@ -17,10 +17,63 @@ private enum MainTabIdentifier {
 }
 
 @main
-class AppDelegate: UIResponder, UIApplicationDelegate {
+class AppDelegate: UIResponder, UIApplicationDelegate, UITabBarControllerDelegate {
+
+    // MARK: - Global keyboard shortcuts (Mac Catalyst)
+
+    /// App-wide shortcuts: tab switching and opening Settings.
+    /// Reader- and library-scoped shortcuts are declared on their own view
+    /// controllers so they take precedence when those views are first responder.
+    override var keyCommands: [UIKeyCommand]? {
+        let commands = [
+            UIKeyCommand(
+                title: NSLocalizedString("sc_go_home", comment: "Keyboard shortcut: go to Home tab"),
+                action: #selector(selectHomeTab),
+                input: "1",
+                modifierFlags: .command
+            ),
+            UIKeyCommand(
+                title: NSLocalizedString("sc_go_library", comment: "Keyboard shortcut: go to Library tab"),
+                action: #selector(selectLibraryTab),
+                input: "2",
+                modifierFlags: .command
+            ),
+            UIKeyCommand(
+                title: NSLocalizedString("sc_go_me", comment: "Keyboard shortcut: go to Me tab"),
+                action: #selector(selectMeTab),
+                input: "3",
+                modifierFlags: .command
+            ),
+            UIKeyCommand(
+                title: NSLocalizedString("sc_open_settings", comment: "Keyboard shortcut: open Settings"),
+                action: #selector(selectMeTab),
+                input: ",",
+                modifierFlags: .command
+            ),
+        ]
+        #if targetEnvironment(macCatalyst)
+        for command in commands { command.wantsPriorityOverSystemBehavior = true }
+        #endif
+        return commands
+    }
+
+    func selectMainTab(_ index: Int) {
+        app.tabBarController?.selectedIndex = index
+        #if targetEnvironment(macCatalyst)
+        if let scene = app.tabBarController?.viewIfLoaded?.window?.windowScene {
+            UIApplication.shared.requestSceneSessionActivation(scene.session, userActivity: nil, options: nil)
+        }
+        #endif
+    }
+
+    @objc private func selectHomeTab() { selectMainTab(0) }
+    @objc private func selectLibraryTab() { selectMainTab(1) }
+    @objc private func selectMeTab() { selectMainTab(2) }
+
     let hasSeenOnboardingKey = "hasSeenOnboarding"
     private(set) var app: AppModule!
     private var launchError: Error?
+    private weak var desktopLibraryController: LibraryViewController?
     private var subscriptions = Set<AnyCancellable>()
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
@@ -74,7 +127,15 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         configurationForConnecting connectingSceneSession: UISceneSession,
         options: UIScene.ConnectionOptions
     ) -> UISceneConfiguration {
-        UISceneConfiguration(name: "Default Configuration", sessionRole: connectingSceneSession.role)
+        #if targetEnvironment(macCatalyst)
+        if options.userActivities.contains(where: { $0.activityType == MacReaderSceneDelegate.activityType })
+            || connectingSceneSession.stateRestorationActivity?.activityType == MacReaderSceneDelegate.activityType {
+            let configuration = UISceneConfiguration(name: "Reader", sessionRole: connectingSceneSession.role)
+            configuration.delegateClass = MacReaderSceneDelegate.self
+            return configuration
+        }
+        #endif
+        return UISceneConfiguration(name: "Default Configuration", sessionRole: connectingSceneSession.role)
     }
 
     /// Best-effort cleanup of orphaned files from crashed imports or failed
@@ -165,6 +226,25 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             makeTab(titleKey: "bookshelf_tab", systemImage: "books.vertical", identifier: MainTabIdentifier.library, viewController: libraryViewController),
             makeTab(titleKey: "me_tab", systemImage: "person.crop.circle", identifier: MainTabIdentifier.me, viewController: meViewController),
         ])
+        #if targetEnvironment(macCatalyst)
+        let libraryNavigation = libraryViewController as! UINavigationController
+        let library = libraryNavigation.viewControllers.first as! LibraryViewController
+        desktopLibraryController = library
+        let children = LibraryViewController.ReadingFilter.allCases.map { filter in
+            UITab(title: filter.title, image: UIImage(systemName: filter.symbol),
+                  identifier: "library.\(filter.rawValue)") { _ in
+                UIViewController()
+            }
+        }
+        let group = UITabGroup(title: NSLocalizedString("bookshelf_tab", comment: ""),
+                               image: UIImage(systemName: "books.vertical"),
+                               identifier: MainTabIdentifier.library, children: children)
+        group.managingNavigationController = libraryNavigation
+        group.sidebarAppearance = .rootSection
+        tabBarController.tabs[1] = group
+        tabBarController.delegate = self
+        tabBarController.selectedTab = children.first
+        #endif
         tabBarController.customizationIdentifier = "com.panyang.PagePilot.main"
 
         if PagePilotReaderHost.isSupported {
@@ -173,6 +253,29 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         }
 
         return tabBarController
+    }
+
+    @available(iOS 18.0, *)
+    func tabBarController(_ tabBarController: UITabBarController, shouldSelectTab tab: UITab) -> Bool {
+        #if targetEnvironment(macCatalyst)
+        let destination = (tab as? UITabGroup)?.selectedChild ?? tab
+        if let filter = LibraryViewController.ReadingFilter(rawValue: destination.identifier.replacingOccurrences(of: "library.", with: "")) {
+            desktopLibraryController?.setReadingFilter(filter)
+        }
+        #endif
+        return true
+    }
+
+    @available(iOS 18.0, *)
+    func tabBarController(_ tabBarController: UITabBarController, displayedViewControllersFor tab: UITab, proposedViewControllers: [UIViewController]) -> [UIViewController] {
+        #if targetEnvironment(macCatalyst)
+        if let filter = LibraryViewController.ReadingFilter(rawValue: tab.identifier.replacingOccurrences(of: "library.", with: "")),
+           let library = desktopLibraryController {
+            library.setReadingFilter(filter)
+            return [library]
+        }
+        #endif
+        return proposedViewControllers
     }
 
     private func makeLegacyTabBarController(
@@ -246,6 +349,13 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
                 NSLocalizedString("bookshelf_tab", comment: "Tab bar item")
             tabBarController.tab(forIdentifier: MainTabIdentifier.me)?.title =
                 NSLocalizedString("me_tab", comment: "Tab bar item")
+            #if targetEnvironment(macCatalyst)
+            if let group = tabBarController.tab(forIdentifier: MainTabIdentifier.library) as? UITabGroup {
+                for filter in LibraryViewController.ReadingFilter.allCases {
+                    group.tab(forIdentifier: "library.\(filter.rawValue)")?.title = filter.title
+                }
+            }
+            #endif
             return
         }
 
@@ -521,6 +631,15 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         guard let windowScene = scene as? UIWindowScene else { return }
 
         #if targetEnvironment(macCatalyst)
+        // The app modules own one library navigation stack; only readers have
+        // independent scenes. Reuse the library if macOS requests it again.
+        if let existing = UIApplication.shared.connectedScenes.first(where: {
+            $0 !== scene && ($0.delegate as? SceneDelegate)?.window != nil
+        }) {
+            UIApplication.shared.requestSceneSessionActivation(existing.session, userActivity: nil, options: nil)
+            UIApplication.shared.requestSceneSessionDestruction(session, options: nil)
+            return
+        }
         windowScene.sizeRestrictions?.minimumSize = CGSize(width: 600, height: 480)
         #endif
         let rootViewController = appDelegate.makeRootViewController()
@@ -629,3 +748,64 @@ final class StartupProfiler {
         }
     }
 }
+
+#if targetEnvironment(macCatalyst)
+final class MacReaderSceneDelegate: UIResponder, UIWindowSceneDelegate {
+    static let activityType = "com.panyang.PagePilot.readBook"
+    var window: UIWindow?
+    private var activity: NSUserActivity?
+
+    static func open(_ book: Book, from presenter: UIViewController) {
+        guard let bookID = book.id else { return }
+        let activity = NSUserActivity(activityType: activityType)
+        activity.title = book.title
+        activity.userInfo = ["bookID": bookID.rawValue]
+        activity.targetContentIdentifier = "book.\(bookID.rawValue)"
+        let existing = UIApplication.shared.openSessions.first {
+            ($0.scene?.delegate as? MacReaderSceneDelegate)?.activity?.targetContentIdentifier == activity.targetContentIdentifier
+        }
+        if let readerScene = existing?.scene?.delegate as? MacReaderSceneDelegate,
+           let navigation = readerScene.window?.rootViewController as? UINavigationController,
+           let reader = navigation.topViewController {
+            if let target = AppModule.shared?.pendingNavigationTarget, target.bookId == bookID {
+                (reader as? ReaderLocationRouting)?.navigateToReadingLocation(target.locator)
+                AppModule.shared?.pendingNavigationTarget = nil
+            }
+            if let session = MicroReadingLaunchStore.consume(for: bookID) {
+                MicroReadingSessionPresenter.attach(session, to: reader)
+            }
+        }
+        UIApplication.shared.requestSceneSessionActivation(existing, userActivity: activity, options: nil) { error in
+            presenter.alert(UserError(error))
+        }
+    }
+
+    func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
+        guard let scene = scene as? UIWindowScene else { return }
+        activity = connectionOptions.userActivities.first(where: { $0.activityType == Self.activityType })
+            ?? session.stateRestorationActivity
+        scene.userActivity = activity
+        scene.title = activity?.title
+        scene.sizeRestrictions?.minimumSize = CGSize(width: 480, height: 480)
+        let navigation = UINavigationController()
+        let window = UIWindow(windowScene: scene)
+        window.rootViewController = navigation
+        self.window = window
+        window.makeKeyAndVisible()
+        AppAppearancePreferences.applyTheme(to: window)
+        guard let rawID = activity?.userInfo?["bookID"] as? Int64,
+              let app = AppModule.shared else { return }
+        Task { @MainActor in
+            do {
+                guard let book = try await app.books.get(Book.Id(rawValue: rawID)),
+                      let publication = try await app.library.openBook(book, sender: navigation) else { return }
+                app.reader.presentPublication(publication: publication, book: book, in: navigation)
+            } catch {
+                navigation.alert(UserError(error))
+            }
+        }
+    }
+
+    func stateRestorationActivity(for scene: UIScene) -> NSUserActivity? { activity }
+}
+#endif

@@ -93,6 +93,7 @@ targets:
         DEVELOPMENT_TEAM: ${RD_DEVELOPMENT_TEAM}
         CODE_SIGN_ENTITLEMENTS: iPhone/pagepilot.entitlements
         INFOPLIST_FILE: iPhone/Info.plist
+        "INFOPLIST_FILE[sdk=macosx*]": Mac/Info.plist
         SUPPORTS_MACCATALYST: YES
         DERIVE_MACCATALYST_PRODUCT_BUNDLE_IDENTIFIER: NO
         "CODE_SIGN_ENTITLEMENTS[sdk=macosx*]": Mac/PagePilot.entitlements
@@ -102,7 +103,7 @@ targets:
         INFOPLIST_KEY_NSLocalNetworkUsageDescription: PagePilot uses the local network to transfer books and connect to your iPad or Mac reader for Apple Watch page controls.
         INFOPLIST_KEY_NSSupportsLiveActivities: YES
         MARKETING_VERSION: 1.0.24
-        CURRENT_PROJECT_VERSION: 52
+        CURRENT_PROJECT_VERSION: 53
       configs:
         Debug:
           "CODE_SIGN_STYLE[sdk=macosx*]": Manual
@@ -129,7 +130,7 @@ targets:
         DEVELOPMENT_TEAM: ${RD_DEVELOPMENT_TEAM}
         CODE_SIGN_STYLE: Manual
         MARKETING_VERSION: 1.0.24
-      CURRENT_PROJECT_VERSION: 52
+      CURRENT_PROJECT_VERSION: 53
       configs:
         Debug:
           CODE_SIGN_IDENTITY: Apple Development
@@ -151,7 +152,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.panyang.PagePilot.ReadingLiveActivity
         DEVELOPMENT_TEAM: ${RD_DEVELOPMENT_TEAM}
         MARKETING_VERSION: 1.0.24
-        CURRENT_PROJECT_VERSION: 52
+        CURRENT_PROJECT_VERSION: 53
         SKIP_INSTALL: YES
       configs:
         Release:
