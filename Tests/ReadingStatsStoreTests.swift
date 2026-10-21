@@ -323,6 +323,68 @@ final class ReadingStatsStoreTests: XCTestCase {
         XCTAssertEqual(store.todayReadingSeconds(referenceDate: start), 135)
     }
 
+    func testQueuedCheckpointEncodesOffMainAndDeliversResultOnMain() {
+        let encoded = expectation(description: "encoded on worker")
+        let completed = expectation(description: "completion on UI")
+        let start = date(2026, 6, 4, 11, 0, 0)
+        let store = ReadingStatsStore(
+            defaults: defaults, calendar: calendar, storageURL: storageURL,
+            encodeStats: { stats in
+                XCTAssertFalse(Thread.isMainThread)
+                encoded.fulfill()
+                return try JSONEncoder().encode(stats)
+            }
+        )
+        store.enqueueReadingCheckpoint(
+            sessionID: "background-queue",
+            startedAt: start,
+            elapsedSeconds: 15,
+            recordedAt: start.addingTimeInterval(15),
+            bookId: Book.Id(rawValue: 3)
+        ) { success in
+            XCTAssertTrue(Thread.isMainThread)
+            XCTAssertTrue(success)
+            completed.fulfill()
+        }
+        wait(for: [encoded, completed], timeout: 10)
+        XCTAssertEqual(store.todayReadingSeconds(referenceDate: start), 15)
+    }
+
+    func testTwoStoreInstancesSerializeWritesToSameFile() {
+        let start = date(2026, 6, 4, 14, 0, 0)
+        let first = makeStore()
+        let second = makeStore()
+        let group = DispatchGroup()
+        group.enter()
+        DispatchQueue.global(qos: .userInitiated).async {
+            for elapsed in [15, 30, 45, 60] {
+                XCTAssertTrue(first.recordReadingCheckpoint(
+                    sessionID: "first-instance",
+                    startedAt: start,
+                    elapsedSeconds: elapsed,
+                    recordedAt: start.addingTimeInterval(TimeInterval(elapsed)),
+                    bookId: Book.Id(rawValue: 3)
+                ))
+            }
+            group.leave()
+        }
+        group.enter()
+        DispatchQueue.global(qos: .userInitiated).async {
+            for elapsed in [15, 30, 45, 60] {
+                XCTAssertTrue(second.recordReadingCheckpoint(
+                    sessionID: "second-instance",
+                    startedAt: start,
+                    elapsedSeconds: elapsed,
+                    recordedAt: start.addingTimeInterval(TimeInterval(elapsed)),
+                    bookId: Book.Id(rawValue: 4)
+                ))
+            }
+            group.leave()
+        }
+        group.wait()
+        XCTAssertEqual(makeStore().todayReadingSeconds(referenceDate: start), 120)
+    }
+
     func testFailedWriteCanBeRetriedWithoutAdvancingCursor() throws {
         let root = storageURL.deletingLastPathComponent()
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
