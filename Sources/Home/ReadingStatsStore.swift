@@ -5,6 +5,7 @@
 //
 
 import Foundation
+import os
 
 extension Notification.Name {
     static let readingStatsDidChange = Notification.Name("readingStatsDidChange")
@@ -54,6 +55,8 @@ struct DailyReadingStat: Codable, Identifiable {
     var hourlySeconds: [Int: Int]? // Key: hour (0-23), Value: seconds read in that hour
     // Stored atomically with daily totals so resumed checkpoints cannot be counted twice.
     var checkpointedSessionSeconds: [String: Int]?
+    // A single reading session is counted once in each touched local day.
+    var checkpointedSessionIDs: [String]?
 
     var id: String { dateKey }
 }
@@ -89,8 +92,10 @@ final class ReadingStatsStore {
     private let defaults: UserDefaults
     private let calendar: Calendar
     private let storageURL: URL
-    private let encoder = JSONEncoder()
     private let decoder = JSONDecoder()
+    private let encodeStats: ([String: DailyReadingStat]) throws -> Data
+    private let ioQueue = DispatchQueue(label: "PagePilot.ReadingStatsStore.IO", qos: .utility)
+    private let signposter = OSSignposter(subsystem: "PagePilot", category: "ReadingStatsStore")
 
     private enum Keys {
         static let dailyStats = "readingStats_dailyStats"
@@ -99,17 +104,14 @@ final class ReadingStatsStore {
 
     init(
         defaults: UserDefaults = .standard,
-        calendar: Calendar = Calendar(identifier: .gregorian),
-        storageURL: URL? = nil
+        calendar: Calendar = .autoupdatingCurrent,
+        storageURL: URL? = nil,
+        encodeStats: @escaping ([String: DailyReadingStat]) throws -> Data = { try JSONEncoder().encode($0) }
     ) {
         self.defaults = defaults
-        var cal = calendar
-        if cal.identifier != .gregorian {
-            cal = Calendar(identifier: .gregorian)
-        }
-        cal.timeZone = .current
-        self.calendar = cal
+        self.calendar = calendar
         self.storageURL = storageURL ?? Self.defaultStorageURL()
+        self.encodeStats = encodeStats
     }
 
     func recordReadingSession(startDate: Date, endDate: Date = Date(), bookId: Book.Id) {
@@ -126,43 +128,90 @@ final class ReadingStatsStore {
         }
     }
 
-    /// Applies only the seconds not yet committed for this session. The checkpoint
-    /// cursor and all affected daily totals share one atomic JSON file write.
-    /// After a process crash the last committed cursor remains the recovery point.
+    /// A checkpoint records a monotonic elapsed cursor and an independently
+    /// sampled wall-clock time. Only the new interval is attributed to the
+    /// calendar. Repeated/decreasing cursors are no-ops.
+    ///
+    /// Returns false if the atomic write failed; the committed cursor is then
+    /// unchanged and the entire interval can safely be retried.
+    @discardableResult
     func recordReadingCheckpoint(
         sessionID: String,
         startedAt: Date,
         elapsedSeconds: Int,
+        recordedAt: Date,
         bookId: Book.Id
+    ) -> Bool {
+        ioQueue.sync {
+            commitCheckpoint(
+                sessionID: sessionID,
+                startedAt: startedAt,
+                elapsedSeconds: elapsedSeconds,
+                recordedAt: recordedAt,
+                bookId: bookId
+            )
+        }
+    }
+
+    /// The Reader always uses this asynchronous entrypoint, ensuring JSON
+    /// decoding, calendar aggregation and atomic writes never run on its UI timer.
+    func enqueueReadingCheckpoint(
+        sessionID: String,
+        startedAt: Date,
+        elapsedSeconds: Int,
+        recordedAt: Date,
+        bookId: Book.Id,
+        completion: ((Bool) -> Void)? = nil
     ) {
-        guard !sessionID.isEmpty, elapsedSeconds > 0 else { return }
+        ioQueue.async {
+            let success = self.commitCheckpoint(
+                sessionID: sessionID,
+                startedAt: startedAt,
+                elapsedSeconds: elapsedSeconds,
+                recordedAt: recordedAt,
+                bookId: bookId
+            )
+            if let completion {
+                DispatchQueue.main.async { completion(success) }
+            }
+        }
+    }
+
+    private func commitCheckpoint(
+        sessionID: String,
+        startedAt: Date,
+        elapsedSeconds: Int,
+        recordedAt: Date,
+        bookId: Book.Id
+    ) -> Bool {
+        guard !sessionID.isEmpty, elapsedSeconds > 0 else { return true }
+        let interval = signposter.beginInterval("CheckpointPersist")
+        defer { signposter.endInterval("CheckpointPersist", interval) }
 
         var statsByDate = loadStatsByDate()
-        let alreadyRecorded = statsByDate.values
-            .compactMap { $0.checkpointedSessionSeconds?[sessionID] }
-            .max() ?? 0
-        guard elapsedSeconds > alreadyRecorded else { return }
+        let existingAnchor = statsByDate.first {
+            $0.value.checkpointedSessionSeconds?[sessionID] != nil
+        }?.key
+        let committed = statsByDate.values.compactMap {
+            $0.checkpointedSessionSeconds?[sessionID]
+        }.max() ?? 0
+        guard elapsedSeconds > committed else { return true }
 
-        var cursor = alreadyRecorded
-        var newSessionDays = Set<String>()
-        while cursor < elapsedSeconds {
-            let segmentDate = startedAt.addingTimeInterval(TimeInterval(cursor))
-            let nextHour = calendar.dateInterval(of: .hour, for: segmentDate)?.end
+        let delta = elapsedSeconds - committed
+        // Anchor THIS delta at the observed wall time. startedAt + uptime
+        // would incorrectly assign days if the system clock changed.
+        let intervalStart = recordedAt.addingTimeInterval(-Double(delta))
+        var offset = 0
+        while offset < delta {
+            let segmentDate = intervalStart.addingTimeInterval(TimeInterval(offset))
+            let hourEnd = calendar.dateInterval(of: .hour, for: segmentDate)?.end
                 ?? segmentDate.addingTimeInterval(3600)
-            let nextDay = calendar.date(
-                byAdding: .day,
-                value: 1,
-                to: calendar.startOfDay(for: segmentDate)
-            ) ?? segmentDate.addingTimeInterval(86400)
-            let boundary = min(nextHour, nextDay)
-            // Attribute whole measured seconds deterministically. In particular,
-            // fractions around midnight must never create or lose a second.
-            let boundaryOffset = max(
-                cursor + 1,
-                Int(ceil(boundary.timeIntervalSince(startedAt)))
-            )
-            let nextCursor = min(elapsedSeconds, boundaryOffset)
-            let delta = nextCursor - cursor
+            let dayEnd = calendar.dateInterval(of: .day, for: segmentDate)?.end
+                ?? segmentDate.addingTimeInterval(86400)
+            let boundary = min(hourEnd, dayEnd)
+            // Always advance even in unusual calendar transitions.
+            let endOffset = min(delta, max(offset + 1, Int(ceil(boundary.timeIntervalSince(intervalStart)))))
+            let seconds = endOffset - offset
             let key = dateKey(for: segmentDate)
             var stat = statsByDate[key] ?? DailyReadingStat(
                 dateKey: key,
@@ -172,54 +221,54 @@ final class ReadingStatsStore {
                 bookSeconds: [:],
                 hourlySeconds: [:]
             )
-
-            let dayStart = calendar.startOfDay(for: segmentDate)
-            let firstOffsetOnDay = max(
-                0,
-                Int(ceil(max(startedAt, dayStart).timeIntervalSince(startedAt)))
-            )
-            if alreadyRecorded <= firstOffsetOnDay, newSessionDays.insert(key).inserted {
+            var ids = stat.checkpointedSessionIDs ?? []
+            if !ids.contains(sessionID) {
+                ids.append(sessionID)
                 stat.sessions += 1
             }
+            stat.checkpointedSessionIDs = ids
 
-            stat.seconds += delta
+            stat.seconds += seconds
             let bookKey = bookId.string
-            if !stat.bookIds.contains(bookKey) {
-                stat.bookIds.append(bookKey)
-            }
+            if !stat.bookIds.contains(bookKey) { stat.bookIds.append(bookKey) }
             var perBook = stat.bookSeconds ?? [:]
-            perBook[bookKey, default: 0] += delta
+            perBook[bookKey, default: 0] += seconds
             stat.bookSeconds = perBook
 
+            // Repeated autumn hours intentionally share the same 0...23
+            // bucket, matching the existing 24-column hourly chart.
             let hour = calendar.component(.hour, from: segmentDate)
             var perHour = stat.hourlySeconds ?? [:]
-            perHour[hour, default: 0] += delta
+            perHour[hour, default: 0] += seconds
             stat.hourlySeconds = perHour
             statsByDate[key] = stat
-            cursor = nextCursor
+            offset = endOffset
         }
 
-        let anchorKey = dateKey(for: startedAt)
+        let anchorKey = existingAnchor ?? dateKey(for: startedAt)
         var anchor = statsByDate[anchorKey] ?? DailyReadingStat(
-            dateKey: anchorKey,
-            seconds: 0,
-            sessions: 0,
-            bookIds: [],
-            bookSeconds: [:],
-            hourlySeconds: [:]
+            dateKey: anchorKey, seconds: 0, sessions: 0, bookIds: [],
+            bookSeconds: [:], hourlySeconds: [:]
         )
-        var committed = anchor.checkpointedSessionSeconds ?? [:]
-        committed[sessionID] = elapsedSeconds
-        anchor.checkpointedSessionSeconds = committed
+        var cursors = anchor.checkpointedSessionSeconds ?? [:]
+        cursors[sessionID] = elapsedSeconds
+        anchor.checkpointedSessionSeconds = cursors
         statsByDate[anchorKey] = anchor
 
-        save(statsByDate)
+        guard save(statsByDate) else { return false }
         NotificationCenter.default.post(name: .readingStatsDidChange, object: self)
+        return true
     }
 
-    func recordReadingSession(seconds: Int, bookId: Book.Id, date: Date = Date()) {
-        guard seconds > 0 else { return }
+    @discardableResult
+    func recordReadingSession(seconds: Int, bookId: Book.Id, date: Date = Date()) -> Bool {
+        guard seconds > 0 else { return true }
+        return ioQueue.sync {
+            recordLegacyReadingSession(seconds: seconds, bookId: bookId, date: date)
+        }
+    }
 
+    private func recordLegacyReadingSession(seconds: Int, bookId: Book.Id, date: Date) -> Bool {
         var statsByDate = loadStatsByDate()
         let key = dateKey(for: date)
         var stat = statsByDate[key] ?? DailyReadingStat(dateKey: key, seconds: 0, sessions: 0, bookIds: [], bookSeconds: [:], hourlySeconds: [:])
@@ -243,13 +292,13 @@ final class ReadingStatsStore {
         stat.hourlySeconds = hSeconds
 
         statsByDate[key] = stat
-        save(statsByDate)
-
+        guard save(statsByDate) else { return false }
         NotificationCenter.default.post(name: .readingStatsDidChange, object: self)
+        return true
     }
 
     func snapshot(for scope: ReadingStatsScope, referenceDate: Date = Date()) -> ReadingStatsSnapshot {
-        let allStats = loadStatsByDate().values.sorted { $0.dateKey < $1.dateKey }
+        let allStats = ioQueue.sync { loadStatsByDate().values.sorted { $0.dateKey < $1.dateKey } }
         let filtered: [DailyReadingStat]
 
         switch scope {
@@ -270,7 +319,7 @@ final class ReadingStatsStore {
     }
 
     func todayReadingSeconds(referenceDate: Date = Date()) -> Int {
-        loadStatsByDate()[dateKey(for: referenceDate)]?.seconds ?? 0
+        ioQueue.sync { loadStatsByDate()[dateKey(for: referenceDate)]?.seconds ?? 0 }
     }
 
     private func makeSnapshot(from stats: [DailyReadingStat], streakSource: [DailyReadingStat], referenceDate: Date) -> ReadingStatsSnapshot {
@@ -437,16 +486,19 @@ final class ReadingStatsStore {
         return stats
     }
 
-    private func save(_ stats: [String: DailyReadingStat]) {
-        guard let data = try? encoder.encode(stats) else { return }
+    @discardableResult
+    private func save(_ stats: [String: DailyReadingStat]) -> Bool {
         do {
+            let data = try encodeStats(stats)
             try FileManager.default.createDirectory(
                 at: storageURL.deletingLastPathComponent(),
                 withIntermediateDirectories: true
             )
             try data.write(to: storageURL, options: [.atomic])
+            return true
         } catch {
             print("ReadingStatsStore: failed to save stats: \(error)")
+            return false
         }
     }
 
@@ -474,21 +526,21 @@ final class ReadingStatsStore {
     }
 
     private func dateKey(for date: Date) -> String {
-        Self.dateFormatter.string(from: calendar.startOfDay(for: date))
+        dateFormatter().string(from: date)
     }
 
     private func date(from key: String) -> Date? {
-        Self.dateFormatter.date(from: key)
+        dateFormatter().date(from: key)
     }
 
-    private static let dateFormatter: DateFormatter = {
+    private func dateFormatter() -> DateFormatter {
         let formatter = DateFormatter()
-        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.calendar = calendar
         formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.timeZone = .current
+        formatter.timeZone = calendar.timeZone
         formatter.dateFormat = "yyyy-MM-dd"
         return formatter
-    }()
+    }
 
     private static func defaultStorageURL() -> URL {
         Paths.library.url
