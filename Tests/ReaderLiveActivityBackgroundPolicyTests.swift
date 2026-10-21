@@ -127,6 +127,41 @@ final class ReaderLiveActivityBackgroundPolicyTests: XCTestCase {
         XCTAssertEqual(second.elapsedSeconds, 0)
     }
 
+    func testSceneRoutingOnlyAcceptsMatchingWindowIdentity() {
+        let sceneA = NSObject()
+        let sceneB = NSObject()
+        XCTAssertTrue(ReaderSceneRouting.matches(eventScene: sceneA, readerScene: sceneA))
+        XCTAssertFalse(ReaderSceneRouting.matches(eventScene: sceneA, readerScene: sceneB))
+        XCTAssertFalse(ReaderSceneRouting.matches(eventScene: nil, readerScene: sceneA))
+        XCTAssertFalse(ReaderSceneRouting.matches(eventScene: sceneB, readerScene: nil))
+    }
+
+    func testDuplicateAppAndSceneLifecycleEventsAreIdempotent() throws {
+        var clock = 10.0
+        let firstStart = Date(timeIntervalSince1970: 1000)
+        var lifecycle = ReaderSessionLifecycle(
+            bookId: Book.Id(rawValue: 99),
+            systemUptime: { clock }
+        )
+        _ = lifecycle.readerDidAppear(
+            at: firstStart, progression: 0.1, applicationIsActive: true
+        )
+        clock = 40
+        XCTAssertNotNil(lifecycle.applicationDidEnterBackground(at: firstStart.addingTimeInterval(30)))
+        XCTAssertNil(lifecycle.applicationDidEnterBackground(at: firstStart.addingTimeInterval(30)))
+        XCTAssertNil(lifecycle.currentCheckpoint())
+
+        clock = 100
+        XCTAssertNotNil(lifecycle.applicationDidBecomeActive(
+            at: firstStart.addingTimeInterval(90), progression: 0.1
+        ))
+        XCTAssertNil(lifecycle.applicationDidBecomeActive(
+            at: firstStart.addingTimeInterval(90), progression: 0.1
+        ))
+        clock = 110
+        XCTAssertEqual(lifecycle.currentCheckpoint()?.elapsedSeconds, 10)
+    }
+
     func testBackgroundForegroundCreatesTwoNonOverlappingSessions() throws {
         let bookId = Book.Id(rawValue: 11)
         var lifecycle = ReaderSessionLifecycle(bookId: bookId)
