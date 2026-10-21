@@ -162,6 +162,33 @@ final class ReaderLiveActivityBackgroundPolicyTests: XCTestCase {
         XCTAssertEqual(lifecycle.currentCheckpoint()?.elapsedSeconds, 10)
     }
 
+    func testBackgroundTaskExpirationAndCompletionCanEndOnlyOnce() {
+        let endGate = ReadingBackgroundTaskEndGate()
+        let lock = NSLock()
+        var claimedCount = 0
+
+        // Concurrent callers model an iOS expiration callback racing the
+        // normal successful final-checkpoint completion callback.
+        DispatchQueue.concurrentPerform(iterations: 32) { _ in
+            if endGate.claimEnd() {
+                lock.lock()
+                claimedCount += 1
+                lock.unlock()
+            }
+        }
+
+        XCTAssertEqual(claimedCount, 1)
+        XCTAssertFalse(endGate.claimEnd())
+    }
+
+    func testBackgroundTaskEndsOnMainAndUsesEndGate() throws {
+        let source = try Self.readerViewControllerSource()
+        XCTAssertTrue(source.contains("guard endGate.claimEnd() else { return }"))
+        XCTAssertTrue(source.contains("if Thread.isMainThread"))
+        XCTAssertTrue(source.contains("DispatchQueue.main.async {"))
+        XCTAssertTrue(source.contains("UIApplication.shared.endBackgroundTask(current)"))
+    }
+
     func testFinalCheckpointGetsBackgroundExecutionAndFrozenProgress() throws {
         let source = try Self.readerViewControllerSource()
         let begin = try XCTUnwrap(source.range(of: "private func finishReadingSession("))
