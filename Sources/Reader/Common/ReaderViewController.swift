@@ -1229,12 +1229,16 @@ class ReaderViewController<N: Navigator>: UIViewController,
             elapsedSeconds: finishedSession.elapsedSeconds,
             recordedAt: recordedAt,
             bookId: finishedSession.bookId
-        ) { [weak self, backgroundTask] saved in
+        ) { [weak self, backgroundTask] result in
             backgroundTask.end()
-            if !saved {
-                // Failure remains in the separate recovery journal (or, if
-                // journaling failed too, in memory until the next activation).
-                print("ReaderViewController: final checkpoint queued for recovery")
+            if !result.aggregateSaved {
+                if result.recoveryJournalSaved {
+                    print("ReaderViewController: final checkpoint safely journaled; awaiting replay")
+                } else {
+                    // Neither durable path succeeded. Only earlier committed
+                    // checkpoints are guaranteed to survive process termination.
+                    print("ReaderViewController: final checkpoint not durable; retry is memory-only")
+                }
             }
             self?.presentReadingSessionFeedback(
                 finishedSession,
