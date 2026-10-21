@@ -18,6 +18,30 @@ enum ReaderSceneRouting {
     }
 }
 
+/// A finite iOS background execution lease for the final checkpoint.
+private final class ReadingFinalCheckpointBackgroundTask {
+    private var identifier: UIBackgroundTaskIdentifier = .invalid
+
+    init() {
+        identifier = UIApplication.shared.beginBackgroundTask(
+            withName: "PagePilot Final Reading Checkpoint"
+        ) { [weak self] in
+            // The system may expire the lease before a storage write finishes.
+            // The durable recovery journal is replayed on next activation.
+            self?.end()
+        }
+    }
+
+    func end() {
+        guard identifier != .invalid else { return }
+        let current = identifier
+        identifier = .invalid
+        UIApplication.shared.endBackgroundTask(current)
+    }
+
+    deinit { end() }
+}
+
 struct ReaderSessionLifecycle {
     struct ActiveSession {
         let bookId: Book.Id
@@ -1147,52 +1171,62 @@ class ReaderViewController<N: Navigator>: UIViewController,
         readingCheckpointTimer = nil
         WatchReadingSessionContext.end()
 
-        let recordedAt = Date()
-        ReadingStatsStore.shared.enqueueReadingCheckpoint(
-            sessionID: finishedSession.sessionID,
-            startedAt: finishedSession.startedAt,
-            elapsedSeconds: finishedSession.elapsedSeconds,
-            recordedAt: recordedAt,
-            bookId: finishedSession.bookId
-        ) { [self] saved in
-            if !saved {
-                print("ReaderViewController: final reading checkpoint persistence failed")
-            }
-            presentReadingSessionFeedback(finishedSession, isVisibleReaderExit: isVisibleReaderExit)
-        }
-    }
-
-    private func presentReadingSessionFeedback(
-        _ finishedSession: ReaderSessionLifecycle.FinishedSession,
-        isVisibleReaderExit: Bool
-    ) {
-        var detailedSession: ReadingSession?
-        if supportsDetailedReadingSessions {
-            let endProgression = navigator.currentLocation?.locations.totalProgression
-                ?? finishedSession.startProgression
-            let session = ReadingSession(
+        // Freeze all Reader/Navigator facts before crossing the async boundary.
+        // The navigator may move or disappear before disk persistence finishes.
+        let detailedSession: ReadingSession? = supportsDetailedReadingSessions
+            ? ReadingSession(
                 sessionID: finishedSession.sessionID,
                 bookId: finishedSession.bookId,
                 startedAt: finishedSession.startedAt,
                 endedAt: finishedSession.endedAt,
                 measuredDurationSeconds: finishedSession.elapsedSeconds,
                 startProgression: finishedSession.startProgression,
-                endProgression: endProgression,
+                endProgression: navigator.currentLocation?.locations.totalProgression
+                    ?? finishedSession.startProgression,
                 watchPageTurns: finishedSession.watchPageTurns
             )
-            detailedSession = session
+            : nil
 
-            if session.durationSeconds > 0 {
-                Task {
-                    do {
-                        try await AppModule.shared?.readingSessions.add(session)
-                    } catch {
-                        print("ReaderViewController: failed to save reading session: \(error)")
-                    }
+        if let detailedSession, detailedSession.durationSeconds > 0 {
+            Task {
+                do {
+                    try await AppModule.shared?.readingSessions.add(detailedSession)
+                } catch {
+                    print("ReaderViewController: failed to save reading session: \(error)")
                 }
             }
         }
 
+        let recordedAt = Date()
+        // Begin before enqueueing: a normal background DispatchQueue alone
+        // does not have an iOS background execution allowance.
+        let backgroundTask = ReadingFinalCheckpointBackgroundTask()
+        ReadingStatsStore.shared.enqueueFinalReadingCheckpoint(
+            sessionID: finishedSession.sessionID,
+            startedAt: finishedSession.startedAt,
+            elapsedSeconds: finishedSession.elapsedSeconds,
+            recordedAt: recordedAt,
+            bookId: finishedSession.bookId
+        ) { [weak self, backgroundTask] saved in
+            backgroundTask.end()
+            if !saved {
+                // Failure remains in the separate recovery journal (or, if
+                // journaling failed too, in memory until the next activation).
+                print("ReaderViewController: final checkpoint queued for recovery")
+            }
+            self?.presentReadingSessionFeedback(
+                finishedSession,
+                detailedSession: detailedSession,
+                isVisibleReaderExit: isVisibleReaderExit
+            )
+        }
+    }
+
+    private func presentReadingSessionFeedback(
+        _ finishedSession: ReaderSessionLifecycle.FinishedSession,
+        detailedSession: ReadingSession?,
+        isVisibleReaderExit: Bool
+    ) {
         let todaySeconds = ReadingStatsStore.shared.todayReadingSeconds()
         let goalMinutes = ReadingPreferences.dailyGoalMinutes
         let goalReached = ReadingGoalPolicy.goalReached(
@@ -1288,6 +1322,7 @@ class ReaderViewController<N: Navigator>: UIViewController,
     /// willEnterForeground fires while the app is still .inactive, so the
     /// restart must wait for didBecomeActive.
     @objc private func appDidBecomeActive() {
+        ReadingStatsStore.shared.enqueuePendingFinalCheckpointRetry()
         guard isReadingWindowActive else { return }
         beginReadingSession(
             readingSessionLifecycle.applicationDidBecomeActive(
