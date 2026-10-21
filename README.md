@@ -30,12 +30,12 @@ This project uses [XcodeGen](https://github.com/yonaskolb/XcodeGen) to generate 
 3. Open `PagePilot.xcodeproj` in Xcode and run
 
 > [!IMPORTANT]
-> The Xcode project is not committed to the repository. Run `make spm` after pulling any changes.
+> The Xcode project is committed to the repository. Run `make spm` when changing the project templates or regenerating dependencies.
 > By default, `make spm` uses Readium `3.9.0` when this repository has no tags. To pin another Readium revision, run `make spm commit=<tag-or-sha>`.
 
 ## Mac App and Watch Page Turns
 
-Open the `PagePilot` scheme and choose **My Mac (Mac Catalyst)** to build the Mac app. The Mac target shares the iPad reader and library; the Watch app and Live Activity extension are embedded only in iOS builds.
+Open the `PagePilot` scheme and choose **My Mac (Mac Catalyst)** to build the Mac app. The Mac app uses a cover-grid bookshelf with reading-status filters and opens books in separate, reusable reading windows; the Watch app and Live Activity extension are embedded only in iOS builds.
 
 To control the Mac reader from Apple Watch:
 
@@ -44,6 +44,12 @@ To control the Mac reader from Apple Watch:
 3. Open a book on Mac, then use PagePilot on the Apple Watch paired with that iPhone to turn pages.
 
 Remote page turns require Pro access on both the iPhone and reader. The iPhone relays Watch commands to the selected reader. Keep the Mac reader window open; Mac does not pair directly with Apple Watch or create Live Activities.
+
+## Mac Reading Controls
+
+See [the Mac reader guide](docs/mac-reader.md) for window behavior, mouse and trackpad input, keyboard shortcuts, and Watch relay setup. The website includes the same core instructions in Chinese, English, Spanish, French, and German.
+
+The repository is preparing **1.0.25** (build 53). Mac **1.0.24 (53)** was submitted for review; the development version is not a new App Store release.
 
 ## Signing
 

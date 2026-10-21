@@ -1,6 +1,6 @@
 # PagePilot
 
-PagePilot is a local-first ebook reader for iOS with Apple Watch page-turn control. This glossary defines the product language agents should use when planning issues, tests, diagnostics, and architecture work.
+PagePilot is a local-first ebook reader for iPhone, iPad, and Mac Catalyst with Apple Watch page-turn control. This glossary defines the product language agents should use when planning issues, tests, diagnostics, and architecture work.
 
 ## Language
 
@@ -27,6 +27,12 @@ _Avoid_: Shelf manager, book manager
 **Reader**:
 The app area responsible for presenting an opened publication for reading.
 _Avoid_: Viewer, navigator UI
+
+**Mac Reading Window**:
+A separate Mac Catalyst window for an opened Book. Reopening the same Book returns to its existing window. The Mac Bookshelf uses a cover grid with Reading, Unread, and Finished filters.
+
+**Mac Page Turn Input**:
+Previous/next buttons, keyboard commands, mouse-wheel input, and two-finger trackpad scrolling in paginated reading. Continuous reading preserves native scrolling, and a zoomed PDF preserves native panning.
 
 **Reading Progress**:
 The saved reading position and total progression for a book.
@@ -57,7 +63,7 @@ A remote catalog feed used to browse and download publications from external sou
 _Avoid_: Online library, feed URL
 
 **Watch Page Turn**:
-The Apple Watch capability that sends next-page or previous-page commands through the paired iPhone. The iPhone Reader responds when active. With Pro Access, the same logical command is also relayed over the local network to a nearby iPad, whose Reader responds only when active. If both Readers are active, both turn; if only one is active, only that device turns.
+The Apple Watch capability that sends next-page or previous-page commands through the paired iPhone. The iPhone Reader responds when active. With Pro Access, the same logical command is also relayed over the local network to a nearby iPad or Mac, whose Reader responds only when active. If both Readers are active, both turn; if only one is active, only that device turns.
 _Avoid_: Watch remote, remote control, selected target, Page Turn Device
 
 **Watch Setup Completion**:
@@ -81,7 +87,7 @@ An optional mode that uses the Apple Watch system Double Tap gesture (index fing
 _Avoid_: Double tap, two-finger tap, double-click, DoubleTap
 
 **Pro Access**:
-The paid entitlement that unlocks limits such as the free bookshelf book count, deeper historical reading review, and automatic nearby-iPad Watch Page Turn relay.
+The paid entitlement that unlocks limits such as the free bookshelf book count, deeper historical reading review, and automatic nearby-iPad/Mac Watch Page Turn relay.
 _Avoid_: Subscription, premium mode, purchase state
 
 **Me Tab**:
