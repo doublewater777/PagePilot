@@ -11,6 +11,13 @@ import SafariServices
 import SwiftUI
 import UIKit
 
+enum ReaderSceneRouting {
+    static func matches(eventScene: AnyObject?, readerScene: AnyObject?) -> Bool {
+        guard let eventScene, let readerScene else { return false }
+        return eventScene === readerScene
+    }
+}
+
 struct ReaderSessionLifecycle {
     struct ActiveSession {
         let bookId: Book.Id
@@ -1029,6 +1036,7 @@ class ReaderViewController<N: Navigator>: UIViewController,
         NotificationCenter.default.addObserver(self, selector: #selector(appDidBecomeActive), name: UIApplication.didBecomeActiveNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(sceneWillDeactivate(_:)), name: UIScene.willDeactivateNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(sceneDidActivate(_:)), name: UIScene.didActivateNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(systemTimeDidChange), name: UIApplication.significantTimeChangeNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(watchPageTurnDidSucceed(_:)), name: .watchPageTurnDidSucceed, object: nil)
 
         #if targetEnvironment(macCatalyst)
@@ -1109,12 +1117,24 @@ class ReaderViewController<N: Navigator>: UIViewController,
 
     private func persistReadingCheckpoint() {
         guard let checkpoint = readingSessionLifecycle.currentCheckpoint() else { return }
-        ReadingStatsStore.shared.recordReadingCheckpoint(
+        let observedAt = Date()
+        ReadingStatsStore.shared.enqueueReadingCheckpoint(
             sessionID: checkpoint.sessionID,
             startedAt: checkpoint.startedAt,
             elapsedSeconds: checkpoint.elapsedSeconds,
+            recordedAt: observedAt,
             bookId: checkpoint.bookId
-        )
+        ) { success in
+            if !success {
+                print("ReaderViewController: reading checkpoint persistence failed; retry on next tick")
+            }
+        }
+    }
+
+    @objc private func systemTimeDidChange() {
+        // Refresh the wall-clock anchor promptly rather than extrapolating
+        // local dates from the session's original startedAt timestamp.
+        persistReadingCheckpoint()
     }
 
     private func finishReadingSession(
@@ -1127,13 +1147,25 @@ class ReaderViewController<N: Navigator>: UIViewController,
         readingCheckpointTimer = nil
         WatchReadingSessionContext.end()
 
-        ReadingStatsStore.shared.recordReadingCheckpoint(
+        let recordedAt = Date()
+        ReadingStatsStore.shared.enqueueReadingCheckpoint(
             sessionID: finishedSession.sessionID,
             startedAt: finishedSession.startedAt,
             elapsedSeconds: finishedSession.elapsedSeconds,
+            recordedAt: recordedAt,
             bookId: finishedSession.bookId
-        )
+        ) { [self] saved in
+            if !saved {
+                print("ReaderViewController: final reading checkpoint persistence failed")
+            }
+            presentReadingSessionFeedback(finishedSession, isVisibleReaderExit: isVisibleReaderExit)
+        }
+    }
 
+    private func presentReadingSessionFeedback(
+        _ finishedSession: ReaderSessionLifecycle.FinishedSession,
+        isVisibleReaderExit: Bool
+    ) {
         var detailedSession: ReadingSession?
         if supportsDetailedReadingSessions {
             let endProgression = navigator.currentLocation?.locations.totalProgression
@@ -1226,13 +1258,19 @@ class ReaderViewController<N: Navigator>: UIViewController,
 
     @objc private func sceneWillDeactivate(_ notification: Notification) {
         guard let scene = notification.object as? UIScene,
-              scene === viewIfLoaded?.window?.windowScene else { return }
+              ReaderSceneRouting.matches(
+                  eventScene: scene,
+                  readerScene: viewIfLoaded?.window?.windowScene
+              ) else { return }
         appDidEnterBackground()
     }
 
     @objc private func sceneDidActivate(_ notification: Notification) {
         guard let scene = notification.object as? UIScene,
-              scene === viewIfLoaded?.window?.windowScene else { return }
+              ReaderSceneRouting.matches(
+                  eventScene: scene,
+                  readerScene: viewIfLoaded?.window?.windowScene
+              ) else { return }
         appDidBecomeActive()
     }
 
