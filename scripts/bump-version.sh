@@ -62,6 +62,19 @@ update_plist_version() {
 update_plist_version "${REPO_ROOT}/iPhone/Info.plist"
 update_plist_version "${REPO_ROOT}/WatchRemote/Info.plist"
 
+# Xcode build settings generate CFBundleShortVersionString for the app
+# targets, so the .pbxproj has to move with the plists.
+update_pbxproj_version() {
+  local pbxproj="$1"
+  [[ -f "$pbxproj" ]] || return 0
+
+  sed -i '' -E "s/(MARKETING_VERSION = )${OLD_VERSION};/\1${NEW_VERSION};/g" "$pbxproj"
+}
+
+while IFS= read -r pbxproj; do
+  update_pbxproj_version "$pbxproj"
+done < <(find "${REPO_ROOT}" -name 'project.pbxproj' -type f -not -path '*/build/*' -not -path '*/.git/*')
+
 NEW_BUILD=""
 if [[ "$INCREMENT_BUILD" -eq 1 ]]; then
   plist="${REPO_ROOT}/iPhone/Info.plist"
@@ -83,6 +96,7 @@ Updated:
   project.yml (if present)
   iPhone/Info.plist
   WatchRemote/Info.plist
+  **/project.pbxproj
 EOF
 
 if [[ -n "$NEW_BUILD" ]]; then
