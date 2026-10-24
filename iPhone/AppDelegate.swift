@@ -114,7 +114,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UITabBarControllerDelegat
         }
 
         // Re-assert the reading-reminder schedule (cleared by reinstall / OS).
+        // Prompt for permission first on a fresh install, since the reminder
+        // defaults to enabled and the toggle's onChange would otherwise never
+        // fire to request it.
         Task {
+            await ReadingReminderScheduler.shared.requestAuthorizationIfNeededOnLaunch()
             await ReadingReminderScheduler.shared.reschedule()
         }
 

@@ -37,6 +37,18 @@ final class ReadingReminderScheduler {
         }
     }
 
+    /// Requests authorization on launch, but only when the reminder is enabled
+    /// AND the status is still `notDetermined`. Already-authorized or
+    /// already-denied states are left alone so we never re-prompt. Without
+    /// this, a fresh install defaults the reminder to on yet never prompts,
+    /// so the scheduled notification silently fails.
+    func requestAuthorizationIfNeededOnLaunch() async {
+        guard ReadingPreferences.reminderEnabled else { return }
+        let status = await center.notificationSettings().authorizationStatus
+        guard status == .notDetermined else { return }
+        _ = await requestAuthorization()
+    }
+
     /// Reschedules the daily reminder from `ReadingPreferences`, or cancels it when
     /// disabled. Safe to call on every launch and on every setting change.
     func reschedule() async {
