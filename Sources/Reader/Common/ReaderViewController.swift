@@ -895,9 +895,11 @@ enum ReadingSessionSummaryPresenter {
                 }
             }
 
-            if UIDevice.current.userInterfaceIdiom == .pad {
-                // On iPad, formSheet respects preferredContentSize and centers nicely.
-                // Do not apply iPhone-style detents or grabber on iPad.
+            let isRegular = host.traitCollection.horizontalSizeClass == .regular || UIDevice.current.userInterfaceIdiom == .pad
+            if isRegular {
+                summaryViewController.modalPresentationStyle = .formSheet
+                // On iPad and regular-width displays, formSheet respects preferredContentSize and centers nicely.
+                // Do not apply iPhone-style detents or grabber.
             } else if let sheet = summaryViewController.sheetPresentationController {
                 if #available(iOS 16.0, *) {
                     let compactDetent = UISheetPresentationController.Detent.custom(identifier: .init("compactSummary")) { _ in
@@ -929,7 +931,8 @@ enum ReadingSessionSummaryPresenter {
         let viewController = UIHostingController(
             rootView: ReadingSessionInsightSheet(book: book)
         )
-        if UIDevice.current.userInterfaceIdiom == .pad {
+        let isRegular = host.traitCollection.horizontalSizeClass == .regular || UIDevice.current.userInterfaceIdiom == .pad
+        if isRegular {
             viewController.modalPresentationStyle = .formSheet
             viewController.preferredContentSize = CGSize(width: 560, height: 640)
         } else {
@@ -1100,6 +1103,14 @@ class ReaderViewController<N: Navigator>: UIViewController,
 
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
+        PostHogAnalytics.shared.screen("reader", properties: [
+            "publication_title": publication.metadata.title,
+            "book_id": bookId
+        ])
+        PostHogAnalytics.shared.capture("reader_opened", properties: [
+            "publication_title": publication.metadata.title,
+            "book_id": bookId
+        ])
         beginReadingSession(
             readingSessionLifecycle.readerDidAppear(
                 at: Date(),
@@ -1126,6 +1137,10 @@ class ReaderViewController<N: Navigator>: UIViewController,
         setMainTabBarHidden(false, animated: animated)
         if isReaderExit,
            UIApplication.shared.applicationState == .active {
+            PostHogAnalytics.shared.capture("reader_closed", properties: [
+                "publication_title": publication.metadata.title,
+                "book_id": bookId
+            ])
             ReviewPromptManager.shared.tryPromptReview()
         }
     }

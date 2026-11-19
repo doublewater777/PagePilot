@@ -7,6 +7,7 @@ import UIKit
 
 struct MyNotesView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     @State private var notes: [TimelineNote] = []
     @State private var isLoading = true
@@ -171,7 +172,7 @@ struct MyNotesView: View {
     }
 
     private var notesBottomClearance: CGFloat {
-        UIDevice.current.userInterfaceIdiom == .pad ? 24 : 96
+        (horizontalSizeClass == .regular || UIDevice.current.userInterfaceIdiom == .pad) ? 24 : 96
     }
 
     private func deleteNote(_ note: TimelineNote) async {

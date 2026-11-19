@@ -1,0 +1,5 @@
+// Public or build-time PostHog API key and host endpoint.
+// For local testing with a private project token, create PostHog.local.xcconfig (git-ignored).
+POSTHOG_API_KEY = phc_zLnN7zxFf2zTS5XkNd9um5DgNPmv4ZZejgR6Ln2uudVm
+POSTHOG_HOST = https://us.i.posthog.com
+#include? "PostHog.local.xcconfig"

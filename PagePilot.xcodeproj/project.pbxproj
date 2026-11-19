@@ -41,6 +41,7 @@
 		22840EACD39FC157B5217F99 /* WatchCommandOutcomeStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41BC0A1B066A7E177AC73760 /* WatchCommandOutcomeStateTests.swift */; };
 		228DAF8BD55D37AE4A79761B /* VolumeKeySettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19E6F1DD380B9E864C81ACDA /* VolumeKeySettingsView.swift */; };
 		22CC8F3524C1E94A10708878 /* ContextualProConversionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 609CB59BB68F7D4B2E76E073 /* ContextualProConversionTests.swift */; };
+		22CC8F3524C1E94A10708879 /* PostHogAnalyticsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 609CB59BB68F7D4B2E76E074 /* PostHogAnalyticsTests.swift */; };
 		23F6333C8704E4ED52731B78 /* HighlightNoteEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9BE090D11709317E8544B91 /* HighlightNoteEditor.swift */; };
 		2406FA5B79F4561461DEE877 /* ContinueReadingSelector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01AEEB20DEA6BB82824F5D61 /* ContinueReadingSelector.swift */; };
 		241CA724AE151194CBCCF6F7 /* LibraryError.swift in Sources */ = {isa = PBXBuildFile; fileRef = E556BE39A9716505BCE414DC /* LibraryError.swift */; };
@@ -186,6 +187,7 @@
 		CDE153446216AB997D9E4A72 /* PagePilotWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = D5B287F95A1282CF890CB098 /* PagePilotWatch.app */; platformFilter = ios; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		CEC59B3405B6C00D2093D75A /* Publication.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED9A3CF3A20BC327FDCB1A99 /* Publication.swift */; };
 		CED60C278606B642FF8CA765 /* Analytics.swift in Sources */ = {isa = PBXBuildFile; fileRef = BCAC8F71F518B1AFEE314B4D /* Analytics.swift */; };
+		CED70C278606B642FF8CA766 /* PostHogAnalytics.swift in Sources */ = {isa = PBXBuildFile; fileRef = BCAE8F71F518B1AFEE314B4E /* PostHogAnalytics.swift */; };
 		CF42BED74FFA3AAB2FAED24C /* QuickPositionJumpPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91B40801496BC91B524225D7 /* QuickPositionJumpPolicy.swift */; };
 		D1824AD20F0D35F1615005FF /* CloudSync.strings in Resources */ = {isa = PBXBuildFile; fileRef = 4A9EC3016F806A8A0F4C3403 /* CloudSync.strings */; };
 		D1D665D751732216E7B60DA1 /* WatchRemoteApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 459015DF4D10FB8B005B017F /* WatchRemoteApp.swift */; };
@@ -369,6 +371,7 @@
 		5E7E8D2E6C8E4E8F45EF2BC1 /* Paths.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Paths.swift; sourceTree = "<group>"; };
 		5E8A1A65F68EC5042259DF4D /* Bookmark.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Bookmark.swift; sourceTree = "<group>"; };
 		609CB59BB68F7D4B2E76E073 /* ContextualProConversionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContextualProConversionTests.swift; sourceTree = "<group>"; };
+		609CB59BB68F7D4B2E76E074 /* PostHogAnalyticsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PostHogAnalyticsTests.swift; sourceTree = "<group>"; };
 		6170E8620EED7FEC1EBC273C /* CloudKit.Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = CloudKit.Debug.xcconfig; sourceTree = "<group>"; };
 		624A0908024583EAA723EF37 /* WatchConnectivityManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchConnectivityManager.swift; sourceTree = "<group>"; };
 		62967626DB216BAB7677B5A2 /* AudiobookModule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudiobookModule.swift; sourceTree = "<group>"; };
@@ -457,6 +460,7 @@
 		B9BE090D11709317E8544B91 /* HighlightNoteEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HighlightNoteEditor.swift; sourceTree = "<group>"; };
 		B9FE2CFDD497EC12093FB1D7 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		BCAC8F71F518B1AFEE314B4D /* Analytics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Analytics.swift; sourceTree = "<group>"; };
+		BCAE8F71F518B1AFEE314B4E /* PostHogAnalytics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PostHogAnalytics.swift; sourceTree = "<group>"; };
 		BCD1FD007BF88436958FB9F4 /* Base */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = Base; path = Base.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		BEB8635BE5EA094C2A00629C /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/PublicationCollectionViewCell.xib; sourceTree = "<group>"; };
 		BF91762E299FD57C7AC2CBA0 /* LastReadBooks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LastReadBooks.swift; sourceTree = "<group>"; };
@@ -766,6 +770,7 @@
 				83FC454CBD0AD1C3914E0E8E /* BookQuotaTests.swift */,
 				23DFDAFADB283187AF23E49F /* CloudSyncSupportTests.swift */,
 				609CB59BB68F7D4B2E76E073 /* ContextualProConversionTests.swift */,
+				609CB59BB68F7D4B2E76E074 /* PostHogAnalyticsTests.swift */,
 				6F7B3BBBC229C74F04221454 /* ContinueReadingSelectorTests.swift */,
 				32C6CDAD8966D6F593498CE9 /* CoverImageLoaderTests.swift */,
 				41F371BDCBD0C7C04E315718 /* FeedbackSupportTests.swift */,
@@ -859,6 +864,7 @@
 			isa = PBXGroup;
 			children = (
 				BCAC8F71F518B1AFEE314B4D /* Analytics.swift */,
+				BCAE8F71F518B1AFEE314B4E /* PostHogAnalytics.swift */,
 				F557F988BEA53B78DC59BEA6 /* NotesQuota.swift */,
 				31EE66AC5EDD18FEF3E2DBD7 /* ProPurchaseManager.swift */,
 				ACF000000000000000000004 /* ProEntitlementSource.swift */,
@@ -1238,6 +1244,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				CED60C278606B642FF8CA765 /* Analytics.swift in Sources */,
+				CED70C278606B642FF8CA766 /* PostHogAnalytics.swift in Sources */,
 				5B31B63F319C2E22FD99251B /* AnyPublisher.swift in Sources */,
 				35C2510E1723E8D0D20E6C2E /* AppColors.swift in Sources */,
 				731992CB6648C944BA3BE567 /* AppDelegate.swift in Sources */,
@@ -1396,6 +1403,7 @@
 				533D51CDB6F14BD986B8B72D /* BookQuotaTests.swift in Sources */,
 				035A0D3C137D9D8C57BAB97D /* CloudSyncSupportTests.swift in Sources */,
 				22CC8F3524C1E94A10708878 /* ContextualProConversionTests.swift in Sources */,
+				22CC8F3524C1E94A10708879 /* PostHogAnalyticsTests.swift in Sources */,
 				028A2542EBF1344183C10DF9 /* ContinueReadingSelectorTests.swift in Sources */,
 				C7081AC5C070FCD855485D67 /* CoverImageLoaderTests.swift in Sources */,
 				19FF1AAE683E19E555FDCEC1 /* FeedbackSupportTests.swift in Sources */,
@@ -1613,7 +1621,7 @@
 				SUPPORTS_MACCATALYST = YES;
 				DERIVE_MACCATALYST_PRODUCT_BUNDLE_IDENTIFIER = NO;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 53;
+				CURRENT_PROJECT_VERSION = 55;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = iPhone/Info.plist;
 				"INFOPLIST_FILE[sdk=macosx*]" = Mac/Info.plist;
@@ -1721,7 +1729,7 @@
 				SUPPORTS_MACCATALYST = YES;
 				DERIVE_MACCATALYST_PRODUCT_BUNDLE_IDENTIFIER = NO;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 53;
+				CURRENT_PROJECT_VERSION = 55;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = iPhone/Info.plist;
 				"INFOPLIST_FILE[sdk=macosx*]" = Mac/Info.plist;
@@ -1750,7 +1758,7 @@
 		4756EBF2B17E64AA1CB6FA93 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CURRENT_PROJECT_VERSION = 53;
+				CURRENT_PROJECT_VERSION = 55;
 				INFOPLIST_FILE = ReadingLiveActivity/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -1769,7 +1777,7 @@
 		491914B06B8D49E52D031C3C /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CURRENT_PROJECT_VERSION = 53;
+				CURRENT_PROJECT_VERSION = 55;
 				INFOPLIST_FILE = ReadingLiveActivity/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -1794,7 +1802,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 53;
+				CURRENT_PROJECT_VERSION = 55;
 				DEVELOPMENT_TEAM = 29C8MS76CZ;
 				INFOPLIST_FILE = WatchRemote/Info.plist;
 				MARKETING_VERSION = 1.0.25;
@@ -1830,7 +1838,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 53;
+				CURRENT_PROJECT_VERSION = 55;
 				DEVELOPMENT_TEAM = 29C8MS76CZ;
 				INFOPLIST_FILE = WatchRemote/Info.plist;
 				MARKETING_VERSION = 1.0.25;

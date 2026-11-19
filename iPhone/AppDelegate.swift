@@ -59,6 +59,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UITabBarControllerDelegat
 
     func selectMainTab(_ index: Int) {
         app.tabBarController?.selectedIndex = index
+        let tabNames = ["home", "library", "me"]
+        if tabNames.indices.contains(index) {
+            PostHogAnalytics.shared.screen(tabNames[index])
+        }
         #if targetEnvironment(macCatalyst)
         if let scene = app.tabBarController?.viewIfLoaded?.window?.windowScene {
             UIApplication.shared.requestSceneSessionActivation(scene.session, userActivity: nil, options: nil)
@@ -86,6 +90,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UITabBarControllerDelegat
         #endif
         AppAppearancePreferences.configureLocalization()
         RevenueCatConfiguration.configure()
+        PostHogAnalytics.configure()
+        PostHogAnalytics.shared.capture("$app_open")
         configureAudioSession()
         WatchPageTurnSettings.migrateDefaultTargetIfNeeded()
         do {
@@ -146,12 +152,17 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UITabBarControllerDelegat
     /// deletes. Runs on background entry rather than at launch, where it
     /// raced cold-start imports and deleted freshly imported publications.
     func applicationDidEnterBackground(_ application: UIApplication) {
+        PostHogAnalytics.shared.capture("$app_background")
         guard let service = app?.library.service else { return }
         let taskID = application.beginBackgroundTask(withName: "OrphanedFileCleanup") {}
         Task.detached {
             await service.cleanOrphanedFiles()
             application.endBackgroundTask(taskID)
         }
+    }
+
+    func applicationWillEnterForeground(_ application: UIApplication) {
+        PostHogAnalytics.shared.capture("$app_foreground")
     }
 
     /// Configures the shared `AVAudioSession` so that audio features (audiobook
@@ -280,6 +291,19 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UITabBarControllerDelegat
         }
         #endif
         return proposedViewControllers
+    }
+
+    func tabBarController(_ tabBarController: UITabBarController, didSelect viewController: UIViewController) {
+        let index = tabBarController.selectedIndex
+        let tabNames = ["home", "library", "me"]
+        if tabNames.indices.contains(index) {
+            PostHogAnalytics.shared.screen(tabNames[index])
+        }
+    }
+
+    @available(iOS 18.0, *)
+    func tabBarController(_ tabBarController: UITabBarController, didSelectTab tab: UITab, previousTab: UITab?) {
+        PostHogAnalytics.shared.screen(tab.identifier)
     }
 
     private func makeLegacyTabBarController(

@@ -70,6 +70,7 @@ Cartfile.resolved
 # Local-only integrations (secrets, personal config)
 Integrations/Local/
 Integrations/SPM/RevenueCat.local.xcconfig
+Integrations/SPM/PostHog.local.xcconfig
 
 # asc CLI workspace (tokens, caches, local state)
 .asc/

@@ -726,6 +726,7 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
     override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
         quickPositionJumpController?.cancel()
         super.viewWillTransition(to: size, with: coordinator)
+        PostHogAnalytics.shared.recordPostureChange(size: size)
     }
 
     #if targetEnvironment(macCatalyst)
@@ -917,6 +918,9 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
                 }
 
                 try await highlights.add(highlight)
+                PostHogAnalytics.shared.capture("highlight_created", properties: [
+                    "color": "\(highlight.color)"
+                ])
 
                 await MainActor.run {
                     switch decision {

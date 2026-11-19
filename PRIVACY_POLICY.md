@@ -8,10 +8,10 @@ Pan Yang ("we", "us", or "our") built PagePilot as a free, open-source applicati
 
 PagePilot does not automatically collect personal data. If you choose to submit feedback, the information described below is sent to our feedback service. Specifically:
 
-- **No analytics or tracking**: We do not use any third-party analytics, crash reporting, or advertising SDKs.
+- **Privacy-preserving anonymous telemetry**: We may collect non-identifiable usage and performance metrics (such as app opens, feature funnel conversions, and device display traits like fold/unfold states) via our privacy-friendly PostHog instance to improve app stability and experience. No personal identifying information (PII), book text, or private notes are ever transmitted.
 - **No account required**: The app does not require registration or sign-in.
 - **No requested personal details**: We do not ask for your name, email, or location. Feedback includes only what you choose to write and the diagnostics described below.
-- **No usage data transmission**: Your reading habits, bookmarks, highlights, and preferences are never sent to any server.
+- **No reading content transmission**: Your reading content, bookmarks, highlights, and personal notes are never sent to any analytics server.
 
 ## Data Stored Locally on Your Device
 

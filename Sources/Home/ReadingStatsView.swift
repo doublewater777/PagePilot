@@ -23,6 +23,7 @@ struct ReadingStatsView: View {
 
     private let statsStore = ReadingStatsStore.shared
     @ObservedObject private var proPurchase = ProPurchaseManager.shared
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     private var canAccessSelectedScope: Bool {
         !selectedStatsScope.requiresPro || proPurchase.hasProAccess
@@ -44,9 +45,11 @@ struct ReadingStatsView: View {
                     lockedStatsView
                 }
             }
+            .frame(maxWidth: horizontalSizeClass == .regular ? 560 : .infinity)
+            .frame(maxWidth: .infinity)
             .padding(.horizontal, 20)
             .padding(.top, 18)
-            .padding(.bottom, UIDevice.current.userInterfaceIdiom == .pad ? 24 : 96)
+            .padding(.bottom, (horizontalSizeClass == .regular || UIDevice.current.userInterfaceIdiom == .pad) ? 24 : 96)
         }
         .background(Color(.systemGroupedBackground))
         .navigationTitle(NSLocalizedString("stats_title", comment: ""))

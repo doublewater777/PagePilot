@@ -312,6 +312,7 @@ class LibraryViewController: UIViewController, Loggable {
 
     override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
         super.viewWillTransition(to: size, with: coordinator)
+        PostHogAnalytics.shared.recordPostureChange(size: size)
         collectionView?.collectionViewLayout.invalidateLayout()
     }
 
@@ -662,8 +663,10 @@ class LibraryViewController: UIViewController, Loggable {
         super.viewWillLayoutSubviews()
 
         let idiom = { () -> UIUserInterfaceIdiom in
-            let tempIdion = UIDevice.current.userInterfaceIdiom
-            return (tempIdion != .pad) ? .phone : .pad // ignnore carplay and others
+            if traitCollection.horizontalSizeClass == .regular || UIDevice.current.userInterfaceIdiom == .pad {
+                return .pad
+            }
+            return .phone
         }()
 
         let layoutNumberPerRow: [UIUserInterfaceIdiom: [ScreenOrientation: Int]] = [
@@ -716,6 +719,7 @@ class LibraryViewController: UIViewController, Loggable {
     }
 
     private func presentWiFiTransfer() {
+        PostHogAnalytics.shared.screen("wifi_transfer")
         let wifiView = WiFiTransferView(library: library)
         let hostingController = UIHostingController(rootView: wifiView)
         hostingController.modalPresentationStyle = .formSheet
@@ -723,6 +727,7 @@ class LibraryViewController: UIViewController, Loggable {
     }
 
     private func presentDeviceTransfer() {
+        PostHogAnalytics.shared.screen("device_transfer")
         let transferView = DeviceTransferView(books: books, library: library)
         let hostingController = UIHostingController(rootView: transferView)
         hostingController.modalPresentationStyle = .formSheet
@@ -730,6 +735,7 @@ class LibraryViewController: UIViewController, Loggable {
     }
 
     private func presentOPDSFeeds() {
+        PostHogAnalytics.shared.screen("opds_catalog")
         let vc = OPDSFeedListViewController(feeds: opdsFeeds, library: library)
         let nav = UINavigationController(rootViewController: vc)
         nav.modalPresentationStyle = .formSheet
@@ -802,6 +808,10 @@ extension LibraryViewController: UIDocumentPickerDelegate {
         Task {
             do {
                 try await library.importPublications(from: urls, sender: self)
+                PostHogAnalytics.shared.capture("book_imported", properties: [
+                    "count": urls.count,
+                    "source": "file_picker"
+                ])
             } catch LibraryError.bookLimitReached {
                 await MainActor.run {
                     presentBookLimitPaywall()

@@ -59,8 +59,10 @@ struct PaywallView: View {
         )
     }
 
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+
     private var isPad: Bool {
-        UIDevice.current.userInterfaceIdiom == .pad
+        horizontalSizeClass == .regular || UIDevice.current.userInterfaceIdiom == .pad
     }
 
     private var heroContent: (icon: String, title: String, subtitle: String) {

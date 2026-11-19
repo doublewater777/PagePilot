@@ -243,6 +243,12 @@ final class WatchPageTurnService: NSObject, ObservableObject {
         activityLog.record(
             commandID: commandID, direction: direction, source: source, destination: destination, outcome: outcome
         )
+        PostHogAnalytics.shared.capture("watch_page_turn", properties: [
+            "direction": direction.rawValue,
+            "source": source == .watch ? "watch" : "iphone",
+            "destination": destination == .iPhone ? "iphone" : (destination == .iPad ? "ipad" : "this_device"),
+            "outcome": "\(outcome)"
+        ])
     }
 
     private func shouldProcessCommand(id: String?) -> Bool {
@@ -529,6 +535,11 @@ extension WatchPageTurnService: WCSessionDelegate {
     }
 
     func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: Error?) {
+        PostHogAnalytics.shared.capture("watch_session_activated", properties: [
+            "activation_state": activationState.rawValue,
+            "is_paired": session.isPaired,
+            "is_watch_app_installed": session.isWatchAppInstalled
+        ])
         DispatchQueue.main.async {
             self.isWatchConnected = activationState == .activated
         }

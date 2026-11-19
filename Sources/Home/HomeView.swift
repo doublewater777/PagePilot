@@ -281,6 +281,7 @@ struct HomeView: View {
     @ObservedObject var viewModel: HomeViewModel
     weak var delegate: HomeModuleDelegate?
     @Environment(\.colorScheme) var colorScheme
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     @State private var appeared = false
     @State private var progressAnimated = false
@@ -324,8 +325,10 @@ struct HomeView: View {
                         .offset(y: appeared ? 0 : 15)
                         .animation(.easeOut(duration: 0.5).delay(0.28), value: appeared)
 
-                    Spacer(minLength: UIDevice.current.userInterfaceIdiom == .pad ? 24 : 100)
+                    Spacer(minLength: (horizontalSizeClass == .regular || UIDevice.current.userInterfaceIdiom == .pad) ? 24 : 100)
                 }
+                .frame(maxWidth: horizontalSizeClass == .regular ? 560 : .infinity)
+                .frame(maxWidth: .infinity)
                 .padding(.horizontal, 24)
                 .padding(.top, 4)
             }

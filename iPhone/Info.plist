@@ -299,6 +299,10 @@
 	</array>
 	<key>RevenueCatAPIKey</key>
 	<string>$(REVENUECAT_API_KEY)</string>
+	<key>PostHogAPIKey</key>
+	<string>$(POSTHOG_API_KEY)</string>
+	<key>PostHogHost</key>
+	<string>$(POSTHOG_HOST)</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
