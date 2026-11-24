@@ -64,6 +64,31 @@ final class ImportDedupTests: XCTestCase {
         XCTAssertNil(empty)
     }
 
+    func testReimportRestoresMissingBookWithoutCreatingAnotherRecord() async throws {
+        let source = tmpDir.appendingPathComponent("Recovery \(UUID().uuidString).txt")
+        try "Chapter 1\nRestored book".write(to: source, atomically: true, encoding: .utf8)
+        let identifier = try TXTToEPUBConverter.contentIdentifier(for: source)
+        let readium = Readium()
+        let library = LibraryService(books: repo, readium: readium, lcp: LCPModule(readium: readium))
+        let original = try await repo.add(Book(
+            identifier: identifier,
+            title: source.deletingPathExtension().lastPathComponent,
+            type: "application/epub+zip",
+            url: AnyURL(string: "missing-\(UUID().uuidString).epub")!
+        ))
+
+        let restored = try await library.importPublication(from: try XCTUnwrap(source.anyURL.absoluteURL))
+        let restoredFile = try XCTUnwrap(restored.absoluteFileURL())
+        defer { try? FileManager.default.removeItem(at: restoredFile) }
+
+        XCTAssertEqual(restored.id, original)
+        XCTAssertTrue(restored.fileIsAvailableLocally)
+        let persisted = try await repo.get(original)
+        XCTAssertEqual(persisted?.url, restored.url)
+        let count = try await repo.count()
+        XCTAssertEqual(count, 1)
+    }
+
     func testTXTContentIdentifierIsStableForSameBytes() throws {
         let fileURL = tmpDir.appendingPathComponent("sample.txt")
         let content = "Chapter 1\nHello from PagePilot\n"

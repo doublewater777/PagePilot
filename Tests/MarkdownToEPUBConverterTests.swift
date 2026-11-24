@@ -647,6 +647,9 @@ final class MarkdownToEPUBConverterTests: XCTestCase {
         try handle.truncate(atOffset: UInt64(MarkdownToEPUBConverter.maxMarkdownBytes + 1))
         try handle.close()
 
+        XCTAssertThrowsError(try MarkdownToEPUBConverter.contentIdentifier(for: url)) { error in
+            XCTAssertEqual(error as? MarkdownToEPUBConverter.ConversionError, .fileTooLarge)
+        }
         do {
             _ = try await MarkdownToEPUBConverter.convert(from: url)
             XCTFail("expected fileTooLarge")

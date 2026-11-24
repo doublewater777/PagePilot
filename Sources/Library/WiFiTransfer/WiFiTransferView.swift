@@ -196,15 +196,19 @@ final class WiFiTransferViewModel: ObservableObject {
         }
 
         do {
+            server.onFileUploaded = { [weak self] fileURL in
+                guard let self else { throw CancellationError() }
+                do {
+                    try await self.importToLibrary(fileURL: fileURL)
+                    self.uploadedCount += 1
+                } catch {
+                    self.error = UserError(error).message
+                    throw error
+                }
+            }
             let url = try server.start()
             serverURL = url
             isRunning = true
-
-            server.onFileUploaded = { [weak self] fileURL in
-                guard let self else { return }
-                self.uploadedCount += 1
-                self.importToLibrary(fileURL: fileURL)
-            }
         } catch {
             self.error = error.localizedDescription
         }
@@ -217,25 +221,21 @@ final class WiFiTransferViewModel: ObservableObject {
 
     /// Imports the uploaded file into the app's library (book database),
     /// so it appears on the bookshelf automatically.
-    private func importToLibrary(fileURL: URL) {
-        guard let absoluteURL = fileURL.anyURL.absoluteURL else { return }
-
-        Task { @MainActor in
-            do {
-                let book = try await library.importPublication(
-                    from: absoluteURL,
-                    sender: UIApplication.shared.firstKeyWindow?.rootViewController ?? UIViewController(),
-                    progress: { _ in }
-                )
-                if !didNotifyFirstImport {
-                    didNotifyFirstImport = true
-                    onPublicationImported?(book)
-                }
-            } catch {
-                print("WiFiTransfer: failed to import \(fileURL.lastPathComponent) to library: \(error)")
-            }
+    private func importToLibrary(fileURL: URL) async throws {
+        guard let absoluteURL = fileURL.anyURL.absoluteURL else {
+            throw LibraryError.publicationIsNotValid
+        }
+        let book = try await library.importPublication(
+            from: absoluteURL,
+            sender: UIApplication.shared.firstKeyWindow?.rootViewController ?? UIViewController(),
+            progress: { _ in }
+        )
+        if !didNotifyFirstImport {
+            didNotifyFirstImport = true
+            onPublicationImported?(book)
         }
     }
+
 }
 
 private extension UIApplication {

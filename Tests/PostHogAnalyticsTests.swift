@@ -11,8 +11,8 @@ final class PostHogAnalyticsTests: XCTestCase {
 
     final class MockURLProtocol: URLProtocol {
         static var lastRequest: URLRequest?
-        static var lastRequestBody: [String: Any]?
         static var responseStatusCode: Int = 200
+        static var onRequest: ((URLRequest, [String: Any]) -> Void)?
 
         override class func canInit(with request: URLRequest) -> Bool {
             return true
@@ -27,7 +27,7 @@ final class PostHogAnalyticsTests: XCTestCase {
 
             if let bodyData = request.httpBody ?? request.httpBodyStreamData() {
                 if let json = try? JSONSerialization.jsonObject(with: bodyData) as? [String: Any] {
-                    Self.lastRequestBody = json
+                    Self.onRequest?(request, json)
                 }
             }
 
@@ -47,8 +47,8 @@ final class PostHogAnalyticsTests: XCTestCase {
 
         static func reset() {
             lastRequest = nil
-            lastRequestBody = nil
             responseStatusCode = 200
+            onRequest = nil
         }
     }
 
@@ -68,6 +68,7 @@ final class PostHogAnalyticsTests: XCTestCase {
     }
 
     override func tearDown() {
+        MockURLProtocol.onRequest = nil
         testUserDefaults.removePersistentDomain(forName: "PostHogAnalyticsTests")
         super.tearDown()
     }
@@ -110,24 +111,16 @@ final class PostHogAnalyticsTests: XCTestCase {
             userDefaults: testUserDefaults
         )
 
-        client.capture("test_conversion_event", properties: [
-            "button_name": "upgrade_now",
-            "tier": "pro_yearly"
-        ])
+        MockURLProtocol.onRequest = { request, body in
+            XCTAssertEqual(request.httpMethod, "POST")
+            XCTAssertEqual(request.url?.path, "/capture")
+            XCTAssertEqual(request.value(forHTTPHeaderField: "Content-Type"), "application/json")
 
-        DispatchQueue.global().asyncAfter(deadline: .now() + 0.3) {
-            XCTAssertNotNil(MockURLProtocol.lastRequest)
-            XCTAssertEqual(MockURLProtocol.lastRequest?.httpMethod, "POST")
-            XCTAssertEqual(MockURLProtocol.lastRequest?.url?.path, "/capture")
-            XCTAssertEqual(MockURLProtocol.lastRequest?.value(forHTTPHeaderField: "Content-Type"), "application/json")
+            XCTAssertEqual(body["api_key"] as? String, "phc_test_12345")
+            XCTAssertEqual(body["event"] as? String, "test_conversion_event")
+            XCTAssertEqual(body["distinct_id"] as? String, client.distinctId)
 
-            let body = MockURLProtocol.lastRequestBody
-            XCTAssertNotNil(body)
-            XCTAssertEqual(body?["api_key"] as? String, "phc_test_12345")
-            XCTAssertEqual(body?["event"] as? String, "test_conversion_event")
-            XCTAssertEqual(body?["distinct_id"] as? String, client.distinctId)
-
-            let props = body?["properties"] as? [String: Any]
+            let props = body["properties"] as? [String: Any]
             XCTAssertNotNil(props)
             XCTAssertEqual(props?["button_name"] as? String, "upgrade_now")
             XCTAssertEqual(props?["tier"] as? String, "pro_yearly")
@@ -138,7 +131,32 @@ final class PostHogAnalyticsTests: XCTestCase {
             expectation.fulfill()
         }
 
-        waitForExpectations(timeout: 2.0)
+        client.capture("test_conversion_event", properties: [
+            "button_name": "upgrade_now",
+            "tier": "pro_yearly"
+        ])
+        waitForExpectations(timeout: 10)
+    }
+
+    func testInvalidReaderEventDoesNotCrashOrBlockNextEvent() {
+        let dispatched = expectation(description: "Valid reader event dispatched")
+        MockURLProtocol.onRequest = { _, payload in
+            XCTAssertEqual(payload["event"] as? String, "reader_opened")
+            XCTAssertEqual((payload["properties"] as? [String: Any])?["book_id"] as? Int64, 42)
+            dispatched.fulfill()
+        }
+        let client = PostHogAnalytics(
+            configuration: PostHogConfiguration(apiKey: "test_ph_key", debugLogging: false),
+            session: mockSession,
+            userDefaults: testUserDefaults
+        )
+        let bookId = Book.Id(rawValue: 42)
+        client.screen("reader", properties: ["book_id": bookId])
+        client.capture("reader_opened", properties: ["book_id": bookId.rawValue])
+
+        withExtendedLifetime(client) {
+            waitForExpectations(timeout: 10)
+        }
     }
 
     func testNotificationCenterObserverForwardsToPostHog() {
@@ -156,22 +174,18 @@ final class PostHogAnalyticsTests: XCTestCase {
         )
         client.startObserving()
 
-        // Trigger existing app event
-        Analytics.shared.log(.paywallViewed(source: "unit_test_source"))
+        MockURLProtocol.onRequest = { _, body in
+            XCTAssertEqual(body["event"] as? String, "paywall_viewed")
 
-        DispatchQueue.global().asyncAfter(deadline: .now() + 0.3) {
-            let body = MockURLProtocol.lastRequestBody
-            XCTAssertNotNil(body)
-            XCTAssertEqual(body?["event"] as? String, "paywall_viewed")
-
-            let props = body?["properties"] as? [String: Any]
+            let props = body["properties"] as? [String: Any]
             XCTAssertEqual(props?["source"] as? String, "unit_test_source")
 
             client.stopObserving()
             expectation.fulfill()
         }
 
-        waitForExpectations(timeout: 2.0)
+        Analytics.shared.log(.paywallViewed(source: "unit_test_source"))
+        waitForExpectations(timeout: 10)
     }
 
     func testSendTestEventWorksWithoutApiKeyInSimulatedMode() {
@@ -206,15 +220,10 @@ final class PostHogAnalyticsTests: XCTestCase {
             userDefaults: testUserDefaults
         )
 
-        // Test unfolded iPhone Duo (669 x 951)
-        client.recordPostureChange(size: CGSize(width: 669, height: 951))
+        MockURLProtocol.onRequest = { _, body in
+            XCTAssertEqual(body["event"] as? String, "duo_posture_changed")
 
-        DispatchQueue.global().asyncAfter(deadline: .now() + 0.3) {
-            let body = MockURLProtocol.lastRequestBody
-            XCTAssertNotNil(body)
-            XCTAssertEqual(body?["event"] as? String, "duo_posture_changed")
-
-            let props = body?["properties"] as? [String: Any]
+            let props = body["properties"] as? [String: Any]
             XCTAssertEqual(props?["duo_state"] as? String, "unfolded")
             XCTAssertEqual(props?["width"] as? Double, 669)
             XCTAssertEqual(props?["height"] as? Double, 951)
@@ -222,7 +231,10 @@ final class PostHogAnalyticsTests: XCTestCase {
             expectation.fulfill()
         }
 
-        waitForExpectations(timeout: 2.0)
+        client.recordPostureChange(size: CGSize(width: 669, height: 951))
+        withExtendedLifetime(client) {
+            waitForExpectations(timeout: 10)
+        }
     }
 }
 

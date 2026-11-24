@@ -107,8 +107,6 @@ final class LibraryService: Loggable {
 
     /// Imports a bunch of publications.
     func importPublications(from sourceURLs: [URL], sender: UIViewController) async throws {
-        try await ensureCanImport(additionalBookCount: sourceURLs.count)
-
         for url in sourceURLs {
             guard let url = url.anyURL.absoluteURL else {
                 continue
@@ -147,8 +145,31 @@ final class LibraryService: Loggable {
         }
 
         var url = url
-        let sourceFileHash = url.fileURL.flatMap { Self.sha256Hex(of: $0.url) }
         var generatedPublicationURL: URL?
+        var downloadedDirectory: URL?
+        defer {
+            if let downloadedDirectory { try? FileManager.default.removeItem(at: downloadedDirectory) }
+        }
+
+        if url.httpURL != nil {
+            let (download, response) = try await URLSession.shared.download(from: url.url)
+            defer { try? FileManager.default.removeItem(at: download) }
+            guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+                throw LibraryError.downloadFailed(URLError(.badServerResponse))
+            }
+            let directory = Paths.makeTemporaryURL().url
+            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: false)
+            downloadedDirectory = directory
+            let suggested = response.suggestedFilename ?? ""
+            let name = (suggested as NSString).pathExtension.isEmpty
+                ? url.url.lastPathComponent : suggested
+            let localURL = directory.appendingPathComponent(name.sanitizedPathComponent)
+            guard !name.isEmpty, let local = localURL.anyURL.absoluteURL else {
+                throw LibraryError.downloadFailed(URLError(.badURL))
+            }
+            try FileManager.default.moveItem(at: download, to: localURL)
+            url = local
+        }
         defer {
             if let generatedPublicationURL {
                 try? FileManager.default.removeItem(at: generatedPublicationURL)
@@ -162,7 +183,8 @@ final class LibraryService: Loggable {
             let ext = file.url.pathExtension.lowercased()
             if ext == "txt" {
                 let txtIdentifier = try TXTToEPUBConverter.contentIdentifier(for: file.url)
-                if let existing = try await books.getByIdentifier(txtIdentifier) {
+                if let existing = try await books.getByIdentifier(txtIdentifier),
+                   existing.fileIsAvailableLocally {
                     return existing
                 }
                 let epubURL = try await TXTToEPUBConverter.convert(from: file.url, identifier: txtIdentifier)
@@ -173,7 +195,8 @@ final class LibraryService: Loggable {
                 url = converted
             } else if MarkdownToEPUBConverter.isMarkdownFileExtension(ext) {
                 let mdIdentifier = try MarkdownToEPUBConverter.contentIdentifier(for: file.url)
-                if let existing = try await books.getByIdentifier(mdIdentifier) {
+                if let existing = try await books.getByIdentifier(mdIdentifier),
+                   existing.fileIsAvailableLocally {
                     return existing
                 }
                 let epubURL = try await MarkdownToEPUBConverter.convert(from: file.url, identifier: mdIdentifier)
@@ -193,12 +216,28 @@ final class LibraryService: Loggable {
 
         let resolvedIdentifier = Self.resolvedIdentifier(
             publicationIdentifier: pub.metadata.identifier,
-            sourceFileHash: sourceFileHash
+            sourceFileHash: (pub.metadata.identifier?.isEmpty ?? true)
+                ? url.fileURL.flatMap { Self.sha256Hex(of: $0.url) } : nil
         )
         if let resolvedIdentifier,
            let existing = try await books.getByIdentifier(resolvedIdentifier)
         {
-            return existing
+            if existing.fileIsAvailableLocally || url.fileURL == nil { return existing }
+            guard let id = existing.id, let source = url.fileURL else {
+                throw LibraryError.bookNotFound
+            }
+            let destination = Paths.makeDocumentURL(title: existing.title, format: format)
+            try FileManager.default.copyItem(at: source.url, to: destination.url)
+            let restoredURL = Paths.documents.relativize(destination)?.string ?? destination.url.absoluteString
+            do {
+                try await books.updateURL(id: id, url: restoredURL)
+            } catch {
+                try? FileManager.default.removeItem(at: destination.url)
+                throw error
+            }
+            var restored = existing
+            restored.url = restoredURL
+            return restored
         }
 
         try await ensureCanImport(additionalBookCount: 1)
@@ -262,12 +301,20 @@ final class LibraryService: Loggable {
     }
 
     private static func sha256Hex(of fileURL: URL) -> String? {
-        guard let data = try? Data(contentsOf: fileURL) else { return nil }
-        return SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
+        guard let file = try? FileHandle(forReadingFrom: fileURL) else { return nil }
+        defer { try? file.close() }
+        do {
+            var hash = SHA256()
+            while let chunk = try file.read(upToCount: 1024 * 1024), !chunk.isEmpty {
+                hash.update(data: chunk)
+            }
+            return hash.finalize().map { String(format: "%02x", $0) }.joined()
+        } catch {
+            return nil
+        }
     }
 
-    /// Fast-fail UX check: rejects obviously over-limit batches before any
-    /// work begins. The atomic guarantee is in `BookRepository.addIfWithinLimit`.
+    /// Avoids staging a new book when the library is already full.
     private func ensureCanImport(additionalBookCount: Int) async throws {
         guard additionalBookCount > 0, !ProPurchaseManager.shared.hasProAccess else {
             return

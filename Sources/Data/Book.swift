@@ -111,6 +111,11 @@ struct Book: Codable {
         try? absoluteURL().fileURL?.url
     }
 
+    var fileIsAvailableLocally: Bool {
+        guard let file = try? absoluteFileURL() else { return false }
+        return FileManager.default.fileExists(atPath: file.path)
+    }
+
     func requireAvailablePublicationFile(
         fileExistsAtPath: (String) -> Bool = { FileManager.default.fileExists(atPath: $0) }
     ) throws {

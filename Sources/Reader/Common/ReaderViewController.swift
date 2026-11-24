@@ -1104,12 +1104,10 @@ class ReaderViewController<N: Navigator>: UIViewController,
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         PostHogAnalytics.shared.screen("reader", properties: [
-            "publication_title": publication.metadata.title,
-            "book_id": bookId
+            "book_id": bookId.rawValue
         ])
         PostHogAnalytics.shared.capture("reader_opened", properties: [
-            "publication_title": publication.metadata.title,
-            "book_id": bookId
+            "book_id": bookId.rawValue
         ])
         beginReadingSession(
             readingSessionLifecycle.readerDidAppear(
@@ -1138,8 +1136,7 @@ class ReaderViewController<N: Navigator>: UIViewController,
         if isReaderExit,
            UIApplication.shared.applicationState == .active {
             PostHogAnalytics.shared.capture("reader_closed", properties: [
-                "publication_title": publication.metadata.title,
-                "book_id": bookId
+                "book_id": bookId.rawValue
             ])
             ReviewPromptManager.shared.tryPromptReview()
         }

@@ -174,9 +174,12 @@ public final class PostHogAnalytics {
     public func capture(_ event: String, properties: [String: Any]? = nil) {
         guard configuration.isEnabled else { return }
 
-        queue.async { [weak self] in
-            guard let self = self else { return }
-            self.sendEvent(name: event, customProperties: properties ?? [:])
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            let defaults = self.defaultProperties()
+            self.queue.async { [weak self] in
+                self?.sendEvent(name: event, customProperties: properties ?? [:], defaults: defaults)
+            }
         }
     }
 
@@ -221,8 +224,8 @@ public final class PostHogAnalytics {
 
     // MARK: - Private Payload & Dispatch
 
-    private func sendEvent(name: String, customProperties: [String: Any]) {
-        var allProperties = defaultProperties()
+    private func sendEvent(name: String, customProperties: [String: Any], defaults: [String: Any]) {
+        var allProperties = defaults
         for (key, val) in customProperties {
             allProperties[key] = val
         }
@@ -245,6 +248,12 @@ public final class PostHogAnalytics {
 
         // If no real API key is configured, log locally and skip network call
         guard let apiKey = configuration.apiKey, !apiKey.isEmpty else {
+            return
+        }
+
+        // Foundation can raise an Objective-C exception for unsupported Swift values.
+        guard JSONSerialization.isValidJSONObject(payload) else {
+            Self.logger.error("Dropped PostHog event with invalid JSON properties: \(name)")
             return
         }
 
@@ -281,6 +290,7 @@ public final class PostHogAnalytics {
         task.resume()
     }
 
+    @MainActor
     private func defaultProperties() -> [String: Any] {
         var props: [String: Any] = [
             "$lib": "posthog-ios-light",

@@ -73,7 +73,7 @@ final class MarkdownToEPUBConverter {
 
     /// Stable publication identifier for a Markdown source, derived from raw file bytes.
     static func contentIdentifier(for sourceURL: URL) throws -> String {
-        let data = try Data(contentsOf: sourceURL)
+        let data = try readSource(at: sourceURL)
         let digest = SHA256.hash(data: data)
         let hex = digest.map { String(format: "%02x", $0) }.joined()
         return "urn:pagepilot:md:\(hex)"
@@ -89,29 +89,7 @@ final class MarkdownToEPUBConverter {
             throw ConversionError.unsupportedExtension
         }
 
-        // Fast reject via file attributes before allocating a large buffer.
-        if let attrs = try? FileManager.default.attributesOfItem(atPath: sourceURL.path),
-           let size = attrs[.size] as? NSNumber,
-           size.int64Value > maxMarkdownBytes
-        {
-            throw ConversionError.fileTooLarge
-        }
-
-        let data: Data
-        do {
-            data = try Data(contentsOf: sourceURL)
-        } catch {
-            throw ConversionError.cannotReadFile
-        }
-
-        guard !data.isEmpty else {
-            throw ConversionError.cannotReadFile
-        }
-
-        if data.count > maxMarkdownBytes {
-            throw ConversionError.fileTooLarge
-        }
-
+        let data = try readSource(at: sourceURL)
         guard let markdown = String(data: data, encoding: .utf8) else {
             throw ConversionError.invalidUTF8
         }
@@ -139,6 +117,33 @@ final class MarkdownToEPUBConverter {
         } catch {
             throw ConversionError.epubCreationFailed(error.localizedDescription)
         }
+    }
+
+    private static func readSource(at sourceURL: URL) throws -> Data {
+        // Fast reject via file attributes before allocating a large buffer.
+        if let attrs = try? FileManager.default.attributesOfItem(atPath: sourceURL.path),
+           let size = attrs[.size] as? NSNumber,
+           size.int64Value > maxMarkdownBytes
+        {
+            throw ConversionError.fileTooLarge
+        }
+
+        let data: Data
+        do {
+            data = try Data(contentsOf: sourceURL)
+        } catch {
+            throw ConversionError.cannotReadFile
+        }
+
+        guard !data.isEmpty else {
+            throw ConversionError.cannotReadFile
+        }
+
+        if data.count > maxMarkdownBytes {
+            throw ConversionError.fileTooLarge
+        }
+
+        return data
     }
 
     // MARK: - Title

@@ -705,11 +705,6 @@ class LibraryViewController: UIViewController, Loggable {
     }
 
     @objc func addBookFromDevice() {
-        guard canImportAdditionalBooks(1) else {
-            presentBookLimitPaywall()
-            return
-        }
-
         var types = DocumentTypes.main.supportedUTTypes
         types.append(UTType.text)
 
@@ -740,10 +735,6 @@ class LibraryViewController: UIViewController, Loggable {
         let nav = UINavigationController(rootViewController: vc)
         nav.modalPresentationStyle = .formSheet
         present(nav, animated: true)
-    }
-
-    private func canImportAdditionalBooks(_ count: Int) -> Bool {
-        ProPurchaseManager.shared.hasProAccess || books.count + count <= ProPurchaseManager.freeBookLimit
     }
 
     private func presentBookLimitPaywall() {
@@ -800,11 +791,6 @@ extension LibraryViewController: UIDocumentPickerDelegate {
     }
 
     private func importFiles(at urls: [URL]) {
-        guard canImportAdditionalBooks(urls.count) else {
-            presentBookLimitPaywall()
-            return
-        }
-
         Task {
             do {
                 try await library.importPublications(from: urls, sender: self)
@@ -1060,11 +1046,6 @@ extension LibraryViewController: UICollectionViewDelegateFlowLayout, UICollectio
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         let book = books[indexPath.item]
         
-        // 点击时更新最近阅读顺序
-        if let bookId = book.id?.rawValue {
-            markBookAsRead(id: bookId)
-        }
-        
         if !isEditingBooks && book.url.hasPrefix("mock_url") {
             let alert = UIAlertController(
                 title: NSLocalizedString("library_demo_book_title", comment: ""),
@@ -1108,11 +1089,12 @@ extension LibraryViewController: UICollectionViewDelegateFlowLayout, UICollectio
                 collectionView.isUserInteractionEnabled = true
             }
 
-            let book = books[indexPath.item]
-
             do {
                 guard let pub = try await library.openBook(book, sender: self) else {
                     return
+                }
+                if let bookId = book.id?.rawValue {
+                    markBookAsRead(id: bookId)
                 }
                 libraryDelegate.libraryDidSelectPublication(pub, book: book)
             } catch {

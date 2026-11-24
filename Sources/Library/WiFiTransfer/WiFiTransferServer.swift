@@ -20,9 +20,7 @@ final class WiFiTransferServer {
         "md", "markdown",
     ]
 
-    /// Called on the main thread when a file has been uploaded successfully.
-    /// The parameter is the file URL in the Documents directory.
-    var onFileUploaded: ((URL) -> Void)?
+    var onFileUploaded: (@MainActor (URL) async throws -> Void)?
 
     // MARK: - Public
 
@@ -55,8 +53,10 @@ final class WiFiTransferServer {
             forMethod: "POST",
             path: "/\(token)/upload",
             request: ReadiumGCDWebServerMultiPartFormRequest.self,
-            processBlock: { [weak self] request in
-                self?.handleUpload(request: request)
+            asyncProcessBlock: { [weak self] request, complete in
+                Task {
+                    complete(await self?.handleUpload(request: request))
+                }
             }
         )
 
@@ -87,7 +87,7 @@ final class WiFiTransferServer {
 
     // MARK: - Upload handling
 
-    private func handleUpload(request: ReadiumGCDWebServerRequest?) -> ReadiumGCDWebServerResponse? {
+    private func handleUpload(request: ReadiumGCDWebServerRequest?) async -> ReadiumGCDWebServerResponse? {
         guard let multipart = request as? ReadiumGCDWebServerMultiPartFormRequest else {
             return jsonResponse(
                 [
@@ -130,34 +130,18 @@ final class WiFiTransferServer {
                 continue
             }
 
-            let destURL = Paths.documents.appendingUniquePathComponent(sanitized).url
-
+            let directory = Paths.makeTemporaryURL().url
+            let destination = directory.appendingPathComponent(sanitized)
             do {
-                try FileManager.default.moveItem(
-                    atPath: tempPath,
-                    toPath: destURL.path
-                )
+                try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: false)
+                defer { try? FileManager.default.removeItem(at: directory) }
+                try FileManager.default.copyItem(atPath: tempPath, toPath: destination.path)
+                guard let importFile = onFileUploaded else { throw CancellationError() }
+                try await importFile(destination)
                 uploadedFiles.append(originalName)
-
-                DispatchQueue.main.async { [weak self] in
-                    self?.onFileUploaded?(destURL)
-                }
             } catch {
-                do {
-                    try FileManager.default.copyItem(
-                        atPath: tempPath,
-                        toPath: destURL.path
-                    )
-                    uploadedFiles.append(originalName)
-
-                    DispatchQueue.main.async { [weak self] in
-                        self?.onFileUploaded?(destURL)
-                    }
-                } catch {
-                    print("WiFiTransfer: failed to save \(originalName): \(error)")
-                    failedFiles.append(originalName)
-                    errors[originalName] = "Could not save file"
-                }
+                failedFiles.append(originalName)
+                errors[originalName] = UserError(error).message
             }
         }
 
