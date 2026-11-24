@@ -93,6 +93,13 @@ struct WiFiTransferView: View {
                 }
             }
 
+            if let error = viewModel.error {
+                Label(error, systemImage: "exclamationmark.circle")
+                    .font(.subheadline)
+                    .foregroundStyle(.red)
+                    .multilineTextAlignment(.center)
+            }
+
             if viewModel.uploadedCount > 0 {
                 HStack(spacing: 6) {
                     Image(systemName: "checkmark.circle.fill")
