@@ -36,10 +36,10 @@ struct CloudSyncSettingsView: View {
         }
         .listStyle(.insetGrouped)
         .scrollContentBackground(.hidden)
-        .background(Color(uiColor: .systemGroupedBackground))
+        .frame(maxWidth: 700)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(AppColors.background.ignoresSafeArea())
         .navigationTitle(CloudSyncL10n.text("cloud_sync_section"))
-        .toolbarBackground(Color(uiColor: .systemGroupedBackground), for: .navigationBar)
-        .toolbarBackground(.visible, for: .navigationBar)
         .task {
             if proPurchase.hasProAccess {
                 status = await service?.currentStatus() ?? .unavailable(
@@ -137,12 +137,25 @@ struct CloudSyncSettingsView: View {
     private var previewHeroSection: some View {
         Section {
             VStack(spacing: 12) {
-                Image(systemName: "icloud.fill")
-                    .font(.system(size: 34, weight: .semibold))
-                    .foregroundStyle(.blue)
-                    .frame(width: 68, height: 68)
-                    .background(Color.blue.opacity(0.12))
-                    .clipShape(Circle())
+                if UIImage(named: "PaywallHeroArt") != nil {
+                    Color.clear
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 132)
+                        .overlay {
+                            Image("PaywallHeroArt")
+                                .resizable()
+                                .scaledToFill()
+                        }
+                        .clipped()
+                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                } else {
+                    Image(systemName: "icloud.fill")
+                        .font(.system(size: 34, weight: .semibold))
+                        .foregroundStyle(.blue)
+                        .frame(width: 68, height: 68)
+                        .background(Color.blue.opacity(0.12))
+                        .clipShape(Circle())
+                }
 
                 Text(CloudSyncL10n.text("cloud_sync_preview_title"))
                     .font(.title3.bold())

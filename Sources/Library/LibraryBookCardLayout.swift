@@ -1,29 +1,29 @@
+//
+//  Copyright 2026 PagePilot. All rights reserved.
+//  Use of this source code is governed by the BSD-style license
+//  available in the top-level LICENSE file of the project.
+//
+
 import UIKit
 
 extension LibraryViewController {
     private enum BookCardMetrics {
-        // PublicationCollectionViewCell wraps the cover with 12 pt leading/
-        // trailing insets and 12/8 pt vertical insets.
-        static let coverHorizontalInset: CGFloat = 24
-        static let coverVerticalInset: CGFloat = 20
+        // Editorial 2:3 hardcover aspect ratio.
+        static let coverAspectRatio: CGFloat = 1.46
 
-        // Keep the cover close to the original XIB's 150 x 220 book shape.
-        static let coverAspectRatio: CGFloat = 220.0 / 150.0
-
-        // Keep grid cards near a comfortable book-cover width while allowing
-        // the column count to adapt to iPad Split View and Stage Manager.
-        static let preferredGridCardWidth: CGFloat = 176
+        // Compact enough for 3 elegant covers per row on iPhone and 4-7 columns
+        // across iPad Split View, Stage Manager, and Mac Catalyst windows.
+        static let preferredCompactCardWidth: CGFloat = 114
+        static let preferredRegularCardWidth: CGFloat = 148
         static let minimumGridColumns = 2
         #if targetEnvironment(macCatalyst)
-        static let maximumGridColumns = 12
+        static let maximumGridColumns = 10
         #else
-        static let maximumGridColumns = 8
+        static let maximumGridColumns = 7
         #endif
 
-        // The metadata stack can contain a two-line title, author and reading
-        // status. 56 pt was too short once the status row was added.
-        static let metadataHeight: CGFloat = 64
-        static let rootStackSpacing: CGFloat = 5
+        static let metadataHeight: CGFloat = 66
+        static let rootStackSpacing: CGFloat = 8
     }
 
     func collectionView(
@@ -35,8 +35,6 @@ extension LibraryViewController {
             return .zero
         }
 
-        // Preserve the existing compact list row exactly as configured by
-        // LibraryViewController.
         guard currentViewMode == .grid else {
             return flowLayout.itemSize
         }
@@ -48,20 +46,22 @@ extension LibraryViewController {
                 - collectionView.adjustedContentInset.right
         )
         let spacing = flowLayout.minimumInteritemSpacing
+        let preferredWidth = contentWidth >= 600
+            ? BookCardMetrics.preferredRegularCardWidth
+            : BookCardMetrics.preferredCompactCardWidth
         let proposedColumns = Int(
-            ((contentWidth + spacing) / (BookCardMetrics.preferredGridCardWidth + spacing)).rounded()
+            ((contentWidth + spacing) / (preferredWidth + spacing)).rounded()
         )
+        let minColumns = contentWidth >= 340 ? 3 : BookCardMetrics.minimumGridColumns
         let columnCount = min(
-            max(proposedColumns, BookCardMetrics.minimumGridColumns),
+            max(proposedColumns, minColumns),
             BookCardMetrics.maximumGridColumns
         )
         let totalSpacing = CGFloat(columnCount - 1) * spacing
         let width = floor(max(0, contentWidth - totalSpacing) / CGFloat(columnCount))
-        let coverWidth = max(0, width - BookCardMetrics.coverHorizontalInset)
-        let coverHeight = coverWidth * BookCardMetrics.coverAspectRatio
+        let coverHeight = width * BookCardMetrics.coverAspectRatio
         let height = ceil(
             coverHeight
-                + BookCardMetrics.coverVerticalInset
                 + BookCardMetrics.rootStackSpacing
                 + BookCardMetrics.metadataHeight
         )
@@ -78,9 +78,7 @@ extension LibraryViewController {
             return
         }
 
-        // A book cover contains important text/art near its edges. Showing the
-        // whole image is preferable to cropping it to fit the card.
-        bookCell.coverImageView.contentMode = .scaleAspectFit
+        bookCell.coverImageView.contentMode = .scaleAspectFill
 
         guard currentViewMode == .grid,
               let textContainer = bookCell.textContainerView,

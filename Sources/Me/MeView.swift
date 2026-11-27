@@ -4,6 +4,7 @@
 //  available in the top-level LICENSE file of the project.
 //
 
+import AVFoundation
 import ObjectiveC
 import SafariServices
 import SwiftUI
@@ -13,30 +14,64 @@ import SwiftUI
 struct MeView: View {
     @AppStorage(AppAppearancePreferences.Keys.language) private var selectedLanguage = AppAppearancePreferences.language.rawValue
     @AppStorage(AppAppearancePreferences.Keys.theme) private var selectedTheme = AppTheme.system.rawValue
+    @AppStorage(ReadingPreferences.Keys.dailyGoalMinutes) private var dailyGoalMinutes = ReadingPreferences.defaultDailyGoalMinutes
+    @AppStorage(ReadingPreferences.Keys.reminderEnabled) private var reminderEnabled = ReadingPreferences.defaultReminderEnabled
+    @AppStorage(ReadingPreferences.Keys.launchDirectlyToReader) private var launchDirectlyToReader = ReadingPreferences.defaultLaunchDirectlyToReader
+    @AppStorage(VolumeKeyService.volumeKeyEnabledKey) private var volumeKeyEnabled = false
+    @Environment(\.colorScheme) private var colorScheme
     @State private var localizationRefreshID = AppAppearancePreferences.language.rawValue
     @State private var showPaywall = false
     @State private var paywallContext: PaywallContext = .general
     @ObservedObject private var proPurchase = ProPurchaseManager.shared
+    @ObservedObject private var watchService = WatchPageTurnService.shared
+    @ObservedObject private var intelligenceEngine = ReadingIntelligenceEngine.shared
     private static var hasAutoShownPaywall = false
+
+    private var goalSummaryText: String {
+        let base = String(format: NSLocalizedString("home_minutes", comment: ""), dailyGoalMinutes)
+        if reminderEnabled {
+            let time = String(format: "%02d:%02d", ReadingPreferences.reminderHour, ReadingPreferences.reminderMinute)
+            return "\(base) · \(time)"
+        }
+        return base
+    }
+
+    private var ttsRateSummary: String {
+        let ratio = Double(TTSPreferences().rate / AVSpeechUtteranceDefaultSpeechRate)
+        return String(format: "%.1f×", max(0.5, min(2.0, ratio)))
+    }
+
+    private var nativeIntelligenceStatusText: String {
+        switch intelligenceEngine.nativeAvailability {
+        case .available:
+            return NSLocalizedString("ai_status_native_available", comment: "")
+        case .simulated:
+            return NSLocalizedString("ai_badge_simulated_preview", comment: "")
+        case .unavailable(let reason):
+            return reason
+        }
+    }
 
     var body: some View {
         List {
             proSection
 
-            readingAndDataSection
-            controlAndSpeechSection
-            appearanceSection
+            readingExperienceSection
+            syncAndAppearanceSection
             supportAndAboutSection
             debugSection
+            versionFooterSection
         }
         .listStyle(.insetGrouped)
+        .listSectionSpacing(14)
         .scrollContentBackground(.hidden)
-        .contentMargins(.top, 8, for: .scrollContent)
-        .background(Color(uiColor: .systemGroupedBackground))
-        .navigationTitle(NSLocalizedString("me_title", comment: ""))
+        .contentMargins(.top, 6, for: .scrollContent)
+        .contentMargins(.bottom, 28, for: .scrollContent)
+        .frame(maxWidth: 700)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(AppColors.background.ignoresSafeArea())
+        .navigationTitle(NSLocalizedString("settings_title", comment: ""))
         .navigationBarTitleDisplayMode(.inline)
-        .toolbarBackground(Color(uiColor: .systemGroupedBackground), for: .navigationBar)
-        .toolbarBackground(.visible, for: .navigationBar)
         .id(localizationRefreshID)
         .onReceive(NotificationCenter.default.publisher(for: AppAppearancePreferences.languageDidChange)) { _ in
             localizationRefreshID = AppAppearancePreferences.language.rawValue
@@ -54,91 +89,37 @@ struct MeView: View {
 
     // MARK: - Sections
 
-    private var appearanceSection: some View {
-        Section(NSLocalizedString("settings_general_preferences_section", comment: "")) {
-            Picker(selection: languageBinding) {
-                ForEach(AppLanguage.allCases) { language in
-                    Text(language.localizedName).tag(language.rawValue)
-                }
-            } label: {
-                MeRow(
-                    icon: "globe",
-                    iconColor: .blue,
-                    title: NSLocalizedString("settings_language", comment: "")
-                )
-            }
-
-            Picker(selection: themeBinding) {
-                ForEach(AppTheme.allCases) { theme in
-                    Text(theme.localizedName).tag(theme.rawValue)
-                }
-            } label: {
-                MeRow(
-                    icon: "circle.lefthalf.filled",
-                    iconColor: .purple,
-                    title: NSLocalizedString("settings_theme", comment: "")
-                )
-            }
-        }
+    private func sectionHeader(_ title: String) -> some View {
+        Text(title)
+            .font(.system(size: 12.5, weight: .semibold))
+            .foregroundStyle(AppColors.secondaryText)
+            .textCase(nil)
     }
 
-    private var readingAndDataSection: some View {
-        Section(NSLocalizedString("settings_reading_data_section", comment: "")) {
+    private var readingExperienceSection: some View {
+        Section {
+            Toggle(isOn: $launchDirectlyToReader) {
+                MeRow(
+                    icon: "bolt.fill",
+                    iconColor: AppColors.accentTeal,
+                    title: NSLocalizedString("settings_launch_to_reader", comment: ""),
+                    subtitle: NSLocalizedString("settings_launch_to_reader_subtitle", comment: "")
+                )
+            }
+            .tint(AppColors.accentTeal)
+
             NavigationLink {
                 LazyView(ReadingGoalSettingsView())
                     .navigationBarTitleDisplayMode(.inline)
             } label: {
                 MeRow(
                     icon: "target",
-                    iconColor: .blue,
-                    title: NSLocalizedString("settings_goal_reminder", comment: "")
+                    iconColor: AppColors.accentBlue,
+                    title: NSLocalizedString("settings_goal_reminder", comment: ""),
+                    trailingText: goalSummaryText
                 )
             }
 
-            NavigationLink {
-                LazyView(ReadingStatsView())
-                    .navigationBarTitleDisplayMode(.inline)
-            } label: {
-                MeRow(
-                    icon: "chart.bar.xaxis",
-                    iconColor: .blue,
-                    title: NSLocalizedString("settings_stats", comment: "")
-                )
-            }
-
-            NavigationLink {
-                LazyView(MyNotesView())
-                    .navigationBarTitleDisplayMode(.inline)
-            } label: {
-                MeRow(
-                    icon: "bookmark.fill",
-                    iconColor: .blue,
-                    title: NSLocalizedString("settings_my_notes", comment: "")
-                )
-            }
-
-            if proPurchase.hasProAccess {
-                NavigationLink {
-                    CloudSyncSettingsView(service: AppModule.shared?.cloudSync)
-                        .navigationBarTitleDisplayMode(.inline)
-                } label: {
-                    CloudSyncRow(showsChevron: false, showsProBadge: false)
-                }
-            } else {
-                Button {
-                    Analytics.shared.log(.paywallViewed(source: "settings_cloud_sync"))
-                    paywallContext = .cloudSync
-                    showPaywall = true
-                } label: {
-                    CloudSyncRow(showsChevron: true, showsProBadge: true)
-                }
-                .buttonStyle(.plain)
-            }
-        }
-    }
-
-    private var controlAndSpeechSection: some View {
-        Section(NSLocalizedString("settings_control_speech_section", comment: "")) {
             if UIDevice.current.userInterfaceIdiom == .phone {
                 NavigationLink {
                     LazyView(WatchSettingsView())
@@ -147,7 +128,11 @@ struct MeView: View {
                     MeRow(
                         icon: "applewatch",
                         iconColor: Color(uiColor: .label),
-                        title: NSLocalizedString("watch_settings_title", comment: "")
+                        title: NSLocalizedString("watch_settings_title", comment: ""),
+                        trailingText: watchService.watchAvailability == .ready
+                            ? NSLocalizedString("settings_watch_connected", comment: "")
+                            : nil,
+                        trailingTint: AppColors.accentTeal
                     )
                 }
 
@@ -158,11 +143,13 @@ struct MeView: View {
                     MeRow(
                         icon: "speaker.wave.2",
                         iconColor: .orange,
-                        title: NSLocalizedString("settings_volume_key_turn_page", comment: "")
+                        title: NSLocalizedString("settings_volume_key_turn_page", comment: ""),
+                        trailingText: NSLocalizedString(volumeKeyEnabled ? "settings_status_on" : "settings_status_off", comment: ""),
+                        trailingTint: volumeKeyEnabled ? AppColors.accentTeal : nil
                     )
                 }
             } else {
-                // iPad receives Watch page turns through the iPhone; same entry name as on iPhone.
+                // iPad / Mac receives Watch page turns through the iPhone; same entry name as on iPhone.
                 NavigationLink {
                     LazyView(IPadWatchConnectionView())
                         .navigationBarTitleDisplayMode(.inline)
@@ -170,7 +157,11 @@ struct MeView: View {
                     MeRow(
                         icon: "applewatch",
                         iconColor: Color(uiColor: .label),
-                        title: NSLocalizedString("watch_settings_title", comment: "")
+                        title: NSLocalizedString("watch_settings_title", comment: ""),
+                        trailingText: watchService.peerHostState.connectedPeerCount > 0
+                            ? NSLocalizedString("settings_watch_connected", comment: "")
+                            : nil,
+                        trailingTint: AppColors.accentTeal
                     )
                 }
             }
@@ -180,23 +171,82 @@ struct MeView: View {
                     .navigationBarTitleDisplayMode(.inline)
             } label: {
                 MeRow(
-                    icon: "speaker.wave.2.fill",
-                    iconColor: .blue,
-                    title: NSLocalizedString("settings_tts_voice", comment: "")
+                    icon: "waveform",
+                    iconColor: .indigo,
+                    title: NSLocalizedString("settings_tts_voice", comment: ""),
+                    trailingText: ttsRateSummary
                 )
             }
+        } header: {
+            sectionHeader(NSLocalizedString("settings_reading_section", comment: ""))
+        }
+    }
+
+    private var syncAndAppearanceSection: some View {
+        Section {
+            if proPurchase.hasProAccess {
+                NavigationLink {
+                    CloudSyncSettingsView(service: AppModule.shared?.cloudSync)
+                        .navigationBarTitleDisplayMode(.inline)
+                } label: {
+                    CloudSyncRow(
+                        showsChevron: false,
+                        showsProBadge: false,
+                        isEnabled: CloudSyncPreferences.isEnabled
+                    )
+                }
+            } else {
+                Button {
+                    Analytics.shared.log(.paywallViewed(source: "settings_cloud_sync"))
+                    paywallContext = .cloudSync
+                    showPaywall = true
+                } label: {
+                    CloudSyncRow(
+                        showsChevron: true,
+                        showsProBadge: true,
+                        isEnabled: false
+                    )
+                }
+                .buttonStyle(.plain)
+            }
+
+            Picker(selection: languageBinding) {
+                ForEach(AppLanguage.allCases) { language in
+                    Text(language.localizedName).tag(language.rawValue)
+                }
+            } label: {
+                MeRow(
+                    icon: "globe",
+                    iconColor: AppColors.accentBlue,
+                    title: NSLocalizedString("settings_language", comment: "")
+                )
+            }
+            .tint(AppColors.secondaryText)
+
+            Picker(selection: themeBinding) {
+                ForEach(AppTheme.allCases) { theme in
+                    Text(theme.localizedName).tag(theme.rawValue)
+                }
+            } label: {
+                MeRow(
+                    icon: "circle.lefthalf.filled",
+                    iconColor: .indigo,
+                    title: NSLocalizedString("settings_theme", comment: "")
+                )
+            }
+            .tint(AppColors.secondaryText)
+        } header: {
+            sectionHeader(NSLocalizedString("settings_sync_appearance_section", comment: ""))
         }
     }
 
     @ViewBuilder
     private var proSection: some View {
         if proPurchase.hasProAccess {
-            // Use default section insets so width matches other Me rows.
             Section {
                 ProEntitlementCard()
                     .listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16))
             }
-            .listSectionSpacing(.compact)
         } else {
             Section {
                 Button(action: {
@@ -204,33 +254,83 @@ struct MeView: View {
                     paywallContext = .general
                     showPaywall = true
                 }) {
-                    HStack(spacing: 12) {
-                        Image(systemName: "crown.fill")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(.yellow)
-                            .frame(width: 28, height: 28)
-                            .background(Color.yellow.opacity(0.15))
-                            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-
-                        VStack(alignment: .leading, spacing: 3) {
-                            Text(NSLocalizedString("settings_upgrade_pro", comment: ""))
-                                .font(.system(size: 16, weight: .semibold))
-                                .foregroundStyle(.primary)
-                            Text(CloudSyncL10n.text("pro_settings_upgrade_body"))
-                                .font(.system(size: 12))
-                                .foregroundStyle(.secondary)
-                                .lineLimit(2)
+                    HStack(spacing: 14) {
+                        if UIImage(named: "PaywallHeroArt") != nil {
+                            Color.clear
+                                .frame(width: 52, height: 52)
+                                .overlay {
+                                    Image("PaywallHeroArt")
+                                        .resizable()
+                                        .scaledToFill()
+                                }
+                                .clipped()
+                                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                        .stroke(Color.white.opacity(0.28), lineWidth: 0.8)
+                                )
+                                .shadow(color: Color.black.opacity(0.22), radius: 8, y: 4)
+                        } else {
+                            Image(systemName: "crown.fill")
+                                .font(.system(size: 18, weight: .semibold))
+                                .foregroundStyle(.white)
+                                .frame(width: 44, height: 44)
+                                .background(Color.white.opacity(0.18), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                         }
 
-                        Spacer(minLength: 0)
+                        VStack(alignment: .leading, spacing: 4) {
+                            HStack(spacing: 7) {
+                                Text(NSLocalizedString("settings_upgrade_pro", comment: ""))
+                                    .font(.system(size: 16, weight: .bold))
+                                    .foregroundStyle(.white)
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(0.9)
+                                Text("PRO")
+                                    .font(.system(size: 10, weight: .heavy))
+                                    .tracking(0.5)
+                                    .foregroundStyle(.white)
+                                    .padding(.horizontal, 7)
+                                    .padding(.vertical, 2.5)
+                                    .background(Color.white.opacity(0.22), in: Capsule())
+                                    .overlay(
+                                        Capsule().stroke(Color.white.opacity(0.32), lineWidth: 0.6)
+                                    )
+                            }
+                            Text(CloudSyncL10n.text("pro_settings_upgrade_body"))
+                                .font(.system(size: 12.5, weight: .regular))
+                                .foregroundStyle(Color.white.opacity(0.84))
+                                .lineSpacing(1.5)
+                                .lineLimit(2)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+
+                        Spacer(minLength: 4)
 
                         Image(systemName: "chevron.right")
                             .font(.system(size: 13, weight: .semibold))
-                            .foregroundStyle(.tertiary)
+                            .foregroundStyle(Color.white.opacity(0.7))
                     }
+                    .padding(.vertical, 6)
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
+                .listRowBackground(
+                    ZStack {
+                        LinearGradient(
+                            colors: colorScheme == .dark
+                                ? [Color(red: 28/255, green: 52/255, blue: 108/255), Color(red: 22/255, green: 84/255, blue: 92/255)]
+                                : [Color(red: 33/255, green: 68/255, blue: 148/255), Color(red: 28/255, green: 116/255, blue: 122/255)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                        RadialGradient(
+                            colors: [Color.white.opacity(0.16), Color.clear],
+                            center: .topTrailing,
+                            startRadius: 8,
+                            endRadius: 190
+                        )
+                    }
+                )
             }
         }
     }
@@ -275,6 +375,21 @@ struct MeView: View {
                 }
                 .buttonStyle(.plain)
 
+                Toggle(
+                    isOn: Binding(
+                        get: { intelligenceEngine.simulationEnabled },
+                        set: { intelligenceEngine.setSimulationEnabled($0) }
+                    )
+                ) {
+                    MeRow(
+                        icon: "sparkles",
+                        iconColor: AppColors.accentTeal,
+                        title: NSLocalizedString("settings_debug_simulate_ai", comment: ""),
+                        subtitle: nativeIntelligenceStatusText
+                    )
+                }
+                .tint(AppColors.accentTeal)
+
                 Button(role: .destructive, action: {
                     proPurchase.resetLocalPurchaseState()
                 }) {
@@ -285,7 +400,7 @@ struct MeView: View {
                     )
                 }
             } header: {
-                Text(NSLocalizedString("settings_developer_testing_section", comment: ""))
+                sectionHeader(NSLocalizedString("settings_developer_testing_section", comment: ""))
             } footer: {
                 Text(NSLocalizedString("settings_developer_testing_footer", comment: ""))
             }
@@ -293,17 +408,20 @@ struct MeView: View {
     }
 
     private var supportAndAboutSection: some View {
-        Section(NSLocalizedString("settings_support_about_section", comment: "")) {
+        Section {
             NavigationLink {
                 FeedbackView()
                     .navigationBarTitleDisplayMode(.inline)
             } label: {
                 MeRow(
                     icon: "envelope.fill",
-                    iconColor: .green,
+                    iconColor: AppColors.accentTeal,
                     title: NSLocalizedString("settings_feedback_section", comment: "")
                 )
             }
+
+            RateAppRow()
+            ShareAppRow()
 
             NavigationLink {
                 AboutDetailView()
@@ -312,14 +430,33 @@ struct MeView: View {
             } label: {
                 MeRow(
                     icon: "info.circle.fill",
-                    iconColor: .gray,
+                    iconColor: .secondary,
                     title: NSLocalizedString("settings_about", comment: "")
                 )
             }
-
-            RateAppRow()
-            ShareAppRow()
+        } header: {
+            sectionHeader(NSLocalizedString("settings_support_about_section", comment: ""))
         }
+    }
+
+    private var versionFooterSection: some View {
+        Section {
+            VStack(spacing: 4) {
+                Text("PagePilot \(Bundle.main.appVersion)")
+                    .font(.system(size: 12.5, weight: .semibold, design: .serif))
+                    .foregroundStyle(AppColors.secondaryText)
+                Text(NSLocalizedString("about_tagline", comment: ""))
+                    .font(.system(size: 11.5))
+                    .foregroundStyle(AppColors.tertiaryText)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 12)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.top, 2)
+            .padding(.bottom, 12)
+        }
+        .listRowBackground(Color.clear)
+        .listRowSeparator(.hidden)
     }
 
     private var languageBinding: Binding<String> {
@@ -349,28 +486,67 @@ struct MeView: View {
 private struct ReadingGoalSettingsView: View {
     @AppStorage(ReadingPreferences.Keys.dailyGoalMinutes) private var dailyGoalMinutes = ReadingPreferences.defaultDailyGoalMinutes
     @AppStorage(ReadingPreferences.Keys.reminderEnabled) private var reminderEnabled = ReadingPreferences.defaultReminderEnabled
+    @Environment(\.colorScheme) private var colorScheme
     @State private var showNotificationDeniedAlert = false
+
+    private let quickPresets = [15, 30, 45, 60]
 
     var body: some View {
         List {
             Section {
-                Picker(selection: $dailyGoalMinutes) {
-                    ForEach(Array(stride(
-                        from: ReadingPreferences.dailyGoalRange.lowerBound,
-                        through: ReadingPreferences.dailyGoalRange.upperBound,
-                        by: 5
-                    )), id: \.self) { minute in
-                        Text(String(format: NSLocalizedString("home_minutes", comment: ""), minute)).tag(minute)
-                    }
-                } label: {
-                    MeRow(
-                        icon: "target",
-                        iconColor: .blue,
-                        title: NSLocalizedString("settings_daily_goal", comment: "")
-                    )
-                }
-                .pickerStyle(.menu)
+                VStack(spacing: 16) {
+                    VStack(spacing: 4) {
+                        Text(String(format: NSLocalizedString("home_minutes", comment: ""), dailyGoalMinutes))
+                            .font(.system(size: 36, weight: .bold, design: .rounded))
+                            .monospacedDigit()
+                            .foregroundStyle(AppColors.primaryText)
 
+                        Text(NSLocalizedString("settings_daily_goal", comment: ""))
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(AppColors.secondaryText)
+                    }
+                    .padding(.top, 6)
+
+                    HStack(spacing: 8) {
+                        ForEach(quickPresets, id: \.self) { preset in
+                            let isSelected = dailyGoalMinutes == preset
+                            Button {
+                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                withAnimation(.spring(response: 0.28, dampingFraction: 0.8)) {
+                                    dailyGoalMinutes = preset
+                                }
+                            } label: {
+                                Text(String(format: NSLocalizedString("home_minutes", comment: ""), preset))
+                                    .font(.system(size: 13, weight: isSelected ? .bold : .semibold))
+                                    .monospacedDigit()
+                                    .foregroundStyle(isSelected ? .white : AppColors.primaryText)
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: 36)
+                                    .background(
+                                        isSelected
+                                            ? AnyShapeStyle(AppColors.horizontalGradient)
+                                            : AnyShapeStyle(Color.primary.opacity(colorScheme == .dark ? 0.08 : 0.045)),
+                                        in: RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                    )
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+
+                    Stepper(
+                        value: $dailyGoalMinutes,
+                        in: ReadingPreferences.dailyGoalRange,
+                        step: 5
+                    ) {
+                        Text(NSLocalizedString("settings_goal_presets", comment: ""))
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundStyle(AppColors.secondaryText)
+                    }
+                }
+                .padding(.vertical, 6)
+            }
+
+            Section {
                 Toggle(isOn: $reminderEnabled) {
                     MeRow(
                         icon: "bell.fill",
@@ -394,10 +570,10 @@ private struct ReadingGoalSettingsView: View {
         }
         .listStyle(.insetGrouped)
         .scrollContentBackground(.hidden)
-        .background(Color(uiColor: .systemGroupedBackground))
+        .frame(maxWidth: 700)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(AppColors.background.ignoresSafeArea())
         .navigationTitle(NSLocalizedString("settings_goal_reminder", comment: ""))
-        .toolbarBackground(Color(uiColor: .systemGroupedBackground), for: .navigationBar)
-        .toolbarBackground(.visible, for: .navigationBar)
         .alert(
             NSLocalizedString("settings_reminder_denied_title", comment: ""),
             isPresented: $showNotificationDeniedAlert
@@ -464,16 +640,21 @@ private struct ReadingGoalSettingsView: View {
 private struct CloudSyncRow: View {
     let showsChevron: Bool
     let showsProBadge: Bool
+    let isEnabled: Bool
 
     var body: some View {
         HStack(spacing: 12) {
             MeRow(
                 icon: "icloud.fill",
-                iconColor: .cyan,
-                title: CloudSyncL10n.text("cloud_sync_section")
+                iconColor: AppColors.accentBlue,
+                title: CloudSyncL10n.text("cloud_sync_section"),
+                trailingText: showsProBadge
+                    ? nil
+                    : NSLocalizedString(isEnabled ? "settings_status_on" : "settings_status_off", comment: ""),
+                trailingTint: (!showsProBadge && isEnabled) ? AppColors.accentTeal : nil
             )
-            Spacer(minLength: 8)
             if showsProBadge {
+                Spacer(minLength: 8)
                 ProBadge()
             }
             if showsChevron {
@@ -723,20 +904,51 @@ private struct MeRow: View {
     let icon: String
     let iconColor: Color
     let title: String
+    var subtitle: String? = nil
+    var trailingText: String? = nil
+    var trailingTint: Color? = nil
 
     var body: some View {
         HStack(spacing: 12) {
             ZStack {
-                RoundedRectangle(cornerRadius: 6, style: .continuous)
-                    .fill(iconColor.opacity(0.15))
-                    .frame(width: 28, height: 28)
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(iconColor.opacity(0.13))
+                    .frame(width: 30, height: 30)
                 Image(systemName: icon)
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.system(size: 13.5, weight: .semibold))
                     .foregroundStyle(iconColor)
             }
-            Text(title)
-                .foregroundStyle(.primary)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.system(size: 15.5, weight: .medium))
+                    .foregroundStyle(.primary)
+                if let subtitle {
+                    Text(subtitle)
+                        .font(.system(size: 12))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.88)
+                }
+            }
+
+            if let trailingText {
+                Spacer(minLength: 8)
+                HStack(spacing: 5) {
+                    if let trailingTint {
+                        Circle()
+                            .fill(trailingTint)
+                            .frame(width: 6, height: 6)
+                    }
+                    Text(trailingText)
+                        .font(.system(size: 14, weight: .medium))
+                        .monospacedDigit()
+                        .foregroundStyle(trailingTint ?? .secondary)
+                        .lineLimit(1)
+                }
+            }
         }
+        .padding(.vertical, subtitle == nil ? 0 : 2)
     }
 }
 
@@ -859,6 +1071,33 @@ private struct AboutDetailView: View {
     var body: some View {
         List {
             Section {
+                VStack(spacing: 10) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                            .fill(AppColors.accentGradient)
+                            .frame(width: 68, height: 68)
+                            .shadow(color: AppColors.accentBlue.opacity(0.26), radius: 14, y: 6)
+                        Image(systemName: "book.pages.fill")
+                            .font(.system(size: 30, weight: .semibold))
+                            .foregroundStyle(.white)
+                    }
+
+                    Text("PagePilot")
+                        .font(.system(size: 22, weight: .bold, design: .serif))
+                        .foregroundStyle(AppColors.primaryText)
+
+                    Text(NSLocalizedString("about_tagline", comment: ""))
+                        .font(.system(size: 13))
+                        .foregroundStyle(AppColors.secondaryText)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 12)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 14)
+            }
+            .listRowBackground(Color.clear)
+
+            Section {
                 HStack {
                     MeRow(
                         icon: "number",
@@ -868,6 +1107,7 @@ private struct AboutDetailView: View {
                     Spacer()
                     Text("\(Bundle.main.appVersion) (\(Bundle.main.buildVersion))")
                         .font(.subheadline)
+                        .monospacedDigit()
                         .foregroundStyle(.secondary)
                 }
                 .contentShape(Rectangle())
@@ -935,7 +1175,9 @@ private struct AboutDetailView: View {
         }
         .listStyle(.insetGrouped)
         .scrollContentBackground(.hidden)
-        .background(Color(uiColor: .systemGroupedBackground))
+        .frame(maxWidth: 700)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(AppColors.background.ignoresSafeArea())
         .sheet(item: $safariURL) { identifiableURL in
             SafariView(url: identifiableURL.url)
         }

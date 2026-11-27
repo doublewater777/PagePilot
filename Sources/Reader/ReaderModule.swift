@@ -131,11 +131,27 @@ extension ReaderModule: ReaderFormatModuleDelegate {
         #endif
     }
 
-    func presentOutline(of publication: Publication, bookId: Book.Id, from viewController: UIViewController) -> AnyPublisher<Locator, Never> {
-        let outlineAdapter = factory.make(publication: publication, bookId: bookId, bookmarks: bookmarks, highlights: highlights)
+    func presentOutline(
+        of publication: Publication,
+        bookId: Book.Id,
+        currentLocator: Locator?,
+        from viewController: UIViewController
+    ) -> AnyPublisher<Locator, Never> {
+        let outlineAdapter = factory.make(
+            publication: publication,
+            bookId: bookId,
+            bookmarks: bookmarks,
+            highlights: highlights,
+            currentLocator: currentLocator
+        )
         let outlineLocatorPublisher = outlineAdapter.1
 
         let navigation = UINavigationController(rootViewController: outlineAdapter.0)
+        navigation.modalPresentationStyle = UIDevice.current.userInterfaceIdiom == .pad ? .formSheet : .pageSheet
+        if let sheet = navigation.sheetPresentationController {
+            sheet.detents = [.large()]
+            sheet.prefersGrabberVisible = true
+        }
         navigation.configureReaderPanelKeyboard()
         viewController.present(navigation, animated: true)
 

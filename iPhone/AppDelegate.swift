@@ -11,73 +11,78 @@ import SwiftUI
 import UIKit
 
 private enum MainTabIdentifier {
-    static let home = "home"
-    static let library = "library"
-    static let me = "me"
+    static let desk = "desk"
+    static let journal = "journal"
 }
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate, UITabBarControllerDelegate {
 
-    // MARK: - Global keyboard shortcuts (Mac Catalyst)
+    // MARK: - Global keyboard shortcuts
 
-    /// App-wide shortcuts: tab switching and opening Settings.
-    /// Reader- and library-scoped shortcuts are declared on their own view
-    /// controllers so they take precedence when those views are first responder.
+    /// App-wide shortcuts: tab switching, importing books, and opening Settings drawer.
     override var keyCommands: [UIKeyCommand]? {
-        let commands = [
+        var commands = [
             UIKeyCommand(
-                title: NSLocalizedString("sc_go_home", comment: "Keyboard shortcut: go to Home tab"),
+                title: NSLocalizedString("sc_go_home", comment: "Keyboard shortcut: go to Desk tab"),
                 action: #selector(selectHomeTab),
                 input: "1",
                 modifierFlags: .command
             ),
             UIKeyCommand(
-                title: NSLocalizedString("sc_go_library", comment: "Keyboard shortcut: go to Library tab"),
-                action: #selector(selectLibraryTab),
+                title: NSLocalizedString("sc_go_journal", comment: "Keyboard shortcut: go to Journal tab"),
+                action: #selector(selectJournalTab),
                 input: "2",
                 modifierFlags: .command
             ),
             UIKeyCommand(
-                title: NSLocalizedString("sc_go_me", comment: "Keyboard shortcut: go to Me tab"),
-                action: #selector(selectMeTab),
-                input: "3",
-                modifierFlags: .command
-            ),
-            UIKeyCommand(
                 title: NSLocalizedString("sc_open_settings", comment: "Keyboard shortcut: open Settings"),
-                action: #selector(selectMeTab),
+                action: #selector(openSettingsDrawer),
                 input: ",",
                 modifierFlags: .command
             ),
         ]
         #if targetEnvironment(macCatalyst)
+        commands.append(
+            UIKeyCommand(
+                title: NSLocalizedString("sc_import_book", comment: "Keyboard shortcut: import a book"),
+                action: #selector(importBooksFromShortcut),
+                input: "o",
+                modifierFlags: .command
+            )
+        )
         for command in commands { command.wantsPriorityOverSystemBehavior = true }
         #endif
         return commands
     }
 
     func selectMainTab(_ index: Int) {
-        app.tabBarController?.selectedIndex = index
-        let tabNames = ["home", "library", "me"]
-        if tabNames.indices.contains(index) {
-            PostHogAnalytics.shared.screen(tabNames[index])
-        }
+        guard let tabBar = app?.tabBarController else { return }
+        let tabNames = ["desk", "journal"]
+        guard tabNames.indices.contains(index) else { return }
+        tabBar.selectedIndex = index
+        PostHogAnalytics.shared.screen(tabNames[index])
         #if targetEnvironment(macCatalyst)
-        if let scene = app.tabBarController?.viewIfLoaded?.window?.windowScene {
+        if let scene = tabBar.viewIfLoaded?.window?.windowScene {
             UIApplication.shared.requestSceneSessionActivation(scene.session, userActivity: nil, options: nil)
         }
         #endif
     }
 
     @objc private func selectHomeTab() { selectMainTab(0) }
-    @objc private func selectLibraryTab() { selectMainTab(1) }
-    @objc private func selectMeTab() { selectMainTab(2) }
+    @objc private func selectJournalTab() { selectMainTab(1) }
+    @objc private func openSettingsDrawer() {
+        Task { @MainActor in
+            app?.presentSettings()
+        }
+    }
+    @objc private func importBooksFromShortcut() {
+        app?.homeDidRequestImportLocalFiles()
+    }
 
     let hasSeenOnboardingKey = "hasSeenOnboarding"
     private(set) var app: AppModule!
     private var launchError: Error?
-    private weak var desktopLibraryController: LibraryViewController?
     private var subscriptions = Set<AnyCancellable>()
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
@@ -189,25 +194,19 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UITabBarControllerDelegat
             return makeLaunchFailureViewController()
         }
 
-        let homeViewController = app.home.rootViewController
-        let libraryViewController = app.library.rootViewController
-
-        let meView = NavigationView { MeView() }
-            .navigationViewStyle(.stack)
-        let meViewController = UIHostingController(rootView: meView)
+        let deskViewController = app.home.rootViewController
+        let journalViewController = app.journalRootViewController
 
         let tabBarController: UITabBarController
         if #available(iOS 18.0, *) {
             tabBarController = makeModernTabBarController(
-                homeViewController: homeViewController,
-                libraryViewController: libraryViewController,
-                meViewController: meViewController
+                deskViewController: deskViewController,
+                journalViewController: journalViewController
             )
         } else {
             tabBarController = makeLegacyTabBarController(
-                homeViewController: homeViewController,
-                libraryViewController: libraryViewController,
-                meViewController: meViewController
+                deskViewController: deskViewController,
+                journalViewController: journalViewController
             )
         }
 
@@ -218,9 +217,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UITabBarControllerDelegat
 
     @available(iOS 18.0, *)
     private func makeModernTabBarController(
-        homeViewController: UIViewController,
-        libraryViewController: UIViewController,
-        meViewController: UIViewController
+        deskViewController: UIViewController,
+        journalViewController: UIViewController
     ) -> UITabBarController {
         func makeTab(
             titleKey: String,
@@ -237,30 +235,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UITabBarControllerDelegat
         }
 
         let tabBarController = UITabBarController(tabs: [
-            makeTab(titleKey: "home_tab", systemImage: "house", identifier: MainTabIdentifier.home, viewController: homeViewController),
-            makeTab(titleKey: "bookshelf_tab", systemImage: "books.vertical", identifier: MainTabIdentifier.library, viewController: libraryViewController),
-            makeTab(titleKey: "me_tab", systemImage: "person.crop.circle", identifier: MainTabIdentifier.me, viewController: meViewController),
+            makeTab(titleKey: "desk_tab", systemImage: "books.vertical", identifier: MainTabIdentifier.desk, viewController: deskViewController),
+            makeTab(titleKey: "journal_tab", systemImage: "sparkles", identifier: MainTabIdentifier.journal, viewController: journalViewController),
         ])
-        #if targetEnvironment(macCatalyst)
-        let libraryNavigation = libraryViewController as! UINavigationController
-        let library = libraryNavigation.viewControllers.first as! LibraryViewController
-        desktopLibraryController = library
-        let children = LibraryViewController.ReadingFilter.allCases.map { filter in
-            UITab(title: filter.title, image: UIImage(systemName: filter.symbol),
-                  identifier: "library.\(filter.rawValue)") { _ in
-                UIViewController()
-            }
-        }
-        let group = UITabGroup(title: NSLocalizedString("bookshelf_tab", comment: ""),
-                               image: UIImage(systemName: "books.vertical"),
-                               identifier: MainTabIdentifier.library, children: children)
-        group.managingNavigationController = libraryNavigation
-        group.sidebarAppearance = .rootSection
-        tabBarController.tabs[1] = group
         tabBarController.delegate = self
-        tabBarController.selectedTab = children.first
-        #endif
-        tabBarController.customizationIdentifier = "com.panyang.PagePilot.main"
+        tabBarController.customizationIdentifier = "com.panyang.PagePilot.main.v2"
 
         if PagePilotReaderHost.isSupported {
             tabBarController.mode = .tabSidebar
@@ -272,30 +251,17 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UITabBarControllerDelegat
 
     @available(iOS 18.0, *)
     func tabBarController(_ tabBarController: UITabBarController, shouldSelectTab tab: UITab) -> Bool {
-        #if targetEnvironment(macCatalyst)
-        let destination = (tab as? UITabGroup)?.selectedChild ?? tab
-        if let filter = LibraryViewController.ReadingFilter(rawValue: destination.identifier.replacingOccurrences(of: "library.", with: "")) {
-            desktopLibraryController?.setReadingFilter(filter)
-        }
-        #endif
-        return true
+        true
     }
 
     @available(iOS 18.0, *)
     func tabBarController(_ tabBarController: UITabBarController, displayedViewControllersFor tab: UITab, proposedViewControllers: [UIViewController]) -> [UIViewController] {
-        #if targetEnvironment(macCatalyst)
-        if let filter = LibraryViewController.ReadingFilter(rawValue: tab.identifier.replacingOccurrences(of: "library.", with: "")),
-           let library = desktopLibraryController {
-            library.setReadingFilter(filter)
-            return [library]
-        }
-        #endif
-        return proposedViewControllers
+        proposedViewControllers
     }
 
     func tabBarController(_ tabBarController: UITabBarController, didSelect viewController: UIViewController) {
         let index = tabBarController.selectedIndex
-        let tabNames = ["home", "library", "me"]
+        let tabNames = ["desk", "journal"]
         if tabNames.indices.contains(index) {
             PostHogAnalytics.shared.screen(tabNames[index])
         }
@@ -307,9 +273,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UITabBarControllerDelegat
     }
 
     private func makeLegacyTabBarController(
-        homeViewController: UIViewController,
-        libraryViewController: UIViewController,
-        meViewController: UIViewController
+        deskViewController: UIViewController,
+        journalViewController: UIViewController
     ) -> UITabBarController {
         func makeItem(title: String, systemImage: String) -> UITabBarItem {
             UITabBarItem(
@@ -319,33 +284,32 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UITabBarControllerDelegat
             )
         }
 
-        homeViewController.tabBarItem = makeItem(title: "home_tab", systemImage: "house")
-        libraryViewController.tabBarItem = makeItem(title: "bookshelf_tab", systemImage: "books.vertical")
-        meViewController.tabBarItem = makeItem(title: "me_tab", systemImage: "person.crop.circle")
+        deskViewController.tabBarItem = makeItem(title: "desk_tab", systemImage: "books.vertical")
+        journalViewController.tabBarItem = makeItem(title: "journal_tab", systemImage: "sparkles")
 
         let tabBarController = UITabBarController()
         tabBarController.viewControllers = [
-            homeViewController,
-            libraryViewController,
-            meViewController,
+            deskViewController,
+            journalViewController,
         ]
+        tabBarController.delegate = self
         return tabBarController
     }
 
     private func configureTabBarAppearance(for tabBarController: UITabBarController) {
         let tabBarAppearance = UITabBarAppearance()
-        tabBarAppearance.configureWithOpaqueBackground()
-        tabBarAppearance.backgroundColor = .systemBackground
+        tabBarAppearance.configureWithDefaultBackground()
         tabBarController.tabBar.standardAppearance = tabBarAppearance
-        tabBarController.tabBar.scrollEdgeAppearance = tabBarAppearance
+        tabBarController.tabBar.scrollEdgeAppearance = nil
 
         let navBarAppearance = UINavigationBarAppearance()
-        navBarAppearance.configureWithOpaqueBackground()
-        navBarAppearance.backgroundColor = .systemGroupedBackground
+        navBarAppearance.configureWithDefaultBackground()
         navBarAppearance.shadowColor = .clear
-        navBarAppearance.shadowImage = UIImage()
         UINavigationBar.appearance().standardAppearance = navBarAppearance
-        UINavigationBar.appearance().scrollEdgeAppearance = navBarAppearance
+
+        let scrollEdgeAppearance = UINavigationBarAppearance()
+        scrollEdgeAppearance.configureWithTransparentBackground()
+        UINavigationBar.appearance().scrollEdgeAppearance = scrollEdgeAppearance
     }
 
     private func makeLaunchFailureViewController() -> UIViewController {
@@ -371,27 +335,17 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UITabBarControllerDelegat
         guard let tabBarController = app.tabBarController else { return }
 
         if #available(iOS 18.0, *) {
-            tabBarController.tab(forIdentifier: MainTabIdentifier.home)?.title =
-                NSLocalizedString("home_tab", comment: "Tab bar item")
-            tabBarController.tab(forIdentifier: MainTabIdentifier.library)?.title =
-                NSLocalizedString("bookshelf_tab", comment: "Tab bar item")
-            tabBarController.tab(forIdentifier: MainTabIdentifier.me)?.title =
-                NSLocalizedString("me_tab", comment: "Tab bar item")
-            #if targetEnvironment(macCatalyst)
-            if let group = tabBarController.tab(forIdentifier: MainTabIdentifier.library) as? UITabGroup {
-                for filter in LibraryViewController.ReadingFilter.allCases {
-                    group.tab(forIdentifier: "library.\(filter.rawValue)")?.title = filter.title
-                }
-            }
-            #endif
+            tabBarController.tab(forIdentifier: MainTabIdentifier.desk)?.title =
+                NSLocalizedString("desk_tab", comment: "Tab bar item")
+            tabBarController.tab(forIdentifier: MainTabIdentifier.journal)?.title =
+                NSLocalizedString("journal_tab", comment: "Tab bar item")
             return
         }
 
-        guard let tabBarItems = tabBarController.tabBar.items, tabBarItems.count >= 3 else { return }
+        guard let tabBarItems = tabBarController.tabBar.items, tabBarItems.count >= 2 else { return }
 
-        tabBarItems[0].title = NSLocalizedString("home_tab", comment: "Tab bar item")
-        tabBarItems[1].title = NSLocalizedString("bookshelf_tab", comment: "Tab bar item")
-        tabBarItems[2].title = NSLocalizedString("me_tab", comment: "Tab bar item")
+        tabBarItems[0].title = NSLocalizedString("desk_tab", comment: "Tab bar item")
+        tabBarItems[1].title = NSLocalizedString("journal_tab", comment: "Tab bar item")
     }
 
     private func observeAppearancePreferences() {
@@ -426,8 +380,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UITabBarControllerDelegat
     func openBookAfterOnboarding(_ book: Book, from rootViewController: UIViewController) async {
         guard let app else { return }
 
-        app.tabBarController?.selectedIndex = 1
-        let nav = app.library.rootViewController
+        app.tabBarController?.selectedIndex = 0
+        let nav = app.home.rootViewController
         nav.popToRootViewController(animated: false)
 
         do {
@@ -487,8 +441,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UITabBarControllerDelegat
     private func openImportedBook(_ book: Book) async {
         guard let app else { return }
 
-        app.tabBarController?.selectedIndex = 1
-        let nav = app.library.rootViewController
+        app.tabBarController?.selectedIndex = 0
+        let nav = app.home.rootViewController
         nav.popToRootViewController(animated: false)
 
         do {
@@ -645,6 +599,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UITabBarControllerDelegat
 
 final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     var window: UIWindow?
+    private static var hasConsumedLaunchToReader = false
 
     private var appDelegate: AppDelegate {
         UIApplication.shared.delegate as! AppDelegate
@@ -677,16 +632,22 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         AppAppearancePreferences.applyTheme(to: window)
         self.window = window
 
-        if ProcessInfo.processInfo.arguments.contains("-SelectMeTab")
-            || ProcessInfo.processInfo.arguments.contains("-SelectSettingsTab") {
-            if let tabBar = rootViewController as? UITabBarController {
-                tabBar.selectedIndex = 2
-            }
+        let args = ProcessInfo.processInfo.arguments
+        let wantsSettings = args.contains("-SelectMeTab") || args.contains("-SelectSettingsTab")
+        let wantsJournal = args.contains("-SelectJournalTab")
+        let wantsLibrary = args.contains("-SelectLibraryTab")
+
+        if wantsJournal, let tabBar = rootViewController as? UITabBarController {
+            tabBar.selectedIndex = 1
+        } else if wantsLibrary, let tabBar = rootViewController as? UITabBarController {
+            tabBar.selectedIndex = 0
         }
 
-        if ProcessInfo.processInfo.arguments.contains("-SelectLibraryTab") {
-            if let tabBar = rootViewController as? UITabBarController {
-                tabBar.selectedIndex = 1
+        if wantsSettings {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { [weak self] in
+                Task { @MainActor in
+                    self?.appDelegate.app?.presentSettings(from: rootViewController)
+                }
             }
         }
 
@@ -699,6 +660,19 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
         if hasSeenOnboarding, let url = initialURL {
             appDelegate.importPublication(from: url, sender: rootViewController)
+        } else if LaunchToReaderPolicy.shouldAutoOpenLastReadBook(
+            hasSeenOnboarding: hasSeenOnboarding,
+            launchDirectlyEnabled: ReadingPreferences.launchDirectlyToReader,
+            hasIncomingURL: initialURL != nil,
+            hasDebugTabOverride: wantsSettings || wantsJournal || wantsLibrary,
+            alreadyConsumedThisLaunch: Self.hasConsumedLaunchToReader
+        ) {
+            Self.hasConsumedLaunchToReader = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) { [weak self] in
+                Task { @MainActor in
+                    self?.appDelegate.app?.autoOpenLastReadBookIfAvailable()
+                }
+            }
         }
         StartupProfiler.shared.record("SceneDelegate willConnectTo End")
     }

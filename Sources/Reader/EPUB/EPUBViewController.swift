@@ -19,9 +19,11 @@ public extension FontFamily {
 
 class EPUBViewController: VisualReaderViewController<EPUBNavigatorViewController> {
     private let preferencesStore: AnyUserPreferencesStore<EPUBPreferences>
-    private var pendingNoteHighlightID: Highlight.Id?
+    private var latestPreferences: EPUBPreferences
     private let selectionMenuPresenter = ReaderTextSelectionMenuPresenter()
     private var colorPickerPopover: UIHostingController<HighlightContextMenu>?
+
+    override var supportsQuickThemeCycle: Bool { true }
 
     init(
         publication: Publication,
@@ -64,6 +66,7 @@ class EPUBViewController: VisualReaderViewController<EPUBNavigatorViewController
         )
 
         self.preferencesStore = preferencesStore
+        self.latestPreferences = initialPreferences
 
         super.init(navigator: navigator, publication: publication, bookId: bookId, books: books, bookmarks: bookmarks, highlights: highlights)
 
@@ -73,6 +76,60 @@ class EPUBViewController: VisualReaderViewController<EPUBNavigatorViewController
     override func viewDidLoad() {
         super.viewDidLoad()
         selectionMenuPresenter.attach(to: navigator.view, viewController: self)
+        applyPreferencesToChrome(latestPreferences)
+
+        preferencesStore.preferencesPublisher(for: bookId)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] prefs in
+                self?.latestPreferences = prefs
+                self?.applyPreferencesToChrome(prefs)
+            }
+            .store(in: &subscriptions)
+    }
+
+    private func applyPreferencesToChrome(_ preferences: EPUBPreferences) {
+        let appearance = ReaderThemeAppearance.resolve(
+            preferences: preferences,
+            systemStyle: traitCollection.userInterfaceStyle
+        )
+        updateReaderThemeAppearance(appearance)
+
+        let activePreset = ReaderPaperPreset.matching(
+            preferences: preferences,
+            systemStyle: traitCollection.userInterfaceStyle
+        )
+        updateActivePaperPreset(activePreset)
+
+        let indicatorPreset = activePreset ?? (appearance.isDarkSurface ? .midnightInk : .morningPaper)
+        updateQuickThemeIndicator(
+            iconName: indicatorPreset.iconName,
+            label: indicatorPreset.localizedTitle
+        )
+    }
+
+    override func applyPaperPreset(_ preset: ReaderPaperPreset) {
+        Task {
+            do {
+                var prefs = try await preferencesStore.preferences(for: bookId)
+                preset.apply(to: &prefs)
+                try await preferencesStore.savePreferences(prefs, of: bookId)
+                await MainActor.run {
+                    self.navigator.submitPreferences(prefs)
+                    self.latestPreferences = prefs
+                    self.applyPreferencesToChrome(prefs)
+                }
+            } catch {
+                moduleDelegate?.presentError(UserError(error), from: self)
+            }
+        }
+    }
+
+    override func cycleQuickReaderTheme() {
+        let current = ReaderPaperPreset.matching(
+            preferences: latestPreferences,
+            systemStyle: traitCollection.userInterfaceStyle
+        ) ?? .morningPaper
+        applyPaperPreset(current.next())
     }
 
     override func presentUserPreferences() {
@@ -80,21 +137,44 @@ class EPUBViewController: VisualReaderViewController<EPUBNavigatorViewController
             do {
                 let preferences = try await preferencesStore.preferences(for: bookId)
 
-            let userPrefs = UserPreferences(
-                model: UserPreferencesViewModel(
-                    bookId: bookId,
-                    preferences: preferences,
-                    configurable: navigator,
-                    store: preferencesStore
-                ),
-                onClose: {
-                    self.dismiss(animated: true)
+                let userPrefs = UserPreferences(
+                    model: UserPreferencesViewModel(
+                        bookId: bookId,
+                        preferences: preferences,
+                        configurable: navigator,
+                        store: preferencesStore
+                    ),
+                    onClose: {
+                        self.dismiss(animated: true)
+                    }
+                )
+                let vc = UIHostingController(rootView: userPrefs)
+                let isPad = traitCollection.horizontalSizeClass == .regular || UIDevice.current.userInterfaceIdiom == .pad
+                if isPad, let anchor = bottomControlBarAnchorView {
+                    vc.modalPresentationStyle = .popover
+                    vc.preferredContentSize = CGSize(width: 390, height: 540)
+                    if let popover = vc.popoverPresentationController {
+                        popover.sourceView = anchor
+                        popover.sourceRect = CGRect(x: anchor.bounds.midX, y: anchor.bounds.minY, width: 1, height: 1)
+                        popover.permittedArrowDirections = [.down, .up]
+                    }
+                } else {
+                    vc.modalPresentationStyle = .pageSheet
+                    if let sheet = vc.sheetPresentationController {
+                        let livePreviewId = UISheetPresentationController.Detent.Identifier("readerLivePreview")
+                        let livePreviewDetent = UISheetPresentationController.Detent.custom(identifier: livePreviewId) { context in
+                            min(460, context.maximumDetentValue * 0.56)
+                        }
+                        sheet.detents = [livePreviewDetent, .large()]
+                        sheet.selectedDetentIdentifier = livePreviewId
+                        // Keep the reading canvas bright behind the half-height sheet for live preview.
+                        sheet.largestUndimmedDetentIdentifier = livePreviewId
+                        sheet.prefersGrabberVisible = true
+                        sheet.prefersScrollingExpandsWhenScrolledToEdge = true
+                    }
                 }
-            )
-            let vc = UIHostingController(rootView: userPrefs)
-            vc.modalPresentationStyle = .formSheet
-            vc.configureReaderPanelKeyboard()
-            present(vc, animated: true)
+                vc.configureReaderPanelKeyboard()
+                present(vc, animated: true)
             } catch {
                 moduleDelegate?.presentError(UserError(error), from: self)
             }
@@ -107,8 +187,9 @@ class EPUBViewController: VisualReaderViewController<EPUBNavigatorViewController
         colorPickerPopover?.dismiss(animated: false)
 
         let menuView = HighlightContextMenu(
-            colors: [.red, .green, .blue, .yellow],
-            systemFontSize: 20,
+            colors: [.yellow, .green, .blue, .red],
+            showsNoteButton: true,
+            showsCopyButton: false,
             showsDeleteButton: false
         )
         menuView.selectedColorPublisher.sink { [weak self] color in
@@ -117,6 +198,15 @@ class EPUBViewController: VisualReaderViewController<EPUBNavigatorViewController
             self.saveHighlight(highlight)
             self.navigator.clearSelection()
             self.colorPickerPopover?.dismiss(animated: true)
+            self.colorPickerPopover = nil
+        }
+        .store(in: &subscriptions)
+
+        menuView.selectedNotePublisher.sink { [weak self] _ in
+            guard let self else { return }
+            self.colorPickerPopover?.dismiss(animated: true) {
+                self.addNoteToSelection()
+            }
             self.colorPickerPopover = nil
         }
         .store(in: &subscriptions)
@@ -131,7 +221,7 @@ class EPUBViewController: VisualReaderViewController<EPUBNavigatorViewController
         if let popover = hosting.popoverPresentationController {
             popover.sourceView = view
             popover.sourceRect = selection.frame ?? .zero
-            popover.permittedArrowDirections = .down
+            popover.permittedArrowDirections = [.down, .up]
             popover.delegate = self
         }
 
@@ -149,7 +239,7 @@ class EPUBViewController: VisualReaderViewController<EPUBNavigatorViewController
                 let highlightID = try await highlights.add(highlight)
                 navigator.clearSelection()
                 await MainActor.run {
-                    presentNoteEditor(for: highlightID, quotedText: quotedText)
+                    presentHighlightNoteEditor(for: highlightID, quotedText: quotedText)
                 }
             } catch {
                 await MainActor.run {
@@ -180,6 +270,42 @@ class EPUBViewController: VisualReaderViewController<EPUBNavigatorViewController
         present(activity, animated: true)
     }
 
+    func presentQuotePostcardForSelection() {
+        guard let selection = navigator.currentSelection else { return }
+        let quotedText = selection.locator.text.sanitized().highlight
+            ?? selection.locator.text.highlight
+            ?? ""
+        guard !quotedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+        navigator.clearSelection()
+
+        let authors = publication.metadata.authors.map(\.name).joined(separator: ", ")
+        let payload = QuotePostcardPayload(
+            quote: quotedText,
+            bookTitle: publication.metadata.title ?? "PagePilot",
+            author: authors.isEmpty ? nil : authors,
+            chapterTitle: selection.locator.title ?? navigator.currentLocation?.title
+        )
+        presentQuotePostcard(payload)
+    }
+
+    func presentIntelligenceForSelection() {
+        guard ReadingIntelligenceEngine.shared.isFeatureAvailable,
+              let selection = navigator.currentSelection else { return }
+        let quotedText = selection.locator.text.sanitized().highlight
+            ?? selection.locator.text.highlight
+            ?? ""
+        let trimmed = quotedText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        navigator.clearSelection()
+
+        let task = ReadingIntelligenceTask.explainSelection(
+            text: trimmed,
+            bookTitle: publication.metadata.title ?? "PagePilot",
+            chapterTitle: selection.locator.title ?? navigator.currentLocation?.title
+        )
+        presentReadingIntelligence(task: task)
+    }
+
     func performWebViewAction(_ selectors: [String]) {
         guard let webView = findWebView(in: navigator.view) else { return }
         for name in selectors {
@@ -203,25 +329,6 @@ class EPUBViewController: VisualReaderViewController<EPUBNavigatorViewController
         return nil
     }
 
-    private func presentNoteEditor(for highlightID: Highlight.Id, quotedText: String) {
-        pendingNoteHighlightID = highlightID
-        let editor = HighlightNoteEditor(
-            highlightID: highlightID,
-            quotedText: quotedText,
-            onSave: { [weak self] text in
-                self?.dismiss(animated: true)
-                guard let self = self else { return }
-                self.updateHighlightNote(highlightID, note: text.trimmingCharacters(in: .whitespacesAndNewlines))
-            },
-            onCancel: { [weak self] in
-                self?.dismiss(animated: true)
-            }
-        )
-        let hosting = UIHostingController(rootView: editor)
-        hosting.modalPresentationStyle = .formSheet
-        present(hosting, animated: true)
-    }
-
     // MARK: - Footnotes
 
     private func presentFootnote(content: String, referrer: String?) -> Bool {
@@ -233,12 +340,29 @@ class EPUBViewController: VisualReaderViewController<EPUBNavigatorViewController
             title = nil
         }
 
+        let appearance = ReaderThemeAppearance.resolve(
+            preferences: latestPreferences,
+            systemStyle: traitCollection.userInterfaceStyle
+        )
         let content = (try? clean(content, .none())) ?? ""
         let page =
             """
             <html>
                 <head>
                     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <style>
+                        body {
+                            margin: 0;
+                            padding: 20px 22px 32px;
+                            background-color: \(appearance.cssHexBackground);
+                            color: \(appearance.cssHexText);
+                            font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", Georgia, serif;
+                            font-size: 16px;
+                            line-height: 1.68;
+                            -webkit-text-size-adjust: 100%;
+                        }
+                        p { margin: 0 0 12px; }
+                    </style>
                 </head>
                 <body>
                     \(content)
@@ -247,17 +371,27 @@ class EPUBViewController: VisualReaderViewController<EPUBNavigatorViewController
             """
 
         let wk = WKWebView()
+        wk.isOpaque = false
+        wk.backgroundColor = appearance.backgroundColor
+        wk.scrollView.backgroundColor = appearance.backgroundColor
         wk.loadHTMLString(page, baseURL: nil)
 
         let vc = UIViewController()
         vc.view = wk
         vc.navigationItem.title = title
-        vc.navigationItem.leftBarButtonItem = BarButtonItem(barButtonSystemItem: .done, actionHandler: { _ in
-            vc.dismiss(animated: true, completion: nil)
-        })
+        vc.navigationItem.rightBarButtonItem = UIBarButtonItem(
+            image: UIImage(systemName: "xmark", withConfiguration: UIImage.SymbolConfiguration(pointSize: 13, weight: .semibold)),
+            primaryAction: UIAction { _ in
+                vc.dismiss(animated: true, completion: nil)
+            }
+        )
 
         let nav = UINavigationController(rootViewController: vc)
-        nav.modalPresentationStyle = .formSheet
+        nav.modalPresentationStyle = UIDevice.current.userInterfaceIdiom == .pad ? .formSheet : .pageSheet
+        if let sheet = nav.sheetPresentationController {
+            sheet.detents = [.medium(), .large()]
+            sheet.prefersGrabberVisible = true
+        }
         present(nav, animated: true, completion: nil)
 
         return false

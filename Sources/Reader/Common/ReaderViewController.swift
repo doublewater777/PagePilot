@@ -1049,6 +1049,8 @@ class ReaderViewController<N: Navigator>: UIViewController,
 
     private(set) var searchViewModel: SearchViewModel?
     private var searchViewController: UIHostingController<SearchView>?
+    private var bookBookmarks: [Bookmark] = []
+    private weak var bookmarkBarButtonItem: UIBarButtonItem?
 
     init(
         navigator: N,
@@ -1081,6 +1083,13 @@ class ReaderViewController<N: Navigator>: UIViewController,
         super.viewDidLoad()
 
         navigationItem.rightBarButtonItems = makeNavigationBarButtons()
+        bookmarks.all(for: bookId)
+            .receive(on: DispatchQueue.main)
+            .sink(receiveCompletion: { _ in }, receiveValue: { [weak self] list in
+                self?.bookBookmarks = list
+                self?.refreshBookmarkButtonState()
+            })
+            .store(in: &subscriptions)
         NotificationCenter.default.addObserver(self, selector: #selector(appDidEnterBackground), name: UIApplication.didEnterBackgroundNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(appDidBecomeActive), name: UIApplication.didBecomeActiveNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(sceneWillDeactivate(_:)), name: UIScene.willDeactivateNotification, object: nil)
@@ -1378,37 +1387,98 @@ class ReaderViewController<N: Navigator>: UIViewController,
 
     // MARK: - Navigation bar
 
+    var usesBottomControlBar: Bool { false }
+
     func makeNavigationBarButtons() -> [UIBarButtonItem] {
         var buttons: [UIBarButtonItem] = []
-        // Table of Contents
-        buttons.append(UIBarButtonItem(image: #imageLiteral(resourceName: "menuIcon"), style: .plain, target: self, action: #selector(presentOutline)))
 
-        // User preferences
-        buttons.append(UIBarButtonItem(image: UIImage(systemName: "gearshape"), style: .plain, target: self, action: #selector(presentUserPreferences)))
+        if !usesBottomControlBar || PagePilotReaderHost.isMac {
+            // Table of Contents
+            let outlineButton = UIBarButtonItem(
+                image: UIImage(systemName: "list.bullet"),
+                style: .plain,
+                target: self,
+                action: #selector(presentOutline)
+            )
+            outlineButton.accessibilityLabel = NSLocalizedString("sc_outline", comment: "")
+            buttons.append(outlineButton)
+
+            // User preferences
+            let prefsButton = UIBarButtonItem(
+                image: UIImage(systemName: "textformat.size"),
+                style: .plain,
+                target: self,
+                action: #selector(presentUserPreferences)
+            )
+            prefsButton.accessibilityLabel = NSLocalizedString("sc_reader_preferences", comment: "")
+            buttons.append(prefsButton)
+        }
 
         // DRM management
         if publication.isProtected {
-            buttons.append(UIBarButtonItem(image: #imageLiteral(resourceName: "drm"), style: .plain, target: self, action: #selector(presentDRMManagement)))
-        }
-        // Bookmarks
-        buttons.append(UIBarButtonItem(image: #imageLiteral(resourceName: "bookmark"), style: .plain, target: self, action: #selector(bookmarkCurrentPosition)))
-        // Search
-        if publication.isSearchable {
-            buttons.append(UIBarButtonItem(image: UIImage(systemName: "magnifyingglass"), style: .plain, target: self, action: #selector(showSearchUI)))
+            let drmButton = UIBarButtonItem(
+                image: UIImage(systemName: "lock.doc"),
+                style: .plain,
+                target: self,
+                action: #selector(presentDRMManagement)
+            )
+            buttons.append(drmButton)
         }
 
-        let labels = ["sc_outline", "sc_reader_preferences"]
-        for (button, key) in zip(buttons.prefix(2), labels) {
-            button.accessibilityLabel = NSLocalizedString(key, comment: "")
+        // Bookmarks (filled state when current location is bookmarked)
+        let isBookmarked = matchingCurrentBookmark() != nil
+        let bookmarkButton = UIBarButtonItem(
+            image: UIImage(systemName: isBookmarked ? "bookmark.fill" : "bookmark"),
+            style: .plain,
+            target: self,
+            action: #selector(bookmarkCurrentPosition)
+        )
+        bookmarkButton.tintColor = isBookmarked ? AppColors.uiAccentBlue : nil
+        bookmarkButton.accessibilityLabel = NSLocalizedString("sc_bookmark", comment: "")
+        bookmarkBarButtonItem = bookmarkButton
+        buttons.append(bookmarkButton)
+
+        // Search
+        if publication.isSearchable {
+            let searchButton = UIBarButtonItem(
+                image: UIImage(systemName: "magnifyingglass"),
+                style: .plain,
+                target: self,
+                action: #selector(showSearchUI)
+            )
+            searchButton.accessibilityLabel = NSLocalizedString("sc_search_book", comment: "")
+            buttons.append(searchButton)
         }
-        buttons.first(where: { $0.action == #selector(bookmarkCurrentPosition) })?.accessibilityLabel = NSLocalizedString("sc_bookmark", comment: "")
-        buttons.first(where: { $0.action == #selector(showSearchUI) })?.accessibilityLabel = NSLocalizedString("sc_search_book", comment: "")
+
         return buttons
+    }
+
+    func refreshBookmarkButtonState() {
+        guard let bookmarkBarButtonItem else { return }
+        let isBookmarked = matchingCurrentBookmark() != nil
+        bookmarkBarButtonItem.image = UIImage(systemName: isBookmarked ? "bookmark.fill" : "bookmark")
+        bookmarkBarButtonItem.tintColor = isBookmarked ? AppColors.uiAccentBlue : nil
+    }
+
+    private func matchingCurrentBookmark() -> Bookmark? {
+        guard let current = navigator.currentLocation else { return nil }
+        return bookBookmarks.first { bookmark in
+            if let curPos = current.locations.position, let bmPos = bookmark.locator.locations.position {
+                return curPos == bmPos
+            }
+            if bookmark.locator.href == current.href,
+               let curProg = current.locations.progression,
+               let bmProg = bookmark.locator.locations.progression {
+                return abs(curProg - bmProg) < 0.005
+            }
+            return false
+        }
     }
 
     // MARK: - NavigatorDelegate
 
     func navigator(_ navigator: Navigator, locationDidChange locator: Locator) {
+        refreshBookmarkButtonState()
         guard !isReadingProgressPersistenceSuppressed else {
             suppressedReadingProgress = locator
             return
@@ -1472,7 +1542,12 @@ class ReaderViewController<N: Navigator>: UIViewController,
     // MARK: - Outlines
 
     @objc func presentOutline() {
-        guard let locatorPublisher = moduleDelegate?.presentOutline(of: publication, bookId: bookId, from: self) else {
+        guard let locatorPublisher = moduleDelegate?.presentOutline(
+            of: publication,
+            bookId: bookId,
+            currentLocator: navigator.currentLocation,
+            from: self
+        ) else {
             return
         }
 
@@ -1493,14 +1568,28 @@ class ReaderViewController<N: Navigator>: UIViewController,
     // MARK: - Bookmarks
 
     @objc func bookmarkCurrentPosition() {
+        if let existing = matchingCurrentBookmark(), let existingId = existing.id {
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            Task {
+                do {
+                    try await bookmarks.remove(existingId)
+                    toast(NSLocalizedString("reader_bookmark_removed_message", comment: ""), on: self.view, duration: 1.2)
+                } catch {
+                    print(error)
+                }
+            }
+            return
+        }
+
         guard let bookmark = currentBookmark else {
             return
         }
 
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
         Task {
             do {
                 try await bookmarks.add(bookmark)
-                toast(NSLocalizedString("reader_bookmark_success_message", comment: "Success message when adding a bookmark"), on: self.view, duration: 1)
+                toast(NSLocalizedString("reader_bookmark_success_message", comment: "Success message when adding a bookmark"), on: self.view, duration: 1.2)
             } catch {
                 print(error)
                 toast(NSLocalizedString("reader_bookmark_failure_message", comment: "Error message when adding a new bookmark failed"), on: self.view, duration: 2)
@@ -1532,7 +1621,7 @@ class ReaderViewController<N: Navigator>: UIViewController,
                         decorations.append(Decoration(
                             id: "selectedSearchResult",
                             locator: locator,
-                            style: .highlight(tint: .yellow, isActive: false)
+                            style: .highlight(tint: HighlightColor.yellow.uiColor, isActive: false)
                         ))
                     }
                     decorator.apply(decorations: decorations, in: "search")
@@ -1541,9 +1630,15 @@ class ReaderViewController<N: Navigator>: UIViewController,
             .store(in: &subscriptions)
         }
 
-        let searchView = SearchView(viewModel: searchViewModel!)
+        let searchView = SearchView(viewModel: searchViewModel!) { [weak self] in
+            self?.searchViewController?.dismiss(animated: true)
+        }
         let vc = UIHostingController(rootView: searchView)
-        vc.modalPresentationStyle = .pageSheet
+        vc.modalPresentationStyle = UIDevice.current.userInterfaceIdiom == .pad ? .formSheet : .pageSheet
+        if let sheet = vc.sheetPresentationController {
+            sheet.detents = [.large()]
+            sheet.prefersGrabberVisible = true
+        }
         vc.configureReaderPanelKeyboard()
         present(vc, animated: true, completion: nil)
         searchViewController = vc

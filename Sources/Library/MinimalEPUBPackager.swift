@@ -29,7 +29,8 @@ enum MinimalEPUBPackager {
         title: String,
         language: String,
         chapters: [Chapter],
-        identifier: String? = nil
+        identifier: String? = nil,
+        coverJPEGData: Data? = nil
     ) async throws -> URL {
         let epubDir = Paths.makeTemporaryURL().url
         // Always remove the staging directory on success or failure.
@@ -53,7 +54,12 @@ enum MinimalEPUBPackager {
             encoding: .utf8
         )
 
-        let opf = buildOPF(title: title, language: language, chapters: chapters, identifier: identifier)
+        let hasCover = coverJPEGData != nil
+        if let coverJPEGData {
+            try coverJPEGData.write(to: oebps.appendingPathComponent("cover.jpg"), options: .atomic)
+        }
+
+        let opf = buildOPF(title: title, language: language, chapters: chapters, identifier: identifier, hasCover: hasCover)
         try opf.write(to: oebps.appendingPathComponent("content.opf"), atomically: true, encoding: .utf8)
 
         let toc = buildTOC(title: title, chapters: chapters)
@@ -95,7 +101,8 @@ enum MinimalEPUBPackager {
         title: String,
         language: String,
         chapters: [Chapter],
-        identifier: String? = nil
+        identifier: String? = nil,
+        hasCover: Bool = false
     ) -> String {
         let resolvedIdentifier = (identifier?.isEmpty == false)
             ? identifier!
@@ -108,6 +115,9 @@ enum MinimalEPUBPackager {
             <item id="toc" href="toc.xhtml" media-type="application/xhtml+xml" properties="nav"/>
             <item id="style" href="style.css" media-type="text/css"/>
         """
+        if hasCover {
+            manifestItems += "\n        <item id=\"cover-image\" href=\"cover.jpg\" media-type=\"image/jpeg\" properties=\"cover-image\"/>"
+        }
 
         var spineItems = ""
 
@@ -118,6 +128,8 @@ enum MinimalEPUBPackager {
             spineItems += "\n        <itemref idref=\"\(id)\"/>"
         }
 
+        let coverMeta = hasCover ? "\n            <meta name=\"cover\" content=\"cover-image\"/>" : ""
+
         return """
         <?xml version="1.0" encoding="UTF-8"?>
         <package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="uid">
@@ -126,7 +138,7 @@ enum MinimalEPUBPackager {
             <dc:title>\(title.xmlEscaped)</dc:title>
             <dc:language>\(language.xmlEscaped)</dc:language>
             <dc:creator>Unknown</dc:creator>
-            <meta property="dcterms:modified">\(date)</meta>
+            <meta property="dcterms:modified">\(date)</meta>\(coverMeta)
           </metadata>
           <manifest>
             \(manifestItems)

@@ -4,6 +4,7 @@
 //  available in the top-level LICENSE file of the project.
 //
 
+import ReadiumNavigator
 import XCTest
 @testable import PagePilot
 
@@ -118,5 +119,61 @@ final class CoverImageLoaderTests: XCTestCase {
         let image = await CoverImageLoader().load(url: url, bookId: 102)
 
         XCTAssertNil(image, "A malformed cover must fail without retaining a partial image")
+    }
+
+    func testGeneratedBookCoverPaletteIsDeterministicAndRendersImage() {
+        let first = GeneratedBookCover.palette(for: "The Great Gatsby")
+        let second = GeneratedBookCover.palette(for: "The Great Gatsby")
+        XCTAssertEqual(first, second)
+
+        let image = GeneratedBookCover.renderImage(
+            title: "The Great Gatsby",
+            author: "F. Scott Fitzgerald",
+            size: CGSize(width: 120, height: 175)
+        )
+        XCTAssertEqual(image.size.width, 120, accuracy: 0.5)
+        XCTAssertEqual(image.size.height, 175, accuracy: 0.5)
+    }
+
+    func testReaderThemeAppearanceResolvesThemesAndDarkSurface() {
+        let sepia = ReaderThemeAppearance.resolve(
+            preferences: EPUBPreferences(theme: .sepia),
+            systemStyle: .light
+        )
+        XCTAssertFalse(sepia.isDarkSurface)
+        XCTAssertEqual(sepia.backgroundColor, AppColors.readerSepiaBackground)
+
+        let dark = ReaderThemeAppearance.resolve(
+            preferences: EPUBPreferences(theme: .dark),
+            systemStyle: .light
+        )
+        XCTAssertTrue(dark.isDarkSurface)
+        XCTAssertEqual(dark.backgroundColor, AppColors.readerDarkBackground)
+
+        let lightInDarkSystem = ReaderThemeAppearance.resolve(
+            preferences: EPUBPreferences(theme: .light),
+            systemStyle: .dark
+        )
+        XCTAssertFalse(lightInDarkSystem.isDarkSurface)
+    }
+
+    func testBundledEditorialAssetsExist() {
+        XCTAssertNotNil(UIImage(named: "OnboardingHeroArt"), "OnboardingHeroArt must be bundled in Assets.xcassets")
+        XCTAssertNotNil(UIImage(named: "SampleBookCover"), "SampleBookCover must be bundled in Assets.xcassets")
+        XCTAssertNotNil(UIImage(named: "EmptyLibraryArt"), "EmptyLibraryArt must be bundled in Assets.xcassets")
+        XCTAssertNotNil(UIImage(named: "PaywallHeroArt"), "PaywallHeroArt must be bundled in Assets.xcassets")
+        let videoAsset = NSDataAsset(name: "OnboardingHeroVideo")
+        XCTAssertNotNil(videoAsset, "OnboardingHeroVideo dataset must be bundled in Assets.xcassets")
+        XCTAssertGreaterThan(videoAsset?.data.count ?? 0, 10_000)
+    }
+
+    func testMinimalEPUBPackagerOPFIncludesCoverWhenEnabled() {
+        let chapters = [MinimalEPUBPackager.Chapter(title: "Ch1", bodyHTML: "<p>Hello</p>")]
+        let withoutCover = MinimalEPUBPackager.buildOPF(title: "Book", language: "en", chapters: chapters, hasCover: false)
+        XCTAssertFalse(withoutCover.contains("cover-image"))
+
+        let withCover = MinimalEPUBPackager.buildOPF(title: "Book", language: "en", chapters: chapters, hasCover: true)
+        XCTAssertTrue(withCover.contains("properties=\"cover-image\""))
+        XCTAssertTrue(withCover.contains("<meta name=\"cover\" content=\"cover-image\"/>"))
     }
 }

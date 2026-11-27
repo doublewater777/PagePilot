@@ -116,6 +116,9 @@ __pycache__/
 .venv-shots/
 
 # ==========================================
+# Generated store screenshots (reproducible via scripts/generate_store_screenshots_v2.py)
+screenshots/export/store-v2/
+
 # Misc
 # ==========================================
 

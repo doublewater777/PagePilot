@@ -4,6 +4,7 @@
 //  available in the top-level LICENSE file of the project.
 //
 
+import AVFoundation
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -164,16 +165,8 @@ struct OnboardingView: View {
             VStack(spacing: 28) {
             Spacer(minLength: 72)
 
-            ZStack {
-                RoundedRectangle(cornerRadius: 22, style: .continuous)
-                    .fill(AppColors.accentGradient)
-                    .frame(width: 112, height: 146)
-                    .shadow(color: AppColors.accentBlue.opacity(0.22), radius: 24, y: 12)
-                Image(systemName: "applewatch.radiowaves.left.and.right")
-                    .font(.system(size: 42, weight: .medium))
-                    .foregroundStyle(.white)
-            }
-            .accessibilityHidden(true)
+            OnboardingMotionHeroCard(reduceMotion: reduceMotion)
+                .accessibilityHidden(true)
 
             VStack(spacing: 12) {
                 Text("onboarding_activation_title")
@@ -311,21 +304,8 @@ struct OnboardingView: View {
         VStack(spacing: 22) {
             Spacer(minLength: 20)
 
-            ZStack {
-                Circle()
-                    .fill(AppColors.accentBlue.opacity(0.1))
-                    .frame(width: 140, height: 140)
-
-                RoundedRectangle(cornerRadius: 28, style: .continuous)
-                    .fill(AppColors.accentGradient)
-                    .frame(width: 104, height: 104)
-                    .shadow(color: AppColors.accentBlue.opacity(0.35), radius: 24, y: 12)
-
-                Image(systemName: "applewatch.radiowaves.left.and.right")
-                    .font(.system(size: 48, weight: .medium))
-                    .foregroundStyle(.white)
-            }
-            .accessibilityHidden(true)
+            OnboardingMotionHeroCard(reduceMotion: reduceMotion)
+                .accessibilityHidden(true)
 
             VStack(spacing: 8) {
                 Text("onboarding_tour_page1_title")
@@ -359,25 +339,8 @@ struct OnboardingView: View {
         VStack(spacing: 22) {
             Spacer(minLength: 20)
 
-            ZStack {
-                Circle()
-                    .fill(AppColors.accentTeal.opacity(0.1))
-                    .frame(width: 140, height: 140)
-
-                RoundedRectangle(cornerRadius: 28, style: .continuous)
-                    .fill(LinearGradient(
-                        colors: [AppColors.accentTeal, AppColors.accentBlue],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ))
-                    .frame(width: 104, height: 104)
-                    .shadow(color: AppColors.accentTeal.opacity(0.35), radius: 24, y: 12)
-
-                Image(systemName: "books.vertical.fill")
-                    .font(.system(size: 46, weight: .medium))
-                    .foregroundStyle(.white)
-            }
-            .accessibilityHidden(true)
+            OnboardingEditorialImageCard(assetName: "EmptyLibraryArt", aspectRatio: 4.0 / 3.0)
+                .accessibilityHidden(true)
 
             VStack(spacing: 8) {
                 Text("onboarding_tour_page2_title")
@@ -411,25 +374,8 @@ struct OnboardingView: View {
         VStack(spacing: 22) {
             Spacer(minLength: 20)
 
-            ZStack {
-                Circle()
-                    .fill(AppColors.accentBlue.opacity(0.1))
-                    .frame(width: 140, height: 140)
-
-                RoundedRectangle(cornerRadius: 28, style: .continuous)
-                    .fill(LinearGradient(
-                        colors: [Color(red: 46 / 255, green: 130 / 255, blue: 245 / 255), AppColors.accentTeal],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ))
-                    .frame(width: 104, height: 104)
-                    .shadow(color: AppColors.accentBlue.opacity(0.35), radius: 24, y: 12)
-
-                Image(systemName: "icloud.fill")
-                    .font(.system(size: 50, weight: .medium))
-                    .foregroundStyle(.white)
-            }
-            .accessibilityHidden(true)
+            OnboardingEditorialImageCard(assetName: "PaywallHeroArt", aspectRatio: 16.0 / 9.0)
+                .accessibilityHidden(true)
 
             VStack(spacing: 8) {
                 Text("onboarding_tour_page3_title")
@@ -463,21 +409,8 @@ struct OnboardingView: View {
         VStack(spacing: 22) {
             Spacer(minLength: 20)
 
-            ZStack {
-                Circle()
-                    .fill(AppColors.accentBlue.opacity(0.1))
-                    .frame(width: 140, height: 140)
-
-                RoundedRectangle(cornerRadius: 22, style: .continuous)
-                    .fill(AppColors.accentGradient)
-                    .frame(width: 96, height: 124)
-                    .shadow(color: AppColors.accentBlue.opacity(0.32), radius: 24, y: 12)
-
-                Image(systemName: "applewatch.radiowaves.left.and.right")
-                    .font(.system(size: 38, weight: .medium))
-                    .foregroundStyle(.white)
-            }
-            .accessibilityHidden(true)
+            OnboardingMotionHeroCard(reduceMotion: reduceMotion)
+                .accessibilityHidden(true)
 
             VStack(spacing: 8) {
                 Text("onboarding_activation_title")
@@ -954,4 +887,159 @@ struct OnboardingView: View {
 
 extension Notification.Name {
     static let onboardingImportURLRequested = Notification.Name("onboardingImportURLRequested")
+}
+
+// MARK: - Editorial Hero Media Components
+
+private struct OnboardingMotionHeroCard: View {
+    @Environment(\.colorScheme) private var colorScheme
+    let reduceMotion: Bool
+
+    var body: some View {
+        Color.clear
+            .aspectRatio(16.0 / 9.0, contentMode: .fit)
+            .frame(maxWidth: 380)
+            .overlay {
+                ZStack {
+                    if UIImage(named: "OnboardingHeroArt") != nil {
+                        Image("OnboardingHeroArt")
+                            .resizable()
+                            .scaledToFill()
+                    } else {
+                        LinearGradient(
+                            colors: [AppColors.accentGradientStart, AppColors.accentGradientEnd],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    }
+
+                    if !reduceMotion, let videoURL = OnboardingHeroVideoCache.url() {
+                        LoopingAssetVideoView(url: videoURL)
+                            .allowsHitTesting(false)
+                    }
+                }
+            }
+            .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .stroke(Color.primary.opacity(colorScheme == .dark ? 0.14 : 0.06), lineWidth: 0.75)
+            )
+            .shadow(
+                color: Color.black.opacity(colorScheme == .dark ? 0.36 : 0.10),
+                radius: 20,
+                y: 10
+            )
+    }
+}
+
+private struct OnboardingEditorialImageCard: View {
+    @Environment(\.colorScheme) private var colorScheme
+    let assetName: String
+    let aspectRatio: CGFloat
+
+    var body: some View {
+        Color.clear
+            .aspectRatio(aspectRatio, contentMode: .fit)
+            .frame(maxWidth: aspectRatio < 1.5 ? 300 : 360)
+            .overlay {
+                if UIImage(named: assetName) != nil {
+                    Image(assetName)
+                        .resizable()
+                        .scaledToFill()
+                } else {
+                    AppColors.accentGradient
+                }
+            }
+            .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .stroke(Color.primary.opacity(colorScheme == .dark ? 0.14 : 0.06), lineWidth: 0.75)
+            )
+            .shadow(
+                color: Color.black.opacity(colorScheme == .dark ? 0.36 : 0.10),
+                radius: 20,
+                y: 10
+            )
+    }
+}
+
+private enum OnboardingHeroVideoCache {
+    private static var cachedURL: URL?
+
+    static func url() -> URL? {
+        if let existing = cachedURL, FileManager.default.fileExists(atPath: existing.path) {
+            return existing
+        }
+        guard let dataAsset = NSDataAsset(name: "OnboardingHeroVideo") else { return nil }
+        let fileURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("pagepilot_onboarding_hero_v1.mp4")
+        if !FileManager.default.fileExists(atPath: fileURL.path) {
+            do {
+                try dataAsset.data.write(to: fileURL, options: .atomic)
+            } catch {
+                return nil
+            }
+        }
+        cachedURL = fileURL
+        return fileURL
+    }
+}
+
+private struct LoopingAssetVideoView: UIViewRepresentable {
+    let url: URL
+
+    final class PlayerContainerView: UIView {
+        override static var layerClass: AnyClass { AVPlayerLayer.self }
+        var playerLayer: AVPlayerLayer { layer as! AVPlayerLayer }
+        var player: AVQueuePlayer?
+        var looper: AVPlayerLooper?
+
+        override init(frame: CGRect) {
+            super.init(frame: frame)
+            backgroundColor = .clear
+            playerLayer.videoGravity = .resizeAspectFill
+            playerLayer.backgroundColor = UIColor.clear.cgColor
+        }
+
+        required init?(coder: NSCoder) {
+            fatalError("init(coder:) has not been implemented")
+        }
+
+        func startLooping(url: URL) {
+            let item = AVPlayerItem(url: url)
+            let queuePlayer = AVQueuePlayer(playerItem: item)
+            queuePlayer.isMuted = true
+            queuePlayer.actionAtItemEnd = .none
+            queuePlayer.preventsDisplaySleepDuringVideoPlayback = false
+            looper = AVPlayerLooper(player: queuePlayer, templateItem: item)
+            player = queuePlayer
+            playerLayer.player = queuePlayer
+            queuePlayer.play()
+        }
+
+        func stop() {
+            player?.pause()
+            playerLayer.player = nil
+            looper = nil
+            player = nil
+        }
+    }
+
+    func makeUIView(context: Context) -> PlayerContainerView {
+        let view = PlayerContainerView()
+        view.startLooping(url: url)
+        return view
+    }
+
+    func updateUIView(_ uiView: PlayerContainerView, context: Context) {
+        if uiView.player == nil {
+            uiView.startLooping(url: url)
+        } else if uiView.player?.rate == 0 {
+            uiView.player?.play()
+        }
+    }
+
+    static func dismantleUIView(_ uiView: PlayerContainerView, coordinator: ()) {
+        uiView.stop()
+    }
 }

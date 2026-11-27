@@ -62,13 +62,14 @@ final class LibraryModule: LibraryModuleAPI {
 
     private(set) lazy var rootViewController: UINavigationController = {
         let nav = UINavigationController(rootViewController: libraryViewController)
-        let appearance = UINavigationBarAppearance()
-        appearance.configureWithOpaqueBackground()
-        appearance.backgroundColor = .systemGroupedBackground
-        appearance.shadowColor = .clear
-        appearance.shadowImage = UIImage()
-        nav.navigationBar.standardAppearance = appearance
-        nav.navigationBar.scrollEdgeAppearance = appearance
+        let standardAppearance = UINavigationBarAppearance()
+        standardAppearance.configureWithDefaultBackground()
+        standardAppearance.shadowColor = .clear
+        nav.navigationBar.standardAppearance = standardAppearance
+
+        let scrollEdgeAppearance = UINavigationBarAppearance()
+        scrollEdgeAppearance.configureWithTransparentBackground()
+        nav.navigationBar.scrollEdgeAppearance = scrollEdgeAppearance
         return nav
     }()
 

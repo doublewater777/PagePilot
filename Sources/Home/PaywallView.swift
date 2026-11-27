@@ -148,13 +148,50 @@ struct PaywallView: View {
     // MARK: - Hero
 
     private var hero: some View {
-        VStack(spacing: 7) {
-            Image(systemName: heroContent.icon)
-                .font(.system(size: 18, weight: .bold))
-                .foregroundColor(.orange)
-                .frame(width: 36, height: 36)
-                .background(Color.orange.opacity(colorScheme == .dark ? 0.18 : 0.12))
-                .clipShape(Circle())
+        VStack(spacing: 10) {
+            if UIImage(named: "PaywallHeroArt") != nil {
+                ZStack(alignment: .topLeading) {
+                    Color.clear
+                        .frame(maxWidth: .infinity)
+                        .frame(height: isPad ? 168 : 146)
+                        .overlay {
+                            Image("PaywallHeroArt")
+                                .resizable()
+                                .scaledToFill()
+                        }
+                        .clipped()
+
+                    HStack(spacing: 5) {
+                        Image(systemName: heroContent.icon)
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundStyle(.orange)
+                        Text("PRO")
+                            .font(.system(size: 10.5, weight: .heavy, design: .rounded))
+                            .tracking(0.6)
+                            .foregroundStyle(AppColors.primaryText)
+                    }
+                    .padding(.horizontal, 9)
+                    .padding(.vertical, 5)
+                    .background(.ultraThinMaterial, in: Capsule())
+                    .overlay(Capsule().stroke(Color.white.opacity(0.28), lineWidth: 0.5))
+                    .padding(10)
+                }
+                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .stroke(Color.primary.opacity(colorScheme == .dark ? 0.14 : 0.06), lineWidth: 0.75)
+                )
+                .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.35 : 0.09), radius: 14, y: 6)
+                .padding(.bottom, 2)
+                .accessibilityHidden(true)
+            } else {
+                Image(systemName: heroContent.icon)
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundColor(.orange)
+                    .frame(width: 36, height: 36)
+                    .background(Color.orange.opacity(colorScheme == .dark ? 0.18 : 0.12))
+                    .clipShape(Circle())
+            }
 
             Text(heroContent.title)
                 .font(.system(size: 23, weight: .bold))
@@ -167,7 +204,7 @@ struct PaywallView: View {
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
         }
-        .padding(.horizontal, 10)
+        .padding(.horizontal, 4)
     }
 
     @ViewBuilder

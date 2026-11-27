@@ -19,10 +19,22 @@ final class ReaderFactory {
 }
 
 extension ReaderFactory: OutlineTableViewControllerFactory {
-    func make(publication: Publication, bookId: Book.Id, bookmarks: BookmarkRepository, highlights: HighlightRepository) -> OutlineTableViewAdapter {
-        let view = OutlineTableView(publication: publication, bookId: bookId, bookmarkRepository: bookmarks, highlightRepository: highlights)
+    func make(
+        publication: Publication,
+        bookId: Book.Id,
+        bookmarks: BookmarkRepository,
+        highlights: HighlightRepository,
+        currentLocator: Locator?
+    ) -> OutlineTableViewAdapter {
+        let view = OutlineTableView(
+            publication: publication,
+            bookId: bookId,
+            bookmarkRepository: bookmarks,
+            highlightRepository: highlights,
+            currentLocator: currentLocator
+        )
         let hostingVC = OutlineHostingController(rootView: view)
-        hostingVC.title = publication.metadata.title
+        hostingVC.title = NSLocalizedString("reader_bar_contents", comment: "")
 
         return (hostingVC, view.goToLocatorPublisher)
     }
@@ -49,7 +61,14 @@ extension ReaderFactory: OutlineTableViewControllerFactory {
 class OutlineHostingController: UIHostingController<OutlineTableView> {
     override init(rootView: OutlineTableView) {
         super.init(rootView: rootView)
-        navigationItem.setLeftBarButton(UIBarButtonItem(barButtonSystemItem: .cancel, target: self, action: #selector(cancelButtonPressed)), animated: true)
+        let closeButton = UIBarButtonItem(
+            image: UIImage(systemName: "xmark", withConfiguration: UIImage.SymbolConfiguration(pointSize: 13, weight: .semibold)),
+            style: .plain,
+            target: self,
+            action: #selector(cancelButtonPressed)
+        )
+        closeButton.accessibilityLabel = NSLocalizedString("close_button", comment: "")
+        navigationItem.rightBarButtonItem = closeButton
     }
 
     @available(*, unavailable)

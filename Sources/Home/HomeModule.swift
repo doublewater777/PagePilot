@@ -16,14 +16,41 @@ protocol HomeModuleAPI {
 }
 
 protocol HomeModuleDelegate: ModuleDelegate {
-    /// Called when user wants to continue reading a book
+    /// Called when user wants to continue reading or open a book.
     func homeDidSelectContinueReading(bookId: Book.Id)
 
     /// Called when user starts a time-boxed reading session.
     func homeDidSelectMicroReading(bookId: Book.Id, minutes: Int)
 
-    /// Called when user wants to go to library tab
+    /// Called when user wants to go to library / import a book.
     func homeDidSelectGoToLibrary()
+
+    /// Opens the system document picker to import local EPUB/PDF/TXT/Markdown books.
+    func homeDidRequestImportLocalFiles()
+
+    /// Presents Wi-Fi transfer sheet.
+    func homeDidRequestWiFiTransfer()
+
+    /// Presents device-to-device transfer sheet.
+    func homeDidRequestDeviceTransfer(books: [Book])
+
+    /// Presents OPDS catalog browser sheet.
+    func homeDidRequestOPDSFeeds()
+
+    /// Presents publication metadata details sheet for a book.
+    func homeDidRequestBookDetails(book: Book)
+
+    /// Deletes one or more books from the library.
+    func homeDidRequestDeleteBooks(_ books: [Book]) async
+
+    /// Opens the Settings modal drawer.
+    func homeDidRequestSettings()
+
+    /// Switches to the Journal tab (reading rhythm & quote box).
+    func homeDidRequestJournal()
+
+    /// Opens Apple Watch / iPad Watch connection settings sheet.
+    func homeDidRequestWatchSettings()
 }
 
 private final class HomeNavigationController: UINavigationController {
@@ -64,7 +91,7 @@ private final class HomeNavigationController: UINavigationController {
     }
 
     private func enforceHiddenNavigationBar() {
-        // Home owns the hidden-navigation-bar policy only while its root view
+        // Desk owns the hidden-navigation-bar policy only while its root view
         // controller is visible. Pushed screens such as Reader manage their own
         // navigation bar visibility.
         guard topViewController === viewControllers.first else { return }
@@ -90,12 +117,7 @@ final class HomeModule: HomeModuleAPI {
             delegate: delegate
         )
         let hostingController = UIHostingController(rootView: homeView)
-        hostingController.view.backgroundColor = UIColor { traits in
-            if traits.userInterfaceStyle == .dark {
-                return UIColor(red: 15 / 255, green: 16 / 255, blue: 19 / 255, alpha: 1)
-            }
-            return UIColor(red: 246 / 255, green: 248 / 255, blue: 252 / 255, alpha: 1)
-        }
+        hostingController.view.backgroundColor = AppColors.uiBackground
         let navigationController = HomeNavigationController(rootViewController: hostingController)
         navigationController.setNavigationBarHidden(true, animated: false)
         navigationController.view.backgroundColor = hostingController.view.backgroundColor

@@ -14,7 +14,6 @@ struct ReadingStatsView: View {
     @State private var selectedStatsScope: ReadingStatsScope = .day
     @State private var currentReferenceDate = Date()
     @State private var showPaywall = false
-    @State private var showShareCard = false
     @State private var statsRefreshID = UUID()
     @State private var streakScale: CGFloat = 1.0
     @State private var booksMap: [String: Book] = [:]
@@ -30,53 +29,42 @@ struct ReadingStatsView: View {
     }
 
     var body: some View {
-        ScrollView(.vertical, showsIndicators: false) {
-            VStack(alignment: .leading, spacing: 18) {
-                header
-                historyEntry
-                scopeSelector
-                periodNavigator
+        GeometryReader { proxy in
+            let isWideLayout = proxy.size.width >= 740
+            let horizontalPadding: CGFloat = isWideLayout ? 32 : 20
 
-                if canAccessSelectedScope {
-                    // Show dashboard immediately — avoid loading spinner swap that feels like a flashy enter animation.
-                    statsDashboard(statsStore.snapshot(for: selectedStatsScope, referenceDate: currentReferenceDate))
-                        .id(statsRefreshID)
-                } else {
-                    lockedStatsView
+            ScrollView(.vertical, showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 16) {
+                    Text(NSLocalizedString("stats_subtitle", comment: ""))
+                        .font(.system(size: 14.5))
+                        .foregroundColor(AppColors.secondaryText)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    scopeSelector
+                    periodNavigator
+
+                    if canAccessSelectedScope {
+                        let snapshot = statsStore.snapshot(for: selectedStatsScope, referenceDate: currentReferenceDate)
+                        statsDashboard(snapshot, isWideLayout: isWideLayout, containerWidth: proxy.size.width)
+                            .id(statsRefreshID)
+                    } else {
+                        lockedStatsView
+                            .frame(maxWidth: 560)
+                            .frame(maxWidth: .infinity)
+                    }
                 }
+                .frame(maxWidth: isWideLayout ? 1020 : 580)
+                .frame(maxWidth: .infinity)
+                .padding(.horizontal, horizontalPadding)
+                .padding(.top, 10)
+                .padding(.bottom, (horizontalSizeClass == .regular || UIDevice.current.userInterfaceIdiom == .pad) ? 28 : 96)
             }
-            .frame(maxWidth: horizontalSizeClass == .regular ? 560 : .infinity)
-            .frame(maxWidth: .infinity)
-            .padding(.horizontal, 20)
-            .padding(.top, 18)
-            .padding(.bottom, (horizontalSizeClass == .regular || UIDevice.current.userInterfaceIdiom == .pad) ? 24 : 96)
         }
-        .background(Color(.systemGroupedBackground))
+        .background(AppColors.background.ignoresSafeArea())
         .navigationTitle(NSLocalizedString("stats_title", comment: ""))
         .navigationBarTitleDisplayMode(.inline)
-        .toolbarBackground(Color(.systemGroupedBackground), for: .navigationBar)
-        .toolbarBackground(.visible, for: .navigationBar)
         .sheet(isPresented: $showPaywall) {
             PaywallView()
-        }
-        .sheet(isPresented: $showShareCard) {
-            ReadingShareCardView(
-                todaySeconds: statsStore.todayReadingSeconds(),
-                streakDays: statsStore.snapshot(for: .summary).currentStreakDays,
-                books: Array(booksMap.values)
-            )
-            .appSheetStyle(.content)
-        }
-        .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Button {
-                    showShareCard = true
-                } label: {
-                    Image(systemName: "square.and.arrow.up")
-                        .foregroundColor(AppColors.primaryText)
-                }
-                .buttonStyle(.plain)
-            }
         }
         .onReceive(NotificationCenter.default.publisher(for: .readingStatsDidChange)) { _ in
             statsRefreshID = UUID()
@@ -97,19 +85,6 @@ struct ReadingStatsView: View {
             } else if let old = oldDate, let new = newDate, !Calendar.current.isDate(old, inSameDayAs: new) {
                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
             }
-        }
-    }
-
-    private var header: some View {
-        VStack(alignment: .leading, spacing: 7) {
-            Text(NSLocalizedString("stats_title", comment: ""))
-                .font(.system(size: 30, weight: .bold))
-                .foregroundColor(AppColors.primaryText)
-
-            Text(NSLocalizedString("stats_subtitle", comment: ""))
-                .font(.system(size: 15))
-                .foregroundColor(AppColors.secondaryText)
-                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
@@ -151,60 +126,61 @@ struct ReadingStatsView: View {
                     .foregroundColor(AppColors.tertiaryText)
             }
             .padding(16)
-            .background(Color(.secondarySystemGroupedBackground))
-            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .cardStyle()
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PremiumButtonStyle())
         .frame(maxWidth: .infinity, alignment: .center)
     }
 
     private var scopeSelector: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                ForEach(ReadingStatsScope.allCases) { scope in
-                    Button {
-                        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                            selectedStatsScope = scope
-                            currentReferenceDate = Date()
-                            selectedChartDate = nil
-                        }
-                        if scope.requiresPro {
-                            Analytics.shared.log(.statsScopeChanged(to: scope.rawValue))
-                        }
-                    } label: {
-                        HStack(spacing: 6) {
-                            Text(scope.title)
-                            if scope.requiresPro && !proPurchase.hasProAccess {
-                                Image(systemName: "lock.fill")
-                                    .font(.system(size: 10, weight: .bold))
-                            }
-                        }
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(selectedStatsScope == scope ? .white : AppColors.primaryText)
-                        .lineLimit(1)
-                        .padding(.horizontal, 14)
-                        .frame(height: 38)
-                        .background(scopeBackground(for: scope))
-                        .clipShape(Capsule())
+        HStack(spacing: 4) {
+            ForEach(ReadingStatsScope.allCases) { scope in
+                let isSelected = selectedStatsScope == scope
+                Button {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
+                        selectedStatsScope = scope
+                        currentReferenceDate = Date()
+                        selectedChartDate = nil
                     }
-                    .buttonStyle(.plain)
+                    if scope.requiresPro {
+                        Analytics.shared.log(.statsScopeChanged(to: scope.rawValue))
+                    }
+                } label: {
+                    HStack(spacing: 4) {
+                        Text(scope.title)
+                        if scope.requiresPro && !proPurchase.hasProAccess {
+                            Image(systemName: "lock.fill")
+                                .font(.system(size: 9, weight: .bold))
+                        }
+                    }
+                    .font(.system(size: 13.5, weight: isSelected ? .bold : .semibold))
+                    .foregroundColor(isSelected ? .white : AppColors.secondaryText)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 34)
+                    .background(scopeBackground(for: scope))
+                    .clipShape(Capsule())
                 }
+                .buttonStyle(.plain)
             }
-            .padding(.vertical, 2)
         }
+        .padding(4)
+        .background(AppColors.cardBackground, in: Capsule())
+        .overlay(
+            Capsule()
+                .stroke(colorScheme == .dark ? Color.white.opacity(0.06) : Color.black.opacity(0.05), lineWidth: 0.75)
+        )
     }
 
     @ViewBuilder
     private func scopeBackground(for scope: ReadingStatsScope) -> some View {
         if selectedStatsScope == scope {
-            LinearGradient(
-                colors: [AppColors.accentBlue, AppColors.accentTeal],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
+            AppColors.horizontalGradient
         } else {
-            Color(.secondarySystemGroupedBackground)
+            Color.clear
         }
     }
 
@@ -231,11 +207,11 @@ struct ReadingStatsView: View {
                 HStack {
                     Button(action: { navigatePeriod(by: -1) }) {
                         Image(systemName: "chevron.left")
-                            .font(.system(size: 16, weight: .bold))
+                            .font(.system(size: 14, weight: .bold))
                             .foregroundColor(AppColors.primaryText)
-                            .frame(width: 36, height: 36)
-                            .background(Color(.secondarySystemGroupedBackground))
-                            .clipShape(Circle())
+                            .frame(width: 34, height: 34)
+                            .background(AppColors.cardBackground, in: Circle())
+                            .overlay(Circle().stroke(colorScheme == .dark ? Color.white.opacity(0.08) : Color.black.opacity(0.05), lineWidth: 0.75))
                     }
                     .buttonStyle(.plain)
 
@@ -264,11 +240,7 @@ struct ReadingStatsView: View {
                                 .foregroundColor(.white)
                                 .padding(.horizontal, 10)
                                 .padding(.vertical, 5)
-                                .background(LinearGradient(
-                                    colors: [AppColors.accentBlue, AppColors.accentTeal],
-                                    startPoint: .leading,
-                                    endPoint: .trailing
-                                ))
+                                .background(AppColors.horizontalGradient)
                                 .clipShape(Capsule())
                             }
                             .transition(.scale.combined(with: .opacity))
@@ -279,11 +251,11 @@ struct ReadingStatsView: View {
 
                     Button(action: { navigatePeriod(by: 1) }) {
                         Image(systemName: "chevron.right")
-                            .font(.system(size: 16, weight: .bold))
+                            .font(.system(size: 14, weight: .bold))
                             .foregroundColor(AppColors.primaryText)
-                            .frame(width: 36, height: 36)
-                            .background(Color(.secondarySystemGroupedBackground))
-                            .clipShape(Circle())
+                            .frame(width: 34, height: 34)
+                            .background(AppColors.cardBackground, in: Circle())
+                            .overlay(Circle().stroke(colorScheme == .dark ? Color.white.opacity(0.08) : Color.black.opacity(0.05), lineWidth: 0.75))
                     }
                     .buttonStyle(.plain)
                     .disabled(isFutureLimitReached)
@@ -373,18 +345,47 @@ struct ReadingStatsView: View {
         }
     }
 
-    private func statsDashboard(_ stats: ReadingStatsSnapshot) -> some View {
-        VStack(spacing: 14) {
-            summaryCard(stats)
-            insightGrid(stats)
-            chartCard(stats)
-            if selectedStatsScope == .month {
-                heatmapGrid(stats)
+    @ViewBuilder
+    private func statsDashboard(
+        _ stats: ReadingStatsSnapshot,
+        isWideLayout: Bool,
+        containerWidth: CGFloat
+    ) -> some View {
+        if isWideLayout {
+            HStack(alignment: .top, spacing: 20) {
+                VStack(spacing: 14) {
+                    summaryCard(stats)
+                    insightGrid(stats)
+                    historyEntry
+                }
+                .frame(width: min(390, max(320, containerWidth * 0.39)))
+
+                VStack(spacing: 14) {
+                    chartCard(stats)
+                    if selectedStatsScope == .month {
+                        heatmapGrid(stats)
+                    }
+                    if selectedStatsScope == .summary {
+                        badgesSection(stats)
+                    }
+                    groupedTimelineCard(stats)
+                }
+                .frame(maxWidth: .infinity)
             }
-            if selectedStatsScope == .summary {
-                badgesSection(stats)
+        } else {
+            VStack(spacing: 14) {
+                summaryCard(stats)
+                insightGrid(stats)
+                chartCard(stats)
+                if selectedStatsScope == .month {
+                    heatmapGrid(stats)
+                }
+                if selectedStatsScope == .summary {
+                    badgesSection(stats)
+                }
+                groupedTimelineCard(stats)
+                historyEntry
             }
-            groupedTimelineCard(stats)
         }
     }
 
@@ -446,8 +447,7 @@ struct ReadingStatsView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 14)
                 .padding(.vertical, 12)
-                .background(Color(.secondarySystemGroupedBackground))
-                .cornerRadius(12)
+                .background(Color.primary.opacity(colorScheme == .dark ? 0.06 : 0.035), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
             }
         }
         .padding(20)
@@ -471,8 +471,7 @@ struct ReadingStatsView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 14)
         .padding(.vertical, 12)
-        .background(Color(.secondarySystemGroupedBackground))
-        .cornerRadius(12)
+        .background(Color.primary.opacity(colorScheme == .dark ? 0.06 : 0.035), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
     private func insightGrid(_ stats: ReadingStatsSnapshot) -> some View {
@@ -532,8 +531,7 @@ struct ReadingStatsView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(14)
-        .background(AppColors.cardBackground)
-        .cornerRadius(16)
+        .cardStyle()
     }
 
     private func chartCard(_ stats: ReadingStatsSnapshot) -> some View {
@@ -828,7 +826,17 @@ struct ReadingStatsView: View {
         }
         
         let totalMinutes = displayData.reduce(0.0) { $0 + $1.value }
-        
+        let chartColors: [Color] = [
+            AppColors.accentBlue,
+            AppColors.accentTeal,
+            .indigo,
+            .orange,
+            .purple,
+            Color.secondary.opacity(0.6),
+        ]
+        let domainTitles = displayData.map(\.title)
+        let rangeColors = displayData.indices.map { chartColors[$0 % chartColors.count] }
+
         return HStack(spacing: 16) {
             if totalMinutes > 0 {
                 Chart(displayData) { item in
@@ -841,25 +849,27 @@ struct ReadingStatsView: View {
                     .cornerRadius(4)
                     .foregroundStyle(by: .value("Book", item.title))
                 }
+                .chartForegroundStyleScale(domain: domainTitles, range: rangeColors)
                 .chartLegend(.hidden)
                 .frame(width: 120, height: 120)
-                
-                VStack(alignment: .leading, spacing: 6) {
-                    ForEach(displayData.prefix(4)) { item in
-                        HStack(spacing: 6) {
+
+                VStack(alignment: .leading, spacing: 7) {
+                    ForEach(Array(displayData.prefix(5).enumerated()), id: \.element.id) { index, item in
+                        HStack(spacing: 7) {
                             Circle()
-                                .fill(bookColor(for: item.title))
+                                .fill(chartColors[index % chartColors.count])
                                 .frame(width: 8, height: 8)
-                            
+
                             Text(item.title)
-                                .font(.system(size: 11, weight: .semibold))
+                                .font(.system(size: 12, weight: .semibold))
                                 .foregroundColor(AppColors.primaryText)
                                 .lineLimit(1)
-                            
+
                             Spacer()
-                            
+
                             Text(String(format: "%.0f%%", totalMinutes > 0 ? (item.value / totalMinutes) * 100 : 0))
-                                .font(.system(size: 11, weight: .bold))
+                                .font(.system(size: 11.5, weight: .bold))
+                                .monospacedDigit()
                                 .foregroundColor(AppColors.secondaryText)
                         }
                     }
@@ -870,12 +880,6 @@ struct ReadingStatsView: View {
             }
         }
         .padding(.vertical, 8)
-    }
-
-    private func bookColor(for title: String) -> Color {
-        let hash = abs(title.hashValue)
-        let colors: [Color] = [.blue, .indigo, .purple, .teal, .orange, .pink, .green]
-        return colors[hash % colors.count]
     }
 
     private func infoPanelDateString(for date: Date) -> String {
@@ -948,23 +952,56 @@ struct ReadingStatsView: View {
             }
         }
         
+        var localizedCalendar = Calendar.current
+        localizedCalendar.locale = AppAppearancePreferences.locale
+        let rawSymbols = localizedCalendar.veryShortStandaloneWeekdaySymbols
+        // Grid starts on Monday (matches `leadingSpaces = (weekday + 5) % 7`)
+        let weekdayHeaders: [String] = rawSymbols.count == 7
+            ? Array(rawSymbols[1...6]) + [rawSymbols[0]]
+            : rawSymbols
+
         return AnyView(
-            VStack(alignment: .leading, spacing: 10) {
-                Text(NSLocalizedString("settings_stats_section", comment: ""))
-                    .font(.system(size: 14, weight: .bold))
-                    .foregroundColor(AppColors.primaryText)
-                
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Text(NSLocalizedString("stats_heatmap_title", comment: ""))
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundColor(AppColors.primaryText)
+
+                    Spacer()
+
+                    HStack(spacing: 4) {
+                        Text(NSLocalizedString("stats_heatmap_less", comment: ""))
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundStyle(AppColors.tertiaryText)
+                        ForEach([0, 300, 1200, 2400], id: \.self) { level in
+                            RoundedRectangle(cornerRadius: 2.5, style: .continuous)
+                                .fill(heatmapColor(for: level))
+                                .frame(width: 10, height: 10)
+                        }
+                        Text(NSLocalizedString("stats_heatmap_more", comment: ""))
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundStyle(AppColors.tertiaryText)
+                    }
+                }
+
                 LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 7), spacing: 6) {
+                    ForEach(Array(weekdayHeaders.enumerated()), id: \.offset) { _, symbol in
+                        Text(symbol)
+                            .font(.system(size: 10.5, weight: .semibold))
+                            .foregroundStyle(AppColors.tertiaryText)
+                            .frame(maxWidth: .infinity)
+                    }
+
                     ForEach(gridItems) { item in
                         if let date = item.date {
                             let color = heatmapColor(for: item.seconds)
                             let isSelected = selectedChartDate != nil && calendar.isDate(selectedChartDate!, inSameDayAs: date)
-                            
-                            RoundedRectangle(cornerRadius: 4)
+
+                            RoundedRectangle(cornerRadius: 5, style: .continuous)
                                 .fill(color)
                                 .aspectRatio(1.0, contentMode: .fit)
                                 .overlay(
-                                    RoundedRectangle(cornerRadius: 4)
+                                    RoundedRectangle(cornerRadius: 5, style: .continuous)
                                         .stroke(AppColors.accentTeal, lineWidth: isSelected ? 2 : 0)
                                 )
                                 .onTapGesture {
@@ -983,10 +1020,9 @@ struct ReadingStatsView: View {
                         }
                     }
                 }
-                .padding(12)
-                .background(AppColors.cardBackground)
-                .cornerRadius(16)
             }
+            .padding(16)
+            .cardStyle()
         )
     }
 
@@ -1106,20 +1142,14 @@ struct ReadingStatsView: View {
                                     .resizable()
                                     .aspectRatio(contentMode: .fill)
                             } placeholder: {
-                                Color(.secondarySystemBackground)
+                                GeneratedBookCoverView(title: item.title, author: book.authors)
                             }
-                            .frame(width: 36, height: 50)
-                            .cornerRadius(6)
-                            .clipped()
+                            .frame(width: 38, height: 54)
+                            .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
                         } else {
-                            ZStack {
-                                Color(.secondarySystemBackground)
-                                Image(systemName: "book.closed")
-                                    .font(.system(size: 14))
-                                    .foregroundColor(.secondary)
-                            }
-                            .frame(width: 36, height: 50)
-                            .cornerRadius(6)
+                            GeneratedBookCoverView(title: item.title, author: booksMap[item.bookId]?.authors)
+                                .frame(width: 38, height: 54)
+                                .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
                         }
                         
                         if index < 3 {
@@ -1381,14 +1411,28 @@ struct ReadingStatsView: View {
       return AnyView(
           VStack(spacing: 12) {
               ForEach(bookItems) { item in
-                  HStack {
-                      VStack(alignment: .leading, spacing: 4) {
+                  HStack(spacing: 12) {
+                      if let book = booksMap[item.bookId], let coverURL = book.cover?.url {
+                          AsyncImage(url: coverURL) { image in
+                              image.resizable().aspectRatio(contentMode: .fill)
+                          } placeholder: {
+                              GeneratedBookCoverView(title: item.title, author: book.authors)
+                          }
+                          .frame(width: 34, height: 48)
+                          .clipShape(RoundedRectangle(cornerRadius: 5, style: .continuous))
+                      } else {
+                          GeneratedBookCoverView(title: item.title, author: booksMap[item.bookId]?.authors)
+                              .frame(width: 34, height: 48)
+                              .clipShape(RoundedRectangle(cornerRadius: 5, style: .continuous))
+                      }
+
+                      VStack(alignment: .leading, spacing: 3) {
                           Text(item.title)
                               .font(.system(size: 14, weight: .semibold))
                               .foregroundColor(AppColors.primaryText)
                               .lineLimit(1)
                           
-                          if let author = booksMap[item.bookId]?.authors {
+                          if let author = booksMap[item.bookId]?.authors, !author.isEmpty, author.lowercased() != "unknown" {
                               Text(author)
                                   .font(.system(size: 12))
                                   .foregroundColor(AppColors.secondaryText)
@@ -1429,25 +1473,42 @@ struct ReadingStatsView: View {
     private var lockedStatsView: some View {
         VStack(spacing: 18) {
             VStack(spacing: 12) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .fill(LinearGradient(
-                            colors: [
-                                AppColors.accentBlue.opacity(colorScheme == .dark ? 0.28 : 0.14),
-                                AppColors.accentTeal.opacity(colorScheme == .dark ? 0.24 : 0.12)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ))
+                if UIImage(named: "PaywallHeroArt") != nil {
+                    Color.clear
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 124)
+                        .overlay {
+                            Image("PaywallHeroArt")
+                                .resizable()
+                                .scaledToFill()
+                        }
+                        .clipped()
+                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .stroke(Color.primary.opacity(colorScheme == .dark ? 0.12 : 0.06), lineWidth: 0.75)
+                        )
+                } else {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                            .fill(LinearGradient(
+                                colors: [
+                                    AppColors.accentBlue.opacity(colorScheme == .dark ? 0.28 : 0.14),
+                                    AppColors.accentTeal.opacity(colorScheme == .dark ? 0.24 : 0.12)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ))
 
-                    Image(systemName: "lock.open.rotation")
-                        .font(.system(size: 28, weight: .semibold))
-                        .foregroundColor(AppColors.accentBlue)
+                        Image(systemName: "lock.open.rotation")
+                            .font(.system(size: 28, weight: .semibold))
+                            .foregroundColor(AppColors.accentBlue)
+                    }
+                    .frame(width: 64, height: 64)
                 }
-                .frame(width: 64, height: 64)
 
                 Text(NSLocalizedString("stats_pro_locked_title", comment: ""))
-                    .font(.system(size: 22, weight: .bold))
+                    .font(.system(size: 21, weight: .bold))
                     .foregroundColor(AppColors.primaryText)
 
                 Text(NSLocalizedString("stats_pro_locked_body", comment: ""))
@@ -1462,8 +1523,7 @@ struct ReadingStatsView: View {
                 Divider().padding(.leading, 42)
                 lockedFeature(icon: "flame.fill", text: NSLocalizedString("paywall_feature_streak", comment: ""))
             }
-            .background(Color(.secondarySystemGroupedBackground))
-            .cornerRadius(16)
+            .background(Color.primary.opacity(colorScheme == .dark ? 0.06 : 0.035), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
 
             Button(action: {
                 Analytics.shared.log(.paywallViewed(source: "stats_locked_view"))
@@ -1473,15 +1533,10 @@ struct ReadingStatsView: View {
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 15)
-                    .background(LinearGradient(
-                        colors: [AppColors.accentBlue, AppColors.accentTeal],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    ))
-                    .cornerRadius(14)
+                    .padding(.vertical, 14)
+                    .background(AppColors.horizontalGradient, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
             }
-            .buttonStyle(.plain)
+            .buttonStyle(PremiumButtonStyle())
         }
         .padding(20)
         .cardStyle()
@@ -1726,11 +1781,11 @@ struct ReadingStatsView: View {
             }
             .padding(.bottom, 12)
         }
-        .background(Color(.secondarySystemGroupedBackground))
-        .cornerRadius(16)
+        .frame(maxWidth: .infinity)
+        .cardStyle()
         .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .stroke(badge.isUnlocked ? AppColors.accentBlue.opacity(0.15) : Color.clear, lineWidth: 1)
+            RoundedRectangle(cornerRadius: AppColors.cardCornerRadius, style: .continuous)
+                .stroke(badge.isUnlocked ? AppColors.accentBlue.opacity(0.24) : Color.clear, lineWidth: 1.2)
         )
     }
     
@@ -1841,11 +1896,9 @@ private struct ReadingHistoryView: View {
                 lockedContent
             }
         }
-        .background(Color(.systemGroupedBackground))
+        .background(AppColors.background.ignoresSafeArea())
         .navigationTitle(book?.title ?? NSLocalizedString("reading_history_title", comment: ""))
         .navigationBarTitleDisplayMode(.inline)
-        .toolbarBackground(Color(.systemGroupedBackground), for: .navigationBar)
-        .toolbarBackground(.visible, for: .navigationBar)
         .sheet(isPresented: $showPaywall) {
             PaywallView(analyticsSource: paywallSource.rawValue)
         }
@@ -2168,8 +2221,7 @@ private struct ReadingPremiumPreviewCard: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
-        .background(Color(.secondarySystemGroupedBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .cardStyle()
     }
 }
 
@@ -2328,12 +2380,7 @@ private struct ReadingHistorySessionCard: View {
     }
 
     private var coverPlaceholder: some View {
-        ZStack {
-            Color(.secondarySystemBackground)
-            Image(systemName: "book.closed")
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundColor(AppColors.tertiaryText)
-        }
+        GeneratedBookCoverView(title: item.book.title, author: item.book.authors)
     }
 
     private var durationText: String {

@@ -57,11 +57,9 @@ struct MyNotesView: View {
                 bookList
             }
         }
-        .background(Color(.systemGroupedBackground))
+        .background(AppColors.background.ignoresSafeArea())
         .navigationTitle(NSLocalizedString("my_notes_title", comment: ""))
         .navigationBarTitleDisplayMode(.inline)
-        .toolbarBackground(Color(.systemGroupedBackground), for: .navigationBar)
-        .toolbarBackground(.visible, for: .navigationBar)
         .task { await loadNotes() }
         .alert(
             NSLocalizedString("my_notes_delete_error_title", comment: ""),
@@ -151,6 +149,8 @@ struct MyNotesView: View {
         }
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
+        .frame(maxWidth: 700)
+        .frame(maxWidth: .infinity)
         .contentMargins(.bottom, notesBottomClearance, for: .scrollContent)
         .padding(.top, 4)
         .sheet(isPresented: $showPaywall) {
@@ -198,40 +198,38 @@ struct MyNotesView: View {
     }
 
     private func openReader(for note: TimelineNote) {
-        guard let app = AppModule.shared, let bookId = note.book.id else { return }
+        guard let app = AppModule.shared else { return }
 
-        app.pendingNavigationTarget = (bookId, note.item.locator)
-
-        // Close Home sheet first; from Me-tab NavigationLink this pops notes.
-        // Defer open so the sheet/nav transition finishes (especially on iPad).
         dismiss()
 
         Task { @MainActor in
-            // Allow sheet dismissal / pop animation to complete before presenting reader.
             try? await Task.sleep(nanoseconds: 350_000_000)
-
-            let tabBar = app.tabBarController
-            let nav = app.library.rootViewController
-            tabBar?.selectedIndex = 1
-            nav.popToRootViewController(animated: false)
-
-            guard let pub = try? await app.library.openBook(note.book, sender: nav) else { return }
-            app.reader.presentPublication(publication: pub, book: note.book, in: nav)
+            app.openBook(note.book, locator: note.item.locator)
         }
     }
 
     private var emptyState: some View {
-        VStack(spacing: 14) {
-            Image(systemName: "bookmark.slash")
-                .font(.system(size: 40, weight: .light))
-                .foregroundStyle(.tertiary)
+        VStack(spacing: 16) {
+            ZStack {
+                Circle()
+                    .fill(AppColors.accentBlue.opacity(0.1))
+                    .frame(width: 72, height: 72)
+                Image(systemName: "highlighter")
+                    .font(.system(size: 28, weight: .semibold))
+                    .foregroundStyle(AppColors.accentBlue)
+            }
 
             Text(NSLocalizedString("my_notes_empty", comment: ""))
-                .font(.system(size: 16, weight: .medium))
-                .foregroundStyle(.secondary)
+                .font(.system(size: 15, weight: .medium))
+                .foregroundStyle(AppColors.secondaryText)
                 .multilineTextAlignment(.center)
-                .padding(.horizontal, 32)
+                .lineSpacing(3)
+                .padding(.horizontal, 28)
         }
+        .padding(.vertical, 32)
+        .frame(maxWidth: 420)
+        .cardStyle()
+        .padding(.horizontal, 24)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
@@ -379,27 +377,64 @@ private struct BookNotesDetailView: View {
     let onOpen: (TimelineNote) -> Void
     let onDelete: (TimelineNote) -> Void
 
-    private var notes: [TimelineNote] {
+    @State private var filter: NoteFilter = .all
+    @State private var postcardPayload: QuotePostcardPayload?
+
+    private enum NoteFilter: CaseIterable {
+        case all, highlights, bookmarks
+
+        var title: String {
+            switch self {
+            case .all: return NSLocalizedString("my_notes_filter_all", comment: "")
+            case .highlights: return NSLocalizedString("my_notes_highlights_label", comment: "")
+            case .bookmarks: return NSLocalizedString("my_notes_bookmarks_label", comment: "")
+            }
+        }
+    }
+
+    private var bookNotes: [TimelineNote] {
         allNotes
             .filter { $0.book.id == book.id }
             .sorted { $0.date > $1.date }
     }
 
+    private var notes: [TimelineNote] {
+        switch filter {
+        case .all:
+            return bookNotes
+        case .highlights:
+            return bookNotes.filter { if case .highlight = $0.item { return true }; return false }
+        case .bookmarks:
+            return bookNotes.filter { if case .bookmark = $0.item { return true }; return false }
+        }
+    }
+
     private var highlightCount: Int {
-        notes.filter { if case .highlight = $0.item { return true }; return false }.count
+        bookNotes.filter { if case .highlight = $0.item { return true }; return false }.count
     }
 
     private var bookmarkCount: Int {
-        notes.filter { if case .bookmark = $0.item { return true }; return false }.count
+        bookNotes.filter { if case .bookmark = $0.item { return true }; return false }.count
     }
 
     var body: some View {
         List {
             Section {
-                bookHeader
-                    .listRowInsets(EdgeInsets(top: 8, leading: 20, bottom: 12, trailing: 20))
-                    .listRowSeparator(.hidden)
-                    .listRowBackground(Color.clear)
+                VStack(spacing: 12) {
+                    bookHeader
+
+                    if highlightCount > 0 && bookmarkCount > 0 {
+                        Picker("", selection: $filter) {
+                            ForEach(NoteFilter.allCases, id: \.self) { option in
+                                Text(option.title).tag(option)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                    }
+                }
+                .listRowInsets(EdgeInsets(top: 8, leading: 20, bottom: 8, trailing: 20))
+                .listRowSeparator(.hidden)
+                .listRowBackground(Color.clear)
             }
 
             Section {
@@ -415,8 +450,10 @@ private struct BookNotesDetailView: View {
                         Button {
                             onOpen(note)
                         } label: {
-                            NoteContentRow(note: note)
-                                .contentShape(Rectangle())
+                            NoteContentRow(note: note, onSharePostcard: { payload in
+                                postcardPayload = payload
+                            })
+                            .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
                         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
@@ -435,11 +472,15 @@ private struct BookNotesDetailView: View {
         }
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
-        .background(Color(.systemGroupedBackground))
+        .frame(maxWidth: 700)
+        .frame(maxWidth: .infinity)
+        .background(AppColors.background.ignoresSafeArea())
         .navigationTitle(book.title)
         .navigationBarTitleDisplayMode(.inline)
-        .toolbarBackground(Color(.systemGroupedBackground), for: .navigationBar)
-        .toolbarBackground(.visible, for: .navigationBar)
+        .sheet(item: $postcardPayload) { payload in
+            QuotePostcardView(payload: payload)
+                .appSheetStyle(.content)
+        }
     }
 
     private var bookHeader: some View {
@@ -488,6 +529,7 @@ private struct BookNotesDetailView: View {
 
 private struct NoteContentRow: View {
     let note: TimelineNote
+    var onSharePostcard: ((QuotePostcardPayload) -> Void)? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -590,12 +632,48 @@ private struct NoteContentRow: View {
                 .padding(.horizontal, 4)
             }
 
-            if let title = hl.locator.title, !title.isEmpty {
-                Text(title)
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(.secondary)
-                    .padding(.top, 8)
+            HStack {
+                if let title = hl.locator.title, !title.isEmpty {
+                    Text(title)
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+
+                Spacer(minLength: 6)
+
+                if let onSharePostcard,
+                   let quote = hl.locator.text.sanitized().highlight,
+                   !quote.isEmpty {
+                    Button {
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        onSharePostcard(
+                            QuotePostcardPayload(
+                                id: note.id,
+                                quote: quote,
+                                note: hl.note,
+                                bookTitle: note.book.title,
+                                author: note.book.authors,
+                                chapterTitle: hl.locator.title,
+                                date: note.date
+                            )
+                        )
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "sparkles")
+                                .font(.system(size: 10, weight: .bold))
+                            Text(NSLocalizedString("quote_postcard_action_short", comment: ""))
+                                .font(.system(size: 11.5, weight: .bold))
+                        }
+                        .foregroundStyle(AppColors.accentBlue)
+                        .padding(.horizontal, 9)
+                        .padding(.vertical, 4)
+                        .background(AppColors.accentBlue.opacity(0.1), in: Capsule())
+                    }
+                    .buttonStyle(.plain)
+                }
             }
+            .padding(.top, 8)
         }
     }
 
@@ -668,13 +746,7 @@ private struct BookCoverThumbnail: View {
                     .aspectRatio(contentMode: .fill)
                     .clipped()
             } else {
-                RoundedRectangle(cornerRadius: 6)
-                    .fill(.quaternary)
-                    .overlay {
-                        Image(systemName: "book.closed")
-                            .font(.system(size: 16, weight: .light))
-                            .foregroundStyle(.tertiary)
-                    }
+                GeneratedBookCoverView(title: book.title, author: book.authors)
             }
         }
         .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))

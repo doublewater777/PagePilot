@@ -58,7 +58,28 @@ final class PDFViewController: VisualReaderViewController<PDFNavigatorViewContro
                 }
             )
             let vc = UIHostingController(rootView: userPrefs)
-            vc.modalPresentationStyle = .formSheet
+            let isPad = traitCollection.horizontalSizeClass == .regular || UIDevice.current.userInterfaceIdiom == .pad
+            if isPad, let anchor = bottomControlBarAnchorView {
+                vc.modalPresentationStyle = .popover
+                vc.preferredContentSize = CGSize(width: 390, height: 480)
+                if let popover = vc.popoverPresentationController {
+                    popover.sourceView = anchor
+                    popover.sourceRect = CGRect(x: anchor.bounds.midX, y: anchor.bounds.minY, width: 1, height: 1)
+                    popover.permittedArrowDirections = [.down, .up]
+                }
+            } else {
+                vc.modalPresentationStyle = .pageSheet
+                if let sheet = vc.sheetPresentationController {
+                    let previewId = UISheetPresentationController.Detent.Identifier("pdfPreview")
+                    let previewDetent = UISheetPresentationController.Detent.custom(identifier: previewId) { context in
+                        min(420, context.maximumDetentValue * 0.52)
+                    }
+                    sheet.detents = [previewDetent, .large()]
+                    sheet.selectedDetentIdentifier = previewId
+                    sheet.largestUndimmedDetentIdentifier = previewId
+                    sheet.prefersGrabberVisible = true
+                }
+            }
             vc.configureReaderPanelKeyboard()
             present(vc, animated: true)
             } catch {

@@ -1,5 +1,5 @@
 //
-//  Copyright 2026 Readium Foundation. All rights reserved.
+//  Copyright 2026 PagePilot. All rights reserved.
 //  Use of this source code is governed by the BSD-style license
 //  available in the top-level LICENSE file of the project.
 //
@@ -9,6 +9,95 @@ import Foundation
 import ReadiumNavigator
 import ReadiumShared
 import SwiftUI
+import UIKit
+
+// MARK: - Reader Theme Appearance Bridge
+
+/// Maps the reader's active EPUB preferences to matching native chrome colors
+/// so safe areas, status bar, footer, and footnote popups harmonize seamlessly with the page.
+struct ReaderThemeAppearance: Equatable {
+    let backgroundColor: UIColor
+    let primaryTextColor: UIColor
+    let secondaryTextColor: UIColor
+    let isDarkSurface: Bool
+
+    static func resolve(
+        preferences: EPUBPreferences?,
+        systemStyle: UIUserInterfaceStyle
+    ) -> ReaderThemeAppearance {
+        if let customBg = preferences?.backgroundColor?.color {
+            let uiBg = UIColor(customBg)
+            let isDark = uiBg.isPerceptuallyDark
+            let customFg = preferences?.textColor.map { UIColor($0.color) }
+            return ReaderThemeAppearance(
+                backgroundColor: uiBg,
+                primaryTextColor: customFg ?? (isDark ? AppColors.readerDarkText : .label),
+                secondaryTextColor: (customFg ?? (isDark ? AppColors.readerDarkText : .label)).withAlphaComponent(0.55),
+                isDarkSurface: isDark
+            )
+        }
+
+        switch preferences?.theme {
+        case .dark:
+            return ReaderThemeAppearance(
+                backgroundColor: AppColors.readerDarkBackground,
+                primaryTextColor: AppColors.readerDarkText,
+                secondaryTextColor: AppColors.readerDarkText.withAlphaComponent(0.56),
+                isDarkSurface: true
+            )
+        case .sepia:
+            return ReaderThemeAppearance(
+                backgroundColor: AppColors.readerSepiaBackground,
+                primaryTextColor: AppColors.readerSepiaText,
+                secondaryTextColor: AppColors.readerSepiaText.withAlphaComponent(0.62),
+                isDarkSurface: false
+            )
+        case .light:
+            return ReaderThemeAppearance(
+                backgroundColor: .white,
+                primaryTextColor: UIColor(red: 28 / 255, green: 30 / 255, blue: 33 / 255, alpha: 1),
+                secondaryTextColor: UIColor(red: 96 / 255, green: 104 / 255, blue: 115 / 255, alpha: 0.78),
+                isDarkSurface: false
+            )
+        case nil:
+            if systemStyle == .dark {
+                return ReaderThemeAppearance(
+                    backgroundColor: AppColors.readerDarkBackground,
+                    primaryTextColor: AppColors.readerDarkText,
+                    secondaryTextColor: AppColors.readerDarkText.withAlphaComponent(0.56),
+                    isDarkSurface: true
+                )
+            }
+            return ReaderThemeAppearance(
+                backgroundColor: .white,
+                primaryTextColor: UIColor(red: 28 / 255, green: 30 / 255, blue: 33 / 255, alpha: 1),
+                secondaryTextColor: UIColor(red: 96 / 255, green: 104 / 255, blue: 115 / 255, alpha: 0.78),
+                isDarkSurface: false
+            )
+        }
+    }
+
+    var cssHexBackground: String { backgroundColor.hexRGBString }
+    var cssHexText: String { primaryTextColor.hexRGBString }
+}
+
+private extension UIColor {
+    var isPerceptuallyDark: Bool {
+        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+        guard getRed(&r, green: &g, blue: &b, alpha: &a) else { return false }
+        let luminance = 0.299 * r + 0.587 * g + 0.114 * b
+        return luminance < 0.5
+    }
+
+    var hexRGBString: String {
+        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+        let resolved = resolvedColor(with: UITraitCollection.current)
+        resolved.getRed(&r, green: &g, blue: &b, alpha: &a)
+        return String(format: "#%02X%02X%02X", Int(round(r * 255)), Int(round(g * 255)), Int(round(b * 255)))
+    }
+}
+
+// MARK: - ViewModel
 
 final class UserPreferencesViewModel<
     S: ConfigurableSettings,
@@ -50,10 +139,12 @@ final class UserPreferencesViewModel<
 
     func commit() {
         Task {
-            try! await store.savePreferences(editor.preferences, of: bookId)
+            try? await store.savePreferences(editor.preferences, of: bookId)
         }
     }
 }
+
+// MARK: - Modern Visual Reader Preferences Panel
 
 struct UserPreferences<
     S: ConfigurableSettings,
@@ -62,6 +153,10 @@ struct UserPreferences<
 >: View where E.Preferences == P {
     @ObservedObject var model: UserPreferencesViewModel<S, P, E>
     var onClose: () -> Void
+
+    @Environment(\.colorScheme) private var colorScheme
+    @State private var screenBrightness: Double = Self.currentScreenBrightness()
+    @State private var showAdvancedTypography = false
 
     private let languages: [Language?] = [nil] + Language.all
         .map { $0.removingRegion() }
@@ -72,107 +167,570 @@ struct UserPreferences<
         userPreferences(editor: model.editor, commit: model.commit)
     }
 
-    func userPreferences<PE: PreferencesEditor>(editor: PE, commit: @escaping () -> Void) -> some View {
-        NavigationView {
-            List {
-                switch editor {
-                case let editor as PDFPreferencesEditor:
-                    fixedLayoutUserPreferences(
-                        commit: commit,
-                        fit: editor.fit,
-                        offsetFirstPage: editor.offsetFirstPage,
-                        pageSpacing: editor.pageSpacing,
-                        readingProgression: editor.readingProgression,
-                        scroll: editor.scroll,
-                        scrollAxis: editor.scrollAxis,
-                        spread: editor.spread,
-                        visibleScrollbar: editor.visibleScrollbar
-                    )
+    private static func currentScreenBrightness() -> Double {
+        #if targetEnvironment(macCatalyst)
+        return 1.0
+        #else
+        let activeScreen = UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .first(where: { $0.activationState == .foregroundActive })?
+            .screen
+        return Double((activeScreen ?? UIScreen.main).brightness)
+        #endif
+    }
 
-                case let editor as EPUBPreferencesEditor:
-                    switch editor.layout {
-                    case .reflowable:
-                        reflowableUserPreferences(
+    private static func applyScreenBrightness(_ value: Double) {
+        #if !targetEnvironment(macCatalyst)
+        let clamped = CGFloat(min(max(value, 0.02), 1.0))
+        let activeScreen = UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .first(where: { $0.activationState == .foregroundActive })?
+            .screen
+        (activeScreen ?? UIScreen.main).brightness = clamped
+        #endif
+    }
+
+    func userPreferences<PE: PreferencesEditor>(editor: PE, commit: @escaping () -> Void) -> some View {
+        NavigationStack {
+            ScrollView(.vertical, showsIndicators: false) {
+                VStack(spacing: 14) {
+                    switch editor {
+                    case let editor as EPUBPreferencesEditor:
+                        switch editor.layout {
+                        case .reflowable:
+                            reflowableVisualPanel(editor: editor, commit: commit)
+                        case .fixed:
+                            fixedLayoutPanel(
+                                commit: commit,
+                                backgroundColor: editor.backgroundColor,
+                                fit: editor.fit,
+                                language: editor.language,
+                                nullableOffsetFirstPage: editor.offsetFirstPage,
+                                readingProgression: editor.readingProgression,
+                                spread: editor.spread
+                            )
+                        }
+
+                    case let editor as PDFPreferencesEditor:
+                        fixedLayoutPanel(
                             commit: commit,
-                            backgroundColor: editor.backgroundColor,
-                            columnCount: editor.columnCount,
-                            fontFamily: editor.fontFamily,
-                            fontSize: editor.fontSize,
-                            fontWeight: editor.fontWeight,
-                            hyphens: editor.hyphens,
-                            imageFilter: editor.imageFilter,
-                            language: editor.language,
-                            letterSpacing: editor.letterSpacing,
-                            ligatures: editor.ligatures,
-                            lineHeight: editor.lineHeight,
-                            pageMargins: editor.pageMargins,
-                            paragraphIndent: editor.paragraphIndent,
-                            paragraphSpacing: editor.paragraphSpacing,
-                            publisherStyles: editor.publisherStyles,
+                            fit: editor.fit,
+                            offsetFirstPage: editor.offsetFirstPage,
+                            pageSpacing: editor.pageSpacing,
                             readingProgression: editor.readingProgression,
                             scroll: editor.scroll,
-                            textAlign: editor.textAlign,
-                            textColor: editor.textColor,
-                            textNormalization: editor.textNormalization,
-                            theme: editor.theme,
-                            typeScale: editor.typeScale,
-                            verticalText: editor.verticalText,
-                            wordSpacing: editor.wordSpacing
+                            scrollAxis: editor.scrollAxis,
+                            spread: editor.spread,
+                            visibleScrollbar: editor.visibleScrollbar
                         )
-                    case .fixed:
-                        fixedLayoutUserPreferences(
+
+                    case let editor as AudioPreferencesEditor:
+                        audioPanel(
                             commit: commit,
-                            backgroundColor: editor.backgroundColor,
-                            fit: editor.fit,
-                            language: editor.language,
-                            nullableOffsetFirstPage: editor.offsetFirstPage,
-                            readingProgression: editor.readingProgression,
-                            spread: editor.spread
+                            volume: editor.volume,
+                            speed: editor.speed
                         )
+
+                    default:
+                        Text(NSLocalizedString("prefs_no_user_preferences", comment: ""))
+                            .foregroundStyle(AppColors.secondaryText)
+                            .padding(.vertical, 32)
                     }
-
-                case let editor as AudioPreferencesEditor:
-                    audioUserPreferences(
-                        commit: commit,
-                        volume: editor.volume,
-                        speed: editor.speed
-                    )
-
-                default:
-                    Text(NSLocalizedString("prefs_no_user_preferences", comment: ""))
                 }
+                .padding(.horizontal, 16)
+                .padding(.top, 8)
+                .padding(.bottom, 24)
             }
-            .listStyle(.insetGrouped)
-            .navigationTitle(NSLocalizedString("prefs_user_preferences", comment: ""))
+            .background(AppColors.background.ignoresSafeArea())
+            .navigationTitle(NSLocalizedString("reader_prefs_title", comment: ""))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
+                    Button(NSLocalizedString("prefs_reset", comment: "")) {
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        editor.clear()
+                        commit()
+                    }
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(AppColors.secondaryText)
+                }
+
+                ToolbarItem(placement: .topBarTrailing) {
                     SheetCloseButton(
                         accessibilityLabel: NSLocalizedString("prefs_close", comment: ""),
                         action: onClose
                     )
                 }
+            }
+        }
+        .onAppear {
+            screenBrightness = Self.currentScreenBrightness()
+        }
+    }
 
-                ToolbarItemGroup(placement: .destructiveAction) {
-                    Button(NSLocalizedString("prefs_reset", comment: "")) {
-                        editor.clear()
+    // MARK: - Reflowable EPUB Visual Panel (Apple Books + Readest Inspired)
+
+    @ViewBuilder
+    private func reflowableVisualPanel(
+        editor: EPUBPreferencesEditor,
+        commit: @escaping () -> Void
+    ) -> some View {
+        #if !targetEnvironment(macCatalyst)
+        brightnessCard
+        #endif
+
+        // 1. Themes (visual color swatch cards)
+        themeSwatchesCard(
+            theme: editor.theme,
+            backgroundColor: editor.backgroundColor,
+            textColor: editor.textColor,
+            commit: commit
+        )
+
+        // 2. Font size large A- / A+ control + Typeface visual strip
+        typographyQuickCard(
+            fontSize: editor.fontSize,
+            fontFamily: editor.fontFamily,
+            commit: commit
+        )
+
+        // 3. Layout: Paging vs Scroll, Line Spacing, Page Margins, Columns
+        layoutQuickCard(
+            scroll: editor.scroll,
+            lineHeight: editor.lineHeight,
+            pageMargins: editor.pageMargins,
+            columnCount: editor.columnCount,
+            publisherStyles: editor.publisherStyles,
+            commit: commit
+        )
+
+        // 4. Collapsible Advanced Typography (preserves Readest-level power without clutter)
+        advancedTypographyCard(editor: editor, commit: commit)
+    }
+
+    private var brightnessCard: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "sun.min.fill")
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(AppColors.secondaryText)
+
+            Slider(value: $screenBrightness, in: 0.05...1.0)
+                .tint(AppColors.accentBlue)
+                .onChange(of: screenBrightness) { _, newValue in
+                    Self.applyScreenBrightness(newValue)
+                }
+
+            Image(systemName: "sun.max.fill")
+                .font(.system(size: 16, weight: .medium))
+                .foregroundStyle(AppColors.secondaryText)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .panelCard(colorScheme: colorScheme)
+        .accessibilityLabel(NSLocalizedString("reader_prefs_brightness", comment: ""))
+    }
+
+    private func themeSwatchesCard(
+        theme: AnyEnumPreference<ReadiumNavigator.Theme>,
+        backgroundColor: AnyPreference<ReadiumNavigator.Color>,
+        textColor: AnyPreference<ReadiumNavigator.Color>,
+        commit: @escaping () -> Void
+    ) -> some View {
+        let previewPrefs = EPUBPreferences(
+            backgroundColor: backgroundColor.value,
+            textColor: textColor.value,
+            theme: theme.value ?? theme.effectiveValue
+        )
+        let activePreset = ReaderPaperPreset.matching(
+            preferences: previewPrefs,
+            systemStyle: colorScheme == .dark ? .dark : .light
+        )
+
+        return VStack(alignment: .leading, spacing: 10) {
+            panelSectionHeader(NSLocalizedString("reader_prefs_theme_section", comment: ""))
+
+            HStack(spacing: 8) {
+                ForEach(ReaderPaperPreset.allCases) { preset in
+                    let isSelected = activePreset == preset
+                    Button {
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        preset.apply(
+                            theme: theme,
+                            backgroundColor: backgroundColor,
+                            textColor: textColor
+                        )
                         commit()
+                    } label: {
+                        VStack(spacing: 6) {
+                            Text("Aa")
+                                .font(.system(size: 19, weight: .semibold, design: .serif))
+                                .foregroundStyle(preset.swiftUITextColor)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 50)
+                                .background(preset.swiftUIBackground, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                        .stroke(
+                                            isSelected ? AppColors.accentBlue : SwiftUI.Color.primary.opacity(0.12),
+                                            lineWidth: isSelected ? 2.2 : 0.75
+                                        )
+                                )
+
+                            Text(preset.localizedTitle)
+                                .font(.system(size: 11.5, weight: isSelected ? .bold : .medium))
+                                .foregroundStyle(isSelected ? AppColors.accentBlue : AppColors.secondaryText)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.8)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+        .padding(14)
+        .panelCard(colorScheme: colorScheme)
+    }
+
+    private func typographyQuickCard(
+        fontSize: AnyRangePreference<Double>,
+        fontFamily: AnyPreference<FontFamily?>,
+        commit: @escaping () -> Void
+    ) -> some View {
+        let supportedFonts: [FontFamily?] = [
+            nil,
+            .literata,
+            .sansSerif,
+            .iaWriterDuospace,
+            .accessibleDfA,
+            .openDyslexic,
+        ]
+        let currentFont = fontFamily.value ?? fontFamily.effectiveValue
+
+        return VStack(alignment: .leading, spacing: 14) {
+            // Font size large A- / A+ control
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    panelSectionHeader(NSLocalizedString("reader_prefs_font_size", comment: ""))
+                    Spacer()
+                    Text(fontSize.format(value: fontSize.value ?? fontSize.effectiveValue))
+                        .font(.system(size: 13, weight: .semibold))
+                        .monospacedDigit()
+                        .foregroundStyle(AppColors.accentBlue)
+                }
+
+                HStack(spacing: 0) {
+                    Button {
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        fontSize.decrement()
+                        commit()
+                    } label: {
+                        Text("A")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(AppColors.primaryText)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 44)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(NSLocalizedString("prefs_font_size", comment: "") + " -")
+
+                    Rectangle()
+                        .fill(SwiftUI.Color.primary.opacity(0.09))
+                        .frame(width: 1, height: 22)
+
+                    Button {
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        fontSize.increment()
+                        commit()
+                    } label: {
+                        Text("A")
+                            .font(.system(size: 22, weight: .semibold))
+                            .foregroundStyle(AppColors.primaryText)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 44)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(NSLocalizedString("prefs_font_size", comment: "") + " +")
+                }
+                .background(SwiftUI.Color.primary.opacity(colorScheme == .dark ? 0.08 : 0.045), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            }
+
+            Divider()
+
+            // Typeface visual cards
+            VStack(alignment: .leading, spacing: 8) {
+                panelSectionHeader(NSLocalizedString("reader_prefs_typeface", comment: ""))
+
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(Array(supportedFonts.enumerated()), id: \.offset) { _, family in
+                            let isSelected = currentFont == family
+                            Button {
+                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                fontFamily.set(family)
+                                commit()
+                            } label: {
+                                VStack(spacing: 4) {
+                                    Text("Aa")
+                                        .font(previewFont(for: family))
+                                        .foregroundStyle(isSelected ? AppColors.accentBlue : AppColors.primaryText)
+                                    Text(fontDisplayName(for: family))
+                                        .font(.system(size: 11, weight: isSelected ? .bold : .medium))
+                                        .foregroundStyle(isSelected ? AppColors.accentBlue : AppColors.secondaryText)
+                                        .lineLimit(1)
+                                        .fixedSize(horizontal: true, vertical: false)
+                                }
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 9)
+                                .frame(minWidth: 74)
+                                .background(
+                                    isSelected
+                                        ? AppColors.accentBlue.opacity(colorScheme == .dark ? 0.22 : 0.1)
+                                        : SwiftUI.Color.primary.opacity(colorScheme == .dark ? 0.07 : 0.04),
+                                    in: RoundedRectangle(cornerRadius: 11, style: .continuous)
+                                )
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 11, style: .continuous)
+                                        .stroke(isSelected ? AppColors.accentBlue : .clear, lineWidth: 1.5)
+                                )
+                            }
+                            .buttonStyle(.plain)
+                        }
                     }
                 }
             }
         }
+        .padding(14)
+        .panelCard(colorScheme: colorScheme)
     }
 
-    private func button(_ label: String, action: @escaping () -> Void) -> some View {
-        Button(
-            action: action,
-            label: { Text(label) }
-        ).buttonStyle(.borderless)
+    private func layoutQuickCard(
+        scroll: AnyPreference<Bool>,
+        lineHeight: AnyRangePreference<Double>,
+        pageMargins: AnyRangePreference<Double>,
+        columnCount: AnyEnumPreference<ColumnCount>,
+        publisherStyles: AnyPreference<Bool>,
+        commit: @escaping () -> Void
+    ) -> some View {
+        let isScroll = scroll.value ?? scroll.effectiveValue
+        let currentLineHeight = lineHeight.value ?? lineHeight.effectiveValue
+        let currentMargins = pageMargins.value ?? pageMargins.effectiveValue
+        let currentColumns = columnCount.value ?? columnCount.effectiveValue
+
+        let linePresets: [(label: String, value: Double, icon: String)] = [
+            (NSLocalizedString("reader_prefs_compact", comment: ""), 1.2, "text.alignleft"),
+            (NSLocalizedString("reader_prefs_comfortable", comment: ""), 1.5, "text.justify"),
+            (NSLocalizedString("reader_prefs_relaxed", comment: ""), 1.85, "line.3.horizontal"),
+        ]
+
+        let marginPresets: [(label: String, value: Double)] = [
+            (NSLocalizedString("reader_prefs_compact", comment: ""), 0.75),
+            (NSLocalizedString("reader_prefs_comfortable", comment: ""), 1.15),
+            (NSLocalizedString("reader_prefs_relaxed", comment: ""), 1.6),
+        ]
+
+        return VStack(alignment: .leading, spacing: 14) {
+            // Reading mode: Paged vs Scroll
+            VStack(alignment: .leading, spacing: 8) {
+                panelSectionHeader(NSLocalizedString("reader_prefs_layout", comment: ""))
+
+                HStack(spacing: 8) {
+                    modeToggleButton(
+                        title: NSLocalizedString("reader_prefs_paging", comment: ""),
+                        icon: "book.pages",
+                        isSelected: !isScroll
+                    ) {
+                        scroll.set(false)
+                        commit()
+                    }
+                    modeToggleButton(
+                        title: NSLocalizedString("reader_prefs_scrolling", comment: ""),
+                        icon: "arrow.up.and.down.text.horizontal",
+                        isSelected: isScroll
+                    ) {
+                        scroll.set(true)
+                        commit()
+                    }
+                }
+            }
+
+            Divider()
+
+            // Line spacing presets
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    panelSectionHeader(NSLocalizedString("reader_prefs_line_spacing", comment: ""))
+                    Spacer()
+                    Text(lineHeight.format(value: currentLineHeight))
+                        .font(.system(size: 12, weight: .semibold))
+                        .monospacedDigit()
+                        .foregroundStyle(AppColors.secondaryText)
+                }
+
+                HStack(spacing: 8) {
+                    ForEach(Array(linePresets.enumerated()), id: \.offset) { _, preset in
+                        let isSelected = !(publisherStyles.value ?? publisherStyles.effectiveValue)
+                            && abs(currentLineHeight - preset.value) < 0.16
+                        presetChip(title: preset.label, isSelected: isSelected) {
+                            if publisherStyles.effectiveValue {
+                                publisherStyles.set(false)
+                            }
+                            lineHeight.set(preset.value)
+                            commit()
+                        }
+                    }
+                }
+            }
+
+            // Page margin presets
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    panelSectionHeader(NSLocalizedString("reader_prefs_margins", comment: ""))
+                    Spacer()
+                    Text(pageMargins.format(value: currentMargins))
+                        .font(.system(size: 12, weight: .semibold))
+                        .monospacedDigit()
+                        .foregroundStyle(AppColors.secondaryText)
+                }
+
+                HStack(spacing: 8) {
+                    ForEach(Array(marginPresets.enumerated()), id: \.offset) { _, preset in
+                        let isSelected = abs(currentMargins - preset.value) < 0.2
+                        presetChip(title: preset.label, isSelected: isSelected) {
+                            pageMargins.set(preset.value)
+                            commit()
+                        }
+                    }
+                }
+            }
+
+            // Column count (especially helpful on iPad / landscape)
+            if columnCount.isEffective {
+                Divider()
+                HStack {
+                    Text(NSLocalizedString("prefs_columns", comment: ""))
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundStyle(AppColors.primaryText)
+                    Spacer()
+                    Picker("", selection: Binding(
+                        get: { currentColumns },
+                        set: {
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                            columnCount.set($0)
+                            commit()
+                        }
+                    )) {
+                        Text(NSLocalizedString("prefs_auto", comment: "")).tag(ColumnCount.auto)
+                        Text("1").tag(ColumnCount.one)
+                        Text("2").tag(ColumnCount.two)
+                    }
+                    .pickerStyle(.segmented)
+                    .frame(width: 170)
+                }
+            }
+        }
+        .padding(14)
+        .panelCard(colorScheme: colorScheme)
     }
 
-    /// User preferences screen for a publication with a fixed layout, such as
-    /// fixed-layout EPUB, PDF or comic book.
-    @ViewBuilder func fixedLayoutUserPreferences(
+    private func advancedTypographyCard(
+        editor: EPUBPreferencesEditor,
+        commit: @escaping () -> Void
+    ) -> some View {
+        DisclosureGroup(isExpanded: $showAdvancedTypography) {
+            VStack(spacing: 12) {
+                Divider().padding(.top, 4)
+
+                cleanToggleRow(
+                    title: NSLocalizedString("prefs_publisher_styles", comment: ""),
+                    preference: editor.publisherStyles,
+                    commit: commit
+                )
+
+                if !editor.publisherStyles.effectiveValue {
+                    cleanPickerRow(
+                        title: NSLocalizedString("prefs_text_alignment", comment: ""),
+                        preference: editor.textAlign,
+                        commit: commit,
+                        formatValue: { v in
+                            switch v {
+                            case nil: return NSLocalizedString("prefs_default", comment: "")
+                            case .center: return NSLocalizedString("prefs_center", comment: "")
+                            case .left: return NSLocalizedString("prefs_left", comment: "")
+                            case .right: return NSLocalizedString("prefs_right", comment: "")
+                            case .justify: return NSLocalizedString("prefs_justify", comment: "")
+                            case .start: return NSLocalizedString("prefs_start", comment: "")
+                            case .end: return NSLocalizedString("prefs_end", comment: "")
+                            }
+                        }
+                    )
+
+                    cleanStepperRow(title: NSLocalizedString("prefs_line_height", comment: ""), preference: editor.lineHeight, commit: commit)
+                    cleanStepperRow(title: NSLocalizedString("prefs_paragraph_spacing", comment: ""), preference: editor.paragraphSpacing, commit: commit)
+                    cleanStepperRow(title: NSLocalizedString("prefs_paragraph_indent", comment: ""), preference: editor.paragraphIndent, commit: commit)
+                    cleanStepperRow(title: NSLocalizedString("prefs_letter_spacing", comment: ""), preference: editor.letterSpacing, commit: commit)
+                    cleanStepperRow(title: NSLocalizedString("prefs_word_spacing", comment: ""), preference: editor.wordSpacing, commit: commit)
+                    cleanToggleRow(title: NSLocalizedString("prefs_hyphens", comment: ""), preference: editor.hyphens, commit: commit)
+                    cleanToggleRow(title: NSLocalizedString("prefs_ligatures", comment: ""), preference: editor.ligatures, commit: commit)
+                }
+
+                Divider()
+
+                cleanStepperRow(title: NSLocalizedString("prefs_font_weight", comment: ""), preference: editor.fontWeight, commit: commit)
+                cleanToggleRow(title: NSLocalizedString("prefs_text_normalization", comment: ""), preference: editor.textNormalization, commit: commit)
+                cleanToggleRow(title: NSLocalizedString("prefs_vertical_text", comment: ""), preference: editor.verticalText, commit: commit)
+
+                cleanPickerRow(
+                    title: NSLocalizedString("prefs_reading_progression", comment: ""),
+                    preference: editor.readingProgression,
+                    commit: commit,
+                    formatValue: { v in
+                        switch v {
+                        case .ltr: return NSLocalizedString("prefs_ltr", comment: "")
+                        case .rtl: return NSLocalizedString("prefs_rtl", comment: "")
+                        }
+                    }
+                )
+
+                cleanPickerRow(
+                    title: NSLocalizedString("prefs_image_filter", comment: ""),
+                    preference: editor.imageFilter,
+                    commit: commit,
+                    formatValue: { v in
+                        switch v {
+                        case nil: return NSLocalizedString("prefs_none", comment: "")
+                        case .darken: return NSLocalizedString("prefs_darken_colors", comment: "")
+                        case .invert: return NSLocalizedString("prefs_invert_colors", comment: "")
+                        }
+                    }
+                )
+
+                cleanColorRow(title: NSLocalizedString("prefs_text_color", comment: ""), preference: editor.textColor, commit: commit)
+                cleanColorRow(title: NSLocalizedString("prefs_background_color", comment: ""), preference: editor.backgroundColor, commit: commit)
+
+                cleanLanguageRow(title: NSLocalizedString("prefs_language", comment: ""), preference: editor.language, commit: commit)
+            }
+            .padding(.top, 4)
+        } label: {
+            HStack(spacing: 10) {
+                Image(systemName: "slider.horizontal.3")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(AppColors.accentBlue)
+                Text(NSLocalizedString("reader_prefs_advanced", comment: ""))
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(AppColors.primaryText)
+            }
+        }
+        .tint(AppColors.secondaryText)
+        .padding(14)
+        .panelCard(colorScheme: colorScheme)
+    }
+
+    // MARK: - Fixed Layout / PDF Panel
+
+    @ViewBuilder
+    private func fixedLayoutPanel(
         commit: @escaping () -> Void,
         backgroundColor: AnyPreference<ReadiumNavigator.Color>? = nil,
         fit: AnyEnumPreference<ReadiumNavigator.Fit>? = nil,
@@ -186,664 +744,360 @@ struct UserPreferences<
         spread: AnyEnumPreference<ReadiumNavigator.Spread>? = nil,
         visibleScrollbar: AnyPreference<Bool>? = nil
     ) -> some View {
-        if language != nil || readingProgression != nil {
-            Section {
-                if let language = language {
-                    languageRow(
-                        title: NSLocalizedString("prefs_language", comment: ""),
-                        preference: language,
-                        commit: commit
-                    )
-                }
+        #if !targetEnvironment(macCatalyst)
+        brightnessCard
+        #endif
 
-                if let readingProgression = readingProgression {
-                    pickerRow(
-                        title: NSLocalizedString("prefs_reading_progression", comment: ""),
-                        preference: readingProgression,
-                        commit: commit,
-                        formatValue: { v in
-                            switch v {
-                            case .ltr: return NSLocalizedString("prefs_ltr", comment: "")
-                            case .rtl: return NSLocalizedString("prefs_rtl", comment: "")
-                            }
+        if scroll != nil || fit != nil || spread != nil {
+            VStack(alignment: .leading, spacing: 14) {
+                if let scroll {
+                    let isScroll = scroll.value ?? scroll.effectiveValue
+                    HStack(spacing: 8) {
+                        modeToggleButton(
+                            title: NSLocalizedString("reader_prefs_paging", comment: ""),
+                            icon: "book.pages",
+                            isSelected: !isScroll
+                        ) {
+                            scroll.set(false)
+                            commit()
                         }
-                    )
+                        modeToggleButton(
+                            title: NSLocalizedString("reader_prefs_scrolling", comment: ""),
+                            icon: "arrow.up.and.down.text.horizontal",
+                            isSelected: isScroll
+                        ) {
+                            scroll.set(true)
+                            commit()
+                        }
+                    }
                 }
-            }
-        }
 
-        if let backgroundColor = backgroundColor {
-            Section {
-                colorRow(
-                    title: NSLocalizedString("prefs_background_color", comment: ""),
-                    preference: backgroundColor,
-                    commit: commit
-                )
-            }
-        }
-
-        if let scroll = scroll {
-            Section {
-                toggleRow(
-                    title: NSLocalizedString("prefs_scroll", comment: ""),
-                    preference: scroll,
-                    commit: commit
-                )
-
-                if let scrollAxis = scrollAxis {
-                    pickerRow(
+                if let scrollAxis, (scroll?.effectiveValue ?? true) {
+                    cleanPickerRow(
                         title: NSLocalizedString("prefs_scroll_axis", comment: ""),
                         preference: scrollAxis,
                         commit: commit,
-                        formatValue: { v in
-                            switch v {
-                            case .horizontal: return NSLocalizedString("prefs_horizontal", comment: "")
-                            case .vertical: return NSLocalizedString("prefs_vertical", comment: "")
-                            }
-                        }
-                    )
-                }
-            }
-        }
-
-        if let spread = spread {
-            Section {
-                pickerRow(
-                    title: NSLocalizedString("prefs_spread", comment: ""),
-                    preference: spread,
-                    commit: commit,
-                    formatValue: { v in
-                        switch v {
-                        case .auto: return NSLocalizedString("prefs_auto", comment: "")
-                        case .never: return NSLocalizedString("prefs_never", comment: "")
-                        case .always: return NSLocalizedString("prefs_always", comment: "")
-                        }
-                    }
-                )
-
-                if let offsetFirstPage = offsetFirstPage {
-                    toggleRow(
-                        title: NSLocalizedString("prefs_offset_first_page", comment: ""),
-                        preference: offsetFirstPage,
-                        commit: commit
+                        formatValue: { $0 == .horizontal ? NSLocalizedString("prefs_horizontal", comment: "") : NSLocalizedString("prefs_vertical", comment: "") }
                     )
                 }
 
-                if let nullableOffsetFirstPage = nullableOffsetFirstPage {
-                    nullableBoolPickerRow(
-                        title: NSLocalizedString("prefs_offset_first_page", comment: ""),
-                        preference: nullableOffsetFirstPage,
-                        commit: commit
-                    )
-                }
-            }
-        }
-
-        if let fit = fit {
-            Section {
-                pickerRow(
-                    title: NSLocalizedString("prefs_fit", comment: ""),
-                    preference: fit,
-                    commit: commit,
-                    formatValue: { v in
-                        switch v {
-                        case .auto: return NSLocalizedString("prefs_auto", comment: "")
-                        case .page: return NSLocalizedString("prefs_page", comment: "")
-                        case .width: return NSLocalizedString("prefs_width", comment: "")
-                        }
-                    }
-                )
-            }
-        }
-
-        if let pageSpacing = pageSpacing {
-            Section {
-                stepperRow(
-                    title: NSLocalizedString("prefs_page_spacing", comment: ""),
-                    preference: pageSpacing,
-                    commit: commit
-                )
-            }
-        }
-    }
-
-    /// User settings for a publication with adjustable fonts and dimensions,
-    /// such as a reflowable EPUB, HTML document or PDF with reflow mode
-    /// enabled.
-    @ViewBuilder func reflowableUserPreferences(
-        commit: @escaping () -> Void,
-        backgroundColor: AnyPreference<ReadiumNavigator.Color>? = nil,
-        columnCount: AnyEnumPreference<ColumnCount>? = nil,
-        fontFamily: AnyPreference<FontFamily?>? = nil,
-        fontSize: AnyRangePreference<Double>? = nil,
-        fontWeight: AnyRangePreference<Double>? = nil,
-        hyphens: AnyPreference<Bool>? = nil,
-        imageFilter: AnyEnumPreference<ImageFilter?>? = nil,
-        language: AnyPreference<Language?>? = nil,
-        letterSpacing: AnyRangePreference<Double>? = nil,
-        ligatures: AnyPreference<Bool>? = nil,
-        lineHeight: AnyRangePreference<Double>? = nil,
-        pageMargins: AnyRangePreference<Double>? = nil,
-        paragraphIndent: AnyRangePreference<Double>? = nil,
-        paragraphSpacing: AnyRangePreference<Double>? = nil,
-        publisherStyles: AnyPreference<Bool>? = nil,
-        readingProgression: AnyEnumPreference<ReadiumNavigator.ReadingProgression>? = nil,
-        scroll: AnyPreference<Bool>? = nil,
-        textAlign: AnyEnumPreference<ReadiumNavigator.TextAlignment?>? = nil,
-        textColor: AnyPreference<ReadiumNavigator.Color>? = nil,
-        textNormalization: AnyPreference<Bool>? = nil,
-        theme: AnyEnumPreference<Theme>? = nil,
-        typeScale: AnyRangePreference<Double>? = nil,
-        verticalText: AnyPreference<Bool>? = nil,
-        wordSpacing: AnyRangePreference<Double>? = nil
-    ) -> some View {
-        if language != nil || readingProgression != nil || verticalText != nil {
-            Section {
-                if let language = language {
-                    languageRow(
-                        title: NSLocalizedString("prefs_language", comment: ""),
-                        preference: language,
-                        commit: commit
-                    )
-                }
-
-                if let readingProgression = readingProgression {
-                    pickerRow(
-                        title: NSLocalizedString("prefs_reading_progression", comment: ""),
-                        preference: readingProgression,
-                        commit: commit,
-                        formatValue: { v in
-                            switch v {
-                            case .ltr: return NSLocalizedString("prefs_ltr", comment: "")
-                            case .rtl: return NSLocalizedString("prefs_rtl", comment: "")
-                            }
-                        }
-                    )
-                }
-
-                if let verticalText = verticalText {
-                    toggleRow(
-                        title: NSLocalizedString("prefs_vertical_text", comment: ""),
-                        preference: verticalText,
-                        commit: commit
-                    )
-                }
-            }
-        }
-
-        if scroll != nil || columnCount != nil || pageMargins != nil {
-            Section {
-                if let scroll = scroll {
-                    toggleRow(
-                        title: NSLocalizedString("prefs_scroll", comment: ""),
-                        preference: scroll,
-                        commit: commit
-                    )
-                }
-
-                if let columnCount = columnCount {
-                    pickerRow(
-                        title: NSLocalizedString("prefs_columns", comment: ""),
-                        preference: columnCount,
+                if let fit {
+                    cleanPickerRow(
+                        title: NSLocalizedString("prefs_fit", comment: ""),
+                        preference: fit,
                         commit: commit,
                         formatValue: { v in
                             switch v {
                             case .auto: return NSLocalizedString("prefs_auto", comment: "")
-                            case .one: return "1"
-                            case .two: return "2"
+                            case .page: return NSLocalizedString("prefs_page", comment: "")
+                            case .width: return NSLocalizedString("prefs_width", comment: "")
                             }
                         }
                     )
                 }
 
-                if let pageMargins = pageMargins {
-                    stepperRow(
-                        title: NSLocalizedString("prefs_page_margins", comment: ""),
-                        preference: pageMargins,
-                        commit: commit
-                    )
-                }
-            }
-        }
-
-        if theme != nil || imageFilter != nil || textColor != nil || backgroundColor != nil {
-            Section {
-                if let theme = theme {
-                    pickerRow(
-                        title: NSLocalizedString("prefs_theme", comment: ""),
-                        preference: theme,
+                if let spread {
+                    cleanPickerRow(
+                        title: NSLocalizedString("prefs_spread", comment: ""),
+                        preference: spread,
                         commit: commit,
                         formatValue: { v in
                             switch v {
-                            case .light: return NSLocalizedString("prefs_light", comment: "")
-                            case .dark: return NSLocalizedString("prefs_dark", comment: "")
-                            case .sepia: return NSLocalizedString("prefs_sepia", comment: "")
+                            case .auto: return NSLocalizedString("prefs_auto", comment: "")
+                            case .never: return NSLocalizedString("prefs_never", comment: "")
+                            case .always: return NSLocalizedString("prefs_always", comment: "")
                             }
                         }
                     )
                 }
 
-                if let imageFilter = imageFilter {
-                    pickerRow(
-                        title: NSLocalizedString("prefs_image_filter", comment: ""),
-                        preference: imageFilter,
-                        commit: commit,
-                        formatValue: { v in
-                            switch v {
-                            case nil: return NSLocalizedString("prefs_none", comment: "")
-                            case .darken: return NSLocalizedString("prefs_darken_colors", comment: "")
-                            case .invert: return NSLocalizedString("prefs_invert_colors", comment: "")
-                            }
+                if let offsetFirstPage {
+                    cleanToggleRow(title: NSLocalizedString("prefs_offset_first_page", comment: ""), preference: offsetFirstPage, commit: commit)
+                }
+
+                if let nullableOffsetFirstPage {
+                    HStack {
+                        Text(NSLocalizedString("prefs_offset_first_page", comment: ""))
+                            .font(.system(size: 14, weight: .medium))
+                        Spacer()
+                        Picker("", selection: Binding(
+                            get: { nullableOffsetFirstPage.value ?? nullableOffsetFirstPage.effectiveValue },
+                            set: { nullableOffsetFirstPage.set($0); commit() }
+                        )) {
+                            Text(NSLocalizedString("prefs_auto", comment: "")).tag(nil as Bool?)
+                            Text(NSLocalizedString("prefs_yes", comment: "")).tag(true as Bool?)
+                            Text(NSLocalizedString("prefs_no", comment: "")).tag(false as Bool?)
                         }
-                    )
+                        .pickerStyle(.menu)
+                    }
                 }
 
-                if let textColor = textColor {
-                    colorRow(
-                        title: NSLocalizedString("prefs_text_color", comment: ""),
-                        preference: textColor,
-                        commit: commit
-                    )
-                }
-
-                if let backgroundColor = backgroundColor {
-                    colorRow(
-                        title: NSLocalizedString("prefs_background_color", comment: ""),
-                        preference: backgroundColor,
-                        commit: commit
-                    )
+                if let pageSpacing {
+                    cleanStepperRow(title: NSLocalizedString("prefs_page_spacing", comment: ""), preference: pageSpacing, commit: commit)
                 }
             }
+            .padding(14)
+            .panelCard(colorScheme: colorScheme)
         }
 
-        if fontFamily != nil || fontSize != nil || fontWeight != nil || textNormalization != nil {
-            Section {
-                if let fontFamily = fontFamily {
-                    pickerRow(
-                        title: NSLocalizedString("prefs_typeface", comment: ""),
-                        preference: fontFamily
-                            .with(supportedValues: [
-                                nil,
-                                .sansSerif,
-                                .iaWriterDuospace,
-                                .accessibleDfA,
-                                .openDyslexic,
-                                .literata,
-                            ])
-                            .eraseToAnyPreference(),
+        if readingProgression != nil || backgroundColor != nil || language != nil {
+            VStack(alignment: .leading, spacing: 12) {
+                if let readingProgression {
+                    cleanPickerRow(
+                        title: NSLocalizedString("prefs_reading_progression", comment: ""),
+                        preference: readingProgression,
                         commit: commit,
-                        formatValue: { ff in
-                            if let ff = ff {
-                                switch ff {
-                                case .sansSerif: return NSLocalizedString("prefs_sans_serif", comment: "")
-                                default: return ff.rawValue
-                                }
-                            } else {
-                                return NSLocalizedString("prefs_original", comment: "")
-                            }
-                        }
+                        formatValue: { $0 == .ltr ? NSLocalizedString("prefs_ltr", comment: "") : NSLocalizedString("prefs_rtl", comment: "") }
                     )
                 }
-
-                if let fontSize = fontSize {
-                    stepperRow(
-                        title: NSLocalizedString("prefs_font_size", comment: ""),
-                        preference: fontSize,
-                        commit: commit
-                    )
+                if let backgroundColor {
+                    cleanColorRow(title: NSLocalizedString("prefs_background_color", comment: ""), preference: backgroundColor, commit: commit)
                 }
-
-                if let fontWeight = fontWeight {
-                    stepperRow(
-                        title: NSLocalizedString("prefs_font_weight", comment: ""),
-                        preference: fontWeight,
-                        commit: commit
-                    )
-                }
-
-                if let textNormalization = textNormalization {
-                    toggleRow(
-                        title: NSLocalizedString("prefs_text_normalization", comment: ""),
-                        preference: textNormalization,
-                        commit: commit
-                    )
+                if let language {
+                    cleanLanguageRow(title: NSLocalizedString("prefs_language", comment: ""), preference: language, commit: commit)
                 }
             }
-        }
-
-        if let publisherStyles = publisherStyles {
-            Section {
-                toggleRow(
-                    title: NSLocalizedString("prefs_publisher_styles", comment: ""),
-                    preference: publisherStyles,
-                    commit: commit
-                )
-
-                // The following settings all require the publisher styles to
-                // be disabled for EPUB. To simplify the interface, they are
-                // hidden when the publisher styles are on.
-                if !publisherStyles.effectiveValue {
-                    if let textAlign = textAlign {
-                        pickerRow(
-                            title: NSLocalizedString("prefs_text_alignment", comment: ""),
-                            preference: textAlign,
-                            commit: commit,
-                            formatValue: { v in
-                                switch v {
-                                case nil: return NSLocalizedString("prefs_default", comment: "")
-                                case .center: return NSLocalizedString("prefs_center", comment: "")
-                                case .left: return NSLocalizedString("prefs_left", comment: "")
-                                case .right: return NSLocalizedString("prefs_right", comment: "")
-                                case .justify: return NSLocalizedString("prefs_justify", comment: "")
-                                case .start: return NSLocalizedString("prefs_start", comment: "")
-                                case .end: return NSLocalizedString("prefs_end", comment: "")
-                                }
-                            }
-                        )
-                    }
-
-                    if let typeScale = typeScale {
-                        stepperRow(
-                            title: NSLocalizedString("prefs_type_scale", comment: ""),
-                            preference: typeScale,
-                            commit: commit
-                        )
-                    }
-
-                    if let lineHeight = lineHeight {
-                        stepperRow(
-                            title: NSLocalizedString("prefs_line_height", comment: ""),
-                            preference: lineHeight,
-                            commit: commit
-                        )
-                    }
-
-                    if let paragraphIndent = paragraphIndent {
-                        stepperRow(
-                            title: NSLocalizedString("prefs_paragraph_indent", comment: ""),
-                            preference: paragraphIndent,
-                            commit: commit
-                        )
-                    }
-
-                    if let paragraphSpacing = paragraphSpacing {
-                        stepperRow(
-                            title: NSLocalizedString("prefs_paragraph_spacing", comment: ""),
-                            preference: paragraphSpacing,
-                            commit: commit
-                        )
-                    }
-
-                    if let wordSpacing = wordSpacing {
-                        stepperRow(
-                            title: NSLocalizedString("prefs_word_spacing", comment: ""),
-                            preference: wordSpacing,
-                            commit: commit
-                        )
-                    }
-
-                    if let letterSpacing = letterSpacing {
-                        stepperRow(
-                            title: NSLocalizedString("prefs_letter_spacing", comment: ""),
-                            preference: letterSpacing,
-                            commit: commit
-                        )
-                    }
-
-                    if let hyphens = hyphens {
-                        toggleRow(
-                            title: NSLocalizedString("prefs_hyphens", comment: ""),
-                            preference: hyphens,
-                            commit: commit
-                        )
-                    }
-
-                    if let ligatures = ligatures {
-                        toggleRow(
-                            title: NSLocalizedString("prefs_ligatures", comment: ""),
-                            preference: ligatures,
-                            commit: commit
-                        )
-                    }
-                }
-            }
+            .padding(14)
+            .panelCard(colorScheme: colorScheme)
         }
     }
 
-    /// User preferences screen for an audiobook.
-    func audioUserPreferences(
+    // MARK: - Audiobook Panel
+
+    private func audioPanel(
         commit: @escaping () -> Void,
         volume: AnyRangePreference<Double>? = nil,
         speed: AnyRangePreference<Double>? = nil
     ) -> some View {
-        Section {
-            if let volume = volume {
-                stepperRow(
-                    title: NSLocalizedString("prefs_volume", comment: ""),
-                    preference: volume,
-                    commit: commit
-                )
+        VStack(spacing: 12) {
+            if let volume {
+                cleanStepperRow(title: NSLocalizedString("prefs_volume", comment: ""), preference: volume, commit: commit)
             }
-
-            if let speed = speed {
-                stepperRow(
-                    title: NSLocalizedString("prefs_speed", comment: ""),
-                    preference: speed,
-                    commit: commit
-                )
+            if let speed {
+                cleanStepperRow(title: NSLocalizedString("prefs_speed", comment: ""), preference: speed, commit: commit)
             }
         }
+        .padding(14)
+        .panelCard(colorScheme: colorScheme)
     }
 
-    /// Component for a boolean `Preference` switchable with a `Toggle` button.
-    func toggleRow(
+    // MARK: - Clean Row Building Blocks (No Developer Backspace Buttons)
+
+    private func panelSectionHeader(_ title: String) -> some View {
+        Text(title)
+            .font(.system(size: 12, weight: .semibold))
+            .foregroundStyle(AppColors.secondaryText)
+    }
+
+    private func modeToggleButton(
+        title: String,
+        icon: String,
+        isSelected: Bool,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button {
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            action()
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: icon)
+                    .font(.system(size: 13, weight: .semibold))
+                Text(title)
+                    .font(.system(size: 13, weight: .semibold))
+                    .lineLimit(1)
+            }
+            .foregroundStyle(isSelected ? .white : AppColors.primaryText)
+            .frame(maxWidth: .infinity)
+            .frame(height: 38)
+            .background(
+                isSelected
+                    ? AnyShapeStyle(AppColors.horizontalGradient)
+                    : AnyShapeStyle(SwiftUI.Color.primary.opacity(colorScheme == .dark ? 0.08 : 0.045)),
+                in: RoundedRectangle(cornerRadius: 10, style: .continuous)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func presetChip(title: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
+        Button {
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            action()
+        } label: {
+            Text(title)
+                .font(.system(size: 13, weight: isSelected ? .bold : .medium))
+                .foregroundStyle(isSelected ? AppColors.accentBlue : AppColors.primaryText)
+                .frame(maxWidth: .infinity)
+                .frame(height: 34)
+                .background(
+                    isSelected
+                        ? AppColors.accentBlue.opacity(colorScheme == .dark ? 0.22 : 0.1)
+                        : SwiftUI.Color.primary.opacity(colorScheme == .dark ? 0.07 : 0.04),
+                    in: RoundedRectangle(cornerRadius: 9, style: .continuous)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 9, style: .continuous)
+                        .stroke(isSelected ? AppColors.accentBlue : .clear, lineWidth: 1.3)
+                )
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func cleanToggleRow(
         title: String,
         preference: AnyPreference<Bool>,
         commit: @escaping () -> Void
     ) -> some View {
-        toggleRow(
-            title: title,
-            value: preference.binding(onSet: commit),
-            isActive: preference.isEffective,
-            onClear: { preference.clear(); commit() }
-        )
+        Toggle(title, isOn: preference.binding(onSet: commit))
+            .font(.system(size: 14, weight: .medium))
+            .tint(AppColors.accentBlue)
+            .opacity(preference.isEffective ? 1 : 0.5)
     }
 
-    /// Component for a boolean `Preference` switchable with a `Toggle` button.
-    func toggleRow(
-        title: String,
-        value: Binding<Bool>,
-        isActive: Bool,
-        onClear: @escaping () -> Void
-    ) -> some View {
-        preferenceRow(
-            isActive: isActive,
-            onClear: onClear
-        ) {
-            Toggle(title, isOn: value)
-        }
-    }
-
-    /// Component for a nullable boolean `Preference` displayed in a `Picker` view
-    /// with three options: Auto, Yes, No.
-    func nullableBoolPickerRow(
-        title: String,
-        preference: AnyPreference<Bool?>,
-        commit: @escaping () -> Void
-    ) -> some View {
-        preferenceRow(
-            isActive: preference.isEffective,
-            onClear: { preference.clear(); commit() }
-        ) {
-            Picker(title, selection: Binding(
-                get: { preference.value ?? preference.effectiveValue },
-                set: { preference.set($0); commit() }
-            )) {
-                Text(NSLocalizedString("prefs_auto", comment: "")).tag(nil as Bool?)
-                Text(NSLocalizedString("prefs_yes", comment: "")).tag(true as Bool?)
-                Text(NSLocalizedString("prefs_no", comment: "")).tag(false as Bool?)
-            }
-        }
-    }
-
-    /// Component for an `EnumPreference` displayed in a `Picker` view.
-    func pickerRow<V: Hashable>(
+    private func cleanPickerRow<V: Hashable>(
         title: String,
         preference: AnyEnumPreference<V>,
         commit: @escaping () -> Void,
         formatValue: @escaping (V) -> String
     ) -> some View {
-        pickerRow(
-            title: title,
-            value: preference.binding(onSet: commit),
-            values: preference.supportedValues,
-            isActive: preference.isEffective,
-            onClear: { preference.clear(); commit() },
-            formatValue: formatValue
-        )
-    }
-
-    /// Component for an `EnumPreference` displayed in a `Picker` view.
-    func pickerRow<V: Hashable>(
-        title: String,
-        value: Binding<V>,
-        values: [V],
-        isActive: Bool,
-        onClear: @escaping () -> Void,
-        formatValue: @escaping (V) -> String
-    ) -> some View {
-        preferenceRow(
-            isActive: isActive,
-            onClear: onClear
-        ) {
-            Picker(title, selection: value) {
-                ForEach(values, id: \.self) {
-                    Text(formatValue($0)).tag($0)
+        HStack {
+            Text(title)
+                .font(.system(size: 14, weight: .medium))
+                .foregroundStyle(preference.isEffective ? AppColors.primaryText : AppColors.tertiaryText)
+            Spacer()
+            Picker("", selection: preference.binding(onSet: commit)) {
+                ForEach(preference.supportedValues, id: \.self) { value in
+                    Text(formatValue(value)).tag(value)
                 }
             }
+            .pickerStyle(.menu)
+            .tint(AppColors.accentBlue)
         }
+        .opacity(preference.isEffective ? 1 : 0.5)
     }
 
-    /// Component for a `RangePreference` modifiable by a `Stepper` view.
-    func stepperRow<V: Comparable>(
+    private func cleanStepperRow<V: Comparable>(
         title: String,
         preference: AnyRangePreference<V>,
         commit: @escaping () -> Void
     ) -> some View {
-        stepperRow(
-            title: title,
-            value: preference.format(value: preference.value ?? preference.effectiveValue),
-            isActive: preference.isEffective,
-            onIncrement: { preference.increment(); commit() },
-            onDecrement: { preference.decrement(); commit() },
-            onClear: { preference.clear(); commit() }
-        )
-    }
-
-    /// Component for a `RangePreference` modifiable by a `Stepper` view.
-    func stepperRow(
-        title: String,
-        value: String,
-        isActive: Bool,
-        onIncrement: @escaping () -> Void,
-        onDecrement: @escaping () -> Void,
-        onClear: @escaping () -> Void
-    ) -> some View {
-        preferenceRow(
-            isActive: isActive,
-            onClear: onClear
-        ) {
-            HStack {
-                Stepper(title,
-                        onIncrement: onIncrement,
-                        onDecrement: onDecrement)
-
-                Text(value)
-                    .font(.caption)
+        HStack {
+            VStack(alignment: .leading, spacing: 1) {
+                Text(title)
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(preference.isEffective ? AppColors.primaryText : AppColors.tertiaryText)
+                Text(preference.format(value: preference.value ?? preference.effectiveValue))
+                    .font(.system(size: 11.5, weight: .medium))
+                    .monospacedDigit()
+                    .foregroundStyle(AppColors.secondaryText)
             }
+            Spacer()
+            Stepper(
+                "",
+                onIncrement: {
+                    preference.increment()
+                    commit()
+                },
+                onDecrement: {
+                    preference.decrement()
+                    commit()
+                }
+            )
+            .labelsHidden()
         }
+        .opacity(preference.isEffective ? 1 : 0.5)
     }
 
-    /// Component for a `Preference` holding a `Language` value.
-    func languageRow(
-        title: String,
-        preference: AnyPreference<Language?>,
-        commit: @escaping () -> Void
-    ) -> some View {
-        pickerRow(
-            title: title,
-            value: Binding(
-                get: { preference.value ?? preference.effectiveValue },
-                set: { preference.set($0); commit() }
-            ),
-            values: languages,
-            isActive: preference.isEffective,
-            onClear: { preference.clear(); commit() },
-            formatValue: { language in
-                language?.localizedDescription() ?? NSLocalizedString("prefs_original", comment: "")
-            }
-        )
-    }
-
-    /// Component for a `Preference` holding a `Color` value.
-    func colorRow(
+    private func cleanColorRow(
         title: String,
         preference: AnyPreference<ReadiumNavigator.Color>,
         commit: @escaping () -> Void
     ) -> some View {
-        colorRow(
-            title: title,
-            value: Binding(
+        ColorPicker(
+            title,
+            selection: Binding(
                 get: { (preference.value ?? preference.effectiveValue).color },
                 set: {
                     preference.set(ReadiumNavigator.Color(color: $0))
                     commit()
                 }
             ),
-            isActive: preference.isEffective,
-            onClear: { preference.clear(); commit() }
+            supportsOpacity: false
         )
+        .font(.system(size: 14, weight: .medium))
+        .opacity(preference.isEffective ? 1 : 0.5)
     }
 
-    /// Component for a `Preference` holding a `Color` value.
-    func colorRow(
+    private func cleanLanguageRow(
         title: String,
-        value: Binding<SwiftUI.Color>,
-        isActive: Bool,
-        onClear: @escaping () -> Void
-    ) -> some View {
-        preferenceRow(
-            isActive: isActive,
-            onClear: onClear
-        ) {
-            ColorPicker(title,
-                        selection: value,
-                        supportsOpacity: false)
-        }
-    }
-
-    /// Layout for a preference row.
-    func preferenceRow<V: View>(
-        isActive: Bool,
-        onClear: @escaping () -> Void,
-        content: @escaping () -> V
+        preference: AnyPreference<Language?>,
+        commit: @escaping () -> Void
     ) -> some View {
         HStack {
-            content()
-                .foregroundColor(isActive ? nil : .gray)
-
-            Button(action: onClear) {
-                Image(systemName: "delete.left")
+            Text(title)
+                .font(.system(size: 14, weight: .medium))
+                .foregroundStyle(preference.isEffective ? AppColors.primaryText : AppColors.tertiaryText)
+            Spacer()
+            Picker("", selection: Binding(
+                get: { preference.value ?? preference.effectiveValue },
+                set: { preference.set($0); commit() }
+            )) {
+                ForEach(languages, id: \.self) { language in
+                    Text(language?.localizedDescription() ?? NSLocalizedString("prefs_original", comment: ""))
+                        .tag(language)
+                }
             }
-            .buttonStyle(.plain)
+            .pickerStyle(.menu)
+            .tint(AppColors.accentBlue)
         }
+        .opacity(preference.isEffective ? 1 : 0.5)
+    }
+
+    private func previewFont(for family: FontFamily?) -> Font {
+        switch family {
+        case .literata:
+            return .system(size: 17, weight: .semibold, design: .serif)
+        case .sansSerif:
+            return .system(size: 17, weight: .semibold, design: .default)
+        case .iaWriterDuospace:
+            return .system(size: 17, weight: .semibold, design: .monospaced)
+        case .accessibleDfA, .openDyslexic:
+            return .system(size: 17, weight: .semibold, design: .rounded)
+        default:
+            return .system(size: 17, weight: .semibold, design: .serif)
+        }
+    }
+
+    private func fontDisplayName(for family: FontFamily?) -> String {
+        guard let family else {
+            return NSLocalizedString("prefs_original", comment: "")
+        }
+        switch family {
+        case .sansSerif:
+            return NSLocalizedString("prefs_sans_serif", comment: "")
+        case .iaWriterDuospace:
+            return "iA Writer"
+        case .accessibleDfA:
+            return "Accessible"
+        default:
+            return family.rawValue
+        }
+    }
+}
+
+private extension View {
+    func panelCard(colorScheme: ColorScheme) -> some View {
+        self
+            .background(AppColors.cardBackground, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .stroke(colorScheme == .dark ? SwiftUI.Color.white.opacity(0.06) : SwiftUI.Color.black.opacity(0.04), lineWidth: 1)
+            )
     }
 }
 
 extension Preference {
     /// Creates a SwiftUI binding to modify the preference's value.
-    ///
-    /// This is convenient when paired with a `Toggle` or `Picker`.
     func binding(onSet: @escaping () -> Void = {}) -> Binding<Value> {
         Binding(
             get: { value ?? effectiveValue },

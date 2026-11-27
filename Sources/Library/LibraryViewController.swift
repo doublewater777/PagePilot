@@ -107,8 +107,10 @@ class LibraryViewController: UIViewController, Loggable {
     private var searchController: UISearchController!
     private var searchText: String = ""
     private var latestDBBooks: [Book] = []
+    private var allAvailableBooks: [Book] = []
     private var removedMockBookIds = Set<Int64>()
     private var coverCache = [Int64: UIImage]()
+    private var generatedCoverCache = [String: UIImage]()
 
     enum SortMode: String {
         case recentAdded
@@ -221,8 +223,8 @@ class LibraryViewController: UIViewController, Loggable {
 
     @IBOutlet var collectionView: UICollectionView! {
         didSet {
-            collectionView.contentInset = UIEdgeInsets(top: 18, left: 20,
-                                                       bottom: 28, right: 20)
+            collectionView.contentInset = UIEdgeInsets(top: 6, left: 18,
+                                                       bottom: 32, right: 18)
             collectionView.register(UINib(nibName: "PublicationCollectionViewCell", bundle: nil),
                                     forCellWithReuseIdentifier: "publicationCollectionViewCell")
             collectionView.delegate = self
@@ -243,8 +245,8 @@ class LibraryViewController: UIViewController, Loggable {
             guard self.traitCollection.hasDifferentColorAppearance(comparedTo: previous) else { return }
             self.deleteToolbar?.layer.borderColor = UIColor.separator.cgColor
         }
-        view.backgroundColor = .systemGroupedBackground
-        collectionView.backgroundColor = .systemGroupedBackground
+        view.backgroundColor = AppColors.uiBackground
+        collectionView.backgroundColor = AppColors.uiBackground
         collectionView.alwaysBounceVertical = true
 
         library.allBooks()
@@ -268,14 +270,7 @@ class LibraryViewController: UIViewController, Loggable {
             }
             .store(in: &subscriptions)
 
-        // Add long press gesture recognizer.
-        let recognizer = UILongPressGestureRecognizer(target: self, action: #selector(handleLongPress))
-
-        recognizer.minimumPressDuration = 0.5
-        recognizer.delaysTouchesBegan = true
-        collectionView.addGestureRecognizer(recognizer)
-
-        // 注册书架顶部 Header View
+        // 注册书架顶部筛选 Header View
         collectionView.register(LibraryHeaderView.self, forSupplementaryViewOfKind: UICollectionView.elementKindSectionHeader, withReuseIdentifier: "LibraryHeaderView")
 
         #if DEBUG
@@ -458,8 +453,9 @@ class LibraryViewController: UIViewController, Loggable {
         #else
         var filteredBooks = latestDBBooks
         #endif
-        
-        #if targetEnvironment(macCatalyst)
+
+        self.allAvailableBooks = filteredBooks
+
         filteredBooks = filteredBooks.filter {
             switch readingFilter {
             case .all: return true
@@ -468,7 +464,6 @@ class LibraryViewController: UIViewController, Loggable {
             case .finished: return $0.progression >= 0.99
             }
         }
-        #endif
         let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         if !query.isEmpty {
             filteredBooks = filteredBooks.filter { book in
@@ -683,25 +678,28 @@ class LibraryViewController: UIViewController, Loggable {
         #endif
         let contentWidth = collectionView.bounds.width - collectionView.adjustedContentInset.left - collectionView.adjustedContentInset.right
 
-        let minimumSpacing = CGFloat(18)
+        let minimumSpacing = CGFloat(14)
         let width: CGFloat
         let height: CGFloat
 
-        print("[PagePilot LOG] viewWillLayoutSubviews.currentViewMode: \(currentViewMode.rawValue)")
         if currentViewMode == .list {
             flowLayout.minimumLineSpacing = 12
             flowLayout.minimumInteritemSpacing = 0
             width = contentWidth
-            height = 96
+            height = 104
         } else {
-            flowLayout.minimumLineSpacing = 24
+            flowLayout.minimumLineSpacing = 22
             flowLayout.minimumInteritemSpacing = minimumSpacing
             width = floor((contentWidth - CGFloat(numberPerRow - 1) * minimumSpacing) / CGFloat(numberPerRow))
-            height = width * 1.48
+            height = width * 1.46 + 74
         }
 
         flowLayout.itemSize = CGSize(width: width, height: height)
+        #if targetEnvironment(macCatalyst)
         flowLayout.headerReferenceSize = .zero
+        #else
+        flowLayout.headerReferenceSize = allAvailableBooks.isEmpty ? .zero : CGSize(width: contentWidth, height: 50)
+        #endif
     }
 
     @objc func addBookFromDevice() {
@@ -755,30 +753,6 @@ class LibraryViewController: UIViewController, Loggable {
     }
 }
 
-extension LibraryViewController {
-        @objc func handleLongPress(gestureRecognizer: UILongPressGestureRecognizer) {
-            guard gestureRecognizer.state == .began else { return }
-
-            let location = gestureRecognizer.location(in: collectionView)
-            if let indexPath = collectionView.indexPathForItem(at: location) {
-                let book = books[indexPath.item]
-                guard let bookId = book.id?.rawValue else { return }
-                
-                let feedback = UIImpactFeedbackGenerator(style: .medium)
-                feedback.impactOccurred()
-
-                if !isEditingBooks {
-                    toggleEditingMode()
-                    selectedBookIds.insert(bookId)
-                    if let cell = collectionView.cellForItem(at: indexPath) as? PublicationCollectionViewCell {
-                        cell.isSelectedForEditing = true
-                    }
-                    updateDeleteButtonTitle()
-                }
-            }
-        }
-    }
-
 // MARK: - UIDocumentPickerDelegate.
 
 extension LibraryViewController: UIDocumentPickerDelegate {
@@ -814,22 +788,59 @@ extension LibraryViewController: UIDocumentPickerDelegate {
 extension LibraryViewController: UICollectionViewDelegateFlowLayout, UICollectionViewDataSource {
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         if books.isEmpty {
-            #if targetEnvironment(macCatalyst)
-            if readingFilter != .all || !searchText.isEmpty {
-                var configuration = UIContentUnavailableConfiguration.search()
-                configuration.secondaryText = readingFilter.title
-                collectionView.backgroundView = UIContentUnavailableView(configuration: configuration)
+            if !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                collectionView.backgroundView = makeFilteredEmptyView(
+                    icon: "magnifyingglass",
+                    message: NSLocalizedString("library_empty_search", comment: "")
+                )
+            } else if readingFilter != .all {
+                collectionView.backgroundView = makeFilteredEmptyView(
+                    icon: readingFilter.symbol,
+                    message: NSLocalizedString("library_empty_filtered", comment: "")
+                )
             } else {
                 collectionView.backgroundView = makeEmptyLibraryView()
             }
-            #else
-            collectionView.backgroundView = makeEmptyLibraryView()
-            #endif
         } else {
             collectionView.backgroundView = nil
         }
 
         return books.count
+    }
+
+    private func makeFilteredEmptyView(icon: String, message: String) -> UIView {
+        let container = UIView(frame: collectionView.bounds)
+        container.backgroundColor = .clear
+
+        let imageView = UIImageView(image: UIImage(
+            systemName: icon,
+            withConfiguration: UIImage.SymbolConfiguration(pointSize: 32, weight: .light)
+        ))
+        imageView.tintColor = .tertiaryLabel
+        imageView.translatesAutoresizingMaskIntoConstraints = false
+
+        let label = UILabel()
+        label.text = message
+        label.font = .systemFont(ofSize: 15, weight: .medium)
+        label.textColor = .secondaryLabel
+        label.textAlignment = .center
+        label.numberOfLines = 0
+        label.translatesAutoresizingMaskIntoConstraints = false
+
+        let stack = UIStackView(arrangedSubviews: [imageView, label])
+        stack.axis = .vertical
+        stack.alignment = .center
+        stack.spacing = 12
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        container.addSubview(stack)
+
+        NSLayoutConstraint.activate([
+            stack.centerXAnchor.constraint(equalTo: container.centerXAnchor),
+            stack.centerYAnchor.constraint(equalTo: container.centerYAnchor, constant: -20),
+            label.widthAnchor.constraint(lessThanOrEqualTo: container.widthAnchor, multiplier: 0.72),
+        ])
+
+        return container
     }
 
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
@@ -850,16 +861,17 @@ extension LibraryViewController: UICollectionViewDelegateFlowLayout, UICollectio
         cell.delegate = self
         cell.accessibilityLabel = book.title
         cell.titleLabel.text = book.title
-        cell.authorLabel.text = book.authors
+        let authorText = book.authors?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let resolvedAuthor = (authorText?.isEmpty == false && authorText?.lowercased() != "unknown") ? authorText : nil
+        cell.authorLabel.text = resolvedAuthor
+        cell.authorLabel.isHidden = (resolvedAuthor == nil)
 
         // Load image asynchronously to avoid blocking the main thread with disk I/O.
         let flowLayout = collectionView.collectionViewLayout as? UICollectionViewFlowLayout
         if let bookId = book.id?.rawValue, let cachedImage = coverCache[bookId] {
-            // Cache hit: set immediately, no I/O needed
             cell.coverImageView.image = cachedImage
         } else if let coverURL = book.cover {
-            // Show placeholder immediately, then load cover in background
-            cell.coverImageView.image = defaultCover(layout: flowLayout, description: book.title)
+            cell.coverImageView.image = defaultCover(layout: flowLayout, description: book.title, author: authorText)
             let bookId = book.id?.rawValue
             let coverFileURL = coverURL.url
             DispatchQueue.global(qos: .userInitiated).async { [weak self] in
@@ -867,11 +879,9 @@ extension LibraryViewController: UICollectionViewDelegateFlowLayout, UICollectio
                       let data = try? Data(contentsOf: coverFileURL),
                       let cover = UIImage(data: data) else { return }
                 DispatchQueue.main.async {
-                    // Cache for future reuse
                     if let bookId = bookId {
                         self.coverCache[bookId] = cover
                     }
-                    // Only update the cell if it still represents the same book
                     guard let currentIndexPath = self.collectionView.indexPath(for: cell),
                           currentIndexPath.item < self.books.count,
                           self.books[currentIndexPath.item].id?.rawValue == bookId else { return }
@@ -879,10 +889,9 @@ extension LibraryViewController: UICollectionViewDelegateFlowLayout, UICollectio
                 }
             }
         } else {
-            cell.coverImageView.image = defaultCover(layout: flowLayout, description: book.title)
+            cell.coverImageView.image = defaultCover(layout: flowLayout, description: book.title, author: authorText)
         }
 
-        print("[PagePilot LOG] cellForItemAt.currentViewMode: \(currentViewMode.rawValue) for book: \(book.title)")
         cell.configureMode(currentViewMode)
         return cell
     }
@@ -891,84 +900,122 @@ extension LibraryViewController: UICollectionViewDelegateFlowLayout, UICollectio
         guard kind == UICollectionView.elementKindSectionHeader else {
             return UICollectionReusableView()
         }
-        return collectionView.dequeueReusableSupplementaryView(ofKind: kind, withReuseIdentifier: "LibraryHeaderView", for: indexPath)
+        let header = collectionView.dequeueReusableSupplementaryView(ofKind: kind, withReuseIdentifier: "LibraryHeaderView", for: indexPath) as! LibraryHeaderView
+        header.configure(
+            selectedFilter: readingFilter,
+            counts: filterCounts(),
+            onSelect: { [weak self] filter in
+                guard let self, self.readingFilter != filter else { return }
+                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                self.readingFilter = filter
+                self.applyFilteringAndReload()
+            }
+        )
+        return header
     }
 
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, referenceSizeForHeaderInSection section: Int) -> CGSize {
+        #if targetEnvironment(macCatalyst)
         return .zero
+        #else
+        guard !allAvailableBooks.isEmpty else { return .zero }
+        let width = max(0, collectionView.bounds.width - collectionView.adjustedContentInset.left - collectionView.adjustedContentInset.right)
+        return CGSize(width: width, height: 48)
+        #endif
     }
 
-    func defaultCover(layout: UICollectionViewFlowLayout?, description: String) -> UIImage {
-        let width = layout?.itemSize.width ?? 120
-        let height = width * 1.38
-        let size = CGSize(width: width, height: height)
-
-        let renderer = UIGraphicsImageRenderer(size: size)
-        return renderer.image { context in
-            // Draw background gradient
-            let isDark = self.traitCollection.userInterfaceStyle == .dark
-            let colors = isDark ? [
-                UIColor(red: 0.12, green: 0.18, blue: 0.24, alpha: 1).cgColor,
-                UIColor(red: 0.08, green: 0.12, blue: 0.16, alpha: 1).cgColor
-            ] : [
-                UIColor(red: 0.88, green: 0.94, blue: 0.96, alpha: 1).cgColor,
-                UIColor(red: 0.94, green: 0.97, blue: 0.98, alpha: 1).cgColor
-            ]
-
-            let colorSpace = CGColorSpaceCreateDeviceRGB()
-            guard let gradient = CGGradient(colorsSpace: colorSpace, colors: colors as CFArray, locations: nil) else { return }
-
-            context.cgContext.drawLinearGradient(gradient, start: CGPoint(x: 0, y: 0), end: CGPoint(x: 0, y: height), options: [])
-
-            // Draw book-like spine overlay on the left edge
-            let spinePath = UIBezierPath(rect: CGRect(x: 0, y: 0, width: 6, height: height))
-            let spineColor = isDark ? UIColor.white.withAlphaComponent(0.04) : UIColor.black.withAlphaComponent(0.03)
-            spineColor.setFill()
-            spinePath.fill()
-
-            // Draw text
-            let paragraphStyle = NSMutableParagraphStyle()
-            paragraphStyle.alignment = .center
-
-            let fontSize = max(11, min(15, width * 0.11))
-            let font = UIFont.systemFont(ofSize: fontSize, weight: .bold)
-            let textColor = UIColor.label
-
-            let attributes: [NSAttributedString.Key: Any] = [
-                .font: font,
-                .foregroundColor: textColor,
-                .paragraphStyle: paragraphStyle
-            ]
-
-            let padding: CGFloat = 12
-            let textRect = CGRect(x: padding + 6, y: padding, width: width - padding * 2 - 6, height: height - padding * 2)
-
-            let attributedString = NSAttributedString(string: description, attributes: attributes)
-            let constraintSize = CGSize(width: textRect.width, height: textRect.height)
-            let boundingBox = attributedString.boundingRect(with: constraintSize, options: [.usesLineFragmentOrigin, .truncatesLastVisibleLine], context: nil)
-
-            let textHeight = boundingBox.height
-            let yOffset = max(padding, (height - textHeight) / 2.0)
-            let drawRect = CGRect(x: textRect.origin.x, y: yOffset, width: textRect.width, height: textHeight)
-
-            attributedString.draw(in: drawRect)
+    private func filterCounts() -> [ReadingFilter: Int] {
+        var reading = 0
+        var unread = 0
+        var finished = 0
+        for book in allAvailableBooks {
+            if book.progression >= 0.99 {
+                finished += 1
+            } else if book.progression > 0 {
+                reading += 1
+            } else {
+                unread += 1
+            }
         }
+        return [
+            .all: allAvailableBooks.count,
+            .reading: reading,
+            .unread: unread,
+            .finished: finished,
+        ]
+    }
+
+    func defaultCover(layout: UICollectionViewFlowLayout?, description: String, author: String? = nil) -> UIImage {
+        let width = max(110, min(180, layout?.itemSize.width ?? 120))
+        let height = width * 1.46
+        let cacheKey = "\(description)|\(author ?? "")|\(Int(width))"
+        if let cached = generatedCoverCache[cacheKey] {
+            return cached
+        }
+        let image = GeneratedBookCover.renderImage(
+            title: description,
+            author: author,
+            size: CGSize(width: width, height: height)
+        )
+        generatedCoverCache[cacheKey] = image
+        return image
     }
 
     private func makeEmptyLibraryView() -> UIView {
         let container = UIView(frame: collectionView.bounds)
         container.backgroundColor = .clear
 
-        let iconContainer = UIView()
-        iconContainer.translatesAutoresizingMaskIntoConstraints = false
-        iconContainer.backgroundColor = UIColor.systemBlue.withAlphaComponent(0.12)
-        iconContainer.layer.cornerRadius = 20
+        let visualView: UIView
+        if let emptyArt = UIImage(named: "EmptyLibraryArt") {
+            let shadowWrapper = UIView()
+            shadowWrapper.translatesAutoresizingMaskIntoConstraints = false
+            shadowWrapper.backgroundColor = .clear
+            shadowWrapper.layer.shadowColor = UIColor.black.cgColor
+            shadowWrapper.layer.shadowOpacity = traitCollection.userInterfaceStyle == .dark ? 0.35 : 0.09
+            shadowWrapper.layer.shadowRadius = 14
+            shadowWrapper.layer.shadowOffset = CGSize(width: 0, height: 6)
 
-        let icon = UIImageView(image: UIImage(systemName: "books.vertical"))
-        icon.translatesAutoresizingMaskIntoConstraints = false
-        icon.tintColor = .systemBlue
-        icon.contentMode = .scaleAspectFit
-        iconContainer.addSubview(icon)
+            let artImageView = UIImageView(image: emptyArt)
+            artImageView.translatesAutoresizingMaskIntoConstraints = false
+            artImageView.contentMode = .scaleAspectFill
+            artImageView.clipsToBounds = true
+            artImageView.layer.cornerRadius = 18
+            artImageView.layer.cornerCurve = .continuous
+            artImageView.layer.borderWidth = 0.6
+            artImageView.layer.borderColor = UIColor.label.withAlphaComponent(0.08).cgColor
+            shadowWrapper.addSubview(artImageView)
+
+            NSLayoutConstraint.activate([
+                shadowWrapper.widthAnchor.constraint(equalToConstant: 216),
+                shadowWrapper.heightAnchor.constraint(equalToConstant: 158),
+                artImageView.topAnchor.constraint(equalTo: shadowWrapper.topAnchor),
+                artImageView.leadingAnchor.constraint(equalTo: shadowWrapper.leadingAnchor),
+                artImageView.trailingAnchor.constraint(equalTo: shadowWrapper.trailingAnchor),
+                artImageView.bottomAnchor.constraint(equalTo: shadowWrapper.bottomAnchor),
+            ])
+            visualView = shadowWrapper
+        } else {
+            let iconContainer = UIView()
+            iconContainer.translatesAutoresizingMaskIntoConstraints = false
+            iconContainer.backgroundColor = UIColor.systemBlue.withAlphaComponent(0.12)
+            iconContainer.layer.cornerRadius = 20
+
+            let icon = UIImageView(image: UIImage(systemName: "books.vertical"))
+            icon.translatesAutoresizingMaskIntoConstraints = false
+            icon.tintColor = .systemBlue
+            icon.contentMode = .scaleAspectFit
+            iconContainer.addSubview(icon)
+
+            NSLayoutConstraint.activate([
+                iconContainer.widthAnchor.constraint(equalToConstant: 72),
+                iconContainer.heightAnchor.constraint(equalToConstant: 72),
+                icon.centerXAnchor.constraint(equalTo: iconContainer.centerXAnchor),
+                icon.centerYAnchor.constraint(equalTo: iconContainer.centerYAnchor),
+                icon.widthAnchor.constraint(equalToConstant: 30),
+                icon.heightAnchor.constraint(equalToConstant: 30),
+            ])
+            visualView = iconContainer
+        }
 
         let titleLabel = UILabel()
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
@@ -1017,7 +1064,7 @@ extension LibraryViewController: UICollectionViewDelegateFlowLayout, UICollectio
         configuration.background.imageContentMode = .scaleToFill
         button.configuration = configuration
 
-        let stackView = UIStackView(arrangedSubviews: [iconContainer, titleLabel, messageLabel, button])
+        let stackView = UIStackView(arrangedSubviews: [visualView, titleLabel, messageLabel, button])
         stackView.translatesAutoresizingMaskIntoConstraints = false
         stackView.axis = .vertical
         stackView.alignment = .center
@@ -1026,18 +1073,11 @@ extension LibraryViewController: UICollectionViewDelegateFlowLayout, UICollectio
         container.addSubview(stackView)
 
         NSLayoutConstraint.activate([
-            iconContainer.widthAnchor.constraint(equalToConstant: 72),
-            iconContainer.heightAnchor.constraint(equalToConstant: 72),
-            icon.centerXAnchor.constraint(equalTo: iconContainer.centerXAnchor),
-            icon.centerYAnchor.constraint(equalTo: iconContainer.centerYAnchor),
-            icon.widthAnchor.constraint(equalToConstant: 30),
-            icon.heightAnchor.constraint(equalToConstant: 30),
-
             messageLabel.widthAnchor.constraint(lessThanOrEqualTo: container.widthAnchor, multiplier: 0.72),
             button.heightAnchor.constraint(greaterThanOrEqualToConstant: 44),
 
             stackView.centerXAnchor.constraint(equalTo: container.centerXAnchor),
-            stackView.centerYAnchor.constraint(equalTo: container.centerYAnchor, constant: -34),
+            stackView.centerYAnchor.constraint(equalTo: container.centerYAnchor, constant: -24),
         ])
 
         return container
@@ -1105,32 +1145,67 @@ extension LibraryViewController: UICollectionViewDelegateFlowLayout, UICollectio
 }
 
 extension LibraryViewController: PublicationCollectionViewCellDelegate {
-    #if targetEnvironment(macCatalyst)
     func collectionView(_ collectionView: UICollectionView, contextMenuConfigurationForItemAt indexPath: IndexPath, point: CGPoint) -> UIContextMenuConfiguration? {
-        guard !isEditingBooks else { return nil }
-        let bookID = books[indexPath.item].id
+        guard !isEditingBooks, indexPath.item < books.count else { return nil }
+        let book = books[indexPath.item]
+        let bookID = book.id
+        let isDemo = book.url.hasPrefix("mock_url")
+        let openTitle = book.progression > 0
+            ? NSLocalizedString("library_context_continue", comment: "")
+            : NSLocalizedString("library_context_open", comment: "")
+
         return UIContextMenuConfiguration(identifier: nil, previewProvider: nil) { [weak self] _ in
             guard let self else { return nil }
-            return UIMenu(children: [
-                UIAction(title: NSLocalizedString("mac_open_book", comment: ""), image: UIImage(systemName: "book")) { [weak self] _ in
+            var actions: [UIMenuElement] = [
+                UIAction(title: openTitle, image: UIImage(systemName: "book")) { [weak self] _ in
                     guard let self, let index = self.books.firstIndex(where: { $0.id == bookID }) else { return }
                     let path = IndexPath(item: index, section: 0)
                     self.collectionView(collectionView, didSelectItemAt: path)
                 },
-                UIAction(title: NSLocalizedString("metadata_button", comment: ""), image: UIImage(systemName: "info.circle")) { [weak self] _ in
-                    guard let self, let index = self.books.firstIndex(where: { $0.id == bookID }) else { return }
-                    let path = IndexPath(item: index, section: 0)
-                    self.presentMetadata(forCellAt: path)
-                },
-                UIAction(title: NSLocalizedString("remove_button", comment: ""), image: UIImage(systemName: "trash"), attributes: .destructive) { [weak self] _ in
-                    guard let self, let index = self.books.firstIndex(where: { $0.id == bookID }) else { return }
-                    let path = IndexPath(item: index, section: 0)
-                    self.removePublicationFromLibrary(forCellAt: path)
+            ]
+
+            if !isDemo {
+                actions.append(
+                    UIAction(title: NSLocalizedString("library_context_details", comment: ""), image: UIImage(systemName: "info.circle")) { [weak self] _ in
+                        guard let self, let index = self.books.firstIndex(where: { $0.id == bookID }) else { return }
+                        let path = IndexPath(item: index, section: 0)
+                        self.presentMetadata(forCellAt: path)
+                    }
+                )
+            }
+
+            #if !targetEnvironment(macCatalyst)
+            actions.append(
+                UIAction(title: NSLocalizedString("library_context_select", comment: ""), image: UIImage(systemName: "checkmark.circle")) { [weak self] _ in
+                    guard let self else { return }
+                    if !self.isEditingBooks {
+                        self.toggleEditingMode()
+                    }
+                    if let rawID = bookID?.rawValue {
+                        self.selectedBookIds.insert(rawID)
+                        self.updateDeleteButtonTitle()
+                        self.collectionView.reloadData()
+                    }
                 }
-            ])
+            )
+            #endif
+
+            let deleteAction = UIAction(
+                title: NSLocalizedString("remove_button", comment: ""),
+                image: UIImage(systemName: "trash"),
+                attributes: .destructive
+            ) { [weak self] _ in
+                guard let self, let index = self.books.firstIndex(where: { $0.id == bookID }) else { return }
+                let path = IndexPath(item: index, section: 0)
+                self.removePublicationFromLibrary(forCellAt: path)
+            }
+
+            let destructiveGroup = UIMenu(title: "", options: .displayInline, children: [deleteAction])
+            actions.append(destructiveGroup)
+
+            return UIMenu(title: book.title, children: actions)
         }
     }
-    #endif
 
     func removePublicationFromLibrary(forCellAt indexPath: IndexPath) {
         let book = books[indexPath.item]
@@ -1143,7 +1218,14 @@ extension LibraryViewController: PublicationCollectionViewCellDelegate {
         let removeAction = UIAlertAction(title: NSLocalizedString("remove_button", comment: "Button to confirm the deletion of a publication"), style: .destructive, handler: { _ in
             Task {
                 do {
-                    try await self.library.remove(book)
+                    if let rawID = book.id?.rawValue, rawID == 9992 || rawID == 9993 {
+                        await MainActor.run {
+                            self.removedMockBookIds.insert(rawID)
+                            self.applyFilteringAndReload()
+                        }
+                    } else {
+                        try await self.library.remove(book)
+                    }
                 } catch {
                     self.libraryDelegate?.presentError(UserError(error), from: self)
                 }
@@ -1164,8 +1246,20 @@ extension LibraryViewController: PublicationCollectionViewCellDelegate {
                 guard let pub = try await library.openBook(book, sender: self) else {
                     return
                 }
-                let pubMetadataViewController = UIHostingController(rootView: PublicationMetadataView(publication: pub))
-                pubMetadataViewController.modalPresentationStyle = .popover
+                let metadataView = PublicationMetadataView(
+                    publication: pub,
+                    book: book,
+                    onOpen: { [weak self] in
+                        guard let self else { return }
+                        if let bookId = book.id?.rawValue {
+                            self.markBookAsRead(id: bookId)
+                        }
+                        self.navigationController?.popViewController(animated: false)
+                        self.libraryDelegate?.libraryDidSelectPublication(pub, book: book)
+                    }
+                )
+                let pubMetadataViewController = UIHostingController(rootView: metadataView)
+                pubMetadataViewController.hidesBottomBarWhenPushed = true
                 self.navigationController?.pushViewController(pubMetadataViewController, animated: true)
             } catch {
                 libraryDelegate?.presentError(UserError(error), from: self)
@@ -1182,15 +1276,30 @@ extension LibraryViewController: PublicationCollectionViewCellDelegate {
 }
 
 class PublicationIndicator: UIView {
-    lazy var indicator: UIActivityIndicatorView = {
-        let result = UIActivityIndicatorView(style: .large)
-        result.translatesAutoresizingMaskIntoConstraints = false
-        self.backgroundColor = UIColor.systemBackground.withAlphaComponent(0.7)
-        self.addSubview(result)
+    private lazy var pillView: UIVisualEffectView = {
+        let blur = UIVisualEffectView(effect: UIBlurEffect(style: .systemThinMaterial))
+        blur.translatesAutoresizingMaskIntoConstraints = false
+        blur.layer.cornerRadius = 16
+        blur.layer.cornerCurve = .continuous
+        blur.clipsToBounds = true
+        return blur
+    }()
 
-        let horizontalConstraint = NSLayoutConstraint(item: result, attribute: .centerX, relatedBy: .equal, toItem: self, attribute: .centerX, multiplier: 1.0, constant: 0.0)
-        let verticalConstraint = NSLayoutConstraint(item: result, attribute: .centerY, relatedBy: .equal, toItem: self, attribute: .centerY, multiplier: 1.0, constant: 0.0)
-        self.addConstraints([horizontalConstraint, verticalConstraint])
+    lazy var indicator: UIActivityIndicatorView = {
+        let result = UIActivityIndicatorView(style: .medium)
+        result.translatesAutoresizingMaskIntoConstraints = false
+        self.backgroundColor = UIColor.black.withAlphaComponent(0.18)
+        self.addSubview(pillView)
+        pillView.contentView.addSubview(result)
+
+        NSLayoutConstraint.activate([
+            pillView.centerXAnchor.constraint(equalTo: self.centerXAnchor),
+            pillView.centerYAnchor.constraint(equalTo: self.centerYAnchor),
+            pillView.widthAnchor.constraint(equalToConstant: 56),
+            pillView.heightAnchor.constraint(equalToConstant: 56),
+            result.centerXAnchor.constraint(equalTo: pillView.contentView.centerXAnchor),
+            result.centerYAnchor.constraint(equalTo: pillView.contentView.centerYAnchor),
+        ])
 
         return result
     }()
@@ -1509,63 +1618,93 @@ extension LibraryViewController: UISearchResultsUpdating {
     }
 }
 
-// MARK: - LibraryHeaderView
+// MARK: - LibraryHeaderView (Horizontal Reading-Status Filter Pills)
 
 class LibraryHeaderView: UICollectionReusableView {
-    let titleLabel = UILabel()
-    let sortButton = UIButton()
-    
+    private let scrollView = UIScrollView()
+    private let stackView = UIStackView()
+    private var buttons: [LibraryViewController.ReadingFilter: UIButton] = [:]
+    private var onSelect: ((LibraryViewController.ReadingFilter) -> Void)?
+
     override init(frame: CGRect) {
         super.init(frame: frame)
         setupViews()
     }
-    
+
     required init?(coder: NSCoder) {
         super.init(coder: coder)
         setupViews()
     }
-    
-    func configure(withTitle title: String) {
-        var config = UIButton.Configuration.filled()
-        config.buttonSize = .mini
-        config.cornerStyle = .capsule
-        config.baseBackgroundColor = UIColor.label.withAlphaComponent(0.06)
-        config.baseForegroundColor = .secondaryLabel
-        config.contentInsets = NSDirectionalEdgeInsets(top: 4, leading: 10, bottom: 4, trailing: 10)
-        
-        let imageConfig = UIImage.SymbolConfiguration(pointSize: 10, weight: .medium)
-        config.image = UIImage(systemName: "arrow.up.arrow.down", withConfiguration: imageConfig)
-        config.imagePadding = 4
-        config.imagePlacement = .leading
-        
-        var container = AttributeContainer()
-        container.font = UIFont.systemFont(ofSize: 13, weight: .medium)
-        config.attributedTitle = AttributedString(title, attributes: container)
-        
-        sortButton.configuration = config
-    }
-    
+
     private func setupViews() {
         backgroundColor = .clear
-        
-        titleLabel.translatesAutoresizingMaskIntoConstraints = false
-        titleLabel.font = .systemFont(ofSize: 20, weight: .bold)
-        titleLabel.textColor = .label
-        titleLabel.text = NSLocalizedString("library_all_books", comment: "")
-        
-        sortButton.translatesAutoresizingMaskIntoConstraints = false
-        configure(withTitle: NSLocalizedString("library_sort_recent_added", comment: ""))
-        
-        addSubview(titleLabel)
-        addSubview(sortButton)
-        
+
+        scrollView.translatesAutoresizingMaskIntoConstraints = false
+        scrollView.showsHorizontalScrollIndicator = false
+        scrollView.showsVerticalScrollIndicator = false
+        scrollView.alwaysBounceHorizontal = true
+        addSubview(scrollView)
+
+        stackView.translatesAutoresizingMaskIntoConstraints = false
+        stackView.axis = .horizontal
+        stackView.alignment = .center
+        stackView.spacing = 8
+        scrollView.addSubview(stackView)
+
         NSLayoutConstraint.activate([
-            titleLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
-            titleLabel.centerYAnchor.constraint(equalTo: centerYAnchor),
-            
-            sortButton.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
-            sortButton.centerYAnchor.constraint(equalTo: centerYAnchor),
-            sortButton.heightAnchor.constraint(equalToConstant: 28)
+            scrollView.leadingAnchor.constraint(equalTo: leadingAnchor),
+            scrollView.trailingAnchor.constraint(equalTo: trailingAnchor),
+            scrollView.topAnchor.constraint(equalTo: topAnchor),
+            scrollView.bottomAnchor.constraint(equalTo: bottomAnchor),
+
+            stackView.leadingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.leadingAnchor),
+            stackView.trailingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.trailingAnchor),
+            stackView.topAnchor.constraint(equalTo: scrollView.contentLayoutGuide.topAnchor),
+            stackView.bottomAnchor.constraint(equalTo: scrollView.contentLayoutGuide.bottomAnchor),
+            stackView.heightAnchor.constraint(equalTo: scrollView.frameLayoutGuide.heightAnchor),
         ])
+
+        for filter in LibraryViewController.ReadingFilter.allCases {
+            let button = UIButton(type: .system)
+            button.translatesAutoresizingMaskIntoConstraints = false
+            button.addAction(UIAction { [weak self] _ in
+                self?.onSelect?(filter)
+            }, for: .primaryActionTriggered)
+            buttons[filter] = button
+            stackView.addArrangedSubview(button)
+        }
+    }
+
+    func configure(
+        selectedFilter: LibraryViewController.ReadingFilter,
+        counts: [LibraryViewController.ReadingFilter: Int],
+        onSelect: @escaping (LibraryViewController.ReadingFilter) -> Void
+    ) {
+        self.onSelect = onSelect
+        let isDark = traitCollection.userInterfaceStyle == .dark
+
+        for filter in LibraryViewController.ReadingFilter.allCases {
+            guard let button = buttons[filter] else { continue }
+            let isSelected = (filter == selectedFilter)
+            let count = counts[filter] ?? 0
+            let titleText = count > 0 ? "\(filter.title) \(count)" : filter.title
+
+            var config = UIButton.Configuration.filled()
+            config.cornerStyle = .capsule
+            config.contentInsets = NSDirectionalEdgeInsets(top: 7, leading: 13, bottom: 7, trailing: 13)
+            config.baseBackgroundColor = isSelected
+                ? AppColors.uiAccentBlue
+                : (isDark ? UIColor.white.withAlphaComponent(0.08) : UIColor.white)
+            config.baseForegroundColor = isSelected ? .white : .secondaryLabel
+
+            var attrs = AttributeContainer()
+            attrs.font = UIFont.systemFont(ofSize: 13, weight: isSelected ? .semibold : .medium)
+            config.attributedTitle = AttributedString(titleText, attributes: attrs)
+
+            button.configuration = config
+            button.layer.cornerRadius = 16
+            button.layer.borderWidth = isSelected ? 0 : 0.75
+            button.layer.borderColor = (isDark ? UIColor.white.withAlphaComponent(0.08) : UIColor.black.withAlphaComponent(0.06)).cgColor
+        }
     }
 }

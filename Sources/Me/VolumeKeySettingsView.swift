@@ -23,8 +23,10 @@ struct VolumeKeySettingsView: View {
             mappingSection
         }
         .listStyle(.insetGrouped)
+        .scrollContentBackground(.hidden)
+        .frame(maxWidth: 700)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(.systemGroupedBackground))
+        .background(AppColors.background.ignoresSafeArea())
         .navigationTitle(NSLocalizedString("settings_volume_key_turn_page", comment: ""))
         .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $showEducation) {

@@ -17,21 +17,39 @@ struct AppColors {
 
     // MARK: Surfaces
 
-    /// Light `#F6F8FC` / Dark `#0F1013`
-    static let background = Color(uiColor: UIColor { traits in
+    /// UIKit equivalent of `background` (`#F6F8FC` / `#0F1013`).
+    static let uiBackground = UIColor { traits in
         if traits.userInterfaceStyle == .dark {
             return UIColor(red: 15 / 255, green: 16 / 255, blue: 19 / 255, alpha: 1)
         }
         return UIColor(red: 246 / 255, green: 248 / 255, blue: 252 / 255, alpha: 1)
-    })
+    }
 
-    /// Light `#FFFFFF` / Dark `#1A1C20`
-    static let cardBackground = Color(uiColor: UIColor { traits in
+    /// UIKit equivalent of `cardBackground` (`#FFFFFF` / `#1A1C20`).
+    static let uiCardBackground = UIColor { traits in
         if traits.userInterfaceStyle == .dark {
             return UIColor(red: 26 / 255, green: 28 / 255, blue: 32 / 255, alpha: 1)
         }
         return .white
-    })
+    }
+
+    /// UIKit equivalent of `accentBlue` (`#386EF2`).
+    static let uiAccentBlue = UIColor(red: 56 / 255, green: 110 / 255, blue: 242 / 255, alpha: 1)
+
+    /// UIKit equivalent of `accentTeal` (`#299E94`).
+    static let uiAccentTeal = UIColor(red: 41 / 255, green: 158 / 255, blue: 148 / 255, alpha: 1)
+
+    /// Light `#F6F8FC` / Dark `#0F1013`
+    static let background = Color(uiColor: uiBackground)
+
+    /// Light `#FFFFFF` / Dark `#1A1C20`
+    static let cardBackground = Color(uiColor: uiCardBackground)
+
+    /// Reader theme surfaces (aligned with `docs/design-system.md`).
+    static let readerSepiaBackground = UIColor(red: 244 / 255, green: 236 / 255, blue: 216 / 255, alpha: 1)
+    static let readerSepiaText = UIColor(red: 67 / 255, green: 52 / 255, blue: 34 / 255, alpha: 1)
+    static let readerDarkBackground = UIColor(red: 18 / 255, green: 19 / 255, blue: 22 / 255, alpha: 1)
+    static let readerDarkText = UIColor(red: 235 / 255, green: 237 / 255, blue: 242 / 255, alpha: 1)
 
     // MARK: Text
 

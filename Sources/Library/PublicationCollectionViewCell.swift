@@ -1,5 +1,5 @@
 //
-//  Copyright 2026 Readium Foundation. All rights reserved.
+//  Copyright 2026 PagePilot. All rights reserved.
 //  Use of this source code is governed by the BSD-style license
 //  available in the top-level LICENSE file of the project.
 //
@@ -38,424 +38,547 @@ class PublicationCollectionViewCell: UICollectionViewCell {
         }
     }
 
-    private var statusLabel: UILabel!
-    private var checkboxImageView: UIImageView!
-    private var statusStackView: UIStackView!
-    private var statusDotView: UIView!
-    private var progressPillContainer: UIView!
-    private var progressPillLabel: UILabel!
-    private var listWidthConstraint: NSLayoutConstraint?
-    private var gridHeightConstraint: NSLayoutConstraint?
+    private var currentMode: LibraryViewController.ViewMode = .grid
+
+    // Editorial hardcover containers & overlays
+    private let coverShadowContainer = UIView()
+    private let coverClipContainer = UIView()
+    private let spineOverlayView = UIView()
+    private let spineGradientLayer = CAGradientLayer()
+    private let coverProgressTrack = UIView()
+    private let coverProgressFill = UIView()
+    private var coverProgressWidthConstraint: NSLayoutConstraint?
+    private let finishedBadgeView = UIImageView()
+    private let checkboxImageView = UIImageView()
+
+    // Metadata labels
+    private let metaStatusLabel = UILabel()
+    private let listProgressTrack = UIView()
+    private let listProgressFill = UIView()
+    private var listProgressWidthConstraint: NSLayoutConstraint?
+
+    private var listCoverWidthConstraint: NSLayoutConstraint?
+    private var gridTextHeightConstraint: NSLayoutConstraint?
+    private var coverWrapperLeadingConstraint: NSLayoutConstraint?
+    private var coverWrapperTrailingConstraint: NSLayoutConstraint?
+    private var coverWrapperTopConstraint: NSLayoutConstraint?
+    private var coverWrapperBottomConstraint: NSLayoutConstraint?
 
     private var rootStackView: UIStackView? {
-        return contentView.subviews.first(where: { $0 is UIStackView && $0 != publicationMenuViewController.view }) as? UIStackView
+        contentView.subviews.first(where: { $0 is UIStackView && $0 != publicationMenuViewController.view }) as? UIStackView
     }
 
     var progress: Float = 0.0 {
         didSet {
-            progressView.isHidden = true
-            
-            let showPill = (progress > 0.0 && progress < 0.99)
-            progressPillContainer?.isHidden = !showPill
-            if showPill {
-                let percentage = Int(progress * 100)
-                progressPillLabel?.text = "\(percentage)%"
-            }
-            updateStatusLabel()
+            updateProgressAndStatusUI()
         }
     }
 
-    private lazy var progressView: UIProgressView = {
-        let pView = UIProgressView(progressViewStyle: .default)
-        pView.translatesAutoresizingMaskIntoConstraints = false
-        pView.progressTintColor = .systemBlue
-        pView.trackTintColor = .systemGray5
-        
-        // Add to contentView to ensure it displays above the cell background
-        contentView.addSubview(pView)
-
-        NSLayoutConstraint.activate([
-            pView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 0),
-            pView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: 0),
-            pView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: 0),
-            pView.heightAnchor.constraint(equalToConstant: 3.5)
-        ])
-
-        return pView
-    }()
+    override var isHighlighted: Bool {
+        didSet {
+            let scale: CGFloat = isHighlighted ? 0.96 : 1.0
+            UIView.animate(
+                withDuration: 0.22,
+                delay: 0,
+                usingSpringWithDamping: 0.78,
+                initialSpringVelocity: 0.2,
+                options: [.beginFromCurrentState, .allowUserInteraction]
+            ) {
+                self.transform = CGAffineTransform(scaleX: scale, y: scale)
+            }
+        }
+    }
 
     override func awakeFromNib() {
         super.awakeFromNib()
 
-        // Fix root stack view constraints to pin it to contentView instead of cell self (avoids layout break in edit mode transitions)
+        // Re-pin rootStackView cleanly to contentView
         if let rootStack = rootStackView {
-            let selfConstraints = self.constraints.filter { constraint in
-                return (constraint.firstItem as? UIView == rootStack) || (constraint.secondItem as? UIView == rootStack)
+            let selfConstraints = constraints.filter { constraint in
+                (constraint.firstItem as? UIView == rootStack) || (constraint.secondItem as? UIView == rootStack)
             }
-            self.removeConstraints(selfConstraints)
-            
+            removeConstraints(selfConstraints)
+
             rootStack.translatesAutoresizingMaskIntoConstraints = false
+            rootStack.spacing = 8
             NSLayoutConstraint.activate([
                 rootStack.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
                 rootStack.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
                 rootStack.topAnchor.constraint(equalTo: contentView.topAnchor),
-                rootStack.bottomAnchor.constraint(equalTo: contentView.bottomAnchor)
+                rootStack.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
             ])
         }
 
-        // Fallback for textContainerView if not connected in XIB
         if textContainerView == nil {
             textContainerView = titleLabel.superview?.superview
         }
 
         publicationMenuViewController.delegate = self
-        publicationMenuViewController.view.isHidden = !isMenuDisplayed
+        publicationMenuViewController.view.isHidden = true
         contentView.addSubview(publicationMenuViewController.view)
 
-        // Configure premium card UI appearance (includes cover wrapping)
-        setupCardAppearance()
+        setupEditorialAppearance()
+        setupMetadataStack()
+        setupSelectionCheckbox()
+
         registerForTraitChanges([UITraitUserInterfaceStyle.self]) { (self: Self, previous: UITraitCollection) in
             if self.traitCollection.hasDifferentColorAppearance(comparedTo: previous) {
                 self.applyDynamicColors()
             }
         }
 
-        // Dynamically instantiate helper UI components
-        setupStatusLabel()
-        setupCheckboxImageView()
-        setupProgressPill()
-
-        // Set dynamic colors for dark mode
         applyDynamicColors()
+        updateProgressAndStatusUI()
     }
 
-    private func setupStatusLabel() {
-        statusDotView = UIView()
-        statusDotView.translatesAutoresizingMaskIntoConstraints = false
-        statusDotView.layer.cornerRadius = 3
-        statusDotView.clipsToBounds = true
-        
-        NSLayoutConstraint.activate([
-            statusDotView.widthAnchor.constraint(equalToConstant: 6),
-            statusDotView.heightAnchor.constraint(equalToConstant: 6)
-        ])
-        
-        statusLabel = UILabel()
-        statusLabel.translatesAutoresizingMaskIntoConstraints = false
-        statusLabel.font = .systemFont(ofSize: 9, weight: .semibold)
-        statusLabel.numberOfLines = 1
-        
-        statusStackView = UIStackView(arrangedSubviews: [statusDotView, statusLabel])
-        statusStackView.axis = .horizontal
-        statusStackView.alignment = .center
-        statusStackView.spacing = 4
-        statusStackView.translatesAutoresizingMaskIntoConstraints = false
-        
-        if let stackView = titleLabel.superview as? UIStackView {
-            if let fillView = stackView.arrangedSubviews.first(where: { $0.accessibilityLabel == nil && $0 != titleLabel && $0 != authorLabel }) {
-                fillView.isHidden = true
-            }
-            stackView.addArrangedSubview(statusStackView)
-        }
-        updateStatusLabel()
-    }
+    private func setupEditorialAppearance() {
+        backgroundColor = .clear
+        clipsToBounds = false
+        layer.masksToBounds = false
+        contentView.clipsToBounds = false
+        contentView.layer.masksToBounds = false
 
-    private func setupCheckboxImageView() {
-        checkboxImageView = UIImageView()
-        checkboxImageView.translatesAutoresizingMaskIntoConstraints = false
-        checkboxImageView.contentMode = .center
-        contentView.addSubview(checkboxImageView)
-        
-        NSLayoutConstraint.activate([
-            checkboxImageView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -8),
-            checkboxImageView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 8),
-            checkboxImageView.widthAnchor.constraint(equalToConstant: 24),
-            checkboxImageView.heightAnchor.constraint(equalToConstant: 24)
-        ])
-        
-        checkboxImageView.isHidden = true
-    }
+        // Wrap coverImageView inside a shadow container + continuous corner clip container
+        if let rootStack = coverImageView.superview as? UIStackView,
+           let index = rootStack.arrangedSubviews.firstIndex(of: coverImageView) {
+            let wrapperView = UIView()
+            wrapperView.translatesAutoresizingMaskIntoConstraints = false
+            wrapperView.backgroundColor = .clear
+            wrapperView.accessibilityLabel = "CoverWrapper"
+            wrapperView.clipsToBounds = false
 
-    private func setupProgressPill() {
-        progressPillContainer = UIView()
-        progressPillContainer.translatesAutoresizingMaskIntoConstraints = false
-        progressPillContainer.layer.cornerRadius = 8
-        progressPillContainer.clipsToBounds = true
-        progressPillContainer.backgroundColor = UIColor.black.withAlphaComponent(0.65)
-        
-        let blurEffect = UIBlurEffect(style: .systemUltraThinMaterialDark)
-        let blurView = UIVisualEffectView(effect: blurEffect)
-        blurView.translatesAutoresizingMaskIntoConstraints = false
-        progressPillContainer.addSubview(blurView)
-        
-        NSLayoutConstraint.activate([
-            blurView.topAnchor.constraint(equalTo: progressPillContainer.topAnchor),
-            blurView.leadingAnchor.constraint(equalTo: progressPillContainer.leadingAnchor),
-            blurView.trailingAnchor.constraint(equalTo: progressPillContainer.trailingAnchor),
-            blurView.bottomAnchor.constraint(equalTo: progressPillContainer.bottomAnchor)
-        ])
-        
-        progressPillLabel = UILabel()
-        progressPillLabel.translatesAutoresizingMaskIntoConstraints = false
-        progressPillLabel.font = .systemFont(ofSize: 9, weight: .bold)
-        progressPillLabel.textColor = .white
-        progressPillLabel.textAlignment = .center
-        
-        progressPillContainer.addSubview(progressPillLabel)
-        
-        if let wrapper = coverImageView.superview {
-            wrapper.addSubview(progressPillContainer)
-            
+            rootStack.insertArrangedSubview(wrapperView, at: index)
+            coverImageView.removeFromSuperview()
+
+            coverShadowContainer.translatesAutoresizingMaskIntoConstraints = false
+            coverShadowContainer.backgroundColor = .clear
+            coverShadowContainer.clipsToBounds = false
+            coverShadowContainer.layer.masksToBounds = false
+            wrapperView.addSubview(coverShadowContainer)
+
+            coverWrapperTopConstraint = coverShadowContainer.topAnchor.constraint(equalTo: wrapperView.topAnchor)
+            coverWrapperLeadingConstraint = coverShadowContainer.leadingAnchor.constraint(equalTo: wrapperView.leadingAnchor)
+            coverWrapperTrailingConstraint = coverShadowContainer.trailingAnchor.constraint(equalTo: wrapperView.trailingAnchor)
+            coverWrapperBottomConstraint = coverShadowContainer.bottomAnchor.constraint(equalTo: wrapperView.bottomAnchor)
             NSLayoutConstraint.activate([
-                progressPillContainer.leadingAnchor.constraint(equalTo: coverImageView.leadingAnchor, constant: 8),
-                progressPillContainer.bottomAnchor.constraint(equalTo: coverImageView.bottomAnchor, constant: -8),
-                progressPillContainer.heightAnchor.constraint(equalToConstant: 16),
-                
-                progressPillLabel.leadingAnchor.constraint(equalTo: progressPillContainer.leadingAnchor, constant: 6),
-                progressPillLabel.trailingAnchor.constraint(equalTo: progressPillContainer.trailingAnchor, constant: -6),
-                progressPillLabel.centerYAnchor.constraint(equalTo: progressPillContainer.centerYAnchor)
+                coverWrapperTopConstraint!,
+                coverWrapperLeadingConstraint!,
+                coverWrapperTrailingConstraint!,
+                coverWrapperBottomConstraint!,
+            ])
+
+            coverClipContainer.translatesAutoresizingMaskIntoConstraints = false
+            coverClipContainer.layer.cornerRadius = 10
+            coverClipContainer.layer.cornerCurve = .continuous
+            coverClipContainer.layer.masksToBounds = true
+            coverClipContainer.layer.borderWidth = 0.5
+            coverShadowContainer.addSubview(coverClipContainer)
+
+            NSLayoutConstraint.activate([
+                coverClipContainer.topAnchor.constraint(equalTo: coverShadowContainer.topAnchor),
+                coverClipContainer.leadingAnchor.constraint(equalTo: coverShadowContainer.leadingAnchor),
+                coverClipContainer.trailingAnchor.constraint(equalTo: coverShadowContainer.trailingAnchor),
+                coverClipContainer.bottomAnchor.constraint(equalTo: coverShadowContainer.bottomAnchor),
+            ])
+
+            coverImageView.translatesAutoresizingMaskIntoConstraints = false
+            coverImageView.contentMode = .scaleAspectFill
+            coverImageView.clipsToBounds = true
+            coverClipContainer.addSubview(coverImageView)
+
+            NSLayoutConstraint.activate([
+                coverImageView.topAnchor.constraint(equalTo: coverClipContainer.topAnchor),
+                coverImageView.leadingAnchor.constraint(equalTo: coverClipContainer.leadingAnchor),
+                coverImageView.trailingAnchor.constraint(equalTo: coverClipContainer.trailingAnchor),
+                coverImageView.bottomAnchor.constraint(equalTo: coverClipContainer.bottomAnchor),
+            ])
+
+            // Subtle physical hardcover spine lighting along the leading edge
+            spineOverlayView.translatesAutoresizingMaskIntoConstraints = false
+            spineOverlayView.isUserInteractionEnabled = false
+            spineGradientLayer.colors = [
+                UIColor.black.withAlphaComponent(0.18).cgColor,
+                UIColor.white.withAlphaComponent(0.22).cgColor,
+                UIColor.black.withAlphaComponent(0.06).cgColor,
+                UIColor.clear.cgColor,
+            ]
+            spineGradientLayer.locations = [0.0, 0.35, 0.6, 1.0]
+            spineGradientLayer.startPoint = CGPoint(x: 0, y: 0.5)
+            spineGradientLayer.endPoint = CGPoint(x: 1, y: 0.5)
+            spineOverlayView.layer.addSublayer(spineGradientLayer)
+            coverClipContainer.addSubview(spineOverlayView)
+
+            NSLayoutConstraint.activate([
+                spineOverlayView.topAnchor.constraint(equalTo: coverClipContainer.topAnchor),
+                spineOverlayView.leadingAnchor.constraint(equalTo: coverClipContainer.leadingAnchor),
+                spineOverlayView.bottomAnchor.constraint(equalTo: coverClipContainer.bottomAnchor),
+                spineOverlayView.widthAnchor.constraint(equalToConstant: 8),
+            ])
+
+            // Slim bottom progress bar embedded seamlessly along bottom edge of cover
+            coverProgressTrack.translatesAutoresizingMaskIntoConstraints = false
+            coverProgressTrack.backgroundColor = UIColor.black.withAlphaComponent(0.35)
+            coverProgressTrack.isHidden = true
+            coverClipContainer.addSubview(coverProgressTrack)
+
+            coverProgressFill.translatesAutoresizingMaskIntoConstraints = false
+            coverProgressFill.backgroundColor = AppColors.uiAccentBlue
+            coverProgressTrack.addSubview(coverProgressFill)
+
+            let fillWidth = coverProgressFill.widthAnchor.constraint(equalTo: coverProgressTrack.widthAnchor, multiplier: 0.01)
+            coverProgressWidthConstraint = fillWidth
+
+            NSLayoutConstraint.activate([
+                coverProgressTrack.leadingAnchor.constraint(equalTo: coverClipContainer.leadingAnchor),
+                coverProgressTrack.trailingAnchor.constraint(equalTo: coverClipContainer.trailingAnchor),
+                coverProgressTrack.bottomAnchor.constraint(equalTo: coverClipContainer.bottomAnchor),
+                coverProgressTrack.heightAnchor.constraint(equalToConstant: 3.5),
+
+                coverProgressFill.leadingAnchor.constraint(equalTo: coverProgressTrack.leadingAnchor),
+                coverProgressFill.topAnchor.constraint(equalTo: coverProgressTrack.topAnchor),
+                coverProgressFill.bottomAnchor.constraint(equalTo: coverProgressTrack.bottomAnchor),
+                fillWidth,
+            ])
+
+            // Finished subtle checkmark badge at top-right of cover
+            finishedBadgeView.translatesAutoresizingMaskIntoConstraints = false
+            finishedBadgeView.image = UIImage(
+                systemName: "checkmark.circle.fill",
+                withConfiguration: UIImage.SymbolConfiguration(pointSize: 16, weight: .semibold)
+            )
+            finishedBadgeView.tintColor = AppColors.uiAccentTeal
+            finishedBadgeView.backgroundColor = .white
+            finishedBadgeView.layer.cornerRadius = 9
+            finishedBadgeView.clipsToBounds = true
+            finishedBadgeView.isHidden = true
+            coverClipContainer.addSubview(finishedBadgeView)
+
+            NSLayoutConstraint.activate([
+                finishedBadgeView.topAnchor.constraint(equalTo: coverClipContainer.topAnchor, constant: 6),
+                finishedBadgeView.trailingAnchor.constraint(equalTo: coverClipContainer.trailingAnchor, constant: -6),
+                finishedBadgeView.widthAnchor.constraint(equalToConstant: 18),
+                finishedBadgeView.heightAnchor.constraint(equalToConstant: 18),
             ])
         }
-        
-        progressPillContainer.isHidden = true
     }
 
-    private func setupCardAppearance() {
-        // Round the card container
-        contentView.layer.cornerRadius = 12
-        contentView.layer.masksToBounds = true
-        
-        // Setup shadow properties on the Cell itself
-        self.backgroundColor = .clear
-        self.clipsToBounds = false
-        self.layer.masksToBounds = false
-        
-        // Wrap cover image to add custom inset margins
-        if let rootStackView = coverImageView.superview as? UIStackView {
-            if coverImageView.superview?.accessibilityLabel != "CoverWrapper" {
-                let wrapperView = UIView()
-                wrapperView.translatesAutoresizingMaskIntoConstraints = false
-                wrapperView.backgroundColor = .clear
-                wrapperView.accessibilityLabel = "CoverWrapper"
-                
-                if let index = rootStackView.arrangedSubviews.firstIndex(of: coverImageView) {
-                    rootStackView.insertArrangedSubview(wrapperView, at: index)
-                    coverImageView.removeFromSuperview()
-                    wrapperView.addSubview(coverImageView)
-                    coverImageView.translatesAutoresizingMaskIntoConstraints = false
-                    
-                    NSLayoutConstraint.activate([
-                        coverImageView.topAnchor.constraint(equalTo: wrapperView.topAnchor, constant: 12),
-                        coverImageView.leadingAnchor.constraint(equalTo: wrapperView.leadingAnchor, constant: 12),
-                        coverImageView.trailingAnchor.constraint(equalTo: wrapperView.trailingAnchor, constant: -12),
-                        coverImageView.bottomAnchor.constraint(equalTo: wrapperView.bottomAnchor, constant: -8)
-                    ])
-                }
-            }
-        }
-        
-        // Optimize cover image aspect fill, scale and round corners
-        coverImageView.contentMode = .scaleAspectFill
-        coverImageView.clipsToBounds = true
-        coverImageView.layer.cornerRadius = 10
-        coverImageView.layer.masksToBounds = true
-        
-        // Add inner padding to text stack view to prevent text from sticking to borders
+    private func setupMetadataStack() {
+        titleLabel.numberOfLines = 2
+        titleLabel.lineBreakMode = .byTruncatingTail
+        titleLabel.setContentHuggingPriority(.required, for: .vertical)
+        authorLabel.numberOfLines = 1
+        authorLabel.lineBreakMode = .byTruncatingTail
+        authorLabel.setContentHuggingPriority(.required, for: .vertical)
+
+        metaStatusLabel.translatesAutoresizingMaskIntoConstraints = false
+        metaStatusLabel.font = .monospacedDigitSystemFont(ofSize: 10.5, weight: .semibold)
+        metaStatusLabel.numberOfLines = 1
+        metaStatusLabel.setContentHuggingPriority(.required, for: .vertical)
+
+        // Compact inline progress bar used only in List mode
+        listProgressTrack.translatesAutoresizingMaskIntoConstraints = false
+        listProgressTrack.layer.cornerRadius = 2
+        listProgressTrack.clipsToBounds = true
+        listProgressTrack.isHidden = true
+
+        listProgressFill.translatesAutoresizingMaskIntoConstraints = false
+        listProgressFill.backgroundColor = AppColors.uiAccentBlue
+        listProgressFill.layer.cornerRadius = 2
+        listProgressTrack.addSubview(listProgressFill)
+
+        let listFillWidth = listProgressFill.widthAnchor.constraint(equalTo: listProgressTrack.widthAnchor, multiplier: 0.01)
+        listProgressWidthConstraint = listFillWidth
+        NSLayoutConstraint.activate([
+            listProgressTrack.heightAnchor.constraint(equalToConstant: 4),
+            listProgressFill.leadingAnchor.constraint(equalTo: listProgressTrack.leadingAnchor),
+            listProgressFill.topAnchor.constraint(equalTo: listProgressTrack.topAnchor),
+            listProgressFill.bottomAnchor.constraint(equalTo: listProgressTrack.bottomAnchor),
+            listFillWidth,
+        ])
+
         if let stackView = titleLabel.superview as? UIStackView {
+            stackView.spacing = 3
             stackView.isLayoutMarginsRelativeArrangement = true
-            stackView.layoutMargins = UIEdgeInsets(top: 4, left: 10, bottom: 6, right: 10)
-        }
-        
-        // Set premium fonts
-        titleLabel.font = .systemFont(ofSize: 11, weight: .semibold)
-        authorLabel.font = .systemFont(ofSize: 9, weight: .medium)
-        
-        // Force the text container view height to 56 to fully display title, author and status
-        if let textContainer = textContainerView {
-            for constraint in textContainer.constraints {
-                if constraint.firstAttribute == .height {
-                    textContainer.removeConstraint(constraint)
-                }
+            stackView.layoutMargins = UIEdgeInsets(top: 0, left: 2, bottom: 0, right: 2)
+            // Hide legacy XIB filler view
+            for sub in stackView.arrangedSubviews where sub != titleLabel && sub != authorLabel {
+                sub.isHidden = true
             }
-            gridHeightConstraint = textContainer.heightAnchor.constraint(equalToConstant: 56)
-            gridHeightConstraint?.isActive = true
+            stackView.addArrangedSubview(listProgressTrack)
+            stackView.addArrangedSubview(metaStatusLabel)
+
+            // Flexible bottom spacer keeps title, author, and status tightly stacked at the top
+            let bottomSpacer = UIView()
+            bottomSpacer.backgroundColor = .clear
+            bottomSpacer.setContentHuggingPriority(.defaultLow - 1, for: .vertical)
+            bottomSpacer.setContentCompressionResistancePriority(.defaultLow - 1, for: .vertical)
+            stackView.addArrangedSubview(bottomSpacer)
+        }
+
+        if let textContainer = textContainerView {
+            textContainer.backgroundColor = .clear
+            for constraint in textContainer.constraints where constraint.firstAttribute == .height {
+                textContainer.removeConstraint(constraint)
+            }
+            gridTextHeightConstraint = textContainer.heightAnchor.constraint(equalToConstant: 64)
+            gridTextHeightConstraint?.isActive = true
         }
     }
 
-    private func updateStatusLabel() {
-        guard statusLabel != nil, statusDotView != nil else { return }
-        if progress <= 0.0 {
-            statusLabel.text = NSLocalizedString("bookshelf_status_not_started", comment: "")
-            statusLabel.textColor = .secondaryLabel
-            statusDotView.backgroundColor = .systemGray
-        } else if progress >= 0.99 {
-            statusLabel.text = NSLocalizedString("bookshelf_status_completed", comment: "")
-            statusLabel.textColor = .systemGreen
-            statusDotView.backgroundColor = .systemGreen
+    private func setupSelectionCheckbox() {
+        checkboxImageView.translatesAutoresizingMaskIntoConstraints = false
+        checkboxImageView.contentMode = .scaleAspectFit
+        checkboxImageView.isHidden = true
+        contentView.addSubview(checkboxImageView)
+
+        NSLayoutConstraint.activate([
+            checkboxImageView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -6),
+            checkboxImageView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 6),
+            checkboxImageView.widthAnchor.constraint(equalToConstant: 24),
+            checkboxImageView.heightAnchor.constraint(equalToConstant: 24),
+        ])
+    }
+
+    private func updateProgressAndStatusUI() {
+        let clamped = max(0, min(1, progress))
+        let isReading = clamped > 0.0 && clamped < 0.99
+        let isFinished = clamped >= 0.99
+
+        // Cover progress bar (grid mode)
+        coverProgressTrack.isHidden = !(isReading && currentMode == .grid)
+        if let old = coverProgressWidthConstraint {
+            coverProgressTrack.removeConstraint(old)
+        }
+        let newCoverWidth = coverProgressFill.widthAnchor.constraint(
+            equalTo: coverProgressTrack.widthAnchor,
+            multiplier: CGFloat(max(0.04, clamped))
+        )
+        newCoverWidth.isActive = true
+        coverProgressWidthConstraint = newCoverWidth
+
+        // List progress bar (list mode)
+        listProgressTrack.isHidden = !(currentMode == .list && clamped > 0)
+        if let oldList = listProgressWidthConstraint {
+            listProgressTrack.removeConstraint(oldList)
+        }
+        let newListWidth = listProgressFill.widthAnchor.constraint(
+            equalTo: listProgressTrack.widthAnchor,
+            multiplier: CGFloat(max(0.03, clamped))
+        )
+        newListWidth.isActive = true
+        listProgressWidthConstraint = newListWidth
+        listProgressFill.backgroundColor = isFinished ? AppColors.uiAccentTeal : AppColors.uiAccentBlue
+
+        // Finished checkmark badge (hidden during edit mode so checkbox is unobstructed)
+        finishedBadgeView.isHidden = !isFinished || isEditingMode || currentMode == .list
+
+        if isFinished {
+            metaStatusLabel.text = NSLocalizedString("bookshelf_status_completed", comment: "")
+            metaStatusLabel.textColor = AppColors.uiAccentTeal
+        } else if isReading {
+            let pct = Int((clamped * 100).rounded())
+            metaStatusLabel.text = "\(pct)%"
+            metaStatusLabel.textColor = AppColors.uiAccentBlue
         } else {
-            statusLabel.text = NSLocalizedString("bookshelf_status_reading", comment: "")
-            statusLabel.textColor = .systemBlue
-            statusDotView.backgroundColor = .systemBlue
+            metaStatusLabel.text = NSLocalizedString("bookshelf_status_not_started", comment: "")
+            metaStatusLabel.textColor = .tertiaryLabel
         }
     }
 
     private func updateSelectionAppearance() {
-        guard checkboxImageView != nil else { return }
         if isEditingMode {
             checkboxImageView.isHidden = false
+            finishedBadgeView.isHidden = true
             if isSelectedForEditing {
                 checkboxImageView.image = UIImage(systemName: "checkmark.circle.fill")
-                checkboxImageView.tintColor = .systemBlue
-                
-                // Highlight the selected card with a clean blue border
-                contentView.layer.borderWidth = 2.0
-                contentView.layer.borderColor = UIColor.systemBlue.cgColor
+                checkboxImageView.tintColor = AppColors.uiAccentBlue
+                checkboxImageView.layer.shadowOpacity = 0
+
+                if currentMode == .grid {
+                    coverClipContainer.layer.borderWidth = 2.5
+                    coverClipContainer.layer.borderColor = AppColors.uiAccentBlue.cgColor
+                } else {
+                    contentView.layer.borderWidth = 2.0
+                    contentView.layer.borderColor = AppColors.uiAccentBlue.cgColor
+                }
             } else {
                 checkboxImageView.image = UIImage(systemName: "circle")
-                let isList = rootStackView?.axis == .horizontal
-                checkboxImageView.tintColor = isList ? .systemGray3 : .white
-                
-                // Add soft shadow behind white circle icon to stand out on bright book covers
+                checkboxImageView.tintColor = currentMode == .list ? .systemGray3 : .white
                 checkboxImageView.layer.shadowColor = UIColor.black.cgColor
-                checkboxImageView.layer.shadowOpacity = 0.4
+                checkboxImageView.layer.shadowOpacity = currentMode == .list ? 0 : 0.45
                 checkboxImageView.layer.shadowOffset = CGSize(width: 0, height: 1)
-                checkboxImageView.layer.shadowRadius = 2.0
+                checkboxImageView.layer.shadowRadius = 2.5
                 checkboxImageView.layer.masksToBounds = false
-                
-                contentView.layer.borderWidth = 0.0
-                contentView.layer.borderColor = nil
+
+                applyBorderColors()
             }
         } else {
             checkboxImageView.isHidden = true
-            contentView.layer.borderWidth = 0.0
+            applyBorderColors()
+            updateProgressAndStatusUI()
+        }
+    }
+
+    private func applyBorderColors() {
+        let isDark = traitCollection.userInterfaceStyle == .dark
+        coverClipContainer.layer.borderWidth = 0.6
+        coverClipContainer.layer.borderColor = (isDark ? UIColor.white.withAlphaComponent(0.12) : UIColor.black.withAlphaComponent(0.09)).cgColor
+
+        if currentMode == .list {
+            contentView.layer.borderWidth = 1.0
+            contentView.layer.borderColor = (isDark ? UIColor.white.withAlphaComponent(0.06) : UIColor.black.withAlphaComponent(0.04)).cgColor
+        } else {
+            contentView.layer.borderWidth = 0
             contentView.layer.borderColor = nil
         }
     }
 
     private func applyDynamicColors() {
+        let isDark = traitCollection.userInterfaceStyle == .dark
         titleLabel.textColor = .label
         authorLabel.textColor = .secondaryLabel
-        contentView.backgroundColor = .secondarySystemGroupedBackground
-        textContainerView?.backgroundColor = .secondarySystemGroupedBackground
-        
-        // Adjust shadows adaptively depending on user interface style (Dark/Light)
-        if traitCollection.userInterfaceStyle == .dark {
-            self.layer.shadowColor = UIColor.black.cgColor
-            self.layer.shadowOpacity = 0.35
-            self.layer.shadowOffset = CGSize(width: 0, height: 2)
-            self.layer.shadowRadius = 4.0
+        listProgressTrack.backgroundColor = isDark ? UIColor.white.withAlphaComponent(0.08) : UIColor.black.withAlphaComponent(0.06)
+
+        if currentMode == .list {
+            contentView.backgroundColor = AppColors.uiCardBackground
+            contentView.layer.cornerRadius = 16
+            contentView.layer.cornerCurve = .continuous
+            contentView.clipsToBounds = true
+            layer.shadowColor = UIColor.black.cgColor
+            layer.shadowOpacity = isDark ? 0 : 0.04
+            layer.shadowOffset = CGSize(width: 0, height: 4)
+            layer.shadowRadius = 10
+
+            coverShadowContainer.layer.shadowOpacity = isDark ? 0.3 : 0.14
+            coverShadowContainer.layer.shadowOffset = CGSize(width: 0, height: 2)
+            coverShadowContainer.layer.shadowRadius = 5
         } else {
-            self.layer.shadowColor = UIColor.black.cgColor
-            self.layer.shadowOpacity = 0.07
-            self.layer.shadowOffset = CGSize(width: 0, height: 4)
-            self.layer.shadowRadius = 6.0
+            contentView.backgroundColor = .clear
+            contentView.layer.cornerRadius = 0
+            contentView.clipsToBounds = false
+            layer.shadowOpacity = 0
+
+            coverShadowContainer.layer.shadowColor = UIColor.black.cgColor
+            coverShadowContainer.layer.shadowOpacity = isDark ? 0.42 : 0.16
+            coverShadowContainer.layer.shadowOffset = CGSize(width: 0, height: 6)
+            coverShadowContainer.layer.shadowRadius = 10
         }
-        
+
+        textContainerView?.backgroundColor = .clear
+        applyBorderColors()
         updateSelectionAppearance()
     }
 
     override func layoutSubviews() {
         super.layoutSubviews()
         publicationMenuViewController.view.frame = contentView.bounds
-        
-        // Force contentView layout immediately when cell bounds change to prevent layout delay/stretching
         contentView.layoutIfNeeded()
-        
-        // Set dynamic shadow path for performance and accuracy
-        self.layer.shadowPath = UIBezierPath(roundedRect: self.bounds, cornerRadius: 12).cgPath
+        spineGradientLayer.frame = spineOverlayView.bounds
+        coverShadowContainer.layer.shadowPath = UIBezierPath(
+            roundedRect: coverShadowContainer.bounds,
+            cornerRadius: coverClipContainer.layer.cornerRadius
+        ).cgPath
+        if currentMode == .list {
+            layer.shadowPath = UIBezierPath(roundedRect: bounds, cornerRadius: 16).cgPath
+        } else {
+            layer.shadowPath = nil
+        }
+    }
+
+    override func prepareForReuse() {
+        super.prepareForReuse()
+        coverImageView.image = nil
+        coverImageView.contentMode = .scaleAspectFill
+        transform = .identity
     }
 }
 
 extension PublicationCollectionViewCell {
-    /// Flip the PublicationCollectionViewCell and display a user menu.
+    /// Legacy flip menu retained for protocol compatibility.
     func flipMenu() {
-        // Prevent flipping during multi-select editing mode
         guard !isEditingMode else { return }
-        
-        var transitionOptions: UIView.AnimationOptions!
-
-        if isMenuDisplayed {
-            transitionOptions = UIView.AnimationOptions.transitionFlipFromLeft
-            delegate?.lastFlippedCell = nil
-            isAccessibilityElement = true
-        } else {
-            isAccessibilityElement = false
-            transitionOptions = UIView.AnimationOptions.transitionFlipFromRight
-            if delegate?.lastFlippedCell != self {
-                delegate?.cellFlipped(self)
-            }
-        }
-
-        // Reverse the UI. Display the menu and hide the cover or vice versa
-        UIView.transition(with: contentView, duration: 0.5, options: transitionOptions, animations: {
-            self.rootStackView?.isHidden = !self.isMenuDisplayed
-            self.publicationMenuViewController.view.isHidden = self.isMenuDisplayed
-        }, completion: { _ in
-            self.isMenuDisplayed = !self.isMenuDisplayed
-        })
+        isMenuDisplayed = false
+        publicationMenuViewController.view.isHidden = true
+        rootStackView?.isHidden = false
     }
 }
 
 extension PublicationCollectionViewCell: PublicationMenuViewControllerDelegate {
     func metadataButtonTapped() {
-        guard let indexPath = (superview as? UICollectionView)?.indexPath(for: self) else {
-            return
-        }
-        flipMenu()
+        guard let indexPath = (superview as? UICollectionView)?.indexPath(for: self) else { return }
         delegate?.presentMetadata(forCellAt: indexPath)
     }
 
     func removeButtonTapped() {
-        guard let indexPath = (superview as? UICollectionView)?.indexPath(for: self) else {
-            return
-        }
-        flipMenu()
+        guard let indexPath = (superview as? UICollectionView)?.indexPath(for: self) else { return }
         delegate?.removePublicationFromLibrary(forCellAt: indexPath)
     }
 
     func cancelButtonTapped() {
         flipMenu()
     }
-    
+
     func configureMode(_ mode: LibraryViewController.ViewMode) {
+        currentMode = mode
         guard let rootStack = rootStackView,
-              let wrapperView = coverImageView.superview else { return }
-        
-        if listWidthConstraint == nil {
-            listWidthConstraint = wrapperView.widthAnchor.constraint(equalToConstant: 80)
+              let wrapperView = coverShadowContainer.superview else { return }
+
+        if listCoverWidthConstraint == nil {
+            listCoverWidthConstraint = wrapperView.widthAnchor.constraint(equalToConstant: 74)
         }
-        
+
         if mode == .list {
             rootStack.axis = .horizontal
             rootStack.alignment = .fill
             rootStack.distribution = .fill
-            
-            gridHeightConstraint?.isActive = false
-            listWidthConstraint?.isActive = true
-            
-            titleLabel.font = .systemFont(ofSize: 14, weight: .bold)
-            authorLabel.font = .systemFont(ofSize: 11, weight: .medium)
-            
+            rootStack.spacing = 12
+
+            coverWrapperTopConstraint?.constant = 10
+            coverWrapperBottomConstraint?.constant = -10
+            coverWrapperLeadingConstraint?.constant = 12
+            coverWrapperTrailingConstraint?.constant = 0
+
+            gridTextHeightConstraint?.isActive = false
+            listCoverWidthConstraint?.isActive = true
+
+            coverClipContainer.layer.cornerRadius = 7
+            titleLabel.font = .systemFont(ofSize: 15, weight: .semibold)
+            authorLabel.font = .systemFont(ofSize: 12.5, weight: .regular)
+            metaStatusLabel.font = .monospacedDigitSystemFont(ofSize: 11.5, weight: .semibold)
+
             if let stackView = titleLabel.superview as? UIStackView {
-                stackView.layoutMargins = UIEdgeInsets(top: 14, left: 8, bottom: 14, right: 12)
+                stackView.spacing = 4
+                stackView.layoutMargins = UIEdgeInsets(top: 12, left: 0, bottom: 12, right: 14)
             }
         } else {
             rootStack.axis = .vertical
             rootStack.alignment = .fill
             rootStack.distribution = .fill
-            
-            listWidthConstraint?.isActive = false
-            gridHeightConstraint?.isActive = true
-            
-            titleLabel.font = .systemFont(ofSize: 11, weight: .semibold)
-            authorLabel.font = .systemFont(ofSize: 9, weight: .medium)
-            
+            rootStack.spacing = 8
+
+            coverWrapperTopConstraint?.constant = 0
+            coverWrapperBottomConstraint?.constant = 0
+            coverWrapperLeadingConstraint?.constant = 0
+            coverWrapperTrailingConstraint?.constant = 0
+
+            listCoverWidthConstraint?.isActive = false
+            gridTextHeightConstraint?.isActive = true
+
+            coverClipContainer.layer.cornerRadius = 10
+            titleLabel.font = .systemFont(ofSize: 13, weight: .semibold)
+            authorLabel.font = .systemFont(ofSize: 11, weight: .regular)
+            metaStatusLabel.font = .monospacedDigitSystemFont(ofSize: 10.5, weight: .semibold)
+
             if let stackView = titleLabel.superview as? UIStackView {
-                stackView.layoutMargins = UIEdgeInsets(top: 4, left: 10, bottom: 6, right: 10)
+                stackView.spacing = 2.5
+                stackView.layoutMargins = UIEdgeInsets(top: 0, left: 2, bottom: 0, right: 2)
             }
         }
-        
-        // Force Auto Layout to resolve immediately to avoid layout mismatch in reload animation
+
+        coverImageView.contentMode = .scaleAspectFill
+        applyDynamicColors()
+        updateProgressAndStatusUI()
+
         rootStack.setNeedsLayout()
         rootStack.layoutIfNeeded()
         contentView.setNeedsLayout()

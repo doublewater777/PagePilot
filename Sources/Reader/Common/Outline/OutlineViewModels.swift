@@ -1,14 +1,11 @@
 //
-//  Copyright 2026 Readium Foundation. All rights reserved.
+//  Copyright 2026 PagePilot. All rights reserved.
 //  Use of this source code is governed by the BSD-style license
 //  available in the top-level LICENSE file of the project.
 //
 
 import Combine
 import SwiftUI
-
-// This file contains view model wrappers for fetching data from Repositories: Bookmarks and Highlights.
-// It's not acceptable to fetch that data in a Swiftui View's constructor, so we need a reactive wrapper.
 
 // MARK: - Highlights
 
@@ -32,6 +29,13 @@ final class HighlightsViewModel: ObservableObject, OutlineViewModelLoaderDelegat
 
     func loadIfNeeded() {
         loader.loadIfNeeded()
+    }
+
+    func delete(_ highlight: Highlight) {
+        guard let id = highlight.id else { return }
+        Task {
+            try? await repository.remove(id)
+        }
     }
 
     var dataTask: AnyPublisher<[Highlight], Error> {
@@ -67,6 +71,13 @@ final class BookmarksViewModel: ObservableObject, OutlineViewModelLoaderDelegate
         loader.loadIfNeeded()
     }
 
+    func delete(_ bookmark: Bookmark) {
+        guard let id = bookmark.id else { return }
+        Task {
+            try? await repository.remove(id)
+        }
+    }
+
     var dataTask: AnyPublisher<[Bookmark], Error> {
         repository.all(for: bookId)
     }
@@ -85,7 +96,6 @@ private protocol OutlineViewModelLoaderDelegate: AnyObject {
     func setLoadedValues(_ values: [T])
 }
 
-/// This loader contains a state enum which can be used for expressive UI (loading progress, error handling etc). For this, status overlay view can be used (see https://stackoverflow.com/a/61858358/2567725).
 private final class OutlineViewModelLoader<T, Delegate: OutlineViewModelLoaderDelegate> {
     weak var delegate: Delegate!
     private var state = State.ready

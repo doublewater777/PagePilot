@@ -56,7 +56,12 @@ struct FeedbackView: View {
                     .font(.caption)
                 }
                 .padding(16)
-                .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 8))
+                .cardStyle()
+
+                let isSubmitDisabled =
+                    sendState == .sending || sendState == .sent ||
+                    message.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
+                    isMessageOverLimit
 
                 Button(action: submitFeedback) {
                     Group {
@@ -64,37 +69,40 @@ struct FeedbackView: View {
                             ProgressView().tint(.white)
                         } else {
                             Label(NSLocalizedString("feedback_submit", comment: ""), systemImage: "paperplane.fill")
+                                .font(.system(size: 15.5, weight: .semibold))
                         }
                     }
-                    .frame(maxWidth: .infinity, minHeight: 32)
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 48)
+                    .background(
+                        AppColors.horizontalGradient.opacity(isSubmitDisabled ? 0.45 : 1.0),
+                        in: RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    )
                 }
-                .buttonStyle(.borderedProminent)
-                .disabled(
-                    sendState == .sending || sendState == .sent ||
-                    message.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
-                    isMessageOverLimit
-                )
+                .buttonStyle(PremiumButtonStyle())
+                .disabled(isSubmitDisabled)
 
                 emailSection
             }
             .frame(maxWidth: 600)
-            .padding(16)
+            .padding(20)
             .frame(maxWidth: .infinity)
         }
         .scrollDismissesKeyboard(.interactively)
-        .background(Color(uiColor: .systemGroupedBackground))
+        .background(AppColors.background.ignoresSafeArea())
         .navigationTitle(NSLocalizedString("settings_feedback_section", comment: ""))
         .navigationBarTitleDisplayMode(.inline)
-        .toolbarBackground(Color(uiColor: .systemGroupedBackground), for: .navigationBar)
-        .toolbarBackground(.visible, for: .navigationBar)
         .overlay(alignment: .bottom) {
             if isToastVisible, let result = sendState.toastResult {
                 Label(NSLocalizedString(result.messageKey, comment: ""), systemImage: result.icon)
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 10)
-                    .background(Color.black.opacity(0.8), in: Capsule())
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(AppColors.primaryText)
+                    .padding(.horizontal, 18)
+                    .padding(.vertical, 11)
+                    .background(.ultraThinMaterial, in: Capsule())
+                    .overlay(Capsule().stroke(Color.primary.opacity(0.08), lineWidth: 0.6))
+                    .shadow(color: Color.black.opacity(0.14), radius: 12, y: 5)
                     .frame(maxWidth: 560)
                     .padding(.horizontal, 24)
                     .padding(.bottom, 24)

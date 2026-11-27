@@ -55,6 +55,14 @@ final class ReaderTextSelectionMenuPresenter: NSObject, @preconcurrency UIEditMe
         if !viewController.publication.isProtected {
             secondaryActions.append(
                 UIAction(
+                    title: NSLocalizedString("quote_postcard_title", comment: ""),
+                    image: UIImage(systemName: "sparkles")
+                ) { _ in
+                    viewController.presentQuotePostcardForSelection()
+                }
+            )
+            secondaryActions.append(
+                UIAction(
                     title: NSLocalizedString("reader_share", comment: ""),
                     image: UIImage(systemName: "square.and.arrow.up")
                 ) { _ in
@@ -70,7 +78,7 @@ final class ReaderTextSelectionMenuPresenter: NSObject, @preconcurrency UIEditMe
             children: secondaryActions
         )
 
-        return UIMenu(children: [
+        var primaryActions: [UIMenuElement] = [
             UIAction(
                 title: NSLocalizedString("reader_highlight", comment: ""),
                 image: UIImage(systemName: "highlighter")
@@ -91,7 +99,20 @@ final class ReaderTextSelectionMenuPresenter: NSObject, @preconcurrency UIEditMe
                     await viewController.copySelection()
                 }
             },
-            moreMenu,
-        ])
+        ]
+
+        if ReadingIntelligenceEngine.shared.isFeatureAvailable && !viewController.publication.isProtected {
+            primaryActions.append(
+                UIAction(
+                    title: NSLocalizedString("ai_menu_explain", comment: ""),
+                    image: UIImage(systemName: "wand.and.stars")
+                ) { _ in
+                    viewController.presentIntelligenceForSelection()
+                }
+            )
+        }
+
+        primaryActions.append(moreMenu)
+        return UIMenu(children: primaryActions)
     }
 }

@@ -5,6 +5,7 @@
 //
 
 import Foundation
+import UIKit
 
 enum OnboardingSamplePublication {
     private struct ChapterSource {
@@ -68,11 +69,13 @@ enum OnboardingSamplePublication {
                 bodyHTML: try MarkdownToEPUBConverter.renderAndSanitize($0.markdown)
             )
         }
+        let coverData = UIImage(named: "SampleBookCover")?.jpegData(compressionQuality: 0.90)
         return try await MinimalEPUBPackager.package(
             title: localizedTitle,
             language: languageCode,
             chapters: chapters,
-            identifier: identifier
+            identifier: identifier,
+            coverJPEGData: coverData
         )
     }
 }

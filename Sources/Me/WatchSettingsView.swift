@@ -37,8 +37,10 @@ struct WatchSettingsView: View {
             doubleTapSection
         }
         .listStyle(.insetGrouped)
+        .scrollContentBackground(.hidden)
+        .frame(maxWidth: 700)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(.systemGroupedBackground))
+        .background(AppColors.background.ignoresSafeArea())
         .navigationTitle(NSLocalizedString("watch_settings_title", comment: ""))
         .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $showPaywall) {

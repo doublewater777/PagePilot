@@ -18,8 +18,10 @@ struct TTSSettingsView: View {
             previewSection
         }
         .listStyle(.insetGrouped)
+        .scrollContentBackground(.hidden)
+        .frame(maxWidth: 700)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(uiColor: .systemGroupedBackground))
+        .background(AppColors.background.ignoresSafeArea())
         .navigationTitle(NSLocalizedString("tts_settings_title", comment: ""))
         .navigationBarTitleDisplayMode(.inline)
         .onAppear { model.load() }

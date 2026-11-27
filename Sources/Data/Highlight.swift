@@ -9,6 +9,7 @@ import Foundation
 import GRDB
 import ReadiumNavigator
 import ReadiumShared
+import SwiftUI
 import UIKit
 
 enum HighlightColor: UInt8, Codable, SQLExpressible {
@@ -19,16 +20,30 @@ enum HighlightColor: UInt8, Codable, SQLExpressible {
 }
 
 extension HighlightColor {
+    /// Refined, paper-friendly highlighter ink used inside the WebView and note cards.
     var uiColor: UIColor {
         switch self {
         case .red:
-            return .red
+            return UIColor(red: 239 / 255, green: 108 / 255, blue: 124 / 255, alpha: 1)
         case .green:
-            return .green
+            return UIColor(red: 78 / 255, green: 194 / 255, blue: 139 / 255, alpha: 1)
         case .blue:
-            return .blue
+            return UIColor(red: 90 / 255, green: 156 / 255, blue: 245 / 255, alpha: 1)
         case .yellow:
-            return .yellow
+            return UIColor(red: 245 / 255, green: 200 / 255, blue: 66 / 255, alpha: 1)
+        }
+    }
+
+    var swiftUIColor: SwiftUI.Color {
+        SwiftUI.Color(uiColor: uiColor)
+    }
+
+    var accessibilityName: String {
+        switch self {
+        case .red: return NSLocalizedString("reader_highlight_color_red", comment: "")
+        case .green: return NSLocalizedString("reader_highlight_color_green", comment: "")
+        case .blue: return NSLocalizedString("reader_highlight_color_blue", comment: "")
+        case .yellow: return NSLocalizedString("reader_highlight_color_yellow", comment: "")
         }
     }
 }

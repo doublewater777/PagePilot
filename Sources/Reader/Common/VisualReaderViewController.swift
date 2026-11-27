@@ -65,7 +65,7 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
     /// Appends a text-to-speech toggle on top of the reader-wide shortcuts
     /// declared in ReaderViewController.
     override var keyCommands: [UIKeyCommand]? {
-        let commands = (super.keyCommands ?? []) + [
+        var commands = (super.keyCommands ?? []) + [
             // Esc: close any presented sheet, otherwise toggle the reader chrome.
             UIKeyCommand(
                 title: NSLocalizedString("sc_reader_dismiss", comment: "Keyboard shortcut: dismiss sheet or toggle chrome"),
@@ -79,6 +79,24 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
                 modifierFlags: [.command, .shift]
             ),
         ]
+        if ReadingIntelligenceEngine.shared.isFeatureAvailable && !publication.isProtected {
+            commands.append(
+                UIKeyCommand(
+                    title: NSLocalizedString("ai_recap_title", comment: ""),
+                    action: #selector(presentReadingRecap),
+                    input: "r",
+                    modifierFlags: [.command, .shift]
+                )
+            )
+            commands.append(
+                UIKeyCommand(
+                    title: NSLocalizedString("ai_chapter_summary_title", comment: ""),
+                    action: #selector(presentChapterSummary),
+                    input: "s",
+                    modifierFlags: [.command, .shift]
+                )
+            )
+        }
         #if targetEnvironment(macCatalyst)
         for command in commands where command.modifierFlags.contains(.command) || command.input == UIKeyCommand.inputEscape {
             command.wantsPriorityOverSystemBehavior = true
@@ -114,6 +132,9 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
 
     private var ttsViewModel: TTSViewModel?
     private var ttsControlsViewController: UIHostingController<TTSControls>?
+    private var bottomBarModel = ReaderBottomBarModel()
+    private var bottomBarHost: UIHostingController<ReaderBottomControlBar>?
+    private var activeReaderThemeAppearance: ReaderThemeAppearance?
     private var positionCount: Int?
     private var positions: [Locator] = []
     private var directionalNavigationAdapter: DirectionalNavigationAdapter?
@@ -129,6 +150,16 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
     private var onboardingIPadHintViewController: UIHostingController<OnboardingIPadReaderHintView>?
     private var didDismissWatchGuideThisSession = false
     private let watchInstallReminderStore = WatchInstallReminderStore()
+
+    // Hands-Free Bedside Mode & Watch live feedback
+    private var handsFreeState = HandsFreeReadingState()
+    private var handsFreeShieldView: UIView?
+    private var handsFreeUnlockButton: UIButton?
+    private var handsFreeFilamentTrack: UIView?
+    private var handsFreeFilamentFill: UIView?
+    private var handsFreeFilamentWidthConstraint: NSLayoutConstraint?
+    private var watchFeedbackPill: UIView?
+    private var watchFeedbackHideWorkItem: DispatchWorkItem?
 
     init(
         navigator: N,
@@ -160,6 +191,7 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
                 self?.positions = positions
                 self?.positionCount = positions.count
                 self?.quickPositionJumpController?.positions = positions
+                self?.syncBottomBarState(with: self?.navigator.currentLocation)
             }
         }
     }
@@ -215,7 +247,9 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
             case ("d", .command): self.bookmarkCurrentPosition()
             case ("p", [.command, .shift]): self.presentUserPreferences()
             case ("t", [.command, .shift]): self.toggleTTS()
-            case ("1", .command), ("2", .command), ("3", .command):
+            case ("k", [.command, .shift]): self.cycleQuickReaderTheme()
+            case ("l", [.command, .shift]): self.toggleHandsFreeMode()
+            case ("1", .command), ("2", .command):
                 guard let tab = Int(key) else { return false }
                 (UIApplication.shared.delegate as? AppDelegate)?.selectMainTab(tab - 1)
             default: return false
@@ -288,7 +322,7 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
         #endif
 
         positionLabel.translatesAutoresizingMaskIntoConstraints = false
-        positionLabel.font = .systemFont(ofSize: 12)
+        positionLabel.font = .monospacedDigitSystemFont(ofSize: 11.5, weight: .medium)
         // Prevents VoiceOver from selecting the position label while reading
         // the page.
         positionLabel.isAccessibilityElement = false
@@ -304,6 +338,9 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
         #if targetEnvironment(macCatalyst)
         setupPageTurnButtons()
         setupScrollPageTurning()
+        #else
+        title = publication.metadata.title
+        setupBottomControlBar()
         #endif
 
         let quickPositionJumpController = QuickPositionJumpInteractionController(
@@ -329,6 +366,7 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
         self.quickPositionJumpController = quickPositionJumpController
 
         applyChromeAppearance()
+        updateBottomControlBarVisibility(animated: false)
 
         Task { [weak self] in
             guard let self = self else { return }
@@ -337,6 +375,7 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
 
             await MainActor.run {
                 self.ttsViewModel = ttsVM
+                self.bottomBarModel.supportsTTS = (ttsVM != nil)
                 if let ttsViewModel = self.ttsViewModel {
                     let controls = UIHostingController(rootView: TTSControls(viewModel: ttsViewModel))
                     self.ttsControlsViewController = controls
@@ -349,18 +388,22 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
                     self.view.addSubview(controls.view)
                     NSLayoutConstraint.activate([
                         controls.view.centerXAnchor.constraint(equalTo: self.view.centerXAnchor),
-                        controls.view.topAnchor.constraint(equalTo: self.view.safeAreaLayoutGuide.topAnchor, constant: 20),
+                        controls.view.leadingAnchor.constraint(greaterThanOrEqualTo: self.view.safeAreaLayoutGuide.leadingAnchor, constant: 16),
+                        controls.view.trailingAnchor.constraint(lessThanOrEqualTo: self.view.safeAreaLayoutGuide.trailingAnchor, constant: -16),
+                        controls.view.bottomAnchor.constraint(equalTo: self.view.safeAreaLayoutGuide.bottomAnchor, constant: -14),
                     ])
                     controls.didMove(toParent: self)
 
                     ttsViewModel.$state
                         .receive(on: DispatchQueue.main)
-                        .sink { state in
+                        .sink { [weak self] state in
                             controls.view.isHidden = !state.showControls
+                            self?.bottomBarModel.isTTSPlaying = state.isPlaying
+                            self?.updateBottomControlBarVisibility(animated: true)
                         }
                         .store(in: &self.subscriptions)
 
-                    // Refresh navigation bar to display TTS button now that the view model is ready
+                    // Refresh navigation bar to display TTS button on Mac Catalyst
                     self.navigationItem.rightBarButtonItems = self.makeNavigationBarButtons()
                 }
             }
@@ -369,6 +412,7 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
         WatchPageTurnService.shared.activate()
         showOnboardingWatchGuideIfNeeded()
         showOnboardingIPadHintIfNeeded()
+        observeWatchPageTurnVisualFeedback()
 
         // Refine position from external trigger (e.g. MyNotes) once the navigator is ready.
         if let visualNavigator = navigator as? VisualNavigator,
@@ -715,11 +759,21 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
 
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
+        setHandsFreeMode(false, announce: false)
+        navigationController?.navigationBar.overrideUserInterfaceStyle = .unspecified
         wasTTSPlayingBeforeQuickPositionJump = false
         quickPositionJumpController?.cancel()
         ttsViewModel?.stop()
         if let visualNavigator = navigator as? VisualNavigator {
             WatchPageTurnService.shared.unregisterNavigator(visualNavigator)
+        }
+    }
+
+    deinit {
+        if handsFreeState.isEnabled {
+            DispatchQueue.main.async {
+                UIApplication.shared.isIdleTimerDisabled = false
+            }
         }
     }
 
@@ -801,7 +855,369 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
     }
     #endif
 
-    // MARK: - Navigation bar
+    // MARK: - Navigation bar & Bottom Floating Control Bar
+
+    override var usesBottomControlBar: Bool { !PagePilotReaderHost.isMac }
+
+    var supportsQuickThemeCycle: Bool { false }
+
+    func cycleQuickReaderTheme() {}
+
+    func applyPaperPreset(_ preset: ReaderPaperPreset) {}
+
+    func updateActivePaperPreset(_ preset: ReaderPaperPreset?) {
+        bottomBarModel.activePaperPreset = preset
+        if PagePilotReaderHost.isMac {
+            navigationItem.rightBarButtonItems = makeNavigationBarButtons()
+        }
+    }
+
+    // MARK: - Hands-Free Bedside Mode & Watch Feedback
+
+    private func observeWatchPageTurnVisualFeedback() {
+        NotificationCenter.default.publisher(for: .watchPageTurnDidSucceed)
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                guard let self, self.isReadingWindowActive else { return }
+                self.showWatchPageTurnFeedbackPill()
+            }
+            .store(in: &subscriptions)
+
+        NotificationCenter.default.publisher(for: UIApplication.didEnterBackgroundNotification)
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                guard let self, self.handsFreeState.isEnabled else { return }
+                UIApplication.shared.isIdleTimerDisabled = false
+            }
+            .store(in: &subscriptions)
+
+        NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                guard let self, self.handsFreeState.isEnabled, self.viewIfLoaded?.window != nil else { return }
+                UIApplication.shared.isIdleTimerDisabled = true
+            }
+            .store(in: &subscriptions)
+    }
+
+    func toggleHandsFreeMode() {
+        setHandsFreeMode(!handsFreeState.isEnabled, announce: true)
+    }
+
+    private func setHandsFreeMode(_ enabled: Bool, announce: Bool) {
+        guard handsFreeState.isEnabled != enabled else { return }
+        if enabled {
+            handsFreeState.enable()
+        } else {
+            handsFreeState.disable()
+        }
+
+        bottomBarModel.isHandsFreeMode = handsFreeState.isEnabled
+        UIApplication.shared.isIdleTimerDisabled = handsFreeState.shouldKeepScreenAwake
+
+        if handsFreeState.isEnabled {
+            navigationBarHidden = true
+            installHandsFreeOverlayIfNeeded()
+            handsFreeShieldView?.isHidden = false
+            handsFreeUnlockButton?.isHidden = false
+            handsFreeFilamentTrack?.isHidden = false
+            updateHandsFreeFilamentProgress()
+            positionLabel.isHidden = true
+            if announce {
+                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                showTopMicroPill(
+                    icon: "moon.stars.fill",
+                    text: NSLocalizedString("reader_handsfree_enabled_toast", comment: "")
+                )
+            }
+        } else {
+            handsFreeShieldView?.isHidden = true
+            handsFreeUnlockButton?.isHidden = true
+            handsFreeFilamentTrack?.isHidden = true
+            positionLabel.isHidden = false
+            if announce {
+                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                showTopMicroPill(
+                    icon: "lock.open.fill",
+                    text: NSLocalizedString("reader_handsfree_disabled_toast", comment: "")
+                )
+            }
+        }
+    }
+
+    private func installHandsFreeOverlayIfNeeded() {
+        guard handsFreeShieldView == nil else { return }
+
+        // Transparent anti-accidental-touch shield absorbing stray pillow/palm touches
+        let shield = UIView()
+        shield.translatesAutoresizingMaskIntoConstraints = false
+        shield.backgroundColor = .clear
+        let shieldTap = UITapGestureRecognizer(target: self, action: #selector(handleHandsFreeShieldTap))
+        shield.addGestureRecognizer(shieldTap)
+        let shieldPan = UIPanGestureRecognizer(target: self, action: #selector(handleHandsFreeShieldPan))
+        shield.addGestureRecognizer(shieldPan)
+        view.addSubview(shield)
+        NSLayoutConstraint.activate([
+            shield.topAnchor.constraint(equalTo: view.topAnchor),
+            shield.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            shield.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            shield.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+        ])
+        handsFreeShieldView = shield
+
+        // Ultra-subtle 2pt bottom reading progress filament
+        let track = UIView()
+        track.translatesAutoresizingMaskIntoConstraints = false
+        track.backgroundColor = UIColor.secondaryLabel.withAlphaComponent(0.18)
+        track.layer.cornerRadius = 1
+        track.clipsToBounds = true
+        track.isUserInteractionEnabled = false
+        view.addSubview(track)
+
+        let fill = UIView()
+        fill.translatesAutoresizingMaskIntoConstraints = false
+        fill.backgroundColor = AppColors.uiAccentTeal
+        fill.layer.cornerRadius = 1
+        track.addSubview(fill)
+
+        let widthConstraint = fill.widthAnchor.constraint(equalTo: track.widthAnchor, multiplier: max(0.01, CGFloat(bottomBarModel.progress)))
+        NSLayoutConstraint.activate([
+            track.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 24),
+            track.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -24),
+            track.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -6),
+            track.heightAnchor.constraint(equalToConstant: 2),
+
+            fill.leadingAnchor.constraint(equalTo: track.leadingAnchor),
+            fill.topAnchor.constraint(equalTo: track.topAnchor),
+            fill.bottomAnchor.constraint(equalTo: track.bottomAnchor),
+            widthConstraint,
+        ])
+        handsFreeFilamentTrack = track
+        handsFreeFilamentFill = fill
+        handsFreeFilamentWidthConstraint = widthConstraint
+
+        // Quiet bottom-right unlock pill
+        var config = UIButton.Configuration.filled()
+        config.cornerStyle = .capsule
+        config.baseBackgroundColor = AppColors.uiAccentTeal.withAlphaComponent(0.16)
+        config.baseForegroundColor = AppColors.uiAccentTeal
+        config.image = UIImage(
+            systemName: "lock.fill",
+            withConfiguration: UIImage.SymbolConfiguration(pointSize: 11, weight: .bold)
+        )
+        config.imagePadding = 6
+        config.contentInsets = NSDirectionalEdgeInsets(top: 7, leading: 12, bottom: 7, trailing: 12)
+        var attrs = AttributeContainer()
+        attrs.font = UIFont.systemFont(ofSize: 12, weight: .semibold)
+        config.attributedTitle = AttributedString(
+            NSLocalizedString("reader_handsfree_unlock_pill", comment: ""),
+            attributes: attrs
+        )
+
+        let unlockBtn = UIButton(configuration: config)
+        unlockBtn.translatesAutoresizingMaskIntoConstraints = false
+        unlockBtn.addAction(UIAction { [weak self] _ in
+            self?.setHandsFreeMode(false, announce: true)
+        }, for: .primaryActionTriggered)
+        view.addSubview(unlockBtn)
+        NSLayoutConstraint.activate([
+            unlockBtn.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -18),
+            unlockBtn.bottomAnchor.constraint(equalTo: track.topAnchor, constant: -12),
+        ])
+        handsFreeUnlockButton = unlockBtn
+    }
+
+    private func updateHandsFreeFilamentProgress() {
+        guard let track = handsFreeFilamentTrack, let fill = handsFreeFilamentFill else { return }
+        handsFreeFilamentWidthConstraint?.isActive = false
+        let fraction = max(0.01, min(1.0, CGFloat(bottomBarModel.progress)))
+        let updated = fill.widthAnchor.constraint(equalTo: track.widthAnchor, multiplier: fraction)
+        updated.isActive = true
+        handsFreeFilamentWidthConstraint = updated
+        UIView.animate(withDuration: 0.25) {
+            track.layoutIfNeeded()
+        }
+    }
+
+    @objc private func handleHandsFreeShieldTap() {
+        guard let unlockBtn = handsFreeUnlockButton else { return }
+        UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+        UIView.animate(withDuration: 0.14, animations: {
+            unlockBtn.transform = CGAffineTransform(scaleX: 1.07, y: 1.07)
+        }) { _ in
+            UIView.animate(withDuration: 0.22) {
+                unlockBtn.transform = .identity
+            }
+        }
+    }
+
+    @objc private func handleHandsFreeShieldPan() {
+        // Intentionally absorbs stray pillow/bedside swipes while Hands-Free lock is active.
+    }
+
+    private func showWatchPageTurnFeedbackPill() {
+        showTopMicroPill(
+            icon: "applewatch",
+            text: NSLocalizedString("reader_watch_turned_pill", comment: "")
+        )
+    }
+
+    private func showTopMicroPill(icon: String, text: String) {
+        watchFeedbackHideWorkItem?.cancel()
+        watchFeedbackPill?.removeFromSuperview()
+
+        let pill = UIVisualEffectView(effect: UIBlurEffect(style: .systemUltraThinMaterialDark))
+        pill.translatesAutoresizingMaskIntoConstraints = false
+        pill.layer.cornerRadius = 16
+        pill.clipsToBounds = true
+        pill.layer.borderWidth = 0.6
+        pill.layer.borderColor = UIColor.white.withAlphaComponent(0.14).cgColor
+        pill.isUserInteractionEnabled = false
+        pill.alpha = 0
+        pill.transform = CGAffineTransform(translationX: 0, y: -10).scaledBy(x: 0.94, y: 0.94)
+
+        let dot = UIView()
+        dot.translatesAutoresizingMaskIntoConstraints = false
+        dot.backgroundColor = AppColors.uiAccentTeal
+        dot.layer.cornerRadius = 3
+        NSLayoutConstraint.activate([
+            dot.widthAnchor.constraint(equalToConstant: 6),
+            dot.heightAnchor.constraint(equalToConstant: 6),
+        ])
+
+        let iconView = UIImageView(image: UIImage(
+            systemName: icon,
+            withConfiguration: UIImage.SymbolConfiguration(pointSize: 11, weight: .semibold)
+        ))
+        iconView.tintColor = AppColors.uiAccentTeal
+        iconView.translatesAutoresizingMaskIntoConstraints = false
+
+        let label = UILabel()
+        label.text = text
+        label.font = .systemFont(ofSize: 12, weight: .semibold)
+        label.textColor = .white
+        label.translatesAutoresizingMaskIntoConstraints = false
+
+        let stack = UIStackView(arrangedSubviews: [dot, iconView, label])
+        stack.axis = .horizontal
+        stack.alignment = .center
+        stack.spacing = 6
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        pill.contentView.addSubview(stack)
+        view.addSubview(pill)
+
+        NSLayoutConstraint.activate([
+            stack.leadingAnchor.constraint(equalTo: pill.contentView.leadingAnchor, constant: 12),
+            stack.trailingAnchor.constraint(equalTo: pill.contentView.trailingAnchor, constant: -14),
+            stack.topAnchor.constraint(equalTo: pill.contentView.topAnchor, constant: 7),
+            stack.bottomAnchor.constraint(equalTo: pill.contentView.bottomAnchor, constant: -7),
+
+            pill.centerXAnchor.constraint(equalTo: view.safeAreaLayoutGuide.centerXAnchor),
+            pill.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 8),
+        ])
+        watchFeedbackPill = pill
+
+        UIView.animate(withDuration: 0.24, delay: 0, usingSpringWithDamping: 0.85, initialSpringVelocity: 0.3) {
+            pill.alpha = 1
+            pill.transform = .identity
+        }
+
+        let workItem = DispatchWorkItem { [weak self, weak pill] in
+            guard let pill else { return }
+            UIView.animate(withDuration: 0.25, animations: {
+                pill.alpha = 0
+                pill.transform = CGAffineTransform(translationX: 0, y: -8)
+            }) { _ in
+                pill.removeFromSuperview()
+                if self?.watchFeedbackPill === pill {
+                    self?.watchFeedbackPill = nil
+                }
+            }
+        }
+        watchFeedbackHideWorkItem = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.35, execute: workItem)
+    }
+
+    func presentQuotePostcard(_ payload: QuotePostcardPayload) {
+        let postcardView = QuotePostcardView(payload: payload)
+        let hosting = UIHostingController(rootView: postcardView)
+        let isRegular = traitCollection.horizontalSizeClass == .regular || UIDevice.current.userInterfaceIdiom == .pad
+        hosting.modalPresentationStyle = isRegular ? .formSheet : .pageSheet
+        if isRegular {
+            hosting.preferredContentSize = CGSize(width: 480, height: 660)
+        } else if let sheet = hosting.sheetPresentationController {
+            sheet.detents = [.large()]
+            sheet.prefersGrabberVisible = true
+        }
+        present(hosting, animated: true)
+    }
+
+    func presentReadingIntelligence(
+        task: ReadingIntelligenceTask,
+        contextLoader: (() async -> ReadingIntelligenceTask?)? = nil
+    ) {
+        guard ReadingIntelligenceEngine.shared.isFeatureAvailable else { return }
+        let sheetView = ReadingIntelligenceSheet(task: task, contextLoader: contextLoader)
+        let hosting = UIHostingController(rootView: sheetView)
+        let isRegular = traitCollection.horizontalSizeClass == .regular || UIDevice.current.userInterfaceIdiom == .pad
+        hosting.modalPresentationStyle = isRegular ? .formSheet : .pageSheet
+        if isRegular {
+            hosting.preferredContentSize = CGSize(width: 520, height: 620)
+        } else if let sheet = hosting.sheetPresentationController {
+            sheet.detents = [.medium(), .large()]
+            sheet.selectedDetentIdentifier = .medium
+            sheet.prefersGrabberVisible = true
+        }
+        present(hosting, animated: true)
+    }
+
+    @objc func presentReadingRecap() {
+        guard ReadingIntelligenceEngine.shared.isFeatureAvailable, !publication.isProtected else { return }
+        let bookTitle = publication.metadata.title ?? "PagePilot"
+        let locator = navigator.currentLocation
+        let chapterTitle = locator?.title ?? bottomBarModel.chapterTitle
+        let placeholder = ReadingIntelligenceTask.recap(
+            bookTitle: bookTitle,
+            chapterTitle: chapterTitle.isEmpty ? nil : chapterTitle,
+            priorExcerpt: ""
+        )
+        let pub = publication
+        presentReadingIntelligence(task: placeholder) {
+            let excerpt = await ReadingExcerptExtractor.extractPriorContext(from: pub, currentLocator: locator)
+            guard !excerpt.isEmpty else { return nil }
+            return .recap(
+                bookTitle: bookTitle,
+                chapterTitle: chapterTitle.isEmpty ? nil : chapterTitle,
+                priorExcerpt: excerpt
+            )
+        }
+    }
+
+    @objc func presentChapterSummary() {
+        guard ReadingIntelligenceEngine.shared.isFeatureAvailable, !publication.isProtected else { return }
+        let bookTitle = publication.metadata.title ?? "PagePilot"
+        let locator = navigator.currentLocation
+        let chapterTitle = locator?.title ?? bottomBarModel.chapterTitle
+        let placeholder = ReadingIntelligenceTask.chapterSummary(
+            bookTitle: bookTitle,
+            chapterTitle: chapterTitle.isEmpty ? nil : chapterTitle,
+            chapterExcerpt: ""
+        )
+        let pub = publication
+        presentReadingIntelligence(task: placeholder) {
+            let excerpt = await ReadingExcerptExtractor.extractCurrentChapter(from: pub, currentLocator: locator)
+            guard !excerpt.isEmpty else { return nil }
+            return .chapterSummary(
+                bookTitle: bookTitle,
+                chapterTitle: chapterTitle.isEmpty ? nil : chapterTitle,
+                chapterExcerpt: excerpt
+            )
+        }
+    }
+
+    var bottomControlBarAnchorView: UIView? {
+        bottomBarHost?.view
+    }
 
     private var navigationBarHidden: Bool = !PagePilotReaderHost.isMac {
         didSet {
@@ -812,12 +1228,79 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
     override func makeNavigationBarButtons() -> [UIBarButtonItem] {
         var buttons: [UIBarButtonItem] = super.makeNavigationBarButtons()
 
-        // Text to speech
-        if let ttsViewModel = ttsViewModel {
-            buttons.append(UIBarButtonItem(image: UIImage(systemName: "speaker.wave.2.fill"), style: .plain, target: ttsViewModel, action: #selector(TTSViewModel.start)))
+        // On Mac Catalyst, expose quick Paper Presets menu, Hands-Free focus lock, and TTS in the top toolbar.
+        if PagePilotReaderHost.isMac {
+            if supportsQuickThemeCycle {
+                let activePreset = bottomBarModel.activePaperPreset
+                let presetActions = ReaderPaperPreset.allCases.map { preset in
+                    UIAction(
+                        title: preset.localizedTitle,
+                        image: UIImage(systemName: preset.iconName),
+                        state: activePreset == preset ? .on : .off
+                    ) { [weak self] _ in
+                        self?.applyPaperPreset(preset)
+                    }
+                }
+                let presetButton = UIBarButtonItem(
+                    image: UIImage(systemName: activePreset?.iconName ?? "sun.max"),
+                    menu: UIMenu(title: NSLocalizedString("reader_prefs_theme_section", comment: ""), children: presetActions)
+                )
+                presetButton.accessibilityLabel = NSLocalizedString("reader_prefs_theme_section", comment: "")
+                buttons.append(presetButton)
+            }
+
+            let handsFreeButton = UIBarButtonItem(
+                image: UIImage(systemName: handsFreeState.isEnabled ? "lock.fill" : "moon.stars"),
+                style: .plain,
+                target: self,
+                action: #selector(toggleHandsFreeFromToolbar)
+            )
+            handsFreeButton.accessibilityLabel = NSLocalizedString("reader_bar_handsfree", comment: "")
+            buttons.append(handsFreeButton)
+
+            if ReadingIntelligenceEngine.shared.isFeatureAvailable && !publication.isProtected {
+                let aiMenu = UIMenu(
+                    title: NSLocalizedString("ai_badge_apple_intelligence", comment: ""),
+                    children: [
+                        UIAction(
+                            title: NSLocalizedString("ai_recap_title", comment: ""),
+                            image: UIImage(systemName: "clock.arrow.trianglehead.counterclockwise.rotate.90")
+                        ) { [weak self] _ in
+                            self?.presentReadingRecap()
+                        },
+                        UIAction(
+                            title: NSLocalizedString("ai_chapter_summary_title", comment: ""),
+                            image: UIImage(systemName: "text.document")
+                        ) { [weak self] _ in
+                            self?.presentChapterSummary()
+                        },
+                    ]
+                )
+                let aiButton = UIBarButtonItem(
+                    image: UIImage(systemName: "sparkles"),
+                    menu: aiMenu
+                )
+                aiButton.accessibilityLabel = NSLocalizedString("ai_badge_apple_intelligence", comment: "")
+                buttons.append(aiButton)
+            }
+
+            if let ttsViewModel = ttsViewModel {
+                let ttsButton = UIBarButtonItem(
+                    image: UIImage(systemName: "headphones"),
+                    style: .plain,
+                    target: ttsViewModel,
+                    action: #selector(TTSViewModel.start)
+                )
+                ttsButton.accessibilityLabel = NSLocalizedString("reader_bar_listen", comment: "")
+                buttons.append(ttsButton)
+            }
         }
 
         return buttons
+    }
+
+    @objc private func toggleHandsFreeFromToolbar() {
+        toggleHandsFreeMode()
     }
 
     func toggleNavigationBar() {
@@ -827,6 +1310,7 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
     func updateNavigationBar(animated: Bool = true) {
         navigationController?.setNavigationBarHidden(navigationBarHidden, animated: animated)
         setNeedsStatusBarAppearanceUpdate()
+        updateBottomControlBarVisibility(animated: animated)
     }
 
     override var preferredStatusBarUpdateAnimation: UIStatusBarAnimation {
@@ -837,10 +1321,206 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
         navigationBarHidden
     }
 
-    /// Reader chrome follows system appearance (light/dark) instead of hard-coded white/gray.
+    override var preferredStatusBarStyle: UIStatusBarStyle {
+        if let appearance = activeReaderThemeAppearance {
+            return appearance.isDarkSurface ? .lightContent : .darkContent
+        }
+        return .default
+    }
+
+    /// Applies the active publication theme (Light / Sepia / Dark / custom) to native reader chrome.
+    func updateReaderThemeAppearance(_ appearance: ReaderThemeAppearance) {
+        activeReaderThemeAppearance = appearance
+        applyChromeAppearance()
+    }
+
+    func updateQuickThemeIndicator(iconName: String, label: String) {
+        bottomBarModel.supportsQuickTheme = supportsQuickThemeCycle
+        bottomBarModel.themeIconName = iconName
+        bottomBarModel.themeLabel = label
+    }
+
     private func applyChromeAppearance() {
-        view.backgroundColor = .systemBackground
-        positionLabel.textColor = .secondaryLabel
+        if let appearance = activeReaderThemeAppearance {
+            view.backgroundColor = appearance.backgroundColor
+            positionLabel.textColor = appearance.secondaryTextColor
+            bottomBarModel.isDarkChrome = appearance.isDarkSurface
+            navigationController?.navigationBar.overrideUserInterfaceStyle = appearance.isDarkSurface ? .dark : .light
+        } else {
+            view.backgroundColor = .systemBackground
+            positionLabel.textColor = .secondaryLabel
+            bottomBarModel.isDarkChrome = (traitCollection.userInterfaceStyle == .dark)
+            navigationController?.navigationBar.overrideUserInterfaceStyle = .unspecified
+        }
+        setNeedsStatusBarAppearanceUpdate()
+    }
+
+    private func setupBottomControlBar() {
+        bottomBarModel.supportsQuickTheme = supportsQuickThemeCycle
+        bottomBarModel.supportsIntelligence = ReadingIntelligenceEngine.shared.isFeatureAvailable && !publication.isProtected
+        ReadingIntelligenceEngine.shared.$simulationEnabled
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                guard let self else { return }
+                self.bottomBarModel.supportsIntelligence = ReadingIntelligenceEngine.shared.isFeatureAvailable && !self.publication.isProtected
+                if PagePilotReaderHost.isMac {
+                    self.navigationItem.rightBarButtonItems = self.makeNavigationBarButtons()
+                }
+            }
+            .store(in: &subscriptions)
+        let controlBar = ReaderBottomControlBar(
+            model: bottomBarModel,
+            onOutline: { [weak self] in
+                self?.presentOutline()
+            },
+            onAppearance: { [weak self] in
+                self?.presentUserPreferences()
+            },
+            onSelectPaperPreset: { [weak self] preset in
+                self?.applyPaperPreset(preset)
+            },
+            onToggleHandsFree: { [weak self] in
+                self?.toggleHandsFreeMode()
+            },
+            onToggleTTS: { [weak self] in
+                self?.toggleTTS()
+            },
+            onIntelligenceRecap: { [weak self] in
+                self?.presentReadingRecap()
+            },
+            onIntelligenceSummary: { [weak self] in
+                self?.presentChapterSummary()
+            },
+            onScrubPreview: { [weak self] index in
+                self?.previewBottomBarPosition(at: index)
+            },
+            onScrubCommit: { [weak self] index in
+                self?.commitBottomBarPosition(at: index)
+            }
+        )
+
+        let host = UIHostingController(rootView: controlBar)
+        host.view.backgroundColor = .clear
+        host.view.translatesAutoresizingMaskIntoConstraints = false
+        addChild(host)
+        view.addSubview(host.view)
+
+        let widthFill = host.view.widthAnchor.constraint(equalTo: view.safeAreaLayoutGuide.widthAnchor, constant: -28)
+        widthFill.priority = .defaultHigh
+
+        NSLayoutConstraint.activate([
+            host.view.centerXAnchor.constraint(equalTo: view.safeAreaLayoutGuide.centerXAnchor),
+            host.view.widthAnchor.constraint(lessThanOrEqualToConstant: 500),
+            widthFill,
+            host.view.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -10),
+        ])
+        host.didMove(toParent: self)
+        bottomBarHost = host
+    }
+
+    private func updateBottomControlBarVisibility(animated: Bool) {
+        guard let barView = bottomBarHost?.view else { return }
+        let isTTSVisible = ttsViewModel?.state.showControls == true
+        let shouldShowBar = !navigationBarHidden && !isTTSVisible
+
+        let applyState = {
+            barView.alpha = shouldShowBar ? 1 : 0
+            barView.transform = shouldShowBar ? .identity : CGAffineTransform(translationX: 0, y: 18)
+            self.positionLabel.alpha = (shouldShowBar || isTTSVisible) ? 0 : 1
+        }
+
+        if shouldShowBar {
+            barView.isHidden = false
+            barView.isUserInteractionEnabled = true
+        } else {
+            barView.isUserInteractionEnabled = false
+        }
+
+        if animated {
+            UIView.animate(
+                withDuration: 0.32,
+                delay: 0,
+                usingSpringWithDamping: 0.86,
+                initialSpringVelocity: 0.2,
+                options: [.beginFromCurrentState, .allowUserInteraction],
+                animations: applyState
+            ) { _ in
+                if !shouldShowBar {
+                    barView.isHidden = true
+                }
+            }
+        } else {
+            applyState()
+            barView.isHidden = !shouldShowBar
+        }
+    }
+
+    private func syncBottomBarState(with locator: Locator?) {
+        let total = positions.count
+        bottomBarModel.totalPositions = total
+
+        let title = locator?.title?.trimmingCharacters(in: .whitespacesAndNewlines)
+        bottomBarModel.chapterTitle = (title?.isEmpty == false)
+            ? title!
+            : (publication.metadata.title ?? "")
+
+        if let position = locator?.locations.position, total > 0 {
+            let clamped = max(1, min(total, position))
+            bottomBarModel.currentPositionIndex = clamped - 1
+            let pct = QuickPositionJumpPolicy.percentage(
+                totalProgression: locator?.locations.totalProgression,
+                targetPosition: clamped,
+                positionCount: total
+            )
+            bottomBarModel.percentageText = "\(pct)%"
+            bottomBarModel.positionText = positionsArePages
+                ? "\(clamped) / \(total)"
+                : String(format: NSLocalizedString("reader_position_format", comment: ""), clamped, total)
+            bottomBarModel.progress = total > 1 ? Double(clamped - 1) / Double(total - 1) : 1.0
+            if let remainingMin = ReadingTimeEstimator.remainingMinutes(currentPosition: clamped, targetEndPosition: total) {
+                bottomBarModel.remainingTimeText = ReadingTimeEstimator.localizedRemainingText(minutes: remainingMin)
+            } else {
+                bottomBarModel.remainingTimeText = ""
+            }
+        } else if let totalProgression = locator?.locations.totalProgression {
+            let clamped = min(max(totalProgression, 0), 1)
+            bottomBarModel.progress = clamped
+            bottomBarModel.percentageText = "\(Int((clamped * 100).rounded()))%"
+            bottomBarModel.positionText = ""
+            bottomBarModel.remainingTimeText = ""
+        }
+        if handsFreeState.isEnabled {
+            updateHandsFreeFilamentProgress()
+        }
+    }
+
+    private func previewBottomBarPosition(at index: Int) {
+        guard positions.indices.contains(index) else { return }
+        let locator = positions[index]
+        let total = positions.count
+        let pos = index + 1
+        let pct = QuickPositionJumpPolicy.percentage(
+            totalProgression: locator.locations.totalProgression,
+            targetPosition: pos,
+            positionCount: total
+        )
+        let title = locator.title?.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let title, !title.isEmpty {
+            bottomBarModel.chapterTitle = title
+        }
+        bottomBarModel.percentageText = "\(pct)%"
+        bottomBarModel.positionText = positionsArePages
+            ? "\(pos) / \(total)"
+            : String(format: NSLocalizedString("reader_position_format", comment: ""), pos, total)
+    }
+
+    private func commitBottomBarPosition(at index: Int) {
+        guard positions.indices.contains(index),
+              let visualNavigator = navigator as? VisualNavigator else { return }
+        let target = positions[index]
+        Task {
+            _ = await visualNavigator.go(to: target, options: NavigatorGoOptions(animated: false))
+        }
     }
 
     // MARK: - VisualNavigatorDelegate
@@ -866,9 +1546,8 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
                 return "\(position) / \(positionCount)"
             }
 
-            // Reflowable publications use Readium positions. Keep the footer
-            // stable instead of switching to a percentage.
-            return String(
+            // Reflowable publications use Readium positions, paired with estimated time left on Mac.
+            let base = String(
                 format: NSLocalizedString(
                     "reader_position_format",
                     comment: "Reader footer: current reading position out of total positions"
@@ -876,7 +1555,14 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
                 position,
                 positionCount
             )
+            if PagePilotReaderHost.isMac,
+               let remainingMin = ReadingTimeEstimator.remainingMinutes(currentPosition: position, targetEndPosition: positionCount) {
+                return "\(base) · \(ReadingTimeEstimator.localizedRemainingText(minutes: remainingMin))"
+            }
+            return base
         }()
+
+        syncBottomBarState(with: locator)
 
         // Update Watch progress
         if !isReadingProgressPersistenceSuppressed {
@@ -1027,23 +1713,90 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
     }
 
     private func activateDecoration(for highlight: Highlight, on event: OnDecorationActivatedEvent) {
-        if highlightContextMenu != nil {
-            highlightContextMenu?.removeFromParent()
-        }
+        highlightContextMenu?.dismiss(animated: false)
+        highlightContextMenu = nil
 
-        let menuView = HighlightContextMenu(colors: [.red, .green, .blue, .yellow],
-                                            systemFontSize: 20)
+        let highlightID = event.decoration.highlightID
+        let quotedText = highlight.locator.text.sanitized().highlight ?? ""
+        let existingNote = highlight.note ?? ""
+
+        let menuView = HighlightContextMenu(
+            colors: [.yellow, .green, .blue, .red],
+            selectedColor: highlight.color,
+            hasNote: !existingNote.isEmpty,
+            showsNoteButton: true,
+            showsCopyButton: !quotedText.isEmpty,
+            showsPostcardButton: !quotedText.isEmpty && !publication.isProtected,
+            showsIntelligenceButton: ReadingIntelligenceEngine.shared.isFeatureAvailable && !quotedText.isEmpty && !publication.isProtected,
+            showsDeleteButton: true
+        )
 
         menuView.selectedColorPublisher.sink { [weak self] color in
             self?.currentHighlightCancellable?.cancel()
-            self?.updateHighlight(event.decoration.highlightID, withColor: color)
+            self?.updateHighlight(highlightID, withColor: color)
             self?.highlightContextMenu?.dismiss(animated: true, completion: nil)
+        }
+        .store(in: &subscriptions)
+
+        menuView.selectedNotePublisher.sink { [weak self] _ in
+            guard let self else { return }
+            self.currentHighlightCancellable?.cancel()
+            self.highlightContextMenu?.dismiss(animated: true) {
+                self.presentHighlightNoteEditor(
+                    for: highlightID,
+                    quotedText: quotedText,
+                    initialNote: existingNote,
+                    initialColor: highlight.color
+                )
+            }
+        }
+        .store(in: &subscriptions)
+
+        menuView.selectedCopyPublisher.sink { [weak self] _ in
+            guard let self else { return }
+            self.currentHighlightCancellable?.cancel()
+            UIPasteboard.general.string = quotedText
+            self.highlightContextMenu?.dismiss(animated: true) {
+                toast(NSLocalizedString("reader_copy", comment: ""), on: self.view, duration: 1.0)
+            }
+        }
+        .store(in: &subscriptions)
+
+        menuView.selectedPostcardPublisher.sink { [weak self] _ in
+            guard let self else { return }
+            self.currentHighlightCancellable?.cancel()
+            let authors = self.publication.metadata.authors.map(\.name).joined(separator: ", ")
+            let payload = QuotePostcardPayload(
+                quote: quotedText,
+                note: existingNote.isEmpty ? nil : existingNote,
+                bookTitle: self.publication.metadata.title ?? "PagePilot",
+                author: authors.isEmpty ? nil : authors,
+                chapterTitle: highlight.locator.title ?? self.navigator.currentLocation?.title,
+                date: highlight.created
+            )
+            self.highlightContextMenu?.dismiss(animated: true) {
+                self.presentQuotePostcard(payload)
+            }
+        }
+        .store(in: &subscriptions)
+
+        menuView.selectedIntelligencePublisher.sink { [weak self] _ in
+            guard let self else { return }
+            self.currentHighlightCancellable?.cancel()
+            let task = ReadingIntelligenceTask.explainSelection(
+                text: quotedText,
+                bookTitle: self.publication.metadata.title ?? "PagePilot",
+                chapterTitle: highlight.locator.title ?? self.navigator.currentLocation?.title
+            )
+            self.highlightContextMenu?.dismiss(animated: true) {
+                self.presentReadingIntelligence(task: task)
+            }
         }
         .store(in: &subscriptions)
 
         menuView.selectedDeletePublisher.sink { [weak self] _ in
             self?.currentHighlightCancellable?.cancel()
-            self?.deleteHighlight(event.decoration.highlightID)
+            self?.deleteHighlight(highlightID)
             self?.highlightContextMenu?.dismiss(animated: true, completion: nil)
         }
         .store(in: &subscriptions)
@@ -1058,12 +1811,44 @@ class VisualReaderViewController<N: UIViewController & Navigator>: ReaderViewCon
         highlightContextMenu = hosting
 
         if let popoverController = hosting.popoverPresentationController {
-            popoverController.permittedArrowDirections = .down
-            popoverController.sourceRect = event.rect ?? .zero
+            popoverController.permittedArrowDirections = [.down, .up]
+            popoverController.sourceRect = event.rect ?? CGRect(x: view.bounds.midX, y: view.bounds.midY, width: 1, height: 1)
             popoverController.sourceView = view
             popoverController.delegate = self
             present(hosting, animated: true, completion: nil)
         }
+    }
+
+    func presentHighlightNoteEditor(
+        for highlightID: Highlight.Id,
+        quotedText: String,
+        initialNote: String = "",
+        initialColor: HighlightColor = .yellow
+    ) {
+        let editor = HighlightNoteEditor(
+            highlightID: highlightID,
+            quotedText: quotedText,
+            initialNote: initialNote,
+            initialColor: initialColor,
+            onColorChange: { [weak self] newColor in
+                self?.updateHighlight(highlightID, withColor: newColor)
+            },
+            onSave: { [weak self] text in
+                self?.dismiss(animated: true)
+                let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+                self?.updateHighlightNote(highlightID, note: trimmed.isEmpty ? nil : trimmed)
+            },
+            onCancel: { [weak self] in
+                self?.dismiss(animated: true)
+            }
+        )
+        let hosting = UIHostingController(rootView: editor)
+        hosting.modalPresentationStyle = UIDevice.current.userInterfaceIdiom == .pad ? .formSheet : .pageSheet
+        if let sheet = hosting.sheetPresentationController {
+            sheet.detents = [.medium(), .large()]
+            sheet.prefersGrabberVisible = true
+        }
+        present(hosting, animated: true)
     }
 }
 
@@ -1168,5 +1953,263 @@ struct TrackpadPageTurnSession {
         }
         didTurn = true
         return translation
+    }
+}
+
+// MARK: - Floating Reader Bottom Control Bar
+
+@MainActor
+final class ReaderBottomBarModel: ObservableObject {
+    @Published var chapterTitle: String = ""
+    @Published var positionText: String = ""
+    @Published var percentageText: String = ""
+    @Published var remainingTimeText: String = ""
+    @Published var progress: Double = 0
+    @Published var totalPositions: Int = 0
+    @Published var currentPositionIndex: Int = 0
+    @Published var supportsQuickTheme: Bool = false
+    @Published var activePaperPreset: ReaderPaperPreset? = .morningPaper
+    @Published var themeIconName: String = "sun.max"
+    @Published var themeLabel: String = NSLocalizedString("reader_bar_theme", comment: "")
+    @Published var supportsTTS: Bool = false
+    @Published var isTTSPlaying: Bool = false
+    @Published var isHandsFreeMode: Bool = false
+    @Published var supportsIntelligence: Bool = false
+    @Published var isDarkChrome: Bool = false
+}
+
+struct ReaderBottomControlBar: View {
+    @ObservedObject var model: ReaderBottomBarModel
+    let onOutline: () -> Void
+    let onAppearance: () -> Void
+    let onSelectPaperPreset: (ReaderPaperPreset) -> Void
+    let onToggleHandsFree: () -> Void
+    let onToggleTTS: () -> Void
+    let onIntelligenceRecap: () -> Void
+    let onIntelligenceSummary: () -> Void
+    let onScrubPreview: (Int) -> Void
+    let onScrubCommit: (Int) -> Void
+
+    @State private var isScrubbing = false
+    @State private var scrubValue: Double = 0
+    @State private var lastHapticIndex: Int = -1
+
+    private var canScrub: Bool {
+        model.totalPositions > 1
+    }
+
+    var body: some View {
+        VStack(spacing: 10) {
+            // Chapter title + remaining reading time & percentage + scrubber
+            VStack(spacing: 6) {
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text(model.chapterTitle)
+                        .font(.system(size: 12.5, weight: .semibold))
+                        .foregroundStyle(.primary)
+                        .lineLimit(1)
+
+                    Spacer(minLength: 6)
+
+                    HStack(spacing: 5) {
+                        if !model.remainingTimeText.isEmpty {
+                            Text(model.remainingTimeText)
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundStyle(.secondary)
+                        } else if !model.positionText.isEmpty {
+                            Text(model.positionText)
+                                .font(.system(size: 11.5, weight: .medium))
+                                .foregroundStyle(.secondary)
+                        }
+                        if !model.percentageText.isEmpty {
+                            Text(model.percentageText)
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundStyle(AppColors.accentBlue)
+                        }
+                    }
+                    .monospacedDigit()
+                }
+
+                if canScrub {
+                    Slider(
+                        value: Binding(
+                            get: { isScrubbing ? scrubValue : Double(model.currentPositionIndex) },
+                            set: { newValue in
+                                scrubValue = newValue
+                                let idx = max(0, min(model.totalPositions - 1, Int(newValue.rounded())))
+                                if idx != lastHapticIndex {
+                                    lastHapticIndex = idx
+                                    UISelectionFeedbackGenerator().selectionChanged()
+                                }
+                                onScrubPreview(idx)
+                            }
+                        ),
+                        in: 0...Double(max(1, model.totalPositions - 1)),
+                        onEditingChanged: { editing in
+                            if editing {
+                                isScrubbing = true
+                                scrubValue = Double(model.currentPositionIndex)
+                                lastHapticIndex = model.currentPositionIndex
+                            } else {
+                                let targetIndex = max(0, min(model.totalPositions - 1, Int(scrubValue.rounded())))
+                                isScrubbing = false
+                                onScrubCommit(targetIndex)
+                            }
+                        }
+                    )
+                    .tint(AppColors.accentBlue)
+                }
+            }
+
+            // 1-Tap 4 Curated Paper Presets strip (Morning Paper / Sepia / E-Ink / Midnight)
+            if model.supportsQuickTheme {
+                HStack(spacing: 6) {
+                    ForEach(ReaderPaperPreset.allCases) { preset in
+                        let isSelected = model.activePaperPreset == preset
+                        Button {
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                            onSelectPaperPreset(preset)
+                        } label: {
+                            Text(preset.localizedTitle)
+                                .font(.system(size: 11.5, weight: isSelected ? .bold : .semibold))
+                                .foregroundStyle(preset.swiftUITextColor)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.8)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 30)
+                                .background(preset.swiftUIBackground, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 9, style: .continuous)
+                                        .stroke(
+                                            isSelected ? AppColors.accentBlue : Color.primary.opacity(0.14),
+                                            lineWidth: isSelected ? 1.8 : 0.6
+                                        )
+                                )
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+
+            Divider()
+                .opacity(0.45)
+
+            // Action row (Contents / Appearance / Hands-Free Bedside / Listen)
+            HStack(spacing: 4) {
+                barActionButton(
+                    icon: "list.bullet",
+                    title: NSLocalizedString("reader_bar_contents", comment: ""),
+                    isActive: false,
+                    action: onOutline
+                )
+
+                barActionButton(
+                    icon: "textformat.size",
+                    title: NSLocalizedString("reader_bar_appearance", comment: ""),
+                    isActive: false,
+                    action: onAppearance
+                )
+
+                barActionButton(
+                    icon: model.isHandsFreeMode ? "lock.fill" : "moon.stars",
+                    title: NSLocalizedString("reader_bar_handsfree", comment: ""),
+                    isActive: model.isHandsFreeMode,
+                    accentColor: AppColors.accentTeal,
+                    action: onToggleHandsFree
+                )
+
+                if model.supportsTTS {
+                    barActionButton(
+                        icon: model.isTTSPlaying ? "waveform" : "headphones",
+                        title: NSLocalizedString("reader_bar_listen", comment: ""),
+                        isActive: model.isTTSPlaying,
+                        action: onToggleTTS
+                    )
+                }
+
+                if model.supportsIntelligence {
+                    Menu {
+                        Button {
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                            onIntelligenceRecap()
+                        } label: {
+                            Label(
+                                NSLocalizedString("ai_recap_title", comment: ""),
+                                systemImage: "clock.arrow.trianglehead.counterclockwise.rotate.90"
+                            )
+                        }
+
+                        Button {
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                            onIntelligenceSummary()
+                        } label: {
+                            Label(
+                                NSLocalizedString("ai_chapter_summary_title", comment: ""),
+                                systemImage: "text.document"
+                            )
+                        }
+                    } label: {
+                        VStack(spacing: 4) {
+                            Image(systemName: "sparkles")
+                                .font(.system(size: 17, weight: .semibold))
+                                .foregroundStyle(AppColors.accentGradient)
+                                .frame(height: 22)
+
+                            Text(NSLocalizedString("ai_bar_short_label", comment: ""))
+                                .font(.system(size: 10.5, weight: .medium))
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.8)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 4)
+                        .contentShape(Rectangle())
+                    }
+                    .accessibilityLabel(NSLocalizedString("ai_badge_apple_intelligence", comment: ""))
+                }
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 12)
+        .padding(.bottom, 10)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .stroke(
+                    model.isDarkChrome ? Color.white.opacity(0.12) : Color.black.opacity(0.08),
+                    lineWidth: 0.75
+                )
+        )
+        .shadow(color: Color.black.opacity(model.isDarkChrome ? 0.42 : 0.14), radius: 22, y: 10)
+        .environment(\.colorScheme, model.isDarkChrome ? .dark : .light)
+    }
+
+    private func barActionButton(
+        icon: String,
+        title: String,
+        isActive: Bool,
+        accentColor: SwiftUI.Color = AppColors.accentBlue,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button {
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            action()
+        } label: {
+            VStack(spacing: 4) {
+                Image(systemName: icon)
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(isActive ? accentColor : .primary)
+                    .frame(height: 22)
+
+                Text(title)
+                    .font(.system(size: 10.5, weight: .medium))
+                    .foregroundStyle(isActive ? accentColor : .secondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 4)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 }
