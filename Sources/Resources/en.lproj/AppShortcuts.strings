@@ -1,0 +1,14 @@
+/* AppShortcuts.strings - English */
+
+"Continue reading in ${applicationName}" = "Continue reading in ${applicationName}";
+"Resume reading in ${applicationName}" = "Resume reading in ${applicationName}";
+"Open my current book in ${applicationName}" = "Open my current book in ${applicationName}";
+"Start ${duration} reading in ${applicationName}" = "Start ${duration} reading in ${applicationName}";
+"Quick read in ${applicationName}" = "Quick read in ${applicationName}";
+"Open ${book} in ${applicationName}" = "Open ${book} in ${applicationName}";
+"Read ${book} in ${applicationName}" = "Read ${book} in ${applicationName}";
+"Check reading progress in ${applicationName}" = "Check reading progress in ${applicationName}";
+"How much did I read today in ${applicationName}" = "How much did I read today in ${applicationName}";
+"Show a random quote in ${applicationName}" = "Show a random quote in ${applicationName}";
+"Review a reading highlight in ${applicationName}" = "Review a reading highlight in ${applicationName}";
+"Open a book in ${applicationName}" = "Open a book in ${applicationName}";

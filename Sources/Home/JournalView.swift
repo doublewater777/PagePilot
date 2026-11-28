@@ -235,7 +235,20 @@ struct JournalView: View {
     // MARK: - Header
 
     private var journalHeader: some View {
-        HStack(alignment: .center, spacing: 10) {
+        let todaySeconds = statsStore.todayReadingSeconds()
+        let goalMinutes = ReadingPreferences.dailyGoalMinutes
+        let streakDays = statsStore.snapshot(for: .summary).currentStreakDays
+        let mascotMood = MascotMoodPolicy.resolve(
+            todaySeconds: todaySeconds,
+            dailyGoalMinutes: goalMinutes,
+            streakDays: streakDays,
+            hour: MascotMoodPolicy.currentHour(),
+            hasBooks: true
+        )
+
+        return HStack(alignment: .center, spacing: 10) {
+            PilotOwlMascotView(mood: mascotMood, size: 46, animated: true, showSoftGlow: true)
+
             VStack(alignment: .leading, spacing: 3) {
                 Text(NSLocalizedString("journal_title", comment: ""))
                     .font(.system(size: 31, weight: .bold, design: .serif))
@@ -716,14 +729,7 @@ struct JournalView: View {
 
     private var emptyQuotesCard: some View {
         VStack(spacing: 12) {
-            ZStack {
-                Circle()
-                    .fill(AppColors.accentBlue.opacity(0.1))
-                    .frame(width: 56, height: 56)
-                Image(systemName: "highlighter")
-                    .font(.system(size: 22, weight: .semibold))
-                    .foregroundStyle(AppColors.accentBlue)
-            }
+            PilotOwlMascotView(mood: .reading, size: 112, animated: true, showSoftGlow: true)
             Text(NSLocalizedString("my_notes_empty", comment: ""))
                 .font(.system(size: 14, weight: .medium))
                 .foregroundStyle(AppColors.secondaryText)
@@ -732,7 +738,7 @@ struct JournalView: View {
                 .padding(.horizontal, 16)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 32)
+        .padding(.vertical, 28)
         .cardStyle()
     }
 

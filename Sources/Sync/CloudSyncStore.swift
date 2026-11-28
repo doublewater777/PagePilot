@@ -510,6 +510,7 @@ final class CloudSyncStore {
             if let newCoverURL { try? FileManager.default.removeItem(at: newCoverURL) }
             throw error
         }
+        PagePilotShortcuts.updateAppShortcutParameters()
         return false
     }
 
@@ -860,6 +861,9 @@ final class CloudSyncStore {
 
         for file in filesToDelete where isInsideAppSandbox(file) {
             try? FileManager.default.removeItem(at: file)
+        }
+        if type == .book {
+            PagePilotShortcuts.updateAppShortcutParameters()
         }
     }
 

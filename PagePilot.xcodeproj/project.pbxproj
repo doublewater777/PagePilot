@@ -18,6 +18,14 @@
 		AA2026000000000000000101 /* PagePilotRedesignPolicies.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA2026000000000000000201 /* PagePilotRedesignPolicies.swift */; };
 		AA2026000000000000000105 /* ReadingIntelligenceService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA2026000000000000000205 /* ReadingIntelligenceService.swift */; };
 		AA2026000000000000000106 /* ReadingIntelligenceSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA2026000000000000000206 /* ReadingIntelligenceSheet.swift */; };
+		AA2026000000000000000108 /* PagePilotIntentEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA2026000000000000000208 /* PagePilotIntentEnvironment.swift */; };
+		AA2026000000000000000109 /* PagePilotAppEntities.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA2026000000000000000209 /* PagePilotAppEntities.swift */; };
+		AA2026000000000000000110 /* PagePilotAppIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA2026000000000000000210 /* PagePilotAppIntents.swift */; };
+		AA2026000000000000000111 /* ShortcutsGuideView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA2026000000000000000211 /* ShortcutsGuideView.swift */; };
+		AA2026000000000000000112 /* AppShortcuts.strings in Resources */ = {isa = PBXBuildFile; fileRef = AA2026000000000000000312 /* AppShortcuts.strings */; };
+		AA2026000000000000000113 /* AppIntentsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA2026000000000000000213 /* AppIntentsTests.swift */; };
+		AA2026000000000000000114 /* PilotOwlMascot.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA2026000000000000000214 /* PilotOwlMascot.swift */; };
+		AA2026000000000000000115 /* PilotOwlMascotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA2026000000000000000215 /* PilotOwlMascotTests.swift */; };
 		0AE85ECE215ADBEF873517D5 /* WatchCommandOutcomeState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 223B83471FB7C5E6097141A9 /* WatchCommandOutcomeState.swift */; };
 		0BB40644CC5EE846FE2F9E3F /* ReaderEditingActionsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8CB48566A6E5BE799D3C80A /* ReaderEditingActionsTests.swift */; };
 		0BE350D97BDD701300254B56 /* HomeModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 887713861EF2F9418AC144A2 /* HomeModule.swift */; };
@@ -416,6 +424,18 @@
 		AA2026000000000000000201 /* PagePilotRedesignPolicies.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PagePilotRedesignPolicies.swift; sourceTree = "<group>"; };
 		AA2026000000000000000205 /* ReadingIntelligenceService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadingIntelligenceService.swift; sourceTree = "<group>"; };
 		AA2026000000000000000206 /* ReadingIntelligenceSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadingIntelligenceSheet.swift; sourceTree = "<group>"; };
+		AA2026000000000000000208 /* PagePilotIntentEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PagePilotIntentEnvironment.swift; sourceTree = "<group>"; };
+		AA2026000000000000000209 /* PagePilotAppEntities.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PagePilotAppEntities.swift; sourceTree = "<group>"; };
+		AA2026000000000000000210 /* PagePilotAppIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PagePilotAppIntents.swift; sourceTree = "<group>"; };
+		AA2026000000000000000211 /* ShortcutsGuideView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortcutsGuideView.swift; sourceTree = "<group>"; };
+		AA2026000000000000000213 /* AppIntentsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppIntentsTests.swift; sourceTree = "<group>"; };
+		AA2026000000000000000214 /* PilotOwlMascot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PilotOwlMascot.swift; sourceTree = "<group>"; };
+		AA2026000000000000000215 /* PilotOwlMascotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PilotOwlMascotTests.swift; sourceTree = "<group>"; };
+		AA2026000000000000000220 /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = de; path = de.lproj/AppShortcuts.strings; sourceTree = "<group>"; };
+		AA2026000000000000000221 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/AppShortcuts.strings; sourceTree = "<group>"; };
+		AA2026000000000000000222 /* es */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = es; path = es.lproj/AppShortcuts.strings; sourceTree = "<group>"; };
+		AA2026000000000000000223 /* fr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = fr; path = fr.lproj/AppShortcuts.strings; sourceTree = "<group>"; };
+		AA2026000000000000000224 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/AppShortcuts.strings"; sourceTree = "<group>"; };
 		816C66669DBD1ABF9F20EB7B /* LibraryService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryService.swift; sourceTree = "<group>"; };
 		82D663407FE728242FF837A9 /* LibraryModule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryModule.swift; sourceTree = "<group>"; };
 		83FC454CBD0AD1C3914E0E8E /* BookQuotaTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookQuotaTests.swift; sourceTree = "<group>"; };
@@ -623,6 +643,7 @@
 				0F3C7296F3DB3AD6D58D7B8A /* Data */,
 				B801544785471798BF0F6B0B /* Home */,
 				AA2026000000000000000301 /* Intelligence */,
+				AA2026000000000000000302 /* Intents */,
 				91FD06F0553931D0CA3D67FC /* LCP */,
 				FC77EF4FD5E070381AB5CD7E /* Library */,
 				5B0DCC5CF064B935C6508C9D /* Me */,
@@ -643,6 +664,16 @@
 			path = Intelligence;
 			sourceTree = "<group>";
 		};
+		AA2026000000000000000302 /* Intents */ = {
+			isa = PBXGroup;
+			children = (
+				AA2026000000000000000208 /* PagePilotIntentEnvironment.swift */,
+				AA2026000000000000000209 /* PagePilotAppEntities.swift */,
+				AA2026000000000000000210 /* PagePilotAppIntents.swift */,
+			);
+			path = Intents;
+			sourceTree = "<group>";
+		};
 		41CBD1FD8C9CEFD4A2F66078 /* Common */ = {
 			isa = PBXGroup;
 			children = (
@@ -651,6 +682,7 @@
 				AD556A6CFF6A67358B501074 /* LocalNetworkInfo.swift */,
 				7F4C440F6058256F2FA02C73 /* MicroReadingSession.swift */,
 				AA2026000000000000000201 /* PagePilotRedesignPolicies.swift */,
+				AA2026000000000000000214 /* PilotOwlMascot.swift */,
 				5E7E8D2E6C8E4E8F45EF2BC1 /* Paths.swift */,
 				ED9A3CF3A20BC327FDCB1A99 /* Publication.swift */,
 				0ED27CEBD2A15AD49DD4B827 /* ReadingGoalPolicy.swift */,
@@ -733,6 +765,7 @@
 				6DB0B04CCA4CCC9105A78AC1 /* CloudSyncSettingsView.swift */,
 				C430087E1757176C9077B350 /* FeedbackSupport.swift */,
 				B0813251958A319C44D99083 /* FeedbackView.swift */,
+				AA2026000000000000000211 /* ShortcutsGuideView.swift */,
 				2914AD0EEBC5EA23851C8EBF /* IPadWatchConnectionView.swift */,
 				036A3DAACDB463FFAE654387 /* MeView.swift */,
 				FF6410BAB89E097C705EE30C /* MyNotesView.swift */,
@@ -798,6 +831,8 @@
 				32C6CDAD8966D6F593498CE9 /* CoverImageLoaderTests.swift */,
 				AA2026000000000000000204 /* PagePilotRedesignTests.swift */,
 				AA2026000000000000000207 /* ReadingIntelligenceTests.swift */,
+				AA2026000000000000000213 /* AppIntentsTests.swift */,
+				AA2026000000000000000215 /* PilotOwlMascotTests.swift */,
 				41F371BDCBD0C7C04E315718 /* FeedbackSupportTests.swift */,
 				096A54519E8222A9B204D786 /* HighlightRepositoryTests.swift */,
 				439D33E26E5543F01F91B932 /* ImportDedupTests.swift */,
@@ -952,6 +987,7 @@
 			children = (
 				694BDEB5CE7C0CB8BA260381 /* Assets.xcassets */,
 				1142EC57A83A3BFF2530508A /* PrivacyInfo.xcprivacy */,
+				AA2026000000000000000312 /* AppShortcuts.strings */,
 				4A9EC3016F806A8A0F4C3403 /* CloudSync.strings */,
 				72BF541A12D2D74D5CA10DC7 /* Localizable.strings */,
 				A3DFD7692F2B9D3A2DCFC173 /* Onboarding.strings */,
@@ -1241,6 +1277,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				70806694CA4142EC6BE21AEA /* Assets.xcassets in Resources */,
+				AA2026000000000000000112 /* AppShortcuts.strings in Resources */,
 				D1824AD20F0D35F1615005FF /* CloudSync.strings in Resources */,
 				74C5A728A5472DC977E682CF /* DRM.storyboard in Resources */,
 				5ACC91C220CA6B29D7D20269 /* Fonts in Resources */,
@@ -1325,6 +1362,11 @@
 				AA2026000000000000000101 /* PagePilotRedesignPolicies.swift in Sources */,
 				AA2026000000000000000105 /* ReadingIntelligenceService.swift in Sources */,
 				AA2026000000000000000106 /* ReadingIntelligenceSheet.swift in Sources */,
+				AA2026000000000000000108 /* PagePilotIntentEnvironment.swift in Sources */,
+				AA2026000000000000000109 /* PagePilotAppEntities.swift in Sources */,
+				AA2026000000000000000110 /* PagePilotAppIntents.swift in Sources */,
+				AA2026000000000000000111 /* ShortcutsGuideView.swift in Sources */,
+				AA2026000000000000000114 /* PilotOwlMascot.swift in Sources */,
 				68EFE0EC1A19EB886F500C22 /* MinimalEPUBPackager.swift in Sources */,
 				A1DA548719983342392D4BC5 /* MyNotesView.swift in Sources */,
 				1AFA868AB02BF79A01F2C9F5 /* NotesQuota.swift in Sources */,
@@ -1438,6 +1480,8 @@
 				C7081AC5C070FCD855485D67 /* CoverImageLoaderTests.swift in Sources */,
 				AA2026000000000000000104 /* PagePilotRedesignTests.swift in Sources */,
 				AA2026000000000000000107 /* ReadingIntelligenceTests.swift in Sources */,
+				AA2026000000000000000113 /* AppIntentsTests.swift in Sources */,
+				AA2026000000000000000115 /* PilotOwlMascotTests.swift in Sources */,
 				19FF1AAE683E19E555FDCEC1 /* FeedbackSupportTests.swift in Sources */,
 				E1F538DCE620199B19EBD58D /* HighlightRepositoryTests.swift in Sources */,
 				2E05E17D865D7BF58512A90D /* IPadReaderHintCopyTests.swift in Sources */,
@@ -1550,6 +1594,18 @@
 			name = Localizable.strings;
 			sourceTree = "<group>";
 		};
+		AA2026000000000000000312 /* AppShortcuts.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				AA2026000000000000000220 /* de */,
+				AA2026000000000000000221 /* en */,
+				AA2026000000000000000222 /* es */,
+				AA2026000000000000000223 /* fr */,
+				AA2026000000000000000224 /* zh-Hans */,
+			);
+			name = AppShortcuts.strings;
+			sourceTree = "<group>";
+		};
 		A01D56D366010E6382DBD2B3 /* PublicationMenuViewController.xib */ = {
 			isa = PBXVariantGroup;
 			children = (
@@ -1653,7 +1709,7 @@
 				SUPPORTS_MACCATALYST = YES;
 				DERIVE_MACCATALYST_PRODUCT_BUNDLE_IDENTIFIER = NO;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 59;
+				CURRENT_PROJECT_VERSION = 60;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = iPhone/Info.plist;
 				"INFOPLIST_FILE[sdk=macosx*]" = Mac/Info.plist;
@@ -1761,7 +1817,7 @@
 				SUPPORTS_MACCATALYST = YES;
 				DERIVE_MACCATALYST_PRODUCT_BUNDLE_IDENTIFIER = NO;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 59;
+				CURRENT_PROJECT_VERSION = 60;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = iPhone/Info.plist;
 				"INFOPLIST_FILE[sdk=macosx*]" = Mac/Info.plist;
@@ -1790,7 +1846,7 @@
 		4756EBF2B17E64AA1CB6FA93 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CURRENT_PROJECT_VERSION = 59;
+				CURRENT_PROJECT_VERSION = 60;
 				INFOPLIST_FILE = ReadingLiveActivity/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -1809,7 +1865,7 @@
 		491914B06B8D49E52D031C3C /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CURRENT_PROJECT_VERSION = 59;
+				CURRENT_PROJECT_VERSION = 60;
 				INFOPLIST_FILE = ReadingLiveActivity/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -1834,7 +1890,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 59;
+				CURRENT_PROJECT_VERSION = 60;
 				DEVELOPMENT_TEAM = 29C8MS76CZ;
 				INFOPLIST_FILE = WatchRemote/Info.plist;
 				MARKETING_VERSION = 2.0.0;
@@ -1870,7 +1926,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 59;
+				CURRENT_PROJECT_VERSION = 60;
 				DEVELOPMENT_TEAM = 29C8MS76CZ;
 				INFOPLIST_FILE = WatchRemote/Info.plist;
 				MARKETING_VERSION = 2.0.0;

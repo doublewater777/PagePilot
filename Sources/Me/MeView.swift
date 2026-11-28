@@ -177,6 +177,17 @@ struct MeView: View {
                     trailingText: ttsRateSummary
                 )
             }
+
+            NavigationLink {
+                LazyView(ShortcutsGuideView())
+                    .navigationBarTitleDisplayMode(.inline)
+            } label: {
+                MeRow(
+                    icon: "square.stack.3d.up.fill",
+                    iconColor: AppColors.accentTeal,
+                    title: NSLocalizedString("settings_shortcuts_title", comment: "")
+                )
+            }
         } header: {
             sectionHeader(NSLocalizedString("settings_reading_section", comment: ""))
         }
@@ -255,28 +266,12 @@ struct MeView: View {
                     showPaywall = true
                 }) {
                     HStack(spacing: 14) {
-                        if UIImage(named: "PaywallHeroArt") != nil {
-                            Color.clear
-                                .frame(width: 52, height: 52)
-                                .overlay {
-                                    Image("PaywallHeroArt")
-                                        .resizable()
-                                        .scaledToFill()
-                                }
-                                .clipped()
-                                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                        .stroke(Color.white.opacity(0.28), lineWidth: 0.8)
-                                )
-                                .shadow(color: Color.black.opacity(0.22), radius: 8, y: 4)
-                        } else {
-                            Image(systemName: "crown.fill")
-                                .font(.system(size: 18, weight: .semibold))
-                                .foregroundStyle(.white)
-                                .frame(width: 44, height: 44)
-                                .background(Color.white.opacity(0.18), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                        }
+                        PilotOwlMascotView(
+                            mood: .celebrating,
+                            size: 58,
+                            animated: false,
+                            showSoftGlow: true
+                        )
 
                         VStack(alignment: .leading, spacing: 4) {
                             HStack(spacing: 7) {
@@ -844,12 +839,12 @@ private struct ProEntitlementCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 12) {
-                Image(systemName: "crown.fill")
-                    .font(.system(size: 15, weight: .bold))
-                    .foregroundColor(.white)
-                    .frame(width: 32, height: 32)
-                    .background(AppColors.horizontalGradient)
-                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                PilotOwlMascotView(
+                    mood: .celebrating,
+                    size: 46,
+                    animated: false,
+                    showSoftGlow: true
+                )
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(NSLocalizedString("settings_pro_unlocked", comment: ""))

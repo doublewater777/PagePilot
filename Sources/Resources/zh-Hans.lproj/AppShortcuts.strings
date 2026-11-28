@@ -1,0 +1,14 @@
+/* AppShortcuts.strings - Simplified Chinese */
+
+"Continue reading in ${applicationName}" = "用 ${applicationName} 继续阅读";
+"Resume reading in ${applicationName}" = "在 ${applicationName} 接着看书";
+"Open my current book in ${applicationName}" = "用 ${applicationName} 打开正在读的书";
+"Start ${duration} reading in ${applicationName}" = "用 ${applicationName} 开始 ${duration} 微阅读";
+"Quick read in ${applicationName}" = "用 ${applicationName} 开始微阅读";
+"Open ${book} in ${applicationName}" = "在 ${applicationName} 打开 ${book}";
+"Read ${book} in ${applicationName}" = "用 ${applicationName} 阅读 ${book}";
+"Check reading progress in ${applicationName}" = "在 ${applicationName} 查看今日阅读进度";
+"How much did I read today in ${applicationName}" = "今天在 ${applicationName} 读了多久";
+"Show a random quote in ${applicationName}" = "在 ${applicationName} 随机看一条书摘";
+"Review a reading highlight in ${applicationName}" = "用 ${applicationName} 回顾书摘";
+"Open a book in ${applicationName}" = "在 ${applicationName} 打开一本书";

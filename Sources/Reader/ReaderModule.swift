@@ -17,6 +17,10 @@ protocol ReaderModuleAPI {
     /// Presents the given publication to the user, inside the given navigation controller.
     /// - Parameter completion: Called once the publication is presented, or if an error occured.
     func presentPublication(publication: Publication, book: Book, in navigationController: UINavigationController)
+
+    /// Presents the given publication and awaits completion, throwing on failure so
+    /// callers such as App Intents can accurately report errors.
+    func presentPublicationAndAwait(publication: Publication, book: Book, in navigationController: UINavigationController) async throws
 }
 
 protocol ReaderModuleDelegate: ModuleDelegate {}
@@ -54,66 +58,89 @@ final class ReaderModule: ReaderModuleAPI {
     }
 
     func presentPublication(publication: Publication, book: Book, in navigationController: UINavigationController) {
+        Task {
+            do {
+                try await presentPublicationAndAwait(
+                    publication: publication,
+                    book: book,
+                    in: navigationController
+                )
+            } catch let error as ReaderError {
+                delegate?.presentError(error, from: navigationController)
+            } catch {
+                delegate?.presentError(UserError(error), from: navigationController)
+            }
+        }
+    }
+
+    func presentPublicationAndAwait(
+        publication: Publication,
+        book: Book,
+        in navigationController: UINavigationController
+    ) async throws {
+        guard let bookId = book.id else {
+            throw LibraryError.bookNotFound
+        }
+
+        StartupProfiler.shared.record("ReaderModule: selecting format module")
+        guard let module = self.formatModules.first(where: { $0.supports(publication) }) else {
+            await MicroReadingLaunchStore.clear()
+            throw ReaderError.formatNotSupported
+        }
+
         #if targetEnvironment(macCatalyst)
-        if !(navigationController.view.window?.windowScene?.delegate is MacReaderSceneDelegate) {
-            MacReaderSceneDelegate.open(book, from: navigationController)
+        let isDedicatedMacReaderScene = await MainActor.run {
+            navigationController.view.window?.windowScene?.delegate is MacReaderSceneDelegate
+        }
+        if !isDedicatedMacReaderScene {
+            await MainActor.run {
+                MacReaderSceneDelegate.open(book, from: navigationController)
+            }
             return
         }
         #endif
-        Task {
-            guard let delegate = delegate, let bookId = book.id else {
-                fatalError("Reader delegate not set")
+
+        @MainActor func present(_ viewController: UIViewController) {
+            let backItem = UIBarButtonItem()
+            backItem.title = ""
+            viewController.navigationItem.backBarButtonItem = backItem
+            viewController.hidesBottomBarWhenPushed = true
+            #if targetEnvironment(macCatalyst)
+            viewController.title = book.title
+            navigationController.setViewControllers([viewController], animated: false)
+            #else
+            navigationController.pushViewController(viewController, animated: true)
+            #endif
+
+            if let session = MicroReadingLaunchStore.consume(for: bookId) {
+                MicroReadingSessionPresenter.attach(session, to: viewController)
             }
+        }
 
-            @MainActor func present(_ viewController: UIViewController) {
-                let backItem = UIBarButtonItem()
-                backItem.title = ""
-                viewController.navigationItem.backBarButtonItem = backItem
-                viewController.hidesBottomBarWhenPushed = true
-                #if targetEnvironment(macCatalyst)
-                viewController.title = book.title
-                navigationController.setViewControllers([viewController], animated: false)
-                #else
-                navigationController.pushViewController(viewController, animated: true)
-                #endif
-
-                if let session = MicroReadingLaunchStore.consume(for: bookId) {
-                    MicroReadingSessionPresenter.attach(session, to: viewController)
+        StartupProfiler.shared.record("ReaderModule: making reader view controller")
+        do {
+            let initialLocator: Locator? = await MainActor.run {
+                if let target = AppModule.shared?.pendingNavigationTarget,
+                   target.bookId == bookId {
+                    return target.locator
                 }
+                return book.locator
             }
 
-            StartupProfiler.shared.record("ReaderModule: selecting format module")
-            guard let module = self.formatModules.first(where: { $0.supports(publication) }) else {
-                await MicroReadingLaunchStore.clear()
-                delegate.presentError(ReaderError.formatNotSupported, from: navigationController)
-                return
-            }
-
-            StartupProfiler.shared.record("ReaderModule: making reader view controller")
-            do {
-                let initialLocator: Locator? = {
-                    if let target = AppModule.shared?.pendingNavigationTarget,
-                       target.bookId == bookId {
-                        return target.locator
-                    }
-                    return book.locator
-                }()
-
-                let readerViewController = try await module.makeReaderViewController(
-                    for: publication,
-                    locator: initialLocator,
-                    bookId: bookId,
-                    books: books,
-                    bookmarks: bookmarks,
-                    highlights: highlights,
-                    readium: readium
-                )
-                StartupProfiler.shared.record("ReaderModule: reader view controller ready")
-                await present(readerViewController)
-            } catch {
-                await MicroReadingLaunchStore.clear()
-                delegate.presentError(UserError(error), from: navigationController)
-            }
+            let readerViewController = try await module.makeReaderViewController(
+                for: publication,
+                locator: initialLocator,
+                bookId: bookId,
+                books: books,
+                bookmarks: bookmarks,
+                highlights: highlights,
+                readium: readium
+            )
+            StartupProfiler.shared.record("ReaderModule: reader view controller ready")
+            await present(readerViewController)
+        } catch {
+            await MicroReadingLaunchStore.clear()
+            throw error
         }
     }
 }

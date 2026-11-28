@@ -106,7 +106,8 @@ final class HomeViewModel: ObservableObject {
     @Published var lastReadBook: LastReadBook?
     @Published var recentBooks: [LastReadBook] = []
     @Published var allBooks: [Book] = []
-    @Published var isEmpty: Bool = true
+    @Published var isEmpty: Bool = false
+    @Published var hasLoadedBooks: Bool = false
     @Published var statsRefreshID = UUID()
 
     @Published var shelfFilter: DeskShelfFilter = .all
@@ -229,11 +230,21 @@ final class HomeViewModel: ObservableObject {
     }
 
     private func loadLastReadBook() {
+        // Hydrate initial books synchronously from local SQLite (<1ms) so frame 0 on
+        // cold launch immediately renders the real Desk & Bookshelf without flashing empty state.
+        if let initialBooks = try? books.allSync() {
+            latestBooks = initialBooks
+            allBooks = initialBooks
+            hasLoadedBooks = true
+            applyContinueReadingSelection()
+        }
+
         books.all()
             .receive(on: DispatchQueue.main)
             .sink { _ in } receiveValue: { [weak self] books in
                 self?.latestBooks = books
                 self?.allBooks = books
+                self?.hasLoadedBooks = true
                 self?.applyContinueReadingSelection()
             }
             .store(in: &cancellables)
@@ -290,9 +301,14 @@ final class HomeViewModel: ObservableObject {
         recentBooks = orderedOthers.prefix(8).map { LastReadBook(book: $0) }
     }
 
+    /// Today's reading time in seconds
+    var todayReadingSeconds: Int {
+        statsStore.todayReadingSeconds()
+    }
+
     /// Today's reading time in minutes
     var todayReadingMinutes: Int {
-        statsStore.todayReadingSeconds() / 60
+        todayReadingSeconds / 60
     }
 
     /// Progress towards daily goal (0.0 to 1.0+)
@@ -448,7 +464,6 @@ struct HomeView: View {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
-    @State private var appeared = false
     @State private var progressAnimated = false
     @State private var localizationRefreshID = AppAppearancePreferences.language.rawValue
 
@@ -480,15 +495,22 @@ struct HomeView: View {
                     VStack(alignment: .leading, spacing: 20) {
                         deskHeader
                             .id(viewModel.statsRefreshID)
-                            .opacity(appeared ? 1 : 0)
-                            .offset(y: appeared ? 0 : 6)
-                            .animation(.easeOut(duration: 0.38), value: appeared)
 
-                        if viewModel.isEmpty {
+                        if viewModel.hasLoadedBooks && viewModel.isEmpty {
                             emptyStateView
                                 .frame(maxWidth: 520)
                                 .frame(maxWidth: .infinity)
-                        } else {
+                        } else if viewModel.hasLoadedBooks {
+                            DeskMascotCompanionBar(
+                                todaySeconds: viewModel.todayReadingSeconds,
+                                dailyGoalMinutes: viewModel.dailyReadingGoalMinutes,
+                                streakDays: viewModel.currentStreakDays,
+                                hasBooks: true,
+                                onOpenJournal: {
+                                    delegate?.homeDidRequestJournal()
+                                }
+                            )
+
                             if isWideLayout {
                                 HStack(alignment: .top, spacing: 20) {
                                     if let heroBook = viewModel.lastReadBook {
@@ -501,15 +523,9 @@ struct HomeView: View {
                                 }
                             } else if let heroBook = viewModel.lastReadBook {
                                 heroDeskCard(for: heroBook)
-                                    .opacity(appeared ? 1 : 0)
-                                    .offset(y: appeared ? 0 : 10)
-                                    .animation(.easeOut(duration: 0.42).delay(0.06), value: appeared)
                             }
 
                             unifiedBookshelfSection(columnCount: columnCount)
-                                .opacity(appeared ? 1 : 0)
-                                .offset(y: appeared ? 0 : 12)
-                                .animation(.easeOut(duration: 0.42).delay(0.12), value: appeared)
                         }
 
                         Spacer(minLength: isEditingShelf ? 108 : ((horizontalSizeClass == .regular || UIDevice.current.userInterfaceIdiom == .pad) ? 32 : 96))
@@ -531,7 +547,6 @@ struct HomeView: View {
         .background(AppColors.background.ignoresSafeArea())
         .id(localizationRefreshID)
         .onAppear {
-            appeared = true
             viewModel.refreshContinueReading()
             withAnimation(.easeOut(duration: 0.7).delay(0.2)) {
                 progressAnimated = true
@@ -1459,31 +1474,8 @@ struct HomeView: View {
     private var emptyStateView: some View {
         VStack(spacing: 22) {
             VStack(spacing: 12) {
-                if UIImage(named: "EmptyLibraryArt") != nil {
-                    Image("EmptyLibraryArt")
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                        .frame(width: 210, height: 152)
-                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                .stroke(Color.primary.opacity(colorScheme == .dark ? 0.12 : 0.06), lineWidth: 0.75)
-                        )
-                        .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.35 : 0.08), radius: 14, y: 6)
-                        .padding(.bottom, 4)
-                        .accessibilityHidden(true)
-                } else {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 18, style: .continuous)
-                            .fill(AppColors.accentGradientStart.opacity(colorScheme == .dark ? 0.22 : 0.12))
-                            .frame(width: 68, height: 68)
-
-                        Image(systemName: "books.vertical")
-                            .font(.system(size: 26, weight: .semibold))
-                            .foregroundColor(AppColors.accentGradientStart)
-                    }
-                    .padding(.bottom, 4)
-                }
+                PilotOwlMascotView(mood: .idle, size: 152, animated: true, showSoftGlow: true)
+                    .padding(.bottom, 2)
 
                 Text(NSLocalizedString("home_empty_title", comment: ""))
                     .font(.system(size: 20, weight: .bold))

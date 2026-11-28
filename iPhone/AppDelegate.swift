@@ -94,10 +94,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UITabBarControllerDelegat
         }
         #endif
         AppAppearancePreferences.configureLocalization()
-        RevenueCatConfiguration.configure()
-        PostHogAnalytics.configure()
-        PostHogAnalytics.shared.capture("$app_open")
-        configureAudioSession()
         WatchPageTurnSettings.migrateDefaultTargetIfNeeded()
         do {
             app = try AppModule()
@@ -108,20 +104,32 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UITabBarControllerDelegat
             print("Failed to initialize AppModule: \(error)")
         }
 
-        // Activate Watch connectivity early so the session state is always
-        // current, even before the reader is opened.
-        WatchPageTurnService.shared.activate()
+        // Configure audio session off the main launch thread so CoreAudio HAL plugin
+        // loading does not block frame 0 while preserving background audio/TTS support.
+        DispatchQueue.global(qos: .utility).async { [weak self] in
+            self?.configureAudioSession()
+        }
+
+        // Defer non-rendering startup services to the next main runloop turn so
+        // SceneDelegate presents the Desk immediately without SDK/XPC stalls.
+        DispatchQueue.main.async {
+            PostHogAnalytics.configure()
+            PostHogAnalytics.shared.capture("$app_open")
+            WatchPageTurnService.shared.activate()
+        }
+
+        // Defer App Shortcuts parameter refresh until after cold-launch UI settles
+        // so linkd XPC & cover thumbnail indexing never compete with first frame.
+        Task.detached(priority: .utility) {
+            try? await Task.sleep(nanoseconds: 1_500_000_000)
+            PagePilotShortcuts.updateAppShortcutParameters()
+        }
 
         // ActivityKit can outlive the app process. A fresh process has no
         // active Reader session yet, so dismiss any activity left by the
         // previous process before a new session can publish one.
         Task { @MainActor in
             await ReadingLiveActivityCoordinator.shared.reconcileOnLaunch()
-        }
-
-        // Verify Pro entitlements on launch.
-        Task {
-            await ProPurchaseManager.shared.verifyCurrentEntitlements()
         }
 
         // Re-assert the reading-reminder schedule (cleared by reinstall / OS).
@@ -195,18 +203,19 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UITabBarControllerDelegat
         }
 
         let deskViewController = app.home.rootViewController
-        let journalViewController = app.journalRootViewController
 
         let tabBarController: UITabBarController
         if #available(iOS 18.0, *) {
             tabBarController = makeModernTabBarController(
                 deskViewController: deskViewController,
-                journalViewController: journalViewController
+                journalProvider: { [weak app] in
+                    app?.journalRootViewController ?? UIViewController()
+                }
             )
         } else {
             tabBarController = makeLegacyTabBarController(
                 deskViewController: deskViewController,
-                journalViewController: journalViewController
+                journalViewController: app.journalRootViewController
             )
         }
 
@@ -218,25 +227,25 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UITabBarControllerDelegat
     @available(iOS 18.0, *)
     private func makeModernTabBarController(
         deskViewController: UIViewController,
-        journalViewController: UIViewController
+        journalProvider: @escaping () -> UIViewController
     ) -> UITabBarController {
         func makeTab(
             titleKey: String,
             systemImage: String,
             identifier: String,
-            viewController: UIViewController
+            provider: @escaping () -> UIViewController
         ) -> UITab {
             UITab(
                 title: NSLocalizedString(titleKey, comment: "Tab bar item"),
                 image: UIImage(systemName: systemImage),
                 identifier: identifier,
-                viewControllerProvider: { _ in viewController }
+                viewControllerProvider: { _ in provider() }
             )
         }
 
         let tabBarController = UITabBarController(tabs: [
-            makeTab(titleKey: "desk_tab", systemImage: "books.vertical", identifier: MainTabIdentifier.desk, viewController: deskViewController),
-            makeTab(titleKey: "journal_tab", systemImage: "sparkles", identifier: MainTabIdentifier.journal, viewController: journalViewController),
+            makeTab(titleKey: "desk_tab", systemImage: "books.vertical", identifier: MainTabIdentifier.desk, provider: { deskViewController }),
+            makeTab(titleKey: "journal_tab", systemImage: "sparkles", identifier: MainTabIdentifier.journal, provider: journalProvider),
         ])
         tabBarController.delegate = self
         tabBarController.customizationIdentifier = "com.panyang.PagePilot.main.v2"
@@ -658,20 +667,26 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             initialURL: hasSeenOnboarding ? nil : initialURL
         )
 
+        let hasPendingIntent = AppIntentNavigationCoordinator.shared.hasPendingDestination
+            || AppIntentNavigationCoordinator.shared.hasClaimedExplicitNavigation
         if hasSeenOnboarding, let url = initialURL {
+            AppIntentNavigationCoordinator.shared.cancelAutoResume()
             appDelegate.importPublication(from: url, sender: rootViewController)
+        } else if hasSeenOnboarding, AppIntentNavigationCoordinator.shared.hasPendingDestination {
+            DispatchQueue.main.async {
+                AppIntentNavigationCoordinator.shared.consumePendingIfReady()
+            }
         } else if LaunchToReaderPolicy.shouldAutoOpenLastReadBook(
             hasSeenOnboarding: hasSeenOnboarding,
             launchDirectlyEnabled: ReadingPreferences.launchDirectlyToReader,
             hasIncomingURL: initialURL != nil,
             hasDebugTabOverride: wantsSettings || wantsJournal || wantsLibrary,
-            alreadyConsumedThisLaunch: Self.hasConsumedLaunchToReader
+            alreadyConsumedThisLaunch: Self.hasConsumedLaunchToReader,
+            hasPendingIntent: hasPendingIntent
         ) {
             Self.hasConsumedLaunchToReader = true
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) { [weak self] in
-                Task { @MainActor in
-                    self?.appDelegate.app?.autoOpenLastReadBookIfAvailable()
-                }
+            AppIntentNavigationCoordinator.shared.scheduleAutoResumeIfUnclaimed(delaySeconds: 0.18) { [weak self] shouldStillOpen in
+                await self?.appDelegate.app?.autoOpenLastReadBookIfAvailable(shouldStillOpen: shouldStillOpen)
             }
         }
         StartupProfiler.shared.record("SceneDelegate willConnectTo End")
@@ -685,6 +700,7 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             return
         }
 
+        AppIntentNavigationCoordinator.shared.cancelAutoResume()
         if UserDefaults.standard.bool(forKey: appDelegate.hasSeenOnboardingKey) {
             appDelegate.importPublication(from: url, sender: rootViewController)
         } else {

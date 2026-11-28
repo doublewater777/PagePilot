@@ -199,13 +199,15 @@ enum LaunchToReaderPolicy {
         launchDirectlyEnabled: Bool,
         hasIncomingURL: Bool,
         hasDebugTabOverride: Bool,
-        alreadyConsumedThisLaunch: Bool
+        alreadyConsumedThisLaunch: Bool,
+        hasPendingIntent: Bool = false
     ) -> Bool {
         guard hasSeenOnboarding,
               launchDirectlyEnabled,
               !hasIncomingURL,
               !hasDebugTabOverride,
-              !alreadyConsumedThisLaunch else {
+              !alreadyConsumedThisLaunch,
+              !hasPendingIntent else {
             return false
         }
         return true

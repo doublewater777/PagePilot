@@ -47,6 +47,7 @@ struct QuotePostcardView: View {
     @Environment(\.colorScheme) private var colorScheme
 
     @State private var selectedTheme: QuotePostcardTheme = .paper
+    @State private var showMascotSeal = true
     @State private var isSaving = false
     @State private var toastMessage: String?
     @State private var showToast = false
@@ -98,6 +99,37 @@ struct QuotePostcardView: View {
                             .buttonStyle(.plain)
                         }
                     }
+
+                    Button {
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        withAnimation(.spring(response: 0.28, dampingFraction: 0.82)) {
+                            showMascotSeal.toggle()
+                        }
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: showMascotSeal ? "checkmark.seal.fill" : "seal")
+                                .font(.system(size: 12, weight: .semibold))
+                            Text(NSLocalizedString("quote_postcard_mascot_seal", comment: ""))
+                                .font(.system(size: 12.5, weight: .medium))
+                        }
+                        .foregroundStyle(showMascotSeal ? AppColors.accentTeal : AppColors.secondaryText)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(
+                            showMascotSeal
+                                ? AppColors.accentTeal.opacity(colorScheme == .dark ? 0.20 : 0.10)
+                                : AppColors.cardBackground,
+                            in: Capsule()
+                        )
+                        .overlay(
+                            Capsule()
+                                .stroke(
+                                    showMascotSeal ? AppColors.accentTeal.opacity(0.6) : Color.primary.opacity(0.06),
+                                    lineWidth: 0.85
+                                )
+                        )
+                    }
+                    .buttonStyle(.plain)
 
                     // Editorial Postcard Canvas
                     postcardCanvas
@@ -259,13 +291,21 @@ struct QuotePostcardView: View {
 
                     Spacer(minLength: 8)
 
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 7, style: .continuous)
-                            .fill(AppColors.accentGradient)
-                            .frame(width: 24, height: 24)
-                        Image(systemName: "book.pages.fill")
-                            .font(.system(size: 11, weight: .semibold))
-                            .foregroundStyle(.white)
+                    if showMascotSeal {
+                        MascotPostcardSeal(
+                            accentColor: style.accentText,
+                            borderColor: style.dividerColor,
+                            surfaceColor: style.dividerColor.opacity(0.45)
+                        )
+                    } else {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 7, style: .continuous)
+                                .fill(AppColors.accentGradient)
+                                .frame(width: 24, height: 24)
+                            Image(systemName: "book.pages.fill")
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundStyle(.white)
+                        }
                     }
                 }
                 .padding(.top, 14)

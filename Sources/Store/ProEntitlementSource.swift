@@ -44,6 +44,7 @@ final class RevenueCatEntitlementSource: NSObject, ProEntitlementSource, Purchas
 
     func startObserving(_ onChange: @escaping (Bool) -> Void) {
         self.onChange = onChange
+        RevenueCatConfiguration.configure()
         guard Purchases.isConfigured else { return }
         Purchases.shared.delegate = self
     }
@@ -120,6 +121,7 @@ final class RevenueCatEntitlementSource: NSObject, ProEntitlementSource, Purchas
     }
 
     private func requireConfiguration() throws {
+        RevenueCatConfiguration.configure()
         guard Purchases.isConfigured else { throw ProPurchaseError.productNotFound }
     }
 }

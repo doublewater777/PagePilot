@@ -81,8 +81,13 @@ class EPUBViewController: VisualReaderViewController<EPUBNavigatorViewController
         preferencesStore.preferencesPublisher(for: bookId)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] prefs in
-                self?.latestPreferences = prefs
-                self?.applyPreferencesToChrome(prefs)
+                guard let self else { return }
+                let didChange = self.latestPreferences != prefs
+                self.latestPreferences = prefs
+                if didChange {
+                    self.navigator.submitPreferences(prefs)
+                }
+                self.applyPreferencesToChrome(prefs)
             }
             .store(in: &subscriptions)
     }

@@ -189,6 +189,10 @@ final class Database {
         try migrator.migrate(writer)
     }
 
+    func readSync<T>(_ query: (GRDB.Database) throws -> T) throws -> T {
+        try writer.read(query)
+    }
+
     func read<T>(_ query: @escaping (GRDB.Database) throws -> T) async throws -> T {
         try await withCheckedThrowingContinuation { cont in
             writer.asyncRead { db in

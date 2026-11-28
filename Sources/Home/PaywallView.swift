@@ -149,49 +149,55 @@ struct PaywallView: View {
 
     private var hero: some View {
         VStack(spacing: 10) {
-            if UIImage(named: "PaywallHeroArt") != nil {
-                ZStack(alignment: .topLeading) {
-                    Color.clear
-                        .frame(maxWidth: .infinity)
-                        .frame(height: isPad ? 168 : 146)
-                        .overlay {
-                            Image("PaywallHeroArt")
-                                .resizable()
-                                .scaledToFill()
-                        }
-                        .clipped()
-
-                    HStack(spacing: 5) {
-                        Image(systemName: heroContent.icon)
-                            .font(.system(size: 11, weight: .bold))
-                            .foregroundStyle(.orange)
-                        Text("PRO")
-                            .font(.system(size: 10.5, weight: .heavy, design: .rounded))
-                            .tracking(0.6)
-                            .foregroundStyle(AppColors.primaryText)
-                    }
-                    .padding(.horizontal, 9)
-                    .padding(.vertical, 5)
-                    .background(.ultraThinMaterial, in: Capsule())
-                    .overlay(Capsule().stroke(Color.white.opacity(0.28), lineWidth: 0.5))
-                    .padding(10)
-                }
-                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .stroke(Color.primary.opacity(colorScheme == .dark ? 0.14 : 0.06), lineWidth: 0.75)
+            ZStack {
+                LinearGradient(
+                    colors: colorScheme == .dark
+                        ? [Color(red: 22 / 255, green: 36 / 255, blue: 76 / 255), Color(red: 18 / 255, green: 66 / 255, blue: 74 / 255)]
+                        : [Color(red: 33 / 255, green: 68 / 255, blue: 148 / 255), Color(red: 28 / 255, green: 116 / 255, blue: 122 / 255)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
                 )
-                .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.35 : 0.09), radius: 14, y: 6)
-                .padding(.bottom, 2)
-                .accessibilityHidden(true)
-            } else {
-                Image(systemName: heroContent.icon)
-                    .font(.system(size: 18, weight: .bold))
-                    .foregroundColor(.orange)
-                    .frame(width: 36, height: 36)
-                    .background(Color.orange.opacity(colorScheme == .dark ? 0.18 : 0.12))
-                    .clipShape(Circle())
+
+                RadialGradient(
+                    colors: [Color.white.opacity(0.22), Color.clear],
+                    center: .center,
+                    startRadius: 10,
+                    endRadius: 145
+                )
+
+                PilotOwlMascotView(
+                    mood: .celebrating,
+                    size: isPad ? 136 : 118,
+                    animated: true,
+                    showSoftGlow: true
+                )
             }
+            .frame(maxWidth: .infinity)
+            .frame(height: isPad ? 168 : 148)
+            .overlay(alignment: .topLeading) {
+                HStack(spacing: 5) {
+                    Image(systemName: heroContent.icon)
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundStyle(.orange)
+                    Text("PRO")
+                        .font(.system(size: 10.5, weight: .heavy, design: .rounded))
+                        .tracking(0.6)
+                        .foregroundStyle(.white)
+                }
+                .padding(.horizontal, 9)
+                .padding(.vertical, 5)
+                .background(Color.white.opacity(0.18), in: Capsule())
+                .overlay(Capsule().stroke(Color.white.opacity(0.3), lineWidth: 0.6))
+                .padding(10)
+            }
+            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .stroke(Color.white.opacity(colorScheme == .dark ? 0.14 : 0.18), lineWidth: 0.75)
+            )
+            .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.35 : 0.10), radius: 14, y: 6)
+            .padding(.bottom, 2)
+            .accessibilityHidden(true)
 
             Text(heroContent.title)
                 .font(.system(size: 23, weight: .bold))

@@ -308,9 +308,12 @@ struct OnboardingView: View {
                 .accessibilityHidden(true)
 
             VStack(spacing: 8) {
-                Text("onboarding_tour_page1_title")
-                    .font(.system(size: 24, weight: .bold))
-                    .multilineTextAlignment(.center)
+                HStack(spacing: 8) {
+                    PilotOwlMascotView(mood: .idle, size: 38, animated: true, showSoftGlow: false)
+                    Text("onboarding_tour_page1_title")
+                        .font(.system(size: 24, weight: .bold))
+                        .multilineTextAlignment(.center)
+                }
 
                 Text("onboarding_tour_page1_tagline")
                     .font(.subheadline.weight(.semibold))
@@ -339,8 +342,27 @@ struct OnboardingView: View {
         VStack(spacing: 22) {
             Spacer(minLength: 20)
 
-            OnboardingEditorialImageCard(assetName: "EmptyLibraryArt", aspectRatio: 4.0 / 3.0)
-                .accessibilityHidden(true)
+            ZStack {
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                AppColors.accentBlue.opacity(0.10),
+                                AppColors.accentTeal.opacity(0.08),
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                PilotOwlMascotView(mood: .reading, size: 164, animated: true, showSoftGlow: true)
+            }
+            .aspectRatio(4.0 / 3.0, contentMode: .fit)
+            .frame(maxWidth: 340)
+            .overlay(
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .stroke(Color.primary.opacity(0.06), lineWidth: 0.75)
+            )
+            .accessibilityHidden(true)
 
             VStack(spacing: 8) {
                 Text("onboarding_tour_page2_title")

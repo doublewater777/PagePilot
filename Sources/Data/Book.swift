@@ -175,6 +175,15 @@ final class BookRepository {
         }
     }
 
+    func get(syncID: String) async throws -> Book? {
+        guard !syncID.isEmpty else { return nil }
+        return try await db.read { db in
+            try Book
+                .filter(Book.Columns.syncID == syncID)
+                .fetchOne(db)
+        }
+    }
+
     func getByIdentifier(_ identifier: String) async throws -> Book? {
         guard !identifier.isEmpty else { return nil }
         return try await db.read { db in
@@ -192,6 +201,12 @@ final class BookRepository {
 
     func all() -> AnyPublisher<[Book], Error> {
         db.observe { db in
+            try Book.order(Book.Columns.created).fetchAll(db)
+        }
+    }
+
+    func allSync() throws -> [Book] {
+        try db.readSync { db in
             try Book.order(Book.Columns.created).fetchAll(db)
         }
     }
@@ -215,6 +230,7 @@ final class BookRepository {
             return Book.Id(rawValue: db.lastInsertedRowID)
         }
         notifyCloudSync()
+        PagePilotShortcuts.updateAppShortcutParameters()
         return id
     }
 
@@ -231,6 +247,7 @@ final class BookRepository {
             return Book.Id(rawValue: db.lastInsertedRowID)
         }
         notifyCloudSync()
+        PagePilotShortcuts.updateAppShortcutParameters()
         return id
     }
 
@@ -289,6 +306,7 @@ final class BookRepository {
             try Book.deleteOne(db, key: id)
         }
         notifyCloudSync()
+        PagePilotShortcuts.updateAppShortcutParameters()
     }
 
     func saveProgress(for id: Book.Id, locator: Locator) async throws {

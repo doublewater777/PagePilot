@@ -105,10 +105,14 @@ final class AppModule {
 
         Self.shared = self
 
-        // Do not let CloudKit act on a stale cached Pro flag during cold launch.
-        // Verify StoreKit first, then let CloudSyncService apply its normal
-        // preference + entitlement gate before creating/starting CKSyncEngine.
+        // Defer RevenueCat + StoreKit verification + CloudKit sync until right after the
+        // first frame paints so cold launch stays instantaneous and never acts on a stale
+        // cached Pro flag before verification.
         Task { [cloudSync] in
+            try? await Task.sleep(nanoseconds: 150_000_000)
+            await MainActor.run {
+                RevenueCatConfiguration.configure()
+            }
             await ProPurchaseManager.shared.verifyCurrentEntitlements()
             await cloudSync.start()
         }
@@ -158,40 +162,61 @@ final class AppModule {
     /// Opens a book in the Reader, optionally navigating to a specific locator.
     @MainActor
     func openBook(_ book: Book, locator: Locator? = nil, microReadingMinutes: Int? = nil) {
-        guard let bookId = book.id else { return }
-        if let locator {
-            pendingNavigationTarget = (bookId, locator)
-        }
         Task { @MainActor in
             let nav = preferredReaderNavigationController()
-            if nav === home.rootViewController {
-                tabBarController?.selectedIndex = 0
-            }
-            nav.popToRootViewController(animated: false)
-
             do {
-                guard let pub = try await library.openBook(book, sender: nav) else { return }
-                if let microReadingMinutes {
-                    MicroReadingLaunchStore.prepare(bookId: bookId, minutes: microReadingMinutes)
-                }
-                reader.presentPublication(publication: pub, book: book, in: nav)
+                try await openBookAndAwait(book, locator: locator, microReadingMinutes: microReadingMinutes)
             } catch {
                 presentError(UserError(error), from: nav)
             }
         }
     }
 
-    /// Optional Scheme-B cold-launch helper: immediately resumes the user's last-read book.
+    /// Opens a book in the Reader and awaits full publication validation & presentation,
+    /// throwing on failure (used by App Intents so Shortcuts accurately reports failures).
     @MainActor
-    func autoOpenLastReadBookIfAvailable() {
-        Task { @MainActor in
-            guard let all = try? await books.allOnce(),
-                  let selected = ContinueReadingSelector.select(from: all, lastReadIds: LastReadBooks.orderedIds)
-            else {
-                return
-            }
-            openBook(selected)
+    func openBookAndAwait(_ book: Book, locator: Locator? = nil, microReadingMinutes: Int? = nil) async throws {
+        guard let bookId = book.id else {
+            throw LibraryError.bookNotFound
         }
+        try book.requireAvailablePublicationFile()
+
+        if let locator {
+            pendingNavigationTarget = (bookId, locator)
+        }
+
+        let nav = preferredReaderNavigationController()
+        if nav === home.rootViewController {
+            tabBarController?.selectedIndex = 0
+        }
+        nav.popToRootViewController(animated: false)
+
+        guard let pub = try await library.openBook(book, sender: nav) else {
+            throw LibraryError.bookNotFound
+        }
+        if let microReadingMinutes {
+            MicroReadingLaunchStore.prepare(bookId: bookId, minutes: microReadingMinutes)
+        }
+        do {
+            try await reader.presentPublicationAndAwait(publication: pub, book: book, in: nav)
+        } catch {
+            MicroReadingLaunchStore.clear()
+            throw error
+        }
+    }
+
+    /// Optional Scheme-B cold-launch helper: immediately resumes the user's last-read book
+    /// unless an explicit navigation (such as an App Intent or incoming URL) claimed launch.
+    @MainActor
+    func autoOpenLastReadBookIfAvailable(shouldStillOpen: @MainActor () -> Bool = { true }) async {
+        guard shouldStillOpen() else { return }
+        guard let all = try? await books.allOnce(),
+              shouldStillOpen(),
+              let selected = ContinueReadingSelector.select(from: all, lastReadIds: LastReadBooks.orderedIds)
+        else {
+            return
+        }
+        openBook(selected)
     }
 
     @MainActor

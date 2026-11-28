@@ -198,6 +198,20 @@ final class HighlightRepository {
         }
     }
 
+    func allOnce(for bookId: Book.Id? = nil) async throws -> [Highlight] {
+        try await db.read { db in
+            if let bookId {
+                return try Highlight
+                    .filter(Highlight.Columns.bookId == bookId)
+                    .order(Highlight.Columns.progression)
+                    .fetchAll(db)
+            }
+            return try Highlight
+                .order(Highlight.Columns.created.desc)
+                .fetchAll(db)
+        }
+    }
+
     func totalCount() async throws -> Int {
         try await db.read { db in
             try Highlight.fetchCount(db)
